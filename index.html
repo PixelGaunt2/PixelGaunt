@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Stickman Velocity</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
         body {
             background-color: #111; overflow: hidden; color: white;
             font-family: 'Courier New', Courier, monospace; user-select: none;
@@ -43,16 +43,40 @@
         .arcade-btn {
             padding: 15px 40px; font-size: 24px; font-family: 'Courier New', monospace; font-weight: bold; 
             color: #fff; background: #ff0055; border: 4px solid #fff; cursor: pointer; 
-            box-shadow: 0 0 15px #ff0055; margin-top: 20px; transition: 0.2s;
+            box-shadow: 0 0 15px #ff0055; margin-top: 20px; transition: 0.2s; pointer-events: auto;
         }
         .arcade-btn:hover { background: #00ff88; color: #000; box-shadow: 0 0 25px #00ff88; border-color: #000; }
         .screen-title { font-size: 60px; font-weight: bold; text-shadow: 4px 4px 0 #ff0055, 0 0 20px #00aaff; margin-bottom: 10px; text-align: center;}
 
-        .controls-hint {
-            position: absolute; bottom: 20px; left: 20px; color: rgba(255,255,255,0.8);
-            font-size: 14px; pointer-events: none; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px; z-index: 10;
+        #pauseBtnHint { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; font-size: 12px; pointer-events: auto; cursor: pointer; z-index: 10; border: 1px solid #fff; }
+
+        /* --- MOBILE UI --- */
+        #mobileUI {
+            position: absolute; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; pointer-events: none; z-index: 50;
         }
-        #pauseBtnHint { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; font-size: 12px; pointer-events: auto; cursor: pointer; z-index: 10; }
+        
+        /* Left Joystick */
+        .joy-zone {
+            width: 140px; height: 140px; background: rgba(0, 255, 255, 0.1); border: 2px solid rgba(0, 255, 255, 0.3); border-radius: 50%; position: relative; pointer-events: auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+        .joy-knob {
+            width: 50px; height: 50px; background: rgba(0, 255, 255, 0.6); border-radius: 50%; position: absolute; pointer-events: none; box-shadow: 0 0 10px #00ffff;
+        }
+        
+        /* Right Action Grid */
+        .action-zone {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; pointer-events: auto;
+        }
+        .action-btn {
+            width: 55px; height: 55px; border-radius: 50%; background: rgba(255, 0, 85, 0.2); border: 2px solid rgba(255, 0, 85, 0.5); color: white; font-weight: bold; font-size: 12px; display: flex; align-items: center; justify-content: center; font-family: 'Courier New', monospace; box-shadow: 0 0 10px rgba(255, 0, 85, 0.3); cursor: pointer; transition: 0.1s;
+        }
+        .action-btn:active {
+            background: rgba(255, 0, 85, 0.7); box-shadow: 0 0 20px #ff0055; border-color: #fff; transform: scale(0.9);
+        }
+        .action-btn.special { background: rgba(255, 204, 0, 0.2); border-color: rgba(255, 204, 0, 0.5); box-shadow: 0 0 10px rgba(255, 204, 0, 0.3); }
+        .action-btn.special:active { background: rgba(255, 204, 0, 0.7); box-shadow: 0 0 20px #ffcc00; }
+        .action-btn.jump { background: rgba(0, 255, 136, 0.2); border-color: rgba(0, 255, 136, 0.5); box-shadow: 0 0 10px rgba(0, 255, 136, 0.3); }
+        .action-btn.jump:active { background: rgba(0, 255, 136, 0.7); box-shadow: 0 0 20px #00ff88; }
     </style>
 </head>
 <body>
@@ -79,7 +103,7 @@
         </div>
     </div>
 
-    <div id="pauseBtnHint" onclick="togglePause()">Press P or ESC to Pause</div>
+    <div id="pauseBtnHint" onclick="togglePause()">Press P or Tap Here to Pause</div>
 
     <div id="mainMenu" class="screen-overlay">
         <div class="screen-title">STICKMAN VELOCITY</div>
@@ -98,10 +122,18 @@
         <button class="arcade-btn" onclick="location.reload()">REMATCH</button>
     </div>
 
-    <div class="controls-hint">
-        <b>W:</b> Jump | <b>S:</b> Crouch | <b>A/D:</b> Move Freely<br>
-        <b>J:</b> Punch | <b>L:</b> Kick | <b>K:</b> Fireball (Works while Crouching!)<br>
-        <b>SHIFT:</b> Dash | <b>U:</b> Slide/Dive Attack | <b>J+K+L:</b> ULTIMATE CLONES!
+    <div id="mobileUI">
+        <div class="joy-zone" id="joystick">
+            <div class="joy-knob" id="knob"></div>
+        </div>
+        <div class="action-zone">
+            <div class="action-btn special" id="btnDash">DASH</div>
+            <div class="action-btn jump" id="btnJump">JUMP</div>
+            <div class="action-btn special" id="btnDive">DIVE</div>
+            <div class="action-btn" id="btnPunch">PUNCH</div>
+            <div class="action-btn" id="btnKick">KICK</div>
+            <div class="action-btn" id="btnFire">FIRE</div>
+        </div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -146,36 +178,25 @@
             let themeIndex = (currentStage - 1) % stageThemes.length;
             let theme = stageThemes[themeIndex];
 
-            // Sky
             let gradient = c.createLinearGradient(0, 0, 0, canvas.height);
             gradient.addColorStop(0, theme.top); gradient.addColorStop(1, theme.bot);
             c.fillStyle = gradient; c.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Wireframe Mountains & Stick Trees
             c.strokeStyle = theme.items; c.lineWidth = 3; c.lineCap = 'round';
             let sceneryOffset = (-cameraX * 0.3) % 800; 
             for(let i = -1; i < Math.ceil(canvas.width / 800) + 2; i++) {
                 let startX = i * 800 + sceneryOffset;
-                c.beginPath();
-                c.moveTo(startX, canvas.height - 50);
-                c.lineTo(startX + 200, canvas.height - 350);
-                c.lineTo(startX + 400, canvas.height - 50);
-                c.stroke();
-                
+                c.beginPath(); c.moveTo(startX, canvas.height - 50); c.lineTo(startX + 200, canvas.height - 350); c.lineTo(startX + 400, canvas.height - 50); c.stroke();
                 let treeX = startX + 550;
-                c.beginPath();
-                c.moveTo(treeX, canvas.height - 50); c.lineTo(treeX, canvas.height - 180); 
+                c.beginPath(); c.moveTo(treeX, canvas.height - 50); c.lineTo(treeX, canvas.height - 180); 
                 c.moveTo(treeX, canvas.height - 130); c.lineTo(treeX - 40, canvas.height - 180); 
-                c.moveTo(treeX, canvas.height - 150); c.lineTo(treeX + 40, canvas.height - 200); 
-                c.stroke();
+                c.moveTo(treeX, canvas.height - 150); c.lineTo(treeX + 40, canvas.height - 200); c.stroke();
             }
 
-            // Floor
             c.fillStyle = "#050505"; c.fillRect(0, canvas.height - 50, canvas.width, 50);
             c.strokeStyle = theme.lines; c.lineWidth = 4;
             c.beginPath(); c.moveTo(0, canvas.height - 50); c.lineTo(canvas.width, canvas.height - 50); c.stroke();
 
-            // Grid
             c.strokeStyle = "rgba(255, 255, 255, 0.1)"; c.lineWidth = 2;
             let floorOffset = (-cameraX) % 100;
             for(let i = -100; i < canvas.width + 200; i += 100) {
@@ -187,22 +208,19 @@
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContextClass();
         
-        // --- EXTERNAL MUSIC SETUP ---
-        const bgMusic = new Audio('Midnight_Velocity.mp3');
-        bgMusic.loop = true;
-        bgMusic.volume = 0.5;
+        let bgMusic;
+        try {
+            bgMusic = new Audio('Midnight_Velocity.mp3');
+            bgMusic.loop = true; bgMusic.volume = 0.5;
+        } catch(e) { console.log("Music file not found"); }
 
         function playSound(freq, duration, type='square', volume=0.03) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.value = freq;
-            gain.gain.value = volume;
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
+            osc.type = type; osc.frequency.value = freq; gain.gain.value = volume;
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
 
         function sfxJump(){ playSound(420,0.08,'triangle',0.04); }
@@ -213,7 +231,6 @@
         function sfxHit(){ playSound(90,0.12,'square',0.06); }
         function sfxPower(){ playSound(520,0.18,'triangle',0.05); }
         function sfxBat(){ playSound(700,0.04,'sine',0.02); }
-
 
         class Coin {
             constructor(x, y) {
@@ -294,6 +311,8 @@
                 this.diveCooldown = 0; this.maxDiveCooldown = 150; 
                 
                 this.lifeTimer = 0; this.speed = (team === 'ally') ? 7 : 0;
+                this.animTimer = Math.random() * 100; 
+                this.flashTimer = 0; // NEW: Hit Flashing System
             }
 
             crouch() {
@@ -315,15 +334,21 @@
             }
 
             drawCharacter() {
-                c.save(); c.translate(-cameraX, 0); c.strokeStyle = this.color; c.lineWidth = (this.type === 'goliath') ? 7 : 4; c.lineCap = 'round';
+                c.save(); c.translate(-cameraX, 0); 
+                
+                // FLASHING LOGIC
+                let isFlashing = this.flashTimer > 0 && Math.floor(this.flashTimer / 2) % 2 === 0;
+                c.strokeStyle = isFlashing ? '#ffffff' : this.color; 
+                c.lineWidth = (this.type === 'goliath') ? 7 : 4; c.lineCap = 'round';
 
                 if (this.type === 'spider') {
-                    c.fillStyle = this.color; c.beginPath(); c.arc(this.position.x + this.width/2, this.position.y + 20, 14, 0, Math.PI * 2); c.fill();
+                    c.fillStyle = isFlashing ? '#ffffff' : this.color; 
+                    c.beginPath(); c.arc(this.position.x + this.width/2, this.position.y + 20, 14, 0, Math.PI * 2); c.fill();
                     let eyeX = this.facingRight ? this.position.x + this.width/2 + 6 : this.position.x + this.width/2 - 6;
                     c.fillStyle = '#ff0000'; c.beginPath(); c.arc(eyeX, this.position.y + 16, 5, 0, Math.PI*2); c.fill();
                     c.fillStyle = '#000000'; c.beginPath(); c.arc(this.facingRight ? eyeX + 1.5 : eyeX - 1.5, this.position.y + 16, 2, 0, Math.PI*2); c.fill();
 
-                    let legAnim = Math.sin(Date.now() * 0.02) * 5;
+                    let legAnim = Math.sin(this.animTimer * 0.5) * 5;
                     for (let i = 0; i < 4; i++) {
                         c.beginPath(); c.moveTo(this.position.x + this.width/2, this.position.y + 20); c.lineTo(this.position.x - 10 - (i*5), this.position.y + 35 + legAnim); c.stroke();
                         c.beginPath(); c.moveTo(this.position.x + this.width/2, this.position.y + 20); c.lineTo(this.position.x + this.width + 10 + (i*5), this.position.y + 35 + legAnim); c.stroke();
@@ -331,59 +356,87 @@
                     c.restore(); return;
                 }
 
+                this.animTimer++;
+                
+                let centerX = this.position.x + this.width / 2;
+                let bottomY = this.position.y + this.height;
+                let headRadius = this.type === 'goliath' ? 18 : 12;
+                
+                let isMoving = Math.abs(this.velocity.x) > 0.5 && !this.isDashing && !this.isKnockedDown && !this.isDiving;
+                let isJumping = this.velocity.y !== 0 && !this.isKnockedDown && !this.isDiving;
+                let directionMod = this.facingRight ? 1 : -1;
+
+                let head = { x: centerX, y: this.position.y + headRadius + 3 };
+                let neck = { x: head.x, y: head.y + headRadius };
+                let pelvis = { x: head.x, y: bottomY - (this.isCrouching ? 20 : 35) };
+                
+                let lHand = { x: 0, y: 0 }, rHand = { x: 0, y: 0 };
+                let lFoot = { x: 0, y: 0 }, rFoot = { x: 0, y: 0 };
+                
                 if (this.isKnockedDown) {
-                    let centerX = this.position.x + this.width / 2; let bottomY = this.position.y + this.height;
-                    c.beginPath(); c.arc(centerX + (this.facingRight ? 40 : -40), bottomY - 12, 12, 0, Math.PI * 2); c.stroke();
-                    c.beginPath(); c.moveTo(centerX, bottomY - 12); c.lineTo(centerX + (this.facingRight ? 28 : -28), bottomY - 12); c.stroke();
-                    c.restore(); return;
+                    head.y = bottomY - headRadius; head.x = centerX + (directionMod * 30);
+                    neck.x = head.x - (directionMod * headRadius); neck.y = head.y;
+                    pelvis.x = centerX - (directionMod * 10); pelvis.y = bottomY - 5;
+                    lHand = { x: neck.x, y: bottomY - 5 }; rHand = { x: neck.x + (directionMod * 10), y: bottomY - 15 };
+                    lFoot = { x: pelvis.x - (directionMod * 20), y: bottomY - 5 }; rFoot = { x: pelvis.x - (directionMod * 30), y: bottomY - 10 };
+                } 
+                else if (this.isDiving) {
+                    head.y = bottomY - 20; head.x = centerX + (directionMod * 35);
+                    neck.x = head.x - (directionMod * headRadius); neck.y = head.y;
+                    pelvis.x = centerX - (directionMod * 15); pelvis.y = head.y;
+                    lHand = { x: head.x + (directionMod * 25), y: head.y }; rHand = { x: head.x + (directionMod * 15), y: bottomY - 5 };
+                    lFoot = { x: pelvis.x - (directionMod * 35), y: bottomY - 10 }; rFoot = { x: pelvis.x - (directionMod * 45), y: head.y - 10 };
+                } 
+                else if (this.isDashing) {
+                    c.globalAlpha = 0.5; head.x += directionMod * 15; head.y += 10;
+                    neck.x = head.x; neck.y = head.y + headRadius; pelvis.x = centerX - (directionMod * 10);
+                    lHand = { x: neck.x - (directionMod * 30), y: neck.y - 10 }; rHand = { x: neck.x - (directionMod * 40), y: neck.y - 5 };
+                    lFoot = { x: pelvis.x - (directionMod * 10), y: bottomY }; rFoot = { x: pelvis.x + (directionMod * 20), y: bottomY - 15 };
                 }
+                else {
+                    if (!isMoving && !isJumping && !this.isAttacking) { head.y += Math.sin(this.animTimer * 0.1) * 2; pelvis.y += Math.sin(this.animTimer * 0.1) * 1; }
+                    if (isMoving) { head.x += directionMod * 5; neck.x = head.x; }
 
-                if (this.isDiving) {
-                    let centerX = this.position.x + this.width / 2; let centerY = this.position.y + this.height / 2;
-                    c.beginPath(); c.arc(this.facingRight ? centerX + 40 : centerX - 40, centerY, 12, 0, Math.PI * 2); c.stroke();
-                    c.beginPath(); c.moveTo(centerX - 30, centerY); c.lineTo(centerX + 30, centerY); c.stroke(); 
-                    c.beginPath(); c.moveTo(centerX - 30, centerY); c.lineTo(this.facingRight ? centerX - 60 : centerX + 60, centerY - 10); 
-                    c.beginPath(); c.moveTo(centerX - 30, centerY); c.lineTo(this.facingRight ? centerX - 60 : centerX + 60, centerY + 10); c.stroke();
-                    c.restore(); return;
-                }
+                    if (isJumping) { lFoot = { x: pelvis.x - 10, y: pelvis.y + 15 }; rFoot = { x: pelvis.x + 15, y: pelvis.y + 20 }; } 
+                    else if (isMoving) { let walkCycle = Math.sin(this.animTimer * 0.25) * 25; lFoot = { x: pelvis.x + walkCycle, y: bottomY }; rFoot = { x: pelvis.x - walkCycle, y: bottomY }; } 
+                    else if (this.isCrouching) { lFoot = { x: pelvis.x - 15, y: bottomY }; rFoot = { x: pelvis.x + 15, y: bottomY }; } 
+                    else { lFoot = { x: pelvis.x - 10, y: bottomY }; rFoot = { x: pelvis.x + 10, y: bottomY }; }
 
-                if (this.isDashing) { c.globalAlpha = 0.5; }
+                    let shoulderY = neck.y + 10;
+                    if (this.isAttacking) {
+                        let ext = this.attackType === 'kick' ? 55 : 45;
+                        if (this.type === 'goliath') ext += 20;
 
-                if (this.isCrouching) {
-                    let centerX = this.position.x + this.width / 2;
-                    c.beginPath(); c.arc(centerX, this.position.y + 15, 12, 0, Math.PI * 2); c.stroke(); 
-                    c.beginPath(); c.moveTo(centerX, this.position.y + 27); c.lineTo(centerX, this.position.y + 55); c.stroke(); 
-                    
-                    c.beginPath();
-                    if (this.isAttacking && this.attackType === 'punch') { 
-                        c.moveTo(centerX, this.position.y + 35); 
-                        c.lineTo(this.facingRight ? centerX + 40 : centerX - 40, this.position.y + 40); 
-                    } else if (this.isAttacking && this.attackType === 'kick') { 
-                        c.moveTo(centerX, this.position.y + 50); 
-                        c.lineTo(this.facingRight ? centerX + 50 : centerX - 50, this.position.y + 65); 
+                        if (this.attackType === 'punch') { rHand = { x: neck.x + (directionMod * ext), y: shoulderY }; lHand = { x: neck.x - (directionMod * 15), y: shoulderY + 15 }; } 
+                        else if (this.attackType === 'kick') {
+                            head.x -= directionMod * 10; neck.x = head.x; pelvis.x -= directionMod * 5;
+                            rFoot = { x: pelvis.x + (directionMod * ext), y: pelvis.y - 10 }; lFoot = { x: pelvis.x - (directionMod * 10), y: bottomY }; 
+                            rHand = { x: neck.x + (directionMod * 10), y: shoulderY + 10 }; lHand = { x: neck.x - (directionMod * 20), y: shoulderY };
+                        }
                     } else {
-                        c.moveTo(centerX, this.position.y + 35); c.lineTo(this.facingRight ? centerX + 20 : centerX - 20, this.position.y + 40);
+                        if (isJumping) { lHand = { x: neck.x - 20, y: shoulderY - 20 }; rHand = { x: neck.x + 20, y: shoulderY - 15 }; } 
+                        else if (isMoving) { let armCycle = Math.sin(this.animTimer * 0.25) * 20; lHand = { x: neck.x - armCycle, y: shoulderY + 15 }; rHand = { x: neck.x + armCycle, y: shoulderY + 15 }; } 
+                        else if (this.isCrouching) { lHand = { x: neck.x + (directionMod * 15), y: shoulderY + 15 }; rHand = { x: neck.x + (directionMod * 20), y: shoulderY + 20 }; } 
+                        else { lHand = { x: neck.x + (directionMod * 10), y: shoulderY + 15 }; rHand = { x: neck.x + (directionMod * 15), y: shoulderY + 5 }; }
                     }
-                    c.stroke();
-                    c.beginPath(); c.moveTo(centerX, this.position.y + 55); c.lineTo(this.position.x + 5, this.position.y + this.height);
-                    c.moveTo(centerX, this.position.y + 55); c.lineTo(this.position.x + this.width - 5, this.position.y + this.height); c.stroke();
-                } else {
-                    c.beginPath(); c.arc(this.position.x + this.width / 2, this.position.y + 15, (this.type === 'goliath' ? 18 : 12), 0, Math.PI * 2); c.stroke();
-                    c.beginPath(); c.moveTo(this.position.x + this.width / 2, this.position.y + (this.type === 'goliath' ? 33 : 27)); c.lineTo(this.position.x + this.width / 2, this.position.y + this.height - 35); c.stroke();
-                    c.beginPath(); c.moveTo(this.position.x + this.width / 2, this.position.y + (this.type === 'goliath' ? 45 : 35));
-                    if (this.isAttacking && this.attackType === 'punch') { let punchEnd = this.facingRight ? this.position.x + this.width + 40 : this.position.x - 40; c.lineTo(punchEnd, this.position.y + (this.type === 'goliath' ? 45 : 35)); } 
-                    else { c.lineTo(this.position.x + (this.facingRight ? 20 : 20), this.position.y + 50); } c.stroke();
-                    c.beginPath(); let hipY = this.position.y + this.height - 35;
-                    if (this.isAttacking && this.attackType === 'kick') { c.moveTo(this.position.x + this.width / 2, hipY); let kickEnd = this.facingRight ? this.position.x + this.width + 50 : this.position.x - 50; c.lineTo(kickEnd, hipY - 10); } 
-                    else { c.moveTo(this.position.x + this.width / 2, hipY); c.lineTo(this.position.x + 5, this.position.y + this.height); c.moveTo(this.position.x + this.width / 2, hipY); c.lineTo(this.position.x + this.width - 5, this.position.y + this.height); } c.stroke();
                 }
+
+                if(isFlashing) c.fillStyle = '#ffffff';
+
+                c.beginPath(); c.arc(head.x, head.y, headRadius, 0, Math.PI * 2); c.stroke(); if(isFlashing) c.fill();
+                c.beginPath(); c.moveTo(neck.x, neck.y); c.lineTo(pelvis.x, pelvis.y); c.stroke(); 
+                c.beginPath(); c.moveTo(pelvis.x, pelvis.y); c.lineTo(lFoot.x, lFoot.y); c.stroke(); 
+                c.beginPath(); c.moveTo(pelvis.x, pelvis.y); c.lineTo(rFoot.x, rFoot.y); c.stroke(); 
+                let shoulderY = neck.y + (this.isDiving || this.isKnockedDown ? 0 : 10);
+                c.beginPath(); c.moveTo(neck.x, shoulderY); c.lineTo(lHand.x, lHand.y); c.stroke(); 
+                c.beginPath(); c.moveTo(neck.x, shoulderY); c.lineTo(rHand.x, rHand.y); c.stroke(); 
 
                 if (!this.isKnockedDown) {
-                    let eyeX = this.facingRight ? this.position.x + this.width/2 + 5 : this.position.x + this.width/2 - 5;
-                    let eyeY = this.isCrouching ? this.position.y + 14 : this.position.y + 12;
+                    let eyeOffset = directionMod * (headRadius / 2);
+                    let eyeX = head.x + eyeOffset; let eyeY = head.y - 2;
                     c.fillStyle = (this.team === 'enemy') ? '#ff0000' : '#ffffff'; 
                     c.beginPath(); c.arc(eyeX, eyeY, 5, 0, Math.PI * 2); c.fill(); 
-                    c.fillStyle = '#000000'; let pupilX = this.facingRight ? eyeX + 1.5 : eyeX - 1.5;
+                    c.fillStyle = '#000000'; let pupilX = eyeX + (directionMod * 1.5);
                     c.beginPath(); c.arc(pupilX, eyeY, 2.2, 0, Math.PI * 2); c.fill(); 
                 }
 
@@ -394,6 +447,7 @@
                 if (this.dead) return;
                 this.drawCharacter();
 
+                if (this.flashTimer > 0) this.flashTimer--; // Update Flash Timer
                 if (this.dashCooldown > 0) this.dashCooldown--;
                 if (this.diveCooldown > 0) this.diveCooldown--;
 
@@ -457,13 +511,23 @@
                 sfxFireball(); projectiles.push(new Projectile(this.position.x + this.width/2, this.position.y + yOffset, speed, fbColor, this.team, (this.team === 'player') && hasFireballBoost));
             }
 
-            takeHit(damage) {
+            takeHit(damage, knockerX = null) {
                 if (this.team === 'player') {
                     if (this.isDashing) return; 
                     damage *= 0.4;
                 }
-                this.health -= damage; sfxHit(); triggerShake(damage > 15 ? 15 : 6); createParticles(this.position.x + this.width/2, this.position.y + this.height/2, this.color);
+                this.health -= damage; sfxHit(); triggerShake(damage > 15 ? 15 : 6); 
+                createParticles(this.position.x + this.width/2, this.position.y + this.height/2, this.color);
                 
+                this.flashTimer = 10; // Trigger Hit Flash
+
+                // KNOCKBACK MECHANIC
+                if (knockerX !== null && !this.isDashing && !this.isDiving) {
+                    let knockDir = this.position.x > knockerX ? 1 : -1;
+                    this.velocity.x = knockDir * ((this.type === 'goliath') ? 3 : 7);
+                    if(this.velocity.y === 0) this.velocity.y = -3;
+                }
+
                 if (damage >= 12 && !this.isKnockedDown && !this.isDiving && this.health > 0) {
                     this.stand(); this.isKnockedDown = true; this.knockdownTimer = 60; this.velocity.y = -5; this.velocity.x = this.facingRight ? -6 : 6;
                 }
@@ -474,7 +538,7 @@
                     this.dead = true;
                     if (this.team === 'player') { 
                         gameState = 'GAMEOVER';
-                        bgMusic.pause();
+                        if(bgMusic) bgMusic.pause();
                         document.getElementById('finalStats').innerText = `Stage: ${currentStage} | Kills: ${score} | Coins: ${coins}`;
                         document.getElementById('gameOver').style.display = 'flex'; 
                     } 
@@ -501,71 +565,36 @@
 
         class FlyingBat {
             constructor() {
-                this.position = {
-                    x: cameraX + canvas.width + 200 + Math.random() * 300,
-                    y: 100 + Math.random() * 250
-                };
-                this.width = 90;
-                this.height = 40;
-                this.health = 50;
-                this.dead = false;
-                this.speed = 5 + Math.random() * 2;
-                this.wave = Math.random() * 5;
+                this.position = { x: cameraX + canvas.width + 200 + Math.random() * 300, y: 100 + Math.random() * 250 };
+                this.width = 90; this.height = 40; this.health = 50; this.dead = false; this.speed = 5 + Math.random() * 2; this.wave = Math.random() * 5;
+                this.flashTimer = 0;
             }
-
             draw() {
-                c.save();
-                c.translate(-cameraX, 0);
-                c.strokeStyle = '#bb66ff';
+                c.save(); c.translate(-cameraX, 0); 
+                let isFlashing = this.flashTimer > 0 && Math.floor(this.flashTimer / 2) % 2 === 0;
+                c.strokeStyle = isFlashing ? '#ffffff' : '#bb66ff'; 
                 c.lineWidth = 4;
-
                 let flap = Math.sin(Date.now() * 0.02 + this.wave) * 12;
-
-                c.beginPath();
-                c.arc(this.position.x, this.position.y, 12, 0, Math.PI * 2);
-                c.stroke();
-
-                c.beginPath();
-                c.moveTo(this.position.x - 10, this.position.y);
-                c.quadraticCurveTo(this.position.x - 35, this.position.y - flap, this.position.x - 60, this.position.y + 10);
-
-                c.moveTo(this.position.x + 10, this.position.y);
-                c.quadraticCurveTo(this.position.x + 35, this.position.y - flap, this.position.x + 60, this.position.y + 10);
-                c.stroke();
-
-                c.fillStyle = '#ff0000';
-                c.beginPath();
-                c.arc(this.position.x - 5, this.position.y - 3, 2, 0, Math.PI * 2);
-                c.arc(this.position.x + 5, this.position.y - 3, 2, 0, Math.PI * 2);
-                c.fill();
+                c.beginPath(); c.arc(this.position.x, this.position.y, 12, 0, Math.PI * 2); c.stroke(); if(isFlashing) { c.fillStyle='#fff'; c.fill(); }
+                c.beginPath(); c.moveTo(this.position.x - 10, this.position.y); c.quadraticCurveTo(this.position.x - 35, this.position.y - flap, this.position.x - 60, this.position.y + 10);
+                c.moveTo(this.position.x + 10, this.position.y); c.quadraticCurveTo(this.position.x + 35, this.position.y - flap, this.position.x + 60, this.position.y + 10); c.stroke();
+                if(!isFlashing) {
+                    c.fillStyle = '#ff0000'; c.beginPath(); c.arc(this.position.x - 5, this.position.y - 3, 2, 0, Math.PI * 2); c.arc(this.position.x + 5, this.position.y - 3, 2, 0, Math.PI * 2); c.fill();
+                }
                 c.restore();
             }
-
             update(targetPlayer) {
+                if(this.flashTimer > 0) this.flashTimer--;
                 this.position.x -= this.speed;
-                
                 if (targetPlayer && !targetPlayer.isKnockedDown && Math.abs(this.position.x - targetPlayer.position.x) < 400) {
                     this.position.y += (targetPlayer.position.y - this.position.y) * 0.025; 
-                } else {
-                    this.position.y += Math.sin(Date.now() * 0.01 + this.wave) * 1.5;
-                }
-                
-                if (Math.random() < 0.01) sfxBat();
-                this.draw();
+                } else { this.position.y += Math.sin(Date.now() * 0.01 + this.wave) * 1.5; }
+                if (Math.random() < 0.01) sfxBat(); this.draw();
             }
-
-            takeHit(dmg) {
-                this.health -= dmg;
-                sfxHit();
-                createParticles(this.position.x, this.position.y, '#bb66ff');
-
-                if (this.health <= 0) {
-                    this.dead = true;
-                    score += 2;
-                    coins += 10;
-                    document.getElementById('coinBoard').innerText = `COINS: ${coins}`;
-                    sfxCoin();
-                }
+            takeHit(dmg, knockerX = null) {
+                this.health -= dmg; this.flashTimer = 10; sfxHit(); createParticles(this.position.x, this.position.y, '#bb66ff');
+                if(knockerX !== null) { let knockDir = this.position.x > knockerX ? 1 : -1; this.position.x += knockDir * 20; }
+                if (this.health <= 0) { this.dead = true; score += 2; coins += 10; document.getElementById('coinBoard').innerText = `COINS: ${coins}`; sfxCoin(); }
             }
         }
 
@@ -582,78 +611,109 @@
         const particles = []; function createParticles(x, y, color) { for (let i = 0; i < 12; i++) particles.push(new Particle(x, y, color)); }
 
         const player = new Sprite({ position: { x: 300, y: 0 }, velocity: { x: 0, y: 0 }, color: '#00ff88', team: 'player' });
-        const enemies = [];
-        const allies = []; 
+        const enemies = []; const allies = []; 
         
         function spawnEnemy() {
             if (gameState !== 'PLAYING') return;
             const rand = Math.random(); let type = 'brawler'; let color = '#ffaa00';
-            if (rand < 0.25) { type = 'spider'; color = '#ff00ff'; } 
-            else if (rand < 0.55) { type = 'ninja'; color = '#ff3333'; } 
-            else if (rand < 0.75) { type = 'goliath'; color = '#9933ff'; } 
-
+            if (rand < 0.25) { type = 'spider'; color = '#ff00ff'; } else if (rand < 0.55) { type = 'ninja'; color = '#ff3333'; } else if (rand < 0.75) { type = 'goliath'; color = '#9933ff'; } 
             let spawnX = cameraX + canvas.width + 100 + (Math.random() * 300); 
             const newEnemy = new Sprite({ position: { x: spawnX, y: 100 }, velocity: { x: 0, y: 0 }, color: color, team: 'enemy', type: type });
-
             let stageMultiplier = 1 + (currentStage * 0.05);
             newEnemy.speed = ((type === 'spider') ? 5.5 : ((type === 'ninja') ? 4.5 : ((type === 'goliath') ? 1.5 : 2.5))) * stageMultiplier;
-            newEnemy.health = (type === 'goliath') ? 160 : ((type === 'spider') ? 30 : 70);
-            newEnemy.damage = (type === 'spider') ? 8 : ((type === 'goliath') ? 18 : 10);
+            newEnemy.health = (type === 'goliath') ? 160 : ((type === 'spider') ? 30 : 70); newEnemy.damage = (type === 'spider') ? 8 : ((type === 'goliath') ? 18 : 10);
             enemies.push(newEnemy); setTimeout(spawnEnemy, Math.random() * 2000 + 1500); 
         }
 
         function spawnFlyingBat() {
             if (gameState !== 'PLAYING') return;
-            flyingBats.push(new FlyingBat());
-            setTimeout(spawnFlyingBat, Math.random() * 3000 + 2500);
+            flyingBats.push(new FlyingBat()); setTimeout(spawnFlyingBat, Math.random() * 3000 + 2500);
         }
 
         const keys = { j: {pressed: false}, k: {pressed: false}, l: {pressed: false}, a: {pressed: false}, d: {pressed: false}, s: {pressed: false} };
         
-        function checkUltimateTrigger() {
-            if (ultReady && keys.j.pressed && keys.k.pressed && keys.l.pressed) {
-                activateUltimate();
-            }
-        }
+        function checkUltimateTrigger() { if (ultReady && keys.j.pressed && keys.k.pressed && keys.l.pressed) activateUltimate(); }
 
         function activateUltimate() {
-            ultReady = false; killsSmall = 0; killsSpider = 0; killsBig = 0;
-            triggerShake(35); 
+            ultReady = false; killsSmall = 0; killsSpider = 0; killsBig = 0; triggerShake(35); 
             for(let i=0; i<5; i++) {
                 let spawnX = player.position.x + (Math.random() * 300 - 150);
                 const clone = new Sprite({ position: { x: spawnX, y: 0 }, velocity: { x: 0, y: 0 }, color: '#00ffff', team: 'ally', type: 'brawler' });
-                clone.lifeTimer = 900; 
-                allies.push(clone);
-                createParticles(spawnX, 50, '#00ffff');
+                clone.lifeTimer = 900; allies.push(clone); createParticles(spawnX, 50, '#00ffff');
             }
         }
+
+        // --- MOBILE JOYSTICK AND ACTION BUTTONS LOGIC ---
+        const joystick = document.getElementById('joystick');
+        const knob = document.getElementById('knob');
+        let joyActive = false; let joyCenter = { x: 0, y: 0 };
+
+        joystick.addEventListener('touchstart', (e) => {
+            e.preventDefault(); joyActive = true;
+            let rect = joystick.getBoundingClientRect();
+            joyCenter = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+            handleJoystick(e.touches[0]);
+        }, {passive: false});
+
+        joystick.addEventListener('touchmove', (e) => {
+            e.preventDefault(); if(joyActive) handleJoystick(e.touches[0]);
+        }, {passive: false});
+
+        joystick.addEventListener('touchend', (e) => {
+            e.preventDefault(); joyActive = false; knob.style.transform = `translate(0px, 0px)`;
+            keys.a.pressed = false; keys.d.pressed = false; keys.s.pressed = false;
+        }, {passive: false});
+
+        function handleJoystick(touch) {
+            let dx = touch.clientX - joyCenter.x; let dy = touch.clientY - joyCenter.y;
+            let dist = Math.hypot(dx, dy); let maxDist = 45;
+            if (dist > maxDist) { dx = (dx/dist) * maxDist; dy = (dy/dist) * maxDist; }
+            knob.style.transform = `translate(${dx}px, ${dy}px)`;
+            
+            keys.a.pressed = dx < -20;
+            keys.d.pressed = dx > 20;
+            keys.s.pressed = dy > 30; // Pull down to crouch/slide
+            
+            if(keys.a.pressed && !player.isDiving && !player.isDashing) player.facingRight = false;
+            if(keys.d.pressed && !player.isDiving && !player.isDashing) player.facingRight = true;
+        }
+
+        const bindBtn = (id, actionDown, actionUp) => {
+            let el = document.getElementById(id);
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); actionDown(); }, {passive: false});
+            el.addEventListener('touchend', (e) => { e.preventDefault(); if(actionUp) actionUp(); }, {passive: false});
+            // Desktop mouse bindings for testing on PC
+            el.addEventListener('mousedown', (e) => { actionDown(); });
+            el.addEventListener('mouseup', (e) => { if(actionUp) actionUp(); });
+        };
+
+        bindBtn('btnJump', () => { if (player.velocity.y === 0 && !player.isCrouching && !player.isDiving) { player.velocity.y = -15; sfxJump(); } });
+        bindBtn('btnPunch', () => { keys.j.pressed = true; checkUltimateTrigger(); player.attack('punch'); }, () => { keys.j.pressed = false; });
+        bindBtn('btnKick', () => { keys.l.pressed = true; checkUltimateTrigger(); player.attack('kick'); }, () => { keys.l.pressed = false; });
+        bindBtn('btnFire', () => { keys.k.pressed = true; checkUltimateTrigger(); player.shootFireball(); }, () => { keys.k.pressed = false; });
+        bindBtn('btnDash', () => { player.dash(); });
+        bindBtn('btnDive', () => { player.diveAttack(); });
+        // ---------------------------------------------
 
         window.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' || event.key.toLowerCase() === 'p') { togglePause(); return; }
             if (gameState !== 'PLAYING' || player.isKnockedDown) return;
-            
             switch (event.key.toLowerCase()) {
                 case 'd': keys.d.pressed = true; if(!player.isDiving && !player.isDashing) player.facingRight = true; break;
                 case 'a': keys.a.pressed = true; if(!player.isDiving && !player.isDashing) player.facingRight = false; break;
                 case 's': keys.s.pressed = true; break;
                 case 'w': if (player.velocity.y === 0 && !player.isCrouching && !player.isDiving) { player.velocity.y = -15; sfxJump(); } break;
-                
                 case 'j': keys.j.pressed = true; checkUltimateTrigger(); player.attack('punch'); break;
                 case 'l': keys.l.pressed = true; checkUltimateTrigger(); player.attack('kick'); break; 
                 case 'k': keys.k.pressed = true; checkUltimateTrigger(); player.shootFireball(); break;
-                
                 case 'u': player.diveAttack(); break; 
                 case 'shift': player.dash(); break; 
             }
         });
         window.addEventListener('keyup', (event) => {
             switch (event.key.toLowerCase()) {
-                case 'd': keys.d.pressed = false; break;
-                case 'a': keys.a.pressed = false; break;
-                case 's': keys.s.pressed = false; break;
-                case 'j': keys.j.pressed = false; break;
-                case 'k': keys.k.pressed = false; break;
-                case 'l': keys.l.pressed = false; break;
+                case 'd': keys.d.pressed = false; break; case 'a': keys.a.pressed = false; break; case 's': keys.s.pressed = false; break;
+                case 'j': keys.j.pressed = false; break; case 'k': keys.k.pressed = false; break; case 'l': keys.l.pressed = false; break;
             }
         });
 
@@ -673,7 +733,7 @@
             
             let trackText = document.getElementById('ultTracker');
             if (killsSmall >= reqSmall && killsSpider >= reqSpider && killsBig >= reqBig) {
-                ultReady = true; trackText.innerText = "ULTIMATE READY! PRESS J+K+L"; trackText.style.background = "#ff00ff"; trackText.style.color = "#fff";
+                ultReady = true; trackText.innerText = "ULTIMATE READY! TAP PUNCH+KICK+FIRE"; trackText.style.background = "#ff00ff"; trackText.style.color = "#fff";
             } else {
                 ultReady = false; trackText.innerText = `ULT: Small ${Math.min(killsSmall, reqSmall)}/15 | Spiders ${Math.min(killsSpider, reqSpider)}/5 | Big ${Math.min(killsBig, reqBig)}/5`;
                 trackText.style.background = "rgba(0,0,0,0.7)"; trackText.style.color = "#ff00ff";
@@ -681,37 +741,27 @@
         }
 
         function startGame() {
-            document.getElementById('mainMenu').style.display = 'none';
-            gameState = 'PLAYING'; 
-            bgMusic.play().catch(e => console.log(e));
+            document.getElementById('mainMenu').style.display = 'none'; gameState = 'PLAYING'; 
+            if(bgMusic) bgMusic.play().catch(e => console.log(e));
             setTimeout(spawnEnemy, 1000); setTimeout(spawnFlyingBat, 2000); animate();
         }
 
         function togglePause() {
             if (gameState === 'PLAYING') {
-                gameState = 'PAUSED'; document.getElementById('pauseMenu').style.display = 'flex';
-                bgMusic.pause();
+                gameState = 'PAUSED'; document.getElementById('pauseMenu').style.display = 'flex'; if(bgMusic) bgMusic.pause();
             } else if (gameState === 'PAUSED') {
-                gameState = 'PLAYING'; document.getElementById('pauseMenu').style.display = 'none'; 
-                bgMusic.play().catch(e => console.log(e));
-                animate();
+                gameState = 'PLAYING'; document.getElementById('pauseMenu').style.display = 'none'; if(bgMusic) bgMusic.play().catch(e => console.log(e)); animate();
             }
         }
 
         function animate() {
-            if (gameState !== 'PLAYING') return; 
-            requestAnimationFrame(animate);
-            
+            if (gameState !== 'PLAYING') return; requestAnimationFrame(animate);
             c.save(); applyShake(); drawBackground();
-
             if (hasFireballBoost && --fireballBoostTimer <= 0) hasFireballBoost = false;
             if (hasSpeedBoost && --speedBoostTimer <= 0) hasSpeedBoost = false;
-            
             updateUI(); 
 
-            let targetCameraX = player.position.x - canvas.width / 3;
-            if (targetCameraX < 0) targetCameraX = 0;
-            cameraX += (targetCameraX - cameraX) * 0.1; 
+            let targetCameraX = player.position.x - canvas.width / 3; if (targetCameraX < 0) targetCameraX = 0; cameraX += (targetCameraX - cameraX) * 0.1; 
 
             player.update();
             if (!player.isDashing && !player.isDiving && !player.isKnockedDown) {
@@ -725,170 +775,73 @@
             let validEnemies = enemies.filter(e => !e.dead && !e.isKnockedDown);
             for (let i = allies.length - 1; i >= 0; i--) {
                 let ally = allies[i];
-                if (ally.dead || --ally.lifeTimer <= 0) {
-                    createParticles(ally.position.x, ally.position.y + ally.height/2, ally.color);
-                    allies.splice(i, 1); continue;
-                }
+                if (ally.dead || --ally.lifeTimer <= 0) { createParticles(ally.position.x, ally.position.y + ally.height/2, ally.color); allies.splice(i, 1); continue; }
                 ally.update();
-
                 if (validEnemies.length > 0) {
-                    let targetE = validEnemies[i % validEnemies.length]; 
-                    let dist = targetE.position.x - ally.position.x;
-                    
-                    if(Math.abs(dist) > 60) {
-                        ally.velocity.x = dist > 0 ? ally.speed : -ally.speed; ally.facingRight = dist > 0;
-                    } else {
-                        ally.velocity.x = 0; if(Math.random() < 0.05) ally.attack(Math.random() > 0.5 ? 'punch' : 'kick');
-                    }
+                    let targetE = validEnemies[i % validEnemies.length]; let dist = targetE.position.x - ally.position.x;
+                    if(Math.abs(dist) > 60) { ally.velocity.x = dist > 0 ? ally.speed : -ally.speed; ally.facingRight = dist > 0; } 
+                    else { ally.velocity.x = 0; if(Math.random() < 0.05) ally.attack(Math.random() > 0.5 ? 'punch' : 'kick'); }
                     if(Math.abs(dist) > 200 && Math.random() < 0.01) ally.shootFireball();
                 } else { ally.velocity.x = 0; }
-
-                enemies.forEach(e => {
-                    if (ally.isAttacking && !e.isKnockedDown && rectangularCollision({ r1: ally, r2: e })) {
-                        ally.isAttacking = false; e.takeHit(ally.attackType === 'kick' ? 20 : 10);
-                    }
-                });
+                enemies.forEach(e => { if (ally.isAttacking && !e.isKnockedDown && rectangularCollision({ r1: ally, r2: e })) { ally.isAttacking = false; e.takeHit(ally.attackType === 'kick' ? 20 : 10, ally.position.x); } });
             }
 
             for (let i = coinsArray.length - 1; i >= 0; i--) {
                 const coin = coinsArray[i]; coin.update();
                 let dist = Math.hypot((coin.x - (player.position.x + player.width/2)), (coin.y - (player.position.y + player.height/2)));
-                if (dist < coin.radius + player.height/2) {
-                    coins++; document.getElementById('coinBoard').innerText = `COINS: ${coins}`;
-                    sfxCoin(); createParticles(coin.x, coin.y, coin.color); coinsArray.splice(i, 1);
-                } else if (coin.x < cameraX - 200) coinsArray.splice(i, 1);
+                if (dist < coin.radius + player.height/2) { coins++; document.getElementById('coinBoard').innerText = `COINS: ${coins}`; sfxCoin(); createParticles(coin.x, coin.y, coin.color); coinsArray.splice(i, 1); } 
+                else if (coin.x < cameraX - 200) coinsArray.splice(i, 1);
             }
 
             for (let i = powerUps.length - 1; i >= 0; i--) {
                 const pUp = powerUps[i]; pUp.update();
                 let dist = Math.hypot((pUp.x - (player.position.x + player.width/2)), (pUp.y - (player.position.y + player.height/2)));
                 if (dist < pUp.radius + player.height/2) {
-                    if (pUp.type === 'heal') player.health = Math.min(100, player.health + 35); 
-                    else if (pUp.type === 'damage') { hasFireballBoost = true; fireballBoostTimer = MAX_FB_TIME; }
-                    else if (pUp.type === 'speed') { hasSpeedBoost = true; speedBoostTimer = MAX_SPEED_TIME; }
-                    document.getElementById('playerHealth').style.width = player.health + '%';
-                    sfxPower(); createParticles(pUp.x, pUp.y, pUp.color); powerUps.splice(i, 1);
+                    if (pUp.type === 'heal') player.health = Math.min(100, player.health + 35); else if (pUp.type === 'damage') { hasFireballBoost = true; fireballBoostTimer = MAX_FB_TIME; } else if (pUp.type === 'speed') { hasSpeedBoost = true; speedBoostTimer = MAX_SPEED_TIME; }
+                    document.getElementById('playerHealth').style.width = player.health + '%'; sfxPower(); createParticles(pUp.x, pUp.y, pUp.color); powerUps.splice(i, 1);
                 } else if (pUp.x < cameraX - 200) powerUps.splice(i, 1); 
             }
 
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 const proj = projectiles[i]; proj.update();
                 if (proj.x < cameraX - 100 || proj.x > cameraX + canvas.width + 100) { projectiles.splice(i, 1); continue; }
-                
-                if (proj.team === 'player' || proj.team === 'ally') {
-                    enemies.forEach(enemy => {
-                        if (!enemy.dead && !enemy.isKnockedDown && circleRectCollision(proj, enemy)) {
-                            enemy.takeHit(hasFireballBoost ? 55 : 25); createParticles(proj.x, proj.y, proj.color); proj.active = false;
-                        }
-                    });
-                } else {
-                    if (!player.isKnockedDown && !player.isDashing && circleRectCollision(proj, player)) {
-                        player.takeHit(8); createParticles(proj.x, proj.y, proj.color); proj.active = false;
-                    }
-                    allies.forEach(ally => {
-                        if (!ally.isKnockedDown && circleRectCollision(proj, ally)) {
-                            ally.takeHit(15); createParticles(proj.x, proj.y, proj.color); proj.active = false;
-                        }
-                    });
+                if (proj.team === 'player' || proj.team === 'ally') { enemies.forEach(enemy => { if (!enemy.dead && !enemy.isKnockedDown && circleRectCollision(proj, enemy)) { enemy.takeHit(hasFireballBoost ? 55 : 25, proj.x); createParticles(proj.x, proj.y, proj.color); proj.active = false; } }); } 
+                else {
+                    if (!player.isKnockedDown && !player.isDashing && circleRectCollision(proj, player)) { player.takeHit(8, proj.x); createParticles(proj.x, proj.y, proj.color); proj.active = false; }
+                    allies.forEach(ally => { if (!ally.isKnockedDown && circleRectCollision(proj, ally)) { ally.takeHit(15, proj.x); createParticles(proj.x, proj.y, proj.color); proj.active = false; } });
                 }
                 if (!proj.active) projectiles.splice(i, 1);
             }
 
-            for (let i = particles.length - 1; i >= 0; i--) {
-                particles[i].update(); if (particles[i].alpha <= 0 || particles[i].x < cameraX - 100) particles.splice(i, 1);
-            }
+            for (let i = particles.length - 1; i >= 0; i--) { particles[i].update(); if (particles[i].alpha <= 0 || particles[i].x < cameraX - 100) particles.splice(i, 1); }
 
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies[i];
-                if (enemy.dead) { enemies.splice(i, 1); continue; } 
-                enemy.update();
-
+                if (enemy.dead) { enemies.splice(i, 1); continue; } enemy.update();
                 if (!enemy.isKnockedDown) {
                     let targetP = player; let cDist = Math.abs(player.position.x - enemy.position.x);
-                    allies.forEach(a => {
-                        let d = Math.abs(a.position.x - enemy.position.x);
-                        if(d < cDist) { cDist = d; targetP = a; }
-                    });
-
+                    allies.forEach(a => { let d = Math.abs(a.position.x - enemy.position.x); if(d < cDist) { cDist = d; targetP = a; } });
                     let dist = targetP.position.x - enemy.position.x; let absDist = Math.abs(dist);
-
-                    if (absDist > 50) { enemy.velocity.x = dist > 0 ? enemy.speed : -enemy.speed; enemy.facingRight = dist > 0; } 
-                    else { enemy.velocity.x = 0; }
-
+                    if (absDist > 50) { enemy.velocity.x = dist > 0 ? enemy.speed : -enemy.speed; enemy.facingRight = dist > 0; } else { enemy.velocity.x = 0; }
                     if (enemy.velocity.y === 0 && Math.random() < 0.01) enemy.velocity.y = (enemy.type === 'spider') ? -12 : -14;
-                    if (absDist < 65 && Math.random() < 0.04) { enemy.attack(Math.random() > 0.4 ? 'punch' : 'kick'); } 
-                    else if (absDist > 320 && Math.random() < 0.006 && enemy.type !== 'spider') { enemy.shootFireball(); }
+                    if (absDist < 65 && Math.random() < 0.04) { enemy.attack(Math.random() > 0.4 ? 'punch' : 'kick'); } else if (absDist > 320 && Math.random() < 0.006 && enemy.type !== 'spider') { enemy.shootFireball(); }
                 }
-
-                if (enemy.isAttacking && !player.isKnockedDown && !player.isDashing && rectangularCollision({ r1: enemy, r2: player })) {
-                    enemy.isAttacking = false; player.takeHit((enemy.attackType === 'kick') ? enemy.damage * 1.3 : enemy.damage);
-                }
-                allies.forEach(ally => {
-                    if (enemy.isAttacking && !ally.isKnockedDown && rectangularCollision({ r1: enemy, r2: ally })) {
-                        enemy.isAttacking = false; ally.takeHit((enemy.attackType === 'kick') ? enemy.damage * 1.3 : enemy.damage);
-                    }
-                });
-
-                if (player.isAttacking && !enemy.isKnockedDown && rectangularCollision({ r1: player, r2: enemy })) {
-                    player.isAttacking = false; enemy.takeHit(player.attackType === 'kick' ? 25 : 14);
-                }
-                if (player.isDiving && !enemy.isKnockedDown && rectangularCollision({ r1: player, r2: enemy })) {
-                    enemy.takeHit(30); 
-                }
+                if (enemy.isAttacking && !player.isKnockedDown && !player.isDashing && rectangularCollision({ r1: enemy, r2: player })) { enemy.isAttacking = false; player.takeHit((enemy.attackType === 'kick') ? enemy.damage * 1.3 : enemy.damage, enemy.position.x); }
+                allies.forEach(ally => { if (enemy.isAttacking && !ally.isKnockedDown && rectangularCollision({ r1: enemy, r2: ally })) { enemy.isAttacking = false; ally.takeHit((enemy.attackType === 'kick') ? enemy.damage * 1.3 : enemy.damage, enemy.position.x); } });
+                if (player.isAttacking && !enemy.isKnockedDown && rectangularCollision({ r1: player, r2: enemy })) { player.isAttacking = false; enemy.takeHit(player.attackType === 'kick' ? 25 : 14, player.position.x); }
+                if (player.isDiving && !enemy.isKnockedDown && rectangularCollision({ r1: player, r2: enemy })) { enemy.takeHit(30, player.position.x); }
             }
 
-            // CLEANED UP FLYING BATS LOGIC
             for (let i = flyingBats.length - 1; i >= 0; i--) {
                 const bat = flyingBats[i];
-
-                if (bat.dead || bat.position.x < cameraX - 200) {
-                    flyingBats.splice(i, 1);
-                    continue;
-                }
-
+                if (bat.dead || bat.position.x < cameraX - 200) { flyingBats.splice(i, 1); continue; }
                 bat.update(player);
-
-                // player melee attack on bats
-                if (player.isAttacking) {
-                    let dist = Math.hypot(
-                        (player.position.x + player.width/2) - bat.position.x,
-                        (player.position.y + player.height/2) - bat.position.y
-                    );
-
-                    if (dist < 120) {
-                        bat.takeHit(player.attackType === 'kick' ? 25 : 15);
-                    }
-                }
-
-                // fireball hits bats
-                for (let j = projectiles.length - 1; j >= 0; j--) {
-                    const proj = projectiles[j];
-                    if (proj.team === 'player' || proj.team === 'ally') {
-                        let dist = Math.hypot(proj.x - bat.position.x, proj.y - bat.position.y);
-                        if (dist < 40) {
-                            bat.takeHit(hasFireballBoost ? 60 : 30);
-                            proj.active = false;
-                        }
-                    }
-                }
-
-                // bat damages player
-                if (!player.isDashing && !player.isKnockedDown) {
-                    let pDist = Math.hypot(
-                        (player.position.x + player.width/2) - bat.position.x,
-                        (player.position.y + player.height/2) - bat.position.y
-                    );
-
-                    if (pDist < 60) {
-                        player.takeHit(10);
-                        bat.takeHit(100); // Bat dies kamikaze style after hitting
-                    }
-                }
+                if (player.isAttacking) { let dist = Math.hypot((player.position.x + player.width/2) - bat.position.x, (player.position.y + player.height/2) - bat.position.y); if (dist < 120) { bat.takeHit(player.attackType === 'kick' ? 25 : 15, player.position.x); } }
+                for (let j = projectiles.length - 1; j >= 0; j--) { const proj = projectiles[j]; if (proj.team === 'player' || proj.team === 'ally') { let dist = Math.hypot(proj.x - bat.position.x, proj.y - bat.position.y); if (dist < 40) { bat.takeHit(hasFireballBoost ? 60 : 30, proj.x); proj.active = false; } } }
+                if (!player.isDashing && !player.isKnockedDown) { let pDist = Math.hypot((player.position.x + player.width/2) - bat.position.x, (player.position.y + player.height/2) - bat.position.y); if (pDist < 60) { player.takeHit(10, bat.position.x); bat.takeHit(100, player.position.x); } }
             }
-
             c.restore();
         }
-
         window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
     </script>
 </body>
