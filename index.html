@@ -346,6 +346,816 @@
 </head>
 <body>
 
+    <!-- HIDDEN AUDIO PLAYER FOR GAME BGM -->
+    <audio id="portal-bgm" loop style="display:none;"></audio>
+
+    <!-- LOADING SCREEN -->
+    <div id="loader">
+        <div class="loader-spinner"></div>
+        <p class="pixel-font" style="font-size: 0.65rem; color: var(--neon-cyan); letter-spacing: 2px;">LOADING PORTAL...</p>
+    </div>
+
+    <!-- STICKY HEADER -->
+    <header>
+        <div class="logo pixel-font" onclick="goHome()">Pixel <span>Gaunt</span></div>
+        <nav class="nav-links">
+            <button class="nav-btn" onclick="goHome()">Games</button>
+            <button class="nav-btn" onclick="openUploadWizard()">Upload</button>
+            <button class="nav-btn primary" onclick="openLoginWizard()">Login</button>
+        </nav>
+    </header>
+
+    <!-- SEARCH COMPONENT -->
+    <div class="search-container" id="search-section">
+        <input type="text" class="search-bar" id="search-input" placeholder="Search across retro database..." onkeyup="filterGames()">
+    </div>
+
+    <!-- PAGE 1 — HOMEPAGE LAYOUT -->
+    <main class="container" id="homepage">
+        
+        <!-- LEFT SIDEBAR SECTION (PREMIUM CATEGORIES UI) -->
+        <aside class="sidebar">
+            <div class="sidebar-box">
+                <h3 class="sidebar-title pixel-font">Navigation</h3>
+                <ul class="sidebar-menu">
+                    <li><button class="active" id="btn-cat-all" onclick="filterCategory('All', null)">🕹️ All Games List</button></li>
+                    <li><button id="btn-cat-arcade" onclick="filterCategory('Arcade', null)">⚡ Arcade Database</button></li>
+                    <li><button id="btn-cat-adventure" onclick="filterCategory('Adventure', null)">🧭 Quest Adventure</button></li>
+                    <li><button id="btn-cat-simulation" onclick="filterCategory('Simulation', null)">🍕 Strategy & Sim</button></li>
+                    <li><button id="btn-cat-roguelike" onclick="filterCategory('Rogue-like', null)">💀 Rogue Dungeon</button></li>
+                </ul>
+            </div>
+            <div class="sidebar-box">
+                <h3 class="sidebar-title pixel-font">Developer</h3>
+                <ul class="sidebar-menu">
+                    <li><button onclick="openUploadWizard()">⬆️ Deploy Project (.ZIP)</button></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- GAME GRID FILTERS & ITEMS -->
+        <section class="main-content">
+            <!-- Top Horizon Filters -->
+            <div class="category-bar" id="top-cat-bar">
+                <button class="cat-btn active" onclick="filterCategory('All', this)">All Games</button>
+                <button class="cat-btn" onclick="filterCategory('Arcade', this)">Arcade</button>
+                <button class="cat-btn" onclick="filterCategory('Adventure', this)">Adventure</button>
+                <button class="cat-btn" onclick="filterCategory('Simulation', this)">Simulation</button>
+                <button class="cat-btn" onclick="filterCategory('Rogue-like', this)">Rogue-like</button>
+            </div>
+
+            <!-- Responsive Cards Layout -->
+            <div class="game-grid" id="game-grid">
+                <!-- Data populated dynamically via JavaScript mapping -->
+            </div>
+        </section>
+    </main>
+
+    <!-- PAGE 2 — GAMEPLAY VIEWPORT -->
+    <main id="gameplay-page">
+        <div class="game-header">
+            <h2 class="game-title-large pixel-font" id="current-game-title">Game Viewport</h2>
+        </div>
+
+        <div class="game-controls-top">
+            <button class="back-btn" onclick="goHome()">← Return to Database</button>
+            <button class="fullscreen-btn pixel-font" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+        </div>
+
+        <div class="gameplay-layout">
+            <!-- Left Ads Space -->
+            <div class="empty-zone-v"></div>
+
+            <!-- Core Canvas Frame - ADDED ALLOW AUTOPLAY to prevent iframe blocks -->
+            <div class="game-container" id="game-container-element">
+                <iframe src="" id="game-canvas" allowfullscreen allow="autoplay; fullscreen"></iframe>
+            </div>
+
+            <!-- Right Ads Space -->
+            <div class="empty-zone-v"></div>
+        </div>
+
+        <!-- Meta Descriptions Area -->
+        <div class="game-details">
+            <div class="details-grid">
+                <div class="detail-section">
+                    <h3 class="pixel-font">Project Architecture</h3>
+                    <p id="current-game-desc">Meta information loading...</p>
+                    <br>
+                    <h3 class="pixel-font">Deployment Metrics & Features</h3>
+                    <ul id="current-game-features"></ul>
+                </div>
+                <div class="detail-section">
+                    <h3 class="pixel-font">Input Interfaces (Controls)</h3>
+                    <p id="current-game-controls">Interface layout mapping...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Tasteful Ad Alignment Frame -->
+        <div class="empty-zone-h"></div>
+    </main>
+
+    <!-- FAKE MULTI-OPTION LOGIN MODAL -->
+    <div class="modal-overlay" id="login-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModals()">&times;</button>
+            
+            <!-- STEP 1: Choice Selection -->
+            <div class="modal-step active" id="login-step-choice">
+                <h3 class="modal-title pixel-font">Select Authentication</h3>
+                <div class="option-grid">
+                    <button class="opt-btn" onclick="goToLoginStep('gmail')">
+                        <span>📧</span> Login via Gmail Account
+                    </button>
+                    <button class="opt-btn whatsapp" onclick="goToLoginStep('whatsapp')">
+                        <span>💬</span> Login via WhatsApp Code
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 2A: Gmail Flow -->
+            <div class="modal-step" id="login-step-gmail">
+                <h3 class="modal-title pixel-font">Gmail Access</h3>
+                <div class="form-group">
+                    <label>Enter Registered Email Address</label>
+                    <input type="email" id="login-email-input" placeholder="developer@pixelgaunt.com">
+                </div>
+                <div class="action-btns">
+                    <button class="wizard-btn secondary" onclick="goToLoginStep('choice')">Back</button>
+                    <button class="wizard-btn" onclick="simulateAuthSuccess('Gmail Link dispatched! Check inbox.')">Send Magic Link</button>
+                </div>
+            </div>
+
+            <!-- STEP 2B: WhatsApp Flow -->
+            <div class="modal-step" id="login-step-whatsapp">
+                <h3 class="modal-title pixel-font">WhatsApp Verification</h3>
+                <div class="form-group">
+                    <label>Enter Phone Number (With Country Code)</label>
+                    <input type="tel" id="login-phone-input" placeholder="+92 300 1234567">
+                </div>
+                <div class="action-btns">
+                    <button class="wizard-btn secondary" onclick="goToLoginStep('choice')">Back</button>
+                    <button class="wizard-btn" onclick="simulateAuthSuccess('Verification code triggered over WhatsApp!')">Request Code</button>
+                </div>
+                <div class="join-link-container">
+                    <p style="font-size: 0.8rem; color:#64748b; margin-bottom:6px;">Or instantly stay synced:</p>
+                    <a href="#" class="join-channel-link" onclick="alert('Redirecting to Pixel Gaunt WhatsApp Community Group/Page for updates!')">
+                        📢 Join Official Notification Channel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEVELOPER AGREEMENT & UPLOAD STEP-BY-STEP MODAL -->
+    <div class="modal-overlay" id="upload-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModals()">&times;</button>
+            
+            <!-- STEP 1: Agreement Pipeline -->
+            <div class="modal-step active" id="upload-step-agreement">
+                <h3 class="modal-title pixel-font">Developer Agreement</h3>
+                <div class="agreement-text">
+                    Welcome to Pixel Gaunt Studios. By launching web modules on this platform, you grant Pixel Gaunt localized browser-hosting privileges.<br><br>
+                    1. Ensure modules contain optimized HTML5/JS files.<br>
+                    2. Strict compliance against harmful code execution, malware vectors, or unoptimized infinite loop threads.<br>
+                    3. Upload archives must be single bundled entities using strictly supported formats (.zip, .rar). Everything should load instantly natively without fetching illegal external assets.
+                </div>
+                <label class="checkbox-container">
+                    <input type="checkbox" id="agreement-checkbox" onchange="toggleAgreementNextBtn()">
+                    <span>I review, verify, and agree to the Developer Distribution Guidelines specified above.</span>
+                </label>
+                <div class="action-btns">
+                    <button class="wizard-btn" id="agreement-next-btn" disabled onclick="goToUploadStep('form')">Next Step</button>
+                </div>
+            </div>
+
+            <!-- STEP 2: Main File Submission Form -->
+            <div class="modal-step" id="upload-step-form">
+                <h3 class="modal-title pixel-font">Deploy Archive</h3>
+                <div class="form-group">
+                    <label>Project Title</label>
+                    <input type="text" placeholder="e.g. Neon Runner 2D">
+                </div>
+                <div class="form-group">
+                    <label>Select Deployment Stream (Genre)</label>
+                    <select>
+                        <option>Arcade</option>
+                        <option>Adventure</option>
+                        <option>Simulation</option>
+                        <option>Rogue-like</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Upload Build Package (<span class="file-badge">.ZIP / .RAR only</span>)</label>
+                    <div class="file-upload-box" onclick="document.getElementById('hidden-file-input').click()">
+                        <span style="font-size:1.5rem; color:var(--neon-cyan);">📦</span>
+                        <p style="font-weight:600; margin-top:8px; font-size:0.85rem;">Click to attach project package</p>
+                        <p class="file-info-text">Supported formats: <span class="file-badge">.zip</span> or <span class="file-badge">.rar</span> extensions</p>
+                    </div>
+                    <input type="file" id="hidden-file-input" accept=".zip,.rar" style="display:none;" onchange="handleFileSelection(this)">
+                    <p id="file-selected-name" style="font-size:0.8rem; color:var(--neon-cyan); margin-top:8px; text-align:center; display:none; font-weight:600;"></p>
+                </div>
+                <div class="action-btns">
+                    <button class="wizard-btn secondary" onclick="goToUploadStep('agreement')">Back</button>
+                    <button class="wizard-btn" onclick="simulateUploadSuccess()">Compile & Deploy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STYLISH CLEAN RETRO FOOTER -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="#" onclick="goHome()">Databases</a>
+                <a href="#" onclick="openUploadWizard()">Distribution Panel</a>
+                <a href="#" onclick="openLoginWizard()">Terms of Entry</a>
+            </div>
+            <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt Studios. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- LOGIC SYSTEM MODULE -->
+    <script>
+        // --- FIXED DATA STORAGE WITH ENCODED URLS SO IFRAMES DONT BREAK LOCALLY ---
+        const games = [
+            { 
+                id: 1, 
+                title: 'Stickman Velocity', 
+                genre: 'Arcade', 
+                desc: 'Fast-paced precision platforming module. Precision timing grid to dodge obstacles, compile neon pulses, and map clean velocity vectors inside an acceleration environment.', 
+                controls: 'Arrow interface indicators to direct momentum. Spacebar triggers structural high-speed dash.', 
+                features: ['Procedural difficulty curves', 'High-refresh movement loops', 'Dynamic vectors mapping'],
+                image: '11Gemini_Generated_Image_i6st3bi6st3bi6st.png',
+                url: 'Stick%20Man%20Velocity.html',
+                bgm: 'Stickman_Velocity_BGM.mp3' // Placeholder set for Stickman bgm!
+            },
+            { 
+                id: 2, 
+                title: 'Serpent Relic', 
+                genre: 'Adventure', 
+                desc: 'Deep multi-grid atmospheric adventure. Unravel maze puzzles, solve hidden ancient mechanism systems, and secure terminal sector elements without triggering traps.', 
+                controls: 'WASD keys for orientation translation, E button maps interaction loops, Shift key activates quick traversal.', 
+                features: ['Hidden crypt coordinates', 'Mechanism puzzle matrices', 'Complex pathing obstacles'],
+                image: 'serpent%20relic%20thumbnail.png', 
+                url: 'Serpent%20Relic%20Browser%20Update.html',
+                bgm: 'Calculated_Escape.mp3'
+            },
+            { 
+                id: 3, 
+                title: 'Pizza Chaos', 
+                genre: 'Simulation', 
+                desc: 'Real-time resource management, kitchen optimization, and culinary simulation loop. Streamline assembly lines under extreme traffic overhead bounds.', 
+                controls: 'Cursor coordinate selections to isolate ingredients, click-and-drag mechanics for processing.', 
+                features: ['Dynamic upgrade matrix', 'Highly volatile order queues', 'Complex time-slice management'],
+                image: '11Gemini_Generated_Image_4jgrj54jgrj54jgr.png', 
+                url: 'Pizza%20Chaos%20Browser.html',
+                bgm: 'Insert_Another_Quarter.mp3'
+            },
+            { 
+                id: 4, 
+                title: 'Face Merge', 
+                genre: 'Rogue-like', 
+                desc: 'Dungeon crawler structure integrated with modular mask power arrays. Combine, adapt, and rewrite build characteristics dynamically inside random environments.', 
+                controls: 'Direction keys for translation, Spacebar confirms target combination and transformation loops.', 
+                features: ['Random layout generations', 'Permadeath state triggers', 'Deep mask modification trees'],
+                image: '11Gemini_Generated_Image_knnan0knnan0knna.png', 
+                url: 'Face_Merge.html',
+                bgm: 'One_Final_Move.mp3'
+            }
+        ];
+
+        // Cache elements
+        const homepage = document.getElementById('homepage');
+        const gameplayPage = document.getElementById('gameplay-page');
+        const searchSection = document.getElementById('search-section');
+        const gameGrid = document.getElementById('game-grid');
+        const gameIframe = document.getElementById('game-canvas');
+        const loader = document.getElementById('loader');
+        const portalBgm = document.getElementById('portal-bgm');
+
+        // Render Cards
+        function renderGames(gameList) {
+            gameGrid.innerHTML = '';
+            if (gameList.length === 0) {
+                gameGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px; font-size:0.9rem;">No entries found fitting active matrix fields.</p>';
+                return;
+            }
+
+            gameList.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.onclick = () => launchViewport(game.id);
+
+                card.innerHTML = `
+                    <div class="card-thumb" style="background-image: url('${game.image}');">
+                        <div class="play-overlay">
+                            <div class="play-btn-circle"></div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div>
+                            <div class="card-genre">${game.genre}</div>
+                            <div class="card-title">${game.title}</div>
+                        </div>
+                    </div>
+                `;
+                gameGrid.appendChild(card);
+            });
+        }
+
+        // Searching Logic
+        function filterGames() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const filtered = games.filter(g => g.title.toLowerCase().includes(query) || g.genre.toLowerCase().includes(query));
+            renderGames(filtered);
+            
+            // Unset category tabs
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sidebar-menu button').forEach(b => b.classList.remove('active'));
+        }
+
+        // Category Selection Filter System (Updates Top Bar and Sidebar Sync)
+        function filterCategory(category, btnElement) {
+            document.getElementById('search-input').value = ''; 
+            
+            // Reset all highlights
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sidebar-menu button').forEach(b => b.classList.remove('active'));
+
+            // Set Top Bar active element
+            if (btnElement) {
+                btnElement.classList.add('active');
+            } else {
+                // Find matching top bar button manually
+                const topButtons = document.querySelectorAll('.cat-btn');
+                topButtons.forEach(btn => {
+                    if (category === 'All' && btn.innerText.includes('All')) btn.classList.add('active');
+                    else if (btn.innerText.trim() === category) btn.classList.add('active');
+                });
+            }
+
+            // Set Sidebar Active Highlight
+            const catIdMap = {
+                'All': 'btn-cat-all',
+                'Arcade': 'btn-cat-arcade',
+                'Adventure': 'btn-cat-adventure',
+                'Simulation': 'btn-cat-simulation',
+                'Rogue-like': 'btn-cat-roguelike'
+            };
+            const sideBtn = document.getElementById(catIdMap[category]);
+            if (sideBtn) sideBtn.classList.add('active');
+
+            // Render matching list
+            if (category === 'All') {
+                renderGames(games);
+            } else {
+                const filtered = games.filter(g => g.genre === category);
+                renderGames(filtered);
+            }
+        }
+
+        // View Navigations
+        function goHome() {
+            gameplayPage.style.display = 'none';
+            homepage.style.display = 'flex';
+            searchSection.style.display = 'block';
+            
+            // Stop game and background audio
+            gameIframe.src = ''; 
+            portalBgm.pause();
+            portalBgm.currentTime = 0;
+            portalBgm.src = '';
+
+            window.scrollTo(0, 0);
+        }
+
+        function launchViewport(gameId) {
+            const game = games.find(g => g.id === gameId);
+            if (!game) return;
+
+            homepage.style.display = 'none';
+            searchSection.style.display = 'none';
+            gameplayPage.style.display = 'block';
+            window.scrollTo(0, 0);
+
+            document.getElementById('current-game-title').innerText = game.title;
+            document.getElementById('current-game-desc').innerText = game.desc;
+            document.getElementById('current-game-controls').innerText = game.controls;
+            
+            const featuresList = document.getElementById('current-game-features');
+            featuresList.innerHTML = game.features.map(f => `<li>${f}</li>`).join('');
+
+            // Fast local routing assignment
+            gameIframe.src = game.url; 
+
+            // BACKGROUND AUDIO LOGIC (Plays when game opens)
+            if(game.bgm) {
+                portalBgm.src = game.bgm;
+                portalBgm.play().catch(e => console.log('Browser blocked autoplay. User interaction required.', e));
+            }
+        }
+
+        // Fullscreen Toggle Wrapper
+        function toggleFullscreen() {
+            const container = document.getElementById('game-container-element');
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (container.requestFullscreen) container.requestFullscreen();
+                else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+        }
+
+        // MODAL MULTI-WIZARD ROUTER MANAGEMENT
+        function openLoginWizard() {
+            openModal('login-modal');
+            goToLoginStep('choice');
+        }
+
+        function goToLoginStep(step) {
+            document.querySelectorAll('#login-modal .modal-step').forEach(s => s.classList.remove('active'));
+            document.getElementById(`login-step-${step}`).classList.add('active');
+        }
+
+        function openUploadWizard() {
+            openModal('upload-modal');
+            goToUploadStep('agreement');
+            // reset checkbox
+            document.getElementById('agreement-checkbox').checked = false;
+            document.getElementById('agreement-next-btn').disabled = true;
+            document.getElementById('file-selected-name').style.display = 'none';
+        }
+
+        function goToUploadStep(step) {
+            document.querySelectorAll('#upload-modal .modal-step').forEach(s => s.classList.remove('active'));
+            document.getElementById(`upload-step-${step}`).classList.add('active');
+        }
+
+        function toggleAgreementNextBtn() {
+            const checked = document.getElementById('agreement-checkbox').checked;
+            document.getElementById('agreement-next-btn').disabled = !checked;
+        }
+
+        function handleFileSelection(input) {
+            const fileDisplay = document.getElementById('file-selected-name');
+            if (input.files && input.files[fileDisplay.innerText = input.files[0].name]) {
+                fileDisplay.innerText = `Attached Build: ${input.files[0].name}`;
+                fileDisplay.style.display = 'block';
+            }
+        }
+
+        function simulateAuthSuccess(msg) {
+            alert(msg);
+            closeModals();
+        }
+
+        function simulateUploadSuccess() {
+            alert("Package safely transmitted to compiler! Deployment complete upon validation checks.");
+            closeModals();
+        }
+
+        function openModal(modalId) { 
+            const m = document.getElementById(modalId);
+            m.style.display = 'flex';
+            setTimeout(() => m.classList.add('active'), 10);
+        }
+        
+        function closeModals() { 
+            document.querySelectorAll('.modal-overlay').forEach(m => {
+                m.classList.remove('active');
+                setTimeout(() => m.style.display = 'none', 250);
+            });
+        }
+
+        // INITIALIZER LOOPS
+        window.onload = () => {
+            renderGames(games);
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 400);
+            }, 600);
+        };
+
+        window.onclick = (e) => { if (e.target.classList.contains('modal-overlay')) closeModals(); }
+        window.onkeydown = (e) => { if (e.key === 'Escape') closeModals(); }
+    </script>
+</body>
+</html>            scroll-behavior: smooth;
+        }
+
+        h1, h2, h3, .pixel-font { font-family: 'Press Start 2P', cursive; text-transform: uppercase; letter-spacing: 0.5px; }
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; }
+        button, input, select, textarea { font-family: inherit; color: inherit; }
+        button { cursor: pointer; border: none; outline: none; background: none; }
+
+        /* SCROLLBAR STYLE */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-surface-light); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--neon-purple); }
+
+        /* LOADING SCREEN */
+        #loader {
+            position: fixed; inset: 0; background: var(--bg-base); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.4s ease;
+        }
+        .loader-spinner {
+            width: 45px; height: 45px;
+            border: 4px solid var(--bg-surface);
+            border-top: 4px solid var(--neon-cyan);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* ====================================
+           HEADER & NAVIGATION (Sticky + Blur)
+           ==================================== */
+        header {
+            position: sticky; top: 0; z-index: 100;
+            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 16px 5%;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-size: 1.15rem; color: #fff; text-shadow: 0 0 10px var(--neon-cyan); cursor: pointer; }
+        .logo span { color: var(--neon-purple); text-shadow: 0 0 10px var(--neon-purple); }
+        
+        .nav-links { display: flex; gap: 16px; align-items: center; }
+        .nav-btn {
+            color: var(--text-main); font-weight: 500; padding: 8px 16px; border-radius: 6px;
+            transition: var(--transition-smooth); font-size: 0.9rem;
+        }
+        .nav-btn:hover { color: var(--neon-cyan); background: rgba(0, 243, 255, 0.08); }
+        .nav-btn.primary {
+            background: var(--neon-purple); color: #fff; font-weight: 600;
+            box-shadow: 0 0 12px rgba(188, 19, 254, 0.3);
+        }
+        .nav-btn.primary:hover {
+            background: #cd28ff; box-shadow: 0 0 20px rgba(188, 19, 254, 0.6); transform: translateY(-1px);
+        }
+
+        /* SEARCH BAR */
+        .search-container { margin: 24px 5% 12px 5%; position: relative; }
+        .search-bar {
+            width: 100%; max-width: 580px; margin: 0 auto; display: block;
+            background: var(--bg-surface); border: 1px solid var(--bg-surface-light);
+            color: #fff; padding: 14px 22px; border-radius: 30px; font-size: 0.95rem;
+            transition: var(--transition-smooth);
+        }
+        .search-bar:focus { border-color: var(--neon-cyan); box-shadow: var(--shadow-glow-cyan); outline: none; }
+
+        /* ====================================
+           MAIN LAYOUT (2 Columns)
+           ==================================== */
+        .container { display: flex; gap: 30px; padding: 12px 5% 60px 5%; max-width: 1600px; margin: 0 auto; }
+        
+        /* LEFT SIDEBAR (Category List UI) */
+        .sidebar { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; }
+        .sidebar-box {
+            background: var(--bg-surface); border-radius: 14px; padding: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .sidebar-title { font-size: 0.7rem; color: var(--neon-cyan); margin-bottom: 16px; letter-spacing: 1px; }
+        
+        .sidebar-menu li { margin-bottom: 8px; }
+        .sidebar-menu button {
+            width: 100%; text-align: left; padding: 11px 14px; border-radius: 8px;
+            color: #94a3b8; font-weight: 500; font-size: 0.9rem; transition: var(--transition-smooth);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .sidebar-menu button:hover, .sidebar-menu button.active {
+            color: #fff; background: rgba(255, 255, 255, 0.04); border-left: 3px solid var(--neon-cyan);
+        }
+        .sidebar-menu button.active { border-left-color: var(--neon-purple); color: #fff; background: rgba(188, 19, 254, 0.05); }
+
+        /* MAIN CONTENT AREA */
+        .main-content { flex-grow: 1; }
+
+        /* HORIZONTAL CATEGORY FILTER BAR */
+        .category-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 24px; }
+        .category-bar::-webkit-scrollbar { height: 3px; }
+        .cat-btn {
+            background: var(--bg-surface); border: 1px solid var(--bg-surface-light);
+            color: #94a3b8; padding: 8px 18px; border-radius: 20px;
+            font-size: 0.85rem; font-weight: 500; white-space: nowrap; transition: var(--transition-smooth);
+        }
+        .cat-btn:hover, .cat-btn.active {
+            border-color: var(--neon-purple); color: #fff; background: rgba(188, 19, 254, 0.08);
+            box-shadow: 0 0 10px rgba(188, 19, 254, 0.2);
+        }
+
+        /* ====================================
+           GAME GRID & CARDS
+           ==================================== */
+        .game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+        .game-card {
+            background: var(--bg-surface); border-radius: 14px; overflow: hidden;
+            border: 1px solid var(--bg-surface-light); position: relative;
+            transition: var(--transition-smooth); cursor: pointer;
+            display: flex; flex-direction: column;
+        }
+        .game-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 12px 24px rgba(0, 243, 255, 0.12);
+        }
+        .card-thumb {
+            width: 100%; height: 210px; position: relative;
+            background-size: cover; background-position: center; overflow: hidden;
+        }
+        .card-thumb::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(to bottom, transparent, var(--bg-surface)); opacity: 0.85;
+        }
+        
+        .play-overlay {
+            position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; transition: var(--transition-smooth);
+        }
+        .game-card:hover .play-overlay { opacity: 1; backdrop-filter: blur(3px); }
+        .play-btn-circle {
+            width: 52px; height: 52px; background: var(--neon-cyan); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 18px var(--neon-cyan); transform: scale(0.85); transition: var(--transition-smooth);
+        }
+        .game-card:hover .play-btn-circle { transform: scale(1); }
+        .play-btn-circle::after { content: '▶'; color: #000; font-size: 1.15rem; margin-left: 3px; }
+
+        .card-info { padding: 18px 20px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .card-title { font-size: 1.05rem; color: #fff; margin-bottom: 6px; font-weight: 800; }
+        .card-genre { font-size: 0.72rem; color: var(--neon-purple); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+        /* ====================================
+           PAGE 2 — GAMEPLAY AREA UI
+           ==================================== */
+        #gameplay-page { display: none; padding: 0 5% 60px 5%; max-width: 1600px; margin: 0 auto; animation: fadeIn 0.35s ease-out; }
+        
+        .game-header { text-align: center; margin-bottom: 24px; }
+        .game-title-large { font-size: 1.4rem; color: #fff; text-shadow: 0 0 12px rgba(0, 243, 255, 0.35); margin-top: 16px; }
+        
+        .game-controls-top {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 920px; margin: 0 auto 16px auto;
+        }
+        .back-btn { color: #94a3b8; font-weight: 600; font-size: 0.9rem; transition: var(--transition-smooth); }
+        .back-btn:hover { color: #fff; }
+
+        .fullscreen-btn {
+            background: rgba(0, 243, 255, 0.08); color: var(--neon-cyan); border: 1px solid rgba(0, 243, 255, 0.3);
+            padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 0.85rem;
+            transition: var(--transition-smooth); display: flex; align-items: center; gap: 8px;
+        }
+        .fullscreen-btn:hover {
+            background: var(--neon-cyan); color: #000; box-shadow: 0 0 15px var(--neon-cyan); transform: translateY(-1px);
+        }
+
+        .gameplay-layout { display: flex; justify-content: center; align-items: flex-start; gap: 24px; width: 100%; }
+        
+        /* SPACES FOR FUTURE ADS (UNLABELLED TASTEFUL SPACES) */
+        .empty-zone-v {
+            width: 160px; height: 600px; flex-shrink: 0; border-radius: 8px;
+            background: rgba(255, 255, 255, 0.01); border: 1px dashed rgba(255, 255, 255, 0.04);
+        }
+        .empty-zone-h {
+            width: 100%; max-width: 920px; height: 95px; margin: 32px auto 0 auto; border-radius: 8px;
+            background: rgba(255, 255, 255, 0.01); border: 1px dashed rgba(255, 255, 255, 0.04);
+        }
+
+        .game-container {
+            flex-grow: 1; max-width: 920px; height: 600px; background: #000;
+            border-radius: 12px; border: 2px solid var(--bg-surface-light);
+            box-shadow: 0 24px 48px rgba(0,0,0,0.6); position: relative; overflow: hidden;
+        }
+        .game-container iframe { width: 100%; height: 100%; border: none; display: block; }
+        
+        .game-details {
+            max-width: 920px; margin: 32px auto 0 auto; background: var(--bg-surface);
+            border-radius: 14px; padding: 28px; border: 1px solid var(--bg-surface-light);
+        }
+        .details-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; }
+        .detail-section h3 { font-size: 0.85rem; color: var(--neon-cyan); margin-bottom: 12px; }
+        .detail-section p, .detail-section ul { color: #94a3b8; font-size: 0.92rem; line-height: 1.6; }
+        .detail-section ul { list-style-type: square; padding-left: 18px; }
+
+        /* ====================================
+           MODALS SYSTEMS (MULTI-STEP & OPTIONS)
+           ==================================== */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(4, 4, 6, 0.85); backdrop-filter: blur(6px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+            opacity: 0; transition: opacity 0.25s ease;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        
+        .modal-content {
+            background: var(--bg-surface); padding: 36px; border-radius: 16px;
+            width: 92%; max-width: 460px; border: 1px solid var(--bg-surface-light);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); transform: scale(0.92); transition: transform 0.25s ease;
+            position: relative;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); border-color: var(--neon-purple); }
+        .close-modal { position: absolute; top: 18px; right: 20px; color: #64748b; font-size: 1.4rem; font-weight: bold; }
+        .close-modal:hover { color: #fff; }
+        
+        .modal-title { font-size: 0.95rem; color: #fff; margin-bottom: 24px; text-align: center; }
+        .modal-step { display: none; }
+        .modal-step.active { display: block; }
+
+        /* Option buttons pattern */
+        .option-grid { display: flex; flex-direction: column; gap: 14px; margin-bottom: 10px; }
+        .opt-btn {
+            background: var(--bg-surface-light); border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 14px 20px; border-radius: 10px; text-align: left; font-size: 0.95rem;
+            font-weight: 600; display: flex; align-items: center; gap: 14px; transition: var(--transition-smooth);
+        }
+        .opt-btn:hover {
+            border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.05); transform: translateX(4px);
+        }
+        .opt-btn.whatsapp:hover {
+            border-color: #25d366; background: rgba(37, 211, 102, 0.05);
+        }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; font-weight: 500; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; background: var(--bg-base); border: 1px solid var(--bg-surface-light);
+            color: #fff; padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; transition: var(--transition-smooth);
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--neon-purple); outline: none; }
+        
+        /* File selection layout */
+        .file-upload-box {
+            border: 2px dashed var(--bg-surface-light); padding: 20px; text-align: center; border-radius: 10px;
+            cursor: pointer; transition: var(--transition-smooth); background: rgba(0,0,0,0.2);
+        }
+        .file-upload-box:hover { border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.02); }
+        .file-info-text { font-size: 0.8rem; color: #64748b; margin-top: 6px; }
+        .file-badge { color: var(--neon-cyan); font-weight: 600; }
+
+        /* Agreement Text block */
+        .agreement-text {
+            background: var(--bg-base); border: 1px solid var(--bg-surface-light);
+            padding: 16px; border-radius: 8px; max-height: 180px; overflow-y: auto;
+            font-size: 0.82rem; color: #94a3b8; line-height: 1.5; margin-bottom: 18px;
+        }
+        .checkbox-container { display: flex; align-items: flex-start; gap: 10px; font-size: 0.85rem; color: #e2e8f0; cursor: pointer; margin-bottom: 24px; }
+        .checkbox-container input { width: 16px; height: 16px; margin-top: 2px; cursor: pointer; }
+
+        .action-btns { display: flex; gap: 12px; justify-content: flex-end; }
+        .wizard-btn {
+            background: var(--neon-purple); color: #fff; font-weight: 600; padding: 11px 22px;
+            border-radius: 8px; font-size: 0.88rem; transition: var(--transition-smooth);
+        }
+        .wizard-btn:hover:not(:disabled) { background: #cd28ff; box-shadow: 0 0 15px rgba(188, 19, 254, 0.4); }
+        .wizard-btn:disabled { background: #2e2e3a; color: #64748b; cursor: not-allowed; }
+        .wizard-btn.secondary { background: transparent; border: 1px solid var(--bg-surface-light); color: #94a3b8; }
+        .wizard-btn.secondary:hover { color: #fff; border-color: #64748b; }
+
+        .join-link-container { text-align: center; margin-top: 16px; font-size: 0.85rem; }
+        .join-channel-link { color: #25d366; font-weight: 600; text-decoration: underline; }
+        .join-channel-link:hover { color: #4ef087; }
+
+        /* ====================================
+           PREMIUM CLEAN FOOTER
+           ==================================== */
+        footer {
+            background: #09090e; padding: 40px 5%; border-top: 1px solid rgba(255,255,255,0.03);
+            color: #475569; font-size: 0.85rem; text-align: center;
+        }
+        .footer-content { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; align-items: center; }
+        .footer-links { display: flex; gap: 24px; color: #64748b; font-weight: 500; }
+        .footer-links a:hover { color: var(--neon-cyan); }
+        .footer-copyright { font-size: 0.7rem; color: #334155; margin-top: 8px; letter-spacing: 0.5px; }
+
+        /* ANIMATIONS */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* RESPONSIVENESS */
+        @media (max-width: 1024px) {
+            .empty-zone-v { display: none; }
+            .details-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            header { flex-direction: column; gap: 16px; padding: 16px; }
+            .container { flex-direction: column; }
+            .sidebar { width: 100%; }
+            .game-grid { grid-template-columns: 1fr; }
+            .game-container { height: 320px; }
+            .game-title-large { font-size: 1.15rem; }
+        }
+    </style>
+</head>
+<body>
+
     <!-- LOADING SCREEN -->
     <div id="loader">
         <div class="loader-spinner"></div>
