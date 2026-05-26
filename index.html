@@ -7,7 +7,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
         body {
-            background-color: #111; overflow: hidden; color: white;
+            background-color: #050510; overflow: hidden; color: white;
             font-family: 'Courier New', Courier, monospace; user-select: none;
         }
         canvas { display: block; margin: 0 auto; }
@@ -35,8 +35,16 @@
         }
         #ultTracker:active { transform: scale(0.95); }
 
-        #scoreContainer { text-align: right; font-size: 24px; font-weight: bold; color: #fff; text-shadow: 2px 2px 0 #000; }
+        #scoreContainer { pointer-events: auto; text-align: right; font-size: 24px; font-weight: bold; color: #fff; text-shadow: 2px 2px 0 #000; }
         #coinBoard { color: #ffd700; text-shadow: 0 0 10px #ffd700; margin-top: 5px; }
+        #orbBoard { color: #fff; text-shadow: 0 0 10px #fff; margin-top: 5px; font-size: 18px; }
+        
+        #musicToggle {
+            margin-top: 15px; background: rgba(0,0,0,0.8); border: 2px solid #00ff88; color: #00ff88;
+            padding: 8px 12px; font-weight: bold; font-family: 'Courier New', monospace; font-size: 14px;
+            cursor: pointer; border-radius: 5px; transition: 0.2s; box-shadow: 0 0 10px #00ff88;
+        }
+        #musicToggle:hover { background: #00ff88; color: #000; }
 
         /* LEVEL TIMER PROGRESS BAR */
         #levelTimerContainer {
@@ -74,9 +82,7 @@
         }
         .arcade-btn:hover { background: #00ff88; color: #000; box-shadow: 0 0 25px #00ff88; border-color: #000; }
         
-        .continue-btn {
-            background: #00ff88; color: #000; box-shadow: 0 0 15px #00ff88; border-color: #000; display: none;
-        }
+        .continue-btn { background: #00ff88; color: #000; box-shadow: 0 0 15px #00ff88; border-color: #000; display: none; }
         .continue-btn:hover { background: #fff; color: #000; box-shadow: 0 0 25px #fff; }
 
         #pauseBtnHint { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; font-size: 12px; pointer-events: auto; cursor: pointer; z-index: 10; border: 1px solid #fff; }
@@ -107,7 +113,6 @@
 
         @keyframes pulse { 0% { box-shadow: 0 0 10px #ff00ff; } 50% { box-shadow: 0 0 30px #ff00ff, 0 0 10px #fff; } 100% { box-shadow: 0 0 10px #ff00ff; } }
 
-        /* REWARD TEXT STYLE */
         #rewardText {
             font-size: 26px; margin-top: 15px; color: #ffcc00; 
             font-weight: bold; text-shadow: 0 0 20px #ffcc00; text-transform: uppercase; text-align:center;
@@ -125,7 +130,8 @@
                 <div class="timer-row"><span style="color:#00ffff;">MEGA FIRE</span><div class="bar-bg"><div id="fbBar" class="bar-fill" style="background:#00ffff;"></div></div></div>
                 <div class="timer-row"><span style="color:#ffcc00;">SPEED UP</span><div class="bar-bg"><div id="speedBar" class="bar-fill" style="background:#ffcc00;"></div></div></div>
                 <div class="timer-row" id="carTimerRow" style="display:none;"><span style="color:#00aaff;">CAR MODE</span><div class="bar-bg"><div id="carBar" class="bar-fill" style="background:#00aaff;"></div></div></div>
-                <div class="timer-row" id="mgTimerRow" style="display:none;"><span style="color:#ffffff;">MACHINE GUN</span><div class="bar-bg"><div id="mgBar" class="bar-fill" style="background:#ffffff;"></div></div></div>
+                <div class="timer-row" id="shockTimerRow" style="display:none;"><span style="color:#ffffff;">GUN SHOCK (AUTO)</span><div class="bar-bg"><div id="shockBar" class="bar-fill" style="background:#ffffff;"></div></div></div>
+                
                 <div class="timer-row"><span style="color:#fff;">DASH CD</span><div class="bar-bg"><div id="dashBar" class="bar-fill" style="background:#fff;"></div></div></div>
                 <div class="timer-row"><span style="color:#ff8800;">SWEEP CD</span><div class="bar-bg"><div id="diveBar" class="bar-fill" style="background:#ff8800;"></div></div></div>
             </div>
@@ -137,6 +143,8 @@
         <div id="scoreContainer">
             <div id="scoreBoard">SCORE: 0</div>
             <div id="coinBoard">COINS: 0</div>
+            <div id="orbBoard">BLACK ORBS: 0/10</div>
+            <button id="musicToggle" onclick="toggleMusic()">🎵 BGM: ON</button>
         </div>
     </div>
 
@@ -197,27 +205,25 @@
         let currentStage = 1;
         let shakeTime = 0; let cameraX = 0;
         let gameState = 'MENU'; 
+        let animationId; 
 
         let killsSmall = 0; const reqSmall = 15;
         let killsSpider = 0; const reqSpider = 5;
         let killsBig = 0; const reqBig = 5;
         let ultReady = false;
 
-        let hasFireballBoost = false; let fireballBoostTimer = 0; const MAX_FB_TIME = 600;
+        let hasFireballBoost = false; let fireballBoostTimer = 0; const MAX_FB_TIME = 300; 
         let hasSpeedBoost = false; let speedBoostTimer = 0; const MAX_SPEED_TIME = 600;
-        let hasCarMode = false; let carModeTimer = 0; const MAX_CAR_TIME = 900; // 15 Seconds
-        let hasMachineGun = false; let machineGunTimer = 0; const MAX_MG_TIME = 600; // 10 Seconds
+        let hasCarMode = false; let carModeTimer = 0; const MAX_CAR_TIME = 300; 
+        
+        let hasGunShock = false; let gunShockTimer = 0; const MAX_SHOCK_TIME = 300; 
+        let blackOrbs = 0; const maxBlackOrbs = 10;
         
         let framesElapsed = 0; let levelCompleted = false; 
-        
-        // 90 SECONDS SURVIVAL TIMER PER LEVEL
-        const LEVEL_TIMER_FRAMES = 90 * 60;
+        const LEVEL_TIMER_FRAMES = 90 * 60; 
 
-        // Auto Save Logic checking
         let savedData = localStorage.getItem('stickmanVelocitySave');
-        if (savedData) {
-            document.getElementById('btnContinue').style.display = 'block';
-        }
+        if (savedData) { document.getElementById('btnContinue').style.display = 'block'; }
 
         function triggerShake(intensity = 10) { shakeTime = intensity; }
         function applyShake() {
@@ -229,11 +235,36 @@
             }
         }
 
+        // ================= BACKGROUND MUSIC SYSTEM ================= //
+        const bgMusic = new Audio('Midnight_Velocity.mp3');
+        bgMusic.volume = 0.5; // EXACTLY 50% VOLUME
+        bgMusic.loop = true;
+        let isMusicMuted = false;
+
+        function startMusic() {
+            if (!isMusicMuted) {
+                bgMusic.play().catch(e => console.log("Autoplay blocked by browser. Play interactively."));
+            }
+        }
+
+        function toggleMusic() {
+            let btn = document.getElementById('musicToggle');
+            isMusicMuted = !isMusicMuted;
+            if(isMusicMuted) {
+                bgMusic.pause();
+                btn.innerText = "🔇 BGM: OFF";
+                btn.style.borderColor = "#ff0055"; btn.style.color = "#ff0055"; btn.style.boxShadow = "0 0 10px #ff0055";
+            } else {
+                bgMusic.play();
+                btn.innerText = "🎵 BGM: ON";
+                btn.style.borderColor = "#00ff88"; btn.style.color = "#00ff88"; btn.style.boxShadow = "0 0 10px #00ff88";
+            }
+        }
+
+        // ================= PROCEDURAL SFX SYSTEM ================= //
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
-        let bgMusicOsc, bgMusicGain;
-        let isMusicPlaying = false;
-
+        
         function playSound(freq, duration, type='square', volume=0.03) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
@@ -246,27 +277,11 @@
         function sfxPunch(){ playSound(180,0.06,'square',0.05); }
         function sfxKick(){ playSound(120,0.08,'sawtooth',0.05); }
         function sfxFireball(){ playSound(300,0.15,'sawtooth',0.05); }
+        function sfxShock(){ playSound(600,0.1,'sine',0.06); } 
         function sfxHit(){ playSound(90,0.1,'square',0.06); }
         function sfxCoin(){ playSound(800,0.1,'sine',0.03); }
         function sfxZap(){ playSound(150,0.2,'sawtooth',0.08); }
 
-        function startMusic() {
-            if(isMusicPlaying) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            bgMusicOsc = audioCtx.createOscillator();
-            bgMusicGain = audioCtx.createGain();
-            bgMusicOsc.type = 'sawtooth'; bgMusicOsc.frequency.value = 110;
-            bgMusicGain.gain.value = 0.02;
-            bgMusicOsc.connect(bgMusicGain); bgMusicGain.connect(audioCtx.destination);
-            bgMusicOsc.start(); isMusicPlaying = true;
-            
-            setInterval(() => {
-                if(gameState !== 'PLAYING') return;
-                bgMusicOsc.frequency.setValueAtTime(110 + (currentStage*5), audioCtx.currentTime);
-                bgMusicOsc.frequency.setValueAtTime(146.83 + (currentStage*5), audioCtx.currentTime + 0.2);
-                bgMusicOsc.frequency.setValueAtTime(164.81 + (currentStage*5), audioCtx.currentTime + 0.4);
-            }, 600);
-        }
 
         class Projectile {
             constructor(x, y, velocity, color, team, sizeBoost=false) {
@@ -282,6 +297,22 @@
         }
         const projectiles = [];
 
+        class ShockLaser {
+            constructor(startX, startY, target) {
+                this.startX = startX; this.startY = startY;
+                this.target = target; this.life = 10;
+            }
+            draw() {
+                c.save(); c.translate(-cameraX, 0);
+                c.beginPath(); c.moveTo(this.startX, this.startY);
+                c.lineTo(this.target.position.x + this.target.width/2, this.target.position.y + this.target.height/2);
+                c.strokeStyle = '#fff'; c.lineWidth = 4; c.shadowBlur = 15; c.shadowColor = '#00ffff';
+                c.stroke(); c.restore();
+            }
+            update() { this.draw(); this.life--; }
+        }
+        const shockLasers = [];
+
         class Sprite {
             constructor({ position, velocity, color, team, type = 'brawler' }) {
                 this.position = position; this.velocity = velocity; this.color = color; this.team = team; this.type = type;
@@ -294,8 +325,11 @@
 
                 this.maxHealth = this.health; this.dead = false; this.facingRight = true;
                 
-                this.isAttacking = false; this.attackType = null; this.attackBox = { position: { x: this.position.x, y: this.position.y }, width: 80, height: 50 };
+                this.isAttacking = false; this.attackType = null; this.attackBox = { position: { x: this.position.x, y: this.position.y }, width: 45, height: 50 };
                 
+                this.attackCombo = 0;
+                this.attackTimeout = null;
+
                 this.isCrouching = false; this.isDashing = false; this.dashCooldown = 0; this.maxDashCooldown = 60; this.dashTimer = 0;
                 this.isDiving = false; this.diveCooldown = 0; this.maxDiveCooldown = 90; this.diveTimer = 0;
                 this.jumps = 0; this.maxJumps = 2;
@@ -320,7 +354,6 @@
                 let isJumping = this.velocity.y < -1 || this.velocity.y > 1;
                 let directionMod = this.facingRight ? 1 : -1;
 
-                // CAR MODE DRAWING
                 if (this.team === 'player' && hasCarMode) {
                     c.fillStyle = '#00aaff'; c.shadowBlur = 20; c.shadowColor = '#00aaff';
                     c.fillRect(this.position.x - 20, this.position.y + 60, 120, 40);
@@ -351,14 +384,10 @@
                 c.fillStyle = this.color;
                 c.beginPath(); c.arc(head.x, head.y, headRadius, 0, Math.PI * 2); c.fill();
 
-                // COSTUMES FOR PLAYER
-                if (this.team === 'player') {
-                    // Level 2+ : Cap
-                    if (currentStage >= 2) {
-                        c.fillStyle = '#ff0055'; c.beginPath(); 
-                        c.arc(head.x, head.y - 5, headRadius + 2, Math.PI, 0); c.fill();
-                        c.fillRect(head.x + (this.facingRight?0:-25), head.y - 5, 25, 4);
-                    }
+                if (this.team === 'player' && currentStage >= 2) {
+                    c.fillStyle = '#ff0055'; c.beginPath(); 
+                    c.arc(head.x, head.y - 5, headRadius + 2, Math.PI, 0); c.fill();
+                    c.fillRect(head.x + (this.facingRight?0:-25), head.y - 5, 25, 4);
                 }
 
                 if (this.type !== 'spider') {
@@ -382,8 +411,32 @@
                 let neck = { x: head.x, y: head.y + headRadius };
                 let pelvis = { x: head.x, y: bottomY - (this.isCrouching ? 20 : 35) };
                 let lHand = { x: 0, y: 0 }, rHand = { x: 0, y: 0 }, lFoot = { x: 0, y: 0 }, rFoot = { x: 0, y: 0 };
+                let shoulderY = neck.y + 10;
 
-                if (this.isKnockedDown) {
+                let isSweeping = (this.isDiving && this.attackType === 'sweep' && this.velocity.y === 0);
+                let isDivingAir = (this.isDiving && this.attackType === 'dive' && this.velocity.y !== 0);
+
+                if (isSweeping) {
+                    head.x = this.position.x + (this.facingRight ? 20 : this.width - 20);
+                    head.y = bottomY - 15;
+                    neck = { x: head.x - (directionMod * 15), y: head.y };
+                    pelvis = { x: neck.x - (directionMod * 30), y: head.y };
+                    lFoot = { x: pelvis.x - (directionMod * 25), y: head.y };
+                    rFoot = { x: pelvis.x - (directionMod * 40), y: head.y - 15 };
+                    lHand = { x: neck.x + (directionMod * 25), y: head.y }; 
+                    rHand = { x: neck.x + (directionMod * 10), y: head.y - 10 };
+                    shoulderY = neck.y;
+                } else if (isDivingAir) {
+                    head.x = this.position.x + (this.facingRight ? this.width : 0);
+                    head.y = this.position.y + 20;
+                    neck = { x: head.x - (directionMod * 15), y: head.y };
+                    pelvis = { x: neck.x - (directionMod * 30), y: head.y - 10 };
+                    lFoot = { x: pelvis.x - (directionMod * 30), y: head.y - 20 };
+                    rFoot = { x: pelvis.x - (directionMod * 10), y: head.y }; 
+                    lHand = { x: neck.x + (directionMod * 20), y: head.y };
+                    rHand = { x: neck.x - (directionMod * 10), y: head.y + 10 };
+                    shoulderY = neck.y;
+                } else if (this.isKnockedDown) {
                     head.x -= directionMod * 20; head.y += 40;
                     neck = { x: head.x, y: head.y + headRadius };
                     pelvis = { x: head.x - directionMod * 30, y: bottomY - 10 };
@@ -400,38 +453,49 @@
                     } else {
                         lFoot = { x: pelvis.x - 10, y: bottomY }; rFoot = { x: pelvis.x + 10, y: bottomY };
                     }
+                    
+                    if (this.isAttacking && !this.isDiving) {
+                        let ext = this.attackType === 'kick' ? 55 : 45;
+                        if (this.type === 'goliath') ext += 30;
+                        
+                        if (this.attackType === 'punch') {
+                            if (this.attackCombo === 0) { 
+                                rHand = { x: neck.x + (directionMod * ext), y: shoulderY };
+                                lHand = { x: neck.x + (directionMod * 15), y: shoulderY + 15 };
+                            } else if (this.attackCombo === 1) { 
+                                rHand = { x: neck.x + (directionMod * ext * 0.8), y: shoulderY - 20 };
+                                lHand = { x: neck.x + (directionMod * 10), y: shoulderY + 20 };
+                            } else { 
+                                rHand = { x: neck.x + (directionMod * ext), y: shoulderY + 20 };
+                                lHand = { x: neck.x - (directionMod * 5), y: shoulderY + 10 };
+                            }
+                        } else if (this.attackType === 'kick') {
+                            if (this.attackCombo === 0) { 
+                                rFoot = { x: pelvis.x + (directionMod * ext), y: pelvis.y - 10 };
+                            } else if (this.attackCombo === 1) { 
+                                rFoot = { x: pelvis.x + (directionMod * ext * 0.8), y: pelvis.y - 35 };
+                            } else { 
+                                rFoot = { x: pelvis.x + (directionMod * ext), y: pelvis.y + 15 };
+                            }
+                            lHand = { x: neck.x - (directionMod * 10), y: shoulderY - 10 };
+                            rHand = { x: neck.x + (directionMod * 10), y: shoulderY + 15 };
+                        }
+                    } else {
+                        if (isJumping) {
+                            lHand = { x: neck.x - 20, y: shoulderY - 20 }; rHand = { x: neck.x + 20, y: shoulderY - 15 };
+                        } else if (isMoving) {
+                            let armCycle = Math.sin(this.animTimer * 0.25) * 20;
+                            lHand = { x: neck.x - armCycle, y: shoulderY + 15 }; rHand = { x: neck.x + armCycle, y: shoulderY + 15 };
+                        } else if (this.isCrouching) {
+                            lHand = { x: neck.x + (directionMod * 15), y: shoulderY + 15 }; rHand = { x: neck.x - (directionMod * 15), y: shoulderY + 15 };
+                        } else {
+                            lHand = { x: neck.x - 5, y: shoulderY + 25 }; rHand = { x: neck.x + 5, y: shoulderY + 25 };
+                        }
+                    }
                 }
 
-                let shoulderY = neck.y + 10;
-                if (this.isAttacking) {
-                    let ext = this.attackType === 'kick' ? 55 : 45;
-                    if (this.type === 'goliath') ext += 30;
-                    if (this.attackType === 'punch') {
-                        rHand = { x: neck.x + (directionMod * ext), y: shoulderY };
-                        lHand = { x: neck.x + (directionMod * 15), y: shoulderY + 15 };
-                    } else {
-                        rFoot = { x: pelvis.x + (directionMod * ext), y: pelvis.y - 10 };
-                        lHand = { x: neck.x - (directionMod * 10), y: shoulderY - 10 };
-                        rHand = { x: neck.x + (directionMod * 10), y: shoulderY + 15 };
-                    }
-                } else {
-                    if (isJumping) {
-                        lHand = { x: neck.x - 20, y: shoulderY - 20 }; rHand = { x: neck.x + 20, y: shoulderY - 15 };
-                    } else if (isMoving) {
-                        let armCycle = Math.sin(this.animTimer * 0.25) * 20;
-                        lHand = { x: neck.x - armCycle, y: shoulderY + 15 }; rHand = { x: neck.x + armCycle, y: shoulderY + 15 };
-                    } else if (this.isCrouching) {
-                        lHand = { x: neck.x + (directionMod * 15), y: shoulderY + 15 }; rHand = { x: neck.x - (directionMod * 15), y: shoulderY + 15 };
-                    } else {
-                        lHand = { x: neck.x - 5, y: shoulderY + 25 }; rHand = { x: neck.x + 5, y: shoulderY + 25 };
-                    }
-                }
-
-                if (this.team === 'player' && currentStage >= 3) {
-                    c.strokeStyle = '#00ffff'; c.lineWidth = 10;
-                }
+                if (this.team === 'player' && currentStage >= 3) { c.strokeStyle = '#00ffff'; c.lineWidth = 10; }
                 c.beginPath(); c.moveTo(neck.x, neck.y); c.lineTo(pelvis.x, pelvis.y); c.stroke();
-                
                 if (this.team === 'player' && currentStage >= 5) {
                     c.strokeStyle = '#ff0000'; c.lineWidth = 4;
                     c.beginPath(); c.moveTo(neck.x, neck.y); c.lineTo(neck.x, neck.y + 25); c.stroke();
@@ -450,10 +514,17 @@
                 c.beginPath(); c.moveTo(pelvis.x, pelvis.y); c.lineTo(rFoot.x, rFoot.y); c.stroke();
 
                 if (this.isAttacking) {
-                    c.fillStyle = (this.attackType === 'kick') ? 'rgba(255,255,255,0.4)' : 'rgba(255,0,0,0.4)';
-                    this.attackBox.position.x = this.position.x + (this.facingRight ? this.width : -this.attackBox.width);
-                    this.attackBox.position.y = this.position.y + 20;
-                    if(this.attackType==='kick') this.attackBox.width = 100; else this.attackBox.width = 70;
+                    c.fillStyle = (this.attackType === 'kick' || this.attackType === 'sweep' || this.attackType === 'dive') ? 'rgba(255,255,255,0.4)' : 'rgba(255,0,0,0.4)';
+                    this.attackBox.width = (this.attackType === 'kick') ? 60 : 45; 
+                    
+                    if(isSweeping || isDivingAir) {
+                        this.attackBox.width = 90;
+                        this.attackBox.position.x = this.facingRight ? this.position.x : this.position.x - 40;
+                        this.attackBox.position.y = bottomY - 20;
+                    } else {
+                        this.attackBox.position.x = this.position.x + (this.facingRight ? this.width : -this.attackBox.width);
+                        this.attackBox.position.y = this.position.y + 20;
+                    }
                 }
                 c.restore();
             }
@@ -490,14 +561,9 @@
 
                 if (this.isDiving) {
                     this.diveTimer--; this.velocity.x = this.facingRight ? 20 : -20;
-                    this.attackBox.width = 110; this.attackBox.position.y = this.position.y;
-                    this.attackBox.position.x = this.facingRight ? this.position.x : this.position.x - 50;
                     if (this.diveTimer <= 0) { 
                         this.isDiving = false; 
-                        if(this.height !== this.baseHeight) {
-                            this.position.y -= (this.baseHeight - this.height);
-                            this.height = this.baseHeight; 
-                        }
+                        this.isAttacking = false;
                     }
                 }
 
@@ -509,22 +575,25 @@
 
             crouch() { if (!this.isCrouching && this.velocity.y === 0) { this.isCrouching = true; this.position.y += 40; this.height = this.baseHeight - 40; } }
             stand() { if (this.isCrouching) { this.isCrouching = false; this.position.y -= 40; this.height = this.baseHeight; } }
-            jump() { if (this.isCrouching || this.isDiving || this.isKnockedDown) return; if (this.jumps < this.maxJumps) { this.velocity.y = -15; this.jumps++; sfxJump(); } }
+            jump() { 
+                if (this.isCrouching || this.isDiving || this.isKnockedDown) return; 
+                if (hasCarMode && this.jumps >= 1) return; 
+                if (this.jumps < this.maxJumps) { this.velocity.y = -15; this.jumps++; sfxJump(); } 
+            }
             dash() { if (this.isKnockedDown || this.isDashing || this.dashCooldown > 0) return; this.isDashing = true; this.dashTimer = 15; this.dashCooldown = (this.team==='player'&&hasSpeedBoost)?10:this.maxDashCooldown; sfxJump(); }
             
             sweepAttack() {
                 if (this.isKnockedDown || this.isDiving || this.diveCooldown > 0) return; 
                 this.isDiving = true; this.diveTimer = 20; this.diveCooldown = this.maxDiveCooldown; 
-                this.velocity.y = 0; this.isAttacking = true; this.attackType = 'kick'; 
-                this.position.y += 40; this.height = this.baseHeight - 40; 
-                sfxJump(); setTimeout(() => { this.isAttacking = false; this.attackType = null; }, 300);
+                this.velocity.y = 0; this.isAttacking = true; this.attackType = 'sweep'; 
+                sfxJump(); 
             }
 
             diveAttack() { 
                 if (this.isKnockedDown || this.isDiving || this.diveCooldown > 0) return; 
                 this.isDiving = true; this.diveTimer = 25; this.diveCooldown = this.maxDiveCooldown; 
-                this.velocity.y = 10; this.isAttacking = true; this.attackType = 'kick'; 
-                this.height = 60; sfxJump(); setTimeout(() => { this.isAttacking = false; this.attackType = null; }, 400); 
+                this.velocity.y = 10; this.isAttacking = true; this.attackType = 'dive'; 
+                sfxJump(); 
             }
 
             doSweepOrDive() {
@@ -534,25 +603,36 @@
             }
 
             attack(type) {
-                if (hasCarMode || this.isAttacking || this.isDashing || this.isKnockedDown) return;
-                this.isAttacking = true; this.attackType = type;
+                if (hasCarMode || this.isDashing || this.isKnockedDown || this.isDiving) return;
+                
+                this.isAttacking = true; 
+                this.attackType = type;
+                this.attackCombo = (this.attackCombo + 1) % 3; 
+
                 if(type === 'punch') sfxPunch(); else sfxKick();
-                setTimeout(() => { this.isAttacking = false; this.attackType = null; }, type === 'kick' ? 300 : 150);
+                
+                if (this.attackTimeout) clearTimeout(this.attackTimeout);
+                this.attackTimeout = setTimeout(() => { 
+                    this.isAttacking = false; 
+                    this.attackType = null; 
+                }, type === 'kick' ? 200 : 120); 
             }
 
             shootFireball() {
                 if(this.isKnockedDown) return;
+                if(this.team === 'player' && hasGunShock) return;
+
                 if(this.fireballCooldown > 0) return; 
+                this.fireballCooldown = (this.team === 'player' && hasFireballBoost) ? 25 : 45;
                 
-                if (this.team === 'player' && hasMachineGun) {
-                    this.fireballCooldown = 5; // Very rapid MACHINE GUN logic fixed
-                } else {
-                    this.fireballCooldown = (this.team === 'player' && hasFireballBoost) ? 15 : 45;
-                    this.isAttacking = true; this.attackType = 'punch';
-                    setTimeout(() => { this.isAttacking = false; this.attackType = null; }, 150);
-                }
+                this.isAttacking = true; this.attackType = 'punch';
+                if(this.attackTimeout) clearTimeout(this.attackTimeout);
+                this.attackTimeout = setTimeout(() => { this.isAttacking = false; this.attackType = null; }, 150);
                 
-                const speed = this.facingRight ? (hasCarMode?20:15) : (hasCarMode?-20:-15);
+                let speed = this.facingRight ? 8 : -8;
+                if (hasCarMode) speed = this.facingRight ? 12 : -12;
+                if (hasFireballBoost && this.team === 'player') speed = this.facingRight ? 18 : -18; 
+                
                 const sizeBoost = (this.team === 'player') && hasFireballBoost;
                 projectiles.push(new Projectile(this.position.x + (this.facingRight ? this.width : 0), this.position.y + 40, speed, this.color, this.team, sizeBoost));
                 sfxFireball();
@@ -583,8 +663,7 @@
                         for(let k=0; k<dropAmount; k++) coinsArray.push(new Coin(this.position.x + this.width/2, this.position.y + this.height/2));
                         
                         let dropType = null;
-                        if (currentStage >= 3 && Math.random() < 0.15) dropType = 'machinegun'; 
-                        else if (currentStage >= 2 && Math.random() < 0.20) dropType = 'car'; 
+                        if (currentStage >= 2 && Math.random() < 0.20) dropType = 'car'; 
                         else if (this.type === 'gunner') dropType = 'gun';
                         else if (Math.random() < 0.60) {
                             const types = ['heal', 'damage', 'speed'];
@@ -616,7 +695,11 @@
             }
             takeHit(dmg, sourceX) {
                 this.health -= dmg; createParticles(this.position.x, this.position.y, '#8800ff'); sfxHit();
-                if(this.health <= 0) { this.dead = true; score+=15; for(let k=0; k<2; k++) coinsArray.push(new Coin(this.position.x, this.position.y)); }
+                if(this.health <= 0) { 
+                    this.dead = true; score+=15; 
+                    for(let k=0; k<2; k++) coinsArray.push(new Coin(this.position.x, this.position.y)); 
+                    powerUps.push(new PowerUp(this.position.x + 20, this.position.y, 'blackorb'));
+                }
             }
         }
         const flyingBats = [];
@@ -632,14 +715,18 @@
             constructor(x, y, type) { this.x = x; this.y = y; this.type = type; this.radius = 12; this.floatOffset = Math.random() * 100; }
             draw() { 
                 c.save(); c.translate(-cameraX, 0); 
-                let colors = { 'heal': '#0f0', 'damage': '#0ff', 'speed': '#ffcc00', 'gun': '#fff', 'car': '#00aaff', 'machinegun': '#000000' }; 
+                let colors = { 'heal': '#0f0', 'damage': '#0ff', 'speed': '#ffcc00', 'gun': '#fff', 'car': '#00aaff', 'blackorb': '#000000' }; 
                 let color = colors[this.type]; 
-                c.shadowBlur = 15; c.shadowColor = (this.type === 'machinegun') ? '#ff0000' : color; 
+                
+                c.shadowBlur = 15; c.shadowColor = (this.type === 'blackorb') ? '#fff' : color; 
+                
                 c.beginPath(); c.arc(this.x, this.y + Math.sin(framesElapsed*0.05 + this.floatOffset)*10, this.radius, 0, Math.PI * 2); 
                 c.fillStyle = color; c.fill(); 
-                if (this.type === 'machinegun') { c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke(); }
-                c.fillStyle = (this.type === 'machinegun') ? '#fff' : '#000'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = 'bold 12px Courier'; 
-                let txt = {'heal':'+','damage':'F','speed':'S','gun':'G','car':'C','machinegun':'M'}[this.type]; 
+                
+                if (this.type === 'blackorb') { c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke(); }
+                
+                c.fillStyle = (this.type === 'blackorb') ? '#fff' : '#000'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = 'bold 12px Courier'; 
+                let txt = {'heal':'+','damage':'F','speed':'S','gun':'G','car':'C','blackorb':'⚫'}[this.type]; 
                 c.fillText(txt, this.x, this.y + Math.sin(framesElapsed*0.05 + this.floatOffset)*10); c.restore(); 
             }
             update() { this.draw(); }
@@ -677,7 +764,6 @@
         setInterval(spawnEnemy, Math.max(800, 2000 - (currentStage * 150))); 
         setInterval(() => { if(gameState==='PLAYING' && Math.random()<0.4 && !levelCompleted) flyingBats.push(new Bat(player.position.x + window.innerWidth, 50)); }, Math.max(1500, 3000 - (currentStage * 200)));
 
-        // ULTIMATE SYSTEM FIX
         function checkUltimateTrigger() {
             if(!ultReady && killsSmall >= reqSmall && killsSpider >= reqSpider && killsBig >= reqBig) {
                 ultReady = true; 
@@ -703,7 +789,6 @@
             }
         }
 
-        // KEYBOARD LOGIC (Added flag for holding Machine Gun Fire)
         const keys = { a: { pressed: false }, d: { pressed: false }, w: { pressed: false }, s: { pressed: false }, fire: { pressed: false } };
         window.addEventListener('keydown', (event) => {
             if(gameState !== 'PLAYING') return;
@@ -714,9 +799,9 @@
                 case 'w': case ' ': player.jump(); break;
                 case 'j': player.attack('punch'); break;
                 case 'l': player.attack('kick'); break;
-                case 'k': keys.fire.pressed = true; break; // Allow holding
+                case 'k': keys.fire.pressed = true; break; 
                 case 'u': player.doSweepOrDive(); break;
-                case 'i': triggerUltimate(); break; // Keyboard Ultimate Key
+                case 'i': triggerUltimate(); break; 
                 case 'shift': player.dash(); break;
                 case 'p': case 'escape': togglePause(); break;
             }
@@ -730,7 +815,6 @@
             }
         });
 
-        // Joystick Logic
         const joystick = document.getElementById('joystick'); const knob = document.getElementById('knob');
         let joyActive = false; let joyCenter = { x: 0, y: 0 };
         joystick.addEventListener('touchstart', (e) => { e.preventDefault(); joyActive = true; let rect = joystick.getBoundingClientRect(); joyCenter = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 }; handleJoy(e.touches[0]); });
@@ -749,25 +833,37 @@
 
         document.getElementById('btnPunch').addEventListener('touchstart', (e) => { e.preventDefault(); player.attack('punch'); });
         document.getElementById('btnKick').addEventListener('touchstart', (e) => { e.preventDefault(); player.attack('kick'); });
-        
-        // Touch machine gun logic
         document.getElementById('btnFire').addEventListener('touchstart', (e) => { e.preventDefault(); keys.fire.pressed = true; });
         document.getElementById('btnFire').addEventListener('touchend', (e) => { e.preventDefault(); keys.fire.pressed = false; });
-        
         document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); player.jump(); });
         document.getElementById('btnDash').addEventListener('touchstart', (e) => { e.preventDefault(); player.dash(); });
         document.getElementById('btnDive').addEventListener('touchstart', (e) => { e.preventDefault(); player.doSweepOrDive(); });
 
         function drawBackground() {
-            c.fillStyle = '#111'; c.fillRect(0, 0, canvas.width, canvas.height);
-            c.save(); c.translate(-cameraX * 0.5, 0);
-            c.strokeStyle = '#222'; c.lineWidth = 2;
-            for(let i=-2000; i<10000; i+=100) { c.beginPath(); c.moveTo(i, 0); c.lineTo(i, canvas.height); c.stroke(); }
-            for(let i=0; i<canvas.height; i+=100) { c.beginPath(); c.moveTo(-2000, i); c.lineTo(10000, i); c.stroke(); }
+            c.fillStyle = '#050510'; c.fillRect(0, 0, canvas.width, canvas.height);
+            
+            c.save();
+            let sunY = canvas.height - 150;
+            let grad = c.createLinearGradient(0, sunY - 200, 0, sunY + 150);
+            grad.addColorStop(0, '#ff0055');
+            grad.addColorStop(1, '#ffcc00');
+            c.fillStyle = grad;
+            c.shadowBlur = 50; c.shadowColor = '#ff0055';
+            c.beginPath(); c.arc(canvas.width / 2, sunY, 200, 0, Math.PI * 2); c.fill();
+            c.fillStyle = '#050510';
+            for (let i = 0; i < 6; i++) {
+                c.fillRect(0, sunY + (i*20), canvas.width, 4 + (i*2));
+            }
             c.restore();
 
             c.save(); c.translate(-cameraX * 0.5, 0);
-            c.fillStyle = '#222'; c.fillRect(cameraX * 0.5, canvas.height - 50, canvas.width + 100, 50);
+            c.strokeStyle = 'rgba(0, 255, 255, 0.3)'; c.lineWidth = 2;
+            for(let i=-2000; i<10000; i+=80) { c.beginPath(); c.moveTo(i, canvas.height-50); c.lineTo(i - 300, canvas.height); c.stroke(); }
+            for(let i=0; i<50; i+=10) { c.beginPath(); c.moveTo(-2000, canvas.height - 50 + i); c.lineTo(10000, canvas.height - 50 + i); c.stroke(); }
+            c.restore();
+
+            c.save(); c.translate(-cameraX * 0.5, 0);
+            c.fillStyle = 'rgba(20,0,30,0.8)'; c.fillRect(cameraX * 0.5, canvas.height - 50, canvas.width + 100, 50);
             c.strokeStyle = '#00ffff'; c.lineWidth = 4;
             c.beginPath(); c.moveTo(cameraX * 0.5 - 50, canvas.height - 50); c.lineTo(cameraX * 0.5 + canvas.width + 100, canvas.height - 50); c.stroke();
             c.restore();
@@ -787,10 +883,9 @@
                     playerCar.position.y + playerCar.height > enemy.position.y);
         }
 
-        // AUTO SAVE GAME FUNCTION
         function saveGame() {
             const saveObj = {
-                stage: currentStage, score: score, coins: coins,
+                stage: currentStage, score: score, coins: coins, blackOrbs: blackOrbs,
                 maxHealth: player.maxHealth, dashCD: player.maxDashCooldown, diveCD: player.maxDiveCooldown
             };
             localStorage.setItem('stickmanVelocitySave', JSON.stringify(saveObj));
@@ -812,7 +907,6 @@
             document.getElementById('mobileUI').style.display = 'none';
             document.getElementById('levelTimerContainer').style.display = 'none';
 
-            // Increase stage and save
             currentStage++;
             player.maxHealth += 20;
             player.maxDashCooldown = Math.max(20, player.maxDashCooldown - 5);
@@ -824,7 +918,6 @@
             framesElapsed = 0;
             levelCompleted = false;
             
-            // Player Full Revive Fix
             player.health = player.maxHealth;
             player.dead = false;
             player.isKnockedDown = false;
@@ -835,6 +928,7 @@
             projectiles.length = 0;
             powerUps.length = 0;
             allies.length = 0;
+            shockLasers.length = 0;
             keys.fire.pressed = false;
             keys.a.pressed = false;
             keys.d.pressed = false;
@@ -844,15 +938,12 @@
             document.getElementById('mobileUI').style.display = 'flex';
             document.getElementById('playerStageText').innerText = `PLAYER 1 (LVL ${currentStage})`;
             
-            gameState = 'PLAYING'; // Resumes gameLoop
+            gameState = 'PLAYING';
         }
 
         function gameLoop() {
-            if (gameState !== 'PLAYING') {
-                if(gameState === 'PAUSED' || gameState === 'LEVEL_COMPLETE' || gameState === 'GAME_OVER') requestAnimationFrame(gameLoop);
-                return;
-            }
-            requestAnimationFrame(gameLoop);
+            if (gameState !== 'PLAYING') return; 
+            animationId = requestAnimationFrame(gameLoop);
             
             c.save(); applyShake(); drawBackground();
 
@@ -869,10 +960,27 @@
 
             if (keys.s.pressed) player.crouch();
             
-            // Rapid Fire System
-            if (keys.fire.pressed) { player.shootFireball(); }
+            if (keys.fire.pressed && !hasGunShock) { player.shootFireball(); }
             
             checkUltimateTrigger(); 
+
+            if (hasGunShock && !player.isKnockedDown) {
+                if (framesElapsed % 15 === 0) { 
+                    let target = null; let minDist = 600; 
+                    for(let e of enemies) {
+                        if(!e.dead) {
+                            let dist = Math.hypot((e.position.x + e.width/2) - (player.position.x + player.width/2), (e.position.y + e.height/2) - (player.position.y + player.height/2));
+                            if(dist < minDist) { minDist = dist; target = e; }
+                        }
+                    }
+                    if(target) {
+                        target.takeHit(40, player.position.x);
+                        shockLasers.push(new ShockLaser(player.position.x + player.width/2, player.position.y + 40, target));
+                        sfxShock();
+                        triggerShake(2);
+                    }
+                }
+            }
 
             if (!levelCompleted) {
                 framesElapsed++;
@@ -896,7 +1004,7 @@
             if (hasFireballBoost && --fireballBoostTimer <= 0) hasFireballBoost = false;
             if (hasSpeedBoost && --speedBoostTimer <= 0) hasSpeedBoost = false;
             if (hasCarMode && --carModeTimer <= 0) { hasCarMode = false; document.getElementById('carTimerRow').style.display = 'none'; }
-            if (hasMachineGun && --machineGunTimer <= 0) { hasMachineGun = false; document.getElementById('mgTimerRow').style.display = 'none'; }
+            if (hasGunShock && --gunShockTimer <= 0) { hasGunShock = false; document.getElementById('shockTimerRow').style.display = 'none'; }
             
             document.getElementById('dashBar').style.width = ((player.maxDashCooldown - player.dashCooldown) / player.maxDashCooldown * 100) + '%';
             document.getElementById('diveBar').style.width = ((player.maxDiveCooldown - player.diveCooldown) / player.maxDiveCooldown * 100) + '%';
@@ -904,9 +1012,10 @@
             document.getElementById('fbBar').style.width = (fireballBoostTimer/MAX_FB_TIME*100)+'%';
             document.getElementById('speedBar').style.width = (speedBoostTimer/MAX_SPEED_TIME*100)+'%';
             document.getElementById('carBar').style.width = (carModeTimer/MAX_CAR_TIME*100)+'%';
-            document.getElementById('mgBar').style.width = (machineGunTimer/MAX_MG_TIME*100)+'%';
+            document.getElementById('shockBar').style.width = (gunShockTimer/MAX_SHOCK_TIME*100)+'%';
 
             for (let i = particles.length - 1; i >= 0; i--) { const p = particles[i]; if (p.alpha <= 0) particles.splice(i, 1); else p.update(); }
+            for (let i = shockLasers.length - 1; i >= 0; i--) { const sl = shockLasers[i]; if (sl.life <= 0) shockLasers.splice(i, 1); else sl.update(); }
             
             for (let i = coinsArray.length - 1; i >= 0; i--) {
                 const coin = coinsArray[i]; coin.update();
@@ -928,9 +1037,15 @@
                         hasCarMode = true; carModeTimer = MAX_CAR_TIME; 
                         document.getElementById('carTimerRow').style.display = 'flex';
                     }
-                    else if (pUp.type === 'machinegun') {
-                        hasMachineGun = true; machineGunTimer = MAX_MG_TIME;
-                        document.getElementById('mgTimerRow').style.display = 'flex';
+                    else if (pUp.type === 'blackorb') {
+                        blackOrbs++;
+                        document.getElementById('orbBoard').innerText = `BLACK ORBS: ${blackOrbs}/${maxBlackOrbs}`;
+                        if (blackOrbs >= maxBlackOrbs) {
+                            blackOrbs = 0;
+                            document.getElementById('orbBoard').innerText = `BLACK ORBS: 0/${maxBlackOrbs}`;
+                            hasGunShock = true; gunShockTimer = MAX_SHOCK_TIME; 
+                            document.getElementById('shockTimerRow').style.display = 'flex';
+                        }
                     }
                     sfxCoin(); powerUps.splice(i, 1);
                 } else if (pUp.x < cameraX - 200) powerUps.splice(i, 1);
@@ -941,14 +1056,14 @@
                 if (Math.abs(proj.x - player.position.x) > window.innerWidth || !proj.active) { projectiles.splice(i, 1); continue; }
                 
                 let hitSomething = false;
-                if (proj.team === 'enemy' && !player.isDashing && !player.isKnockedDown) {
+                if (proj.team === 'enemy' && !player.isDashing && !player.isKnockedDown && !hasCarMode) {
                     let dist = Math.hypot(proj.x - (player.position.x + player.width/2), proj.y - (player.position.y + player.height/2));
                     if (dist < proj.radius + player.width/2) { player.takeHit(15 + (currentStage*2), proj.x); proj.active = false; triggerShake(); hitSomething = true;}
                 } else if ((proj.team === 'player' || proj.team === 'ally')) {
                     for (let e of enemies) {
                         if (!e.dead && !e.isKnockedDown) {
                             let dist = Math.hypot(proj.x - (e.position.x + e.width/2), proj.y - (e.position.y + e.height/2));
-                            if (dist < proj.radius + e.width/2) { e.takeHit((hasFireballBoost||hasMachineGun) ? 50+(currentStage*5) : 25+(currentStage*5), proj.x); proj.active = false; triggerShake(); hitSomething = true; break; }
+                            if (dist < proj.radius + e.width/2) { e.takeHit(hasFireballBoost ? 50+(currentStage*5) : 25+(currentStage*5), proj.x); proj.active = false; triggerShake(); hitSomething = true; break; }
                         }
                     }
                     if(!hitSomething) {
@@ -957,7 +1072,7 @@
                                 let distX = Math.abs(proj.x - bat.position.x);
                                 let distY = Math.abs(proj.y - bat.position.y);
                                 if (distX < 60 && distY < 300) { 
-                                    bat.takeHit((hasFireballBoost||hasMachineGun) ? 60 : 30, proj.x); 
+                                    bat.takeHit(hasFireballBoost ? 60 : 30, proj.x); 
                                     proj.active = false; 
                                 }
                             }
@@ -973,8 +1088,12 @@
                 for(let e of enemies) { if(!e.dead) { let dist = Math.abs(e.position.x - ally.position.x); if(dist < minDist) { minDist = dist; target = e; } } }
                 if(target) {
                     ally.facingRight = target.position.x > ally.position.x;
-                    if(minDist > 70 && !ally.isKnockedDown) ally.velocity.x = ally.facingRight ? 6 : -6;
-                    else { ally.velocity.x = 0; if(Math.random()<0.05 && !ally.isAttacking) ally.attack('punch'); }
+                    if(minDist > 70 && !ally.isKnockedDown) {
+                        ally.velocity.x = ally.facingRight ? 6 : -6;
+                    } else { 
+                        ally.velocity.x = 0; 
+                        if(!ally.isAttacking && Math.random()<0.08) ally.attack(Math.random()<0.5 ? 'punch':'kick'); 
+                    }
                 } else { ally.velocity.x = 0; }
                 for (let e of enemies) {
                     if (ally.isAttacking && !e.isKnockedDown && rectangularCollision({ r1: ally, r2: e })) {
@@ -1032,20 +1151,25 @@
                     }
 
                     if (enemy.isAttacking && !targetP.isKnockedDown && !targetP.isDashing && rectangularCollision({ r1: enemy, r2: targetP })) {
-                        enemy.isAttacking = false; targetP.takeHit((enemy.attackType === 'kick' ? 15 : 10) + currentStage, enemy.position.x); triggerShake();
+                        if (targetP === player && hasCarMode) {
+                            enemy.isAttacking = false;
+                        } else {
+                            enemy.isAttacking = false; 
+                            targetP.takeHit((enemy.attackType === 'kick' ? 15 : 10) + currentStage, enemy.position.x); 
+                            triggerShake();
+                        }
                     }
                 }
 
                 if (player.isAttacking && !enemy.isKnockedDown && rectangularCollision({ r1: player, r2: enemy })) {
-                    player.isAttacking = false; 
                     let dmg = player.attackType === 'kick' ? 25 : 15;
+                    if(player.attackType === 'sweep' || player.attackType === 'dive') dmg = 35;
                     dmg += (currentStage * 5); 
                     if (hasSpeedBoost) dmg *= 1.5;
-                    enemy.takeHit(dmg, player.position.x); triggerShake();
-                }
-                
-                if (player.isDiving && !enemy.isKnockedDown && rectangularCollision({ r1: player, r2: enemy })) {
-                    enemy.takeHit(35 + (currentStage*5), player.position.x); triggerShake();
+                    
+                    if(!enemy.flashTimer || enemy.flashTimer <= 0) {
+                        enemy.takeHit(dmg, player.position.x); triggerShake();
+                    }
                 }
             }
 
@@ -1065,8 +1189,6 @@
                 document.getElementById('gameOver').style.display = 'flex'; 
                 document.getElementById('mobileUI').style.display = 'none'; 
                 document.getElementById('ui').style.display = 'none'; 
-                
-                // Reset Save on Death
                 localStorage.removeItem('stickmanVelocitySave');
             }
             
@@ -1075,10 +1197,11 @@
 
         function startNewGame() {
             localStorage.removeItem('stickmanVelocitySave');
-            currentStage = 1; score = 0; coins = 0;
+            currentStage = 1; score = 0; coins = 0; blackOrbs = 0;
             player.maxHealth = 100; player.health = 100;
             player.maxDashCooldown = 60; player.maxDiveCooldown = 90;
             document.getElementById('playerStageText').innerText = `PLAYER 1 (LVL 1)`;
+            document.getElementById('orbBoard').innerText = `BLACK ORBS: 0/10`;
             startMusic(); document.getElementById('mainMenu').style.display = 'none'; gameState = 'PLAYING'; gameLoop();
         }
 
@@ -1088,18 +1211,28 @@
                 currentStage = data.stage;
                 score = data.score;
                 coins = data.coins;
+                blackOrbs = data.blackOrbs || 0;
                 player.maxHealth = data.maxHealth;
                 player.health = player.maxHealth;
                 player.maxDashCooldown = data.dashCD;
                 player.maxDiveCooldown = data.diveCD;
                 document.getElementById('playerStageText').innerText = `PLAYER 1 (LVL ${currentStage})`;
+                document.getElementById('orbBoard').innerText = `BLACK ORBS: ${blackOrbs}/${maxBlackOrbs}`;
             }
             startMusic(); document.getElementById('mainMenu').style.display = 'none'; gameState = 'PLAYING'; gameLoop();
         }
 
         function togglePause() {
-            if(gameState === 'PLAYING') { gameState = 'PAUSED'; document.getElementById('pauseMenu').style.display = 'flex'; }
-            else if(gameState === 'PAUSED') { gameState = 'PLAYING'; document.getElementById('pauseMenu').style.display = 'none'; gameLoop(); }
+            if(gameState === 'PLAYING') { 
+                gameState = 'PAUSED'; 
+                document.getElementById('pauseMenu').style.display = 'flex'; 
+                cancelAnimationFrame(animationId); 
+            }
+            else if(gameState === 'PAUSED') { 
+                gameState = 'PLAYING'; 
+                document.getElementById('pauseMenu').style.display = 'none'; 
+                gameLoop(); 
+            }
         }
 
         drawBackground();
