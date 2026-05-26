@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Face Merge</title>
+<style>
+  body { margin:0; font-family:sans-serif; background:#1a0033; color:#fff; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; }
+  .screen { position:absolute; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg, #2c003e, #005c97); transition:opacity 0.3s; z-index:10; }
+  .hidden { opacity:0; pointer-events:none; z-index:-1; }
+  
+  .animated-title { font-size: 60px; font-weight: bold; text-align: center; margin-bottom: 40px; text-transform: uppercase; background: linear-gradient(90deg, #ff4757, #ffa502, #2ed573, #1e90ff, #9b59b6, #ff4757); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 3s linear infinite, bounceTitle 2s ease-in-out infinite; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8)); line-height: 1.1;}
+  @keyframes shine { to { background-position: 200% center; } }
+  @keyframes bounceTitle { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-15px) rotate(3deg); } }
+
+  .btn { background:#2ed573; color:#fff; border:none; padding:15px 40px; font-size:24px; border-radius:30px; cursor:pointer; font-weight:bold; box-shadow:0 6px 0 #27ae60; transition:transform 0.1s; text-transform:uppercase; }
+  .btn:active { transform:translateY(6px); box-shadow:0 0 0 #27ae60; }
+  
+  .lvl-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; background:rgba(0,0,0,0.4); padding:20px; border-radius:15px; box-shadow:0 10px 20px rgba(0,0,0,0.5); }
+  .lvl-btn { width:50px; height:50px; border-radius:12px; border:none; font-size:20px; font-weight:bold; cursor:pointer; transition:transform 0.1s; box-shadow:0 4px 0 rgba(0,0,0,0.3); }
+  .lvl-unlocked { background:#f1c40f; color:#fff; text-shadow:0 2px 2px #d35400; }
+  .lvl-unlocked:active { transform:translateY(4px); box-shadow:0 0 0 rgba(0,0,0,0.3); }
+  .lvl-locked { background:#7f8c8d; color:#bdc3c7; cursor:not-allowed; }
+
+  /* GAME UI */
+  .top-bar { display:flex; width:95vw; max-width:420px; justify-content:space-between; align-items:center; margin-bottom:5px; box-sizing:border-box;}
+  .back-btn { background:rgba(0,0,0,0.5); border:none; color:#fff; padding:8px 15px; border-radius:10px; cursor:pointer; font-weight:bold; box-shadow:0 3px 0 rgba(0,0,0,0.8); }
+  .back-btn:active { transform:translateY(3px); box-shadow:0 0 0 rgba(0,0,0,0.8); }
+  .coin-counter { background:#f39c12; padding:5px 15px; border-radius:15px; font-weight:bold; font-size:18px; box-shadow:0 3px 0 #d35400; text-shadow:0 1px 2px rgba(0,0,0,0.5); border:2px solid #fff;}
+
+  .header { display:flex; justify-content:space-between; width:95vw; max-width:420px; margin-bottom:10px; background:rgba(255,255,255,0.1); padding:10px; border-radius:10px; box-sizing:border-box;}
+  .stat { text-align:center; flex:1; font-size:12px; text-transform:uppercase; color:#ccc; } 
+  .stat span { display:block; font-size:20px; font-weight:bold; color:#fff; margin-top:2px; text-shadow: 0 0 5px #fff; }
+  
+  /* POWER-UPS WITH INVENTORY SYSTEM */
+  .powers { display:flex; gap:6px; margin-bottom:10px; width:95vw; max-width:420px; justify-content:space-between; box-sizing:border-box;}
+  .power-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+  .power-btn { width: 100%; background: #9b59b6; color: #fff; border: 2px solid #8e44ad; padding: 6px 0; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 0 #732d91; font-size: 16px; position:relative;}
+  .power-btn span { font-size: 12px; background: #2ed573; padding: 1px 6px; border-radius: 10px; position:absolute; top:-8px; right:-5px; box-shadow: 0 2px 0 #27ae60; border: 1px solid #fff; }
+  .power-btn.active-power { background: #ff4757; border-color: #e84118; animation: pulse 1s infinite; }
+  
+  .buy-btn { background: #f39c12; border: none; color: #fff; font-size: 11px; font-weight: bold; padding: 4px 6px; border-radius: 6px; cursor: pointer; box-shadow: 0 3px 0 #d35400; text-shadow: 0 1px 1px #000; width:100%; transition: transform 0.1s; }
+  .buy-btn:active { transform: translateY(3px); box-shadow: 0 0 0 #d35400; }
+  @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.05);} }
+
+  #ui-target { text-align:center; margin-bottom:10px; background:#2ed573; padding:5px 15px; border-radius:20px; font-weight:bold; font-size:16px; box-shadow:0 3px 0 #27ae60; display:inline-block; border: 2px solid #fff;}
+
+  /* GAME LAYOUT */
+  .game-layout { display:flex; gap:10px; width:95vw; max-width:420px; justify-content:center; align-items:stretch; }
+  
+  /* DOG ROOM WITH WATER EFFECTS */
+  .dog-container { position: relative; width:75px; flex-shrink:0; display:flex; flex-direction:column; }
+  
+  .dog-speech { position:absolute; top:25px; left:50%; transform:translateX(-50%); background:#fff; color:#000; padding:4px 8px; border-radius:10px; font-size:12px; font-weight:bold; white-space:nowrap; z-index:20; box-shadow:0 4px 8px rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s; animation: speechFloat 2s ease-in-out infinite;}
+  .dog-speech::after { content:''; position:absolute; bottom:-5px; left:50%; transform:translateX(-50%); border-width:6px 6px 0; border-style:solid; border-color:#fff transparent transparent transparent; }
+  @keyframes speechFloat { 0%, 100% { transform: translate(-50%, 0px); } 50% { transform: translate(-50%, -3px); } }
+
+  .dog-room { flex:1; background:rgba(0,0,0,0.5); border:3px solid #fff; border-radius:12px; position:relative; overflow:hidden; box-shadow:inset 0 0 15px rgba(0,0,0,0.8); }
+  
+  /* WATER FILL EFFECT */
+  .water-fill { position:absolute; bottom:0; width:100%; height:0%; background: linear-gradient(0deg, rgba(9, 132, 227, 0.9), rgba(116, 185, 255, 0.7)); border-top: 3px solid rgba(255,255,255,0.6); transition:height 1s linear; z-index:1; box-shadow: 0 -3px 10px rgba(116, 185, 255, 0.5); }
+  .water-fill::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.6) 3px, transparent 4px), radial-gradient(circle at 70% 40%, rgba(255,255,255,0.4) 2px, transparent 3px), radial-gradient(circle at 40% 60%, rgba(255,255,255,0.5) 2px, transparent 3px); background-size: 35px 35px; animation: bubbles 2s linear infinite; }
+  @keyframes bubbles { 0% { transform: translateY(10px); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateY(-40px); opacity: 0; } }
+
+  .dog-char { position:absolute; bottom:0%; width:100%; text-align:center; font-size:35px; z-index:2; transition:bottom 1s linear, transform 0.3s; text-shadow:0 2px 5px #000; animation:breathe 2s infinite; line-height:1;}
+  .dog-panic { animation:panicShake 0.3s infinite; }
+  @keyframes breathe { 0%,100%{transform:scale(1) translateY(0);} 50%{transform:scale(1.05) translateY(-2px);} }
+  @keyframes panicShake { 0%,100%{transform:translate(0,0);} 25%{transform:translate(-2px,-2px);} 75%{transform:translate(2px,2px);} }
+
+  /* BOARD */
+  #board { display:grid; grid-template-columns:repeat(8, 1fr); gap:2px; flex:1; aspect-ratio:1/1; background:rgba(0,0,0,0.5); padding:6px; border-radius:12px; box-sizing:border-box; position:relative; touch-action:none;}
+  .cell-wrapper { width:100%; height:100%; position:relative; border-radius:50%; touch-action:none;}
+  
+  .cell { width:100%; height:100%; border-radius:50%; position:absolute; top:0; left:0; cursor:grab; 
+          transition:transform 0.2s ease-in-out; box-shadow:inset -3px -3px 6px rgba(0,0,0,0.4), 0 3px 5px rgba(0,0,0,0.3); z-index:5; 
+          display:flex; justify-content:center; align-items:center; touch-action:none; }
+  .cell:active { cursor:grabbing; }
+  .active-drag { transform:scale(0.85); filter:brightness(1.3); z-index:10 !important; }
+  .cell * { pointer-events: none !important; } /* Stops dragging bugs */
+
+  /* COLORS & CSS FACES */
+  .bean-red { background: radial-gradient(circle at 30% 30%, #ff6b81, #ff4757); } 
+  .bean-blue { background: radial-gradient(circle at 30% 30%, #70a1ff, #1e90ff); } 
+  .bean-green { background: radial-gradient(circle at 30% 30%, #7bed9f, #2ed573); }
+  .bean-yellow { background: radial-gradient(circle at 30% 30%, #eccc68, #ffa502); } 
+  .bean-purple { background: radial-gradient(circle at 30% 30%, #a29bfe, #9b59b6); } 
+  .bean-orange { background: radial-gradient(circle at 30% 30%, #ff7f50, #ff6348); }
+
+  /* NEW: CAGE & BIRD CSS */
+  .bean-bird { background: #34495e; box-shadow: inset 0 0 10px #000; cursor: not-allowed; }
+  .cage-bars { position: absolute; width: 100%; height: 100%; border-radius: 10px; background: repeating-linear-gradient(90deg, transparent, transparent 15%, #95a5a6 15%, #95a5a6 25%); border: 4px solid #7f8c8d; box-sizing: border-box; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
+  .bird-emoji { font-size: 26px; z-index: 5; animation: bounceTitle 1s infinite; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8)); }
+  .bird-help { position: absolute; top: -12px; background: #fff; color: #ff4757; font-size: 10px; padding: 2px 5px; border-radius: 5px; font-weight: bold; z-index: 15; animation: blink 1s infinite; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #ff4757; }
+  .bird-help::after { content:''; position:absolute; bottom:-4px; left:50%; transform:translateX(-50%); border-width:4px 4px 0; border-style:solid; border-color:#fff transparent transparent transparent; }
+  @keyframes blink { 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:0.8; transform:scale(1.1);} }
+  
+  .bird-fly-anim { animation: birdFly 0.8s forwards ease-in; z-index: 50 !important; border-radius:0; box-shadow:none; background:transparent;}
+  @keyframes birdFly { 0% { transform: scale(1); } 30% { transform: scale(1.3) rotate(-10deg); } 100% { transform: scale(2) translateY(-100px) translateX(20px); opacity: 0; } }
+
+  .face { position:absolute; width:100%; height:100%; }
+  .eye { position:absolute; width:14%; height:14%; background:#2c3e50; border-radius:50%; top:32%; }
+  .eye-l { left:25%; } .eye-r { right:25%; }
+  .mouth { position:absolute; left:50%; transform:translateX(-50%); background:#2c3e50; }
+
+  .face-red .eye { border-radius:0 0 50% 50%; height:10%; top:35%; }
+  .face-red .eye-l { transform:rotate(20deg); } .face-red .eye-r { transform:rotate(-20deg); }
+  .face-red .mouth { width:30%; height:15%; border-radius:50% 50% 0 0; background:transparent; border-top:3px solid #2c3e50; top:65%; }
+
+  .face-blue .eye { border-radius:50% 50% 0 0; height:10%; }
+  .face-blue .eye-l { transform:rotate(-15deg); } .face-blue .eye-r { transform:rotate(15deg); }
+  .face-blue .mouth { width:25%; height:10%; border-radius:50% 50% 0 0; background:transparent; border-top:3px solid #2c3e50; top:65%; }
+  .face-blue::after { content:''; position:absolute; width:10%; height:15%; background:#7efff5; border-radius:50%; left:25%; top:45%; opacity:0.8; }
+
+  .face-green .eye-l { width:10%; height:10%; } .face-green .eye-r { width:18%; height:18%; top:28%; }
+  .face-green .mouth { width:35%; height:3px; border-radius:2px; transform:translateX(-50%) rotate(-10deg); top:65%; }
+
+  .face-yellow .eye { height:18%; }
+  .face-yellow .mouth { width:35%; height:20%; border-radius:0 0 50px 50px; top:55%; }
+
+  .face-purple .eye { border-radius:50% 50% 0 0; background:transparent; border-top:4px solid #2c3e50; height:15%; }
+  .face-purple .mouth { width:35%; height:15%; border-radius:0 0 50% 0; background:transparent; border-bottom:3px solid #2c3e50; border-right:3px solid #2c3e50; top:55%; left:45%; }
+
+  .face-orange .eye { display:none; } 
+  .face-orange::before { content:''; position:absolute; width:65%; height:20%; background:#222; border-radius:5px 5px 15px 15px; left:17.5%; top:30%; box-shadow:inset 2px 2px 5px rgba(255,255,255,0.3); }
+  .face-orange::after { content:''; position:absolute; width:10%; height:4px; background:#222; left:45%; top:35%; }
+  .face-orange .mouth { width:20%; height:3px; top:65%; border-radius:2px; }
+
+  .pop { animation:pop 0.3s forwards; }
+  @keyframes pop { 50%{transform:scale(1.3); opacity:0.8;} 100%{transform:scale(0); opacity:0;} }
+  
+  .coin { position:absolute; font-size:24px; animation:coinFly 1s forwards; z-index:50; pointer-events:none; text-shadow:0 0 10px yellow; }
+  @keyframes coinFly { 0%{transform:translateY(0) scale(0.5);} 50%{transform:translateY(-50px) scale(1.5);} 100%{transform:translateY(-80px) scale(1); opacity:0;} }
+  
+  .shake { animation:shake 0.4s; }
+  @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-5px);} 75%{transform:translateX(5px);} }
+  
+  .ice { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(178,223,238,0.5); border:3px solid rgba(255,255,255,0.8); border-radius:50%; pointer-events:none; z-index:15; box-shadow:inset 0 0 10px #fff; }
+</style>
+</head>
+<body>
+
+<div id="start-screen" class="screen">
+  <h1 class="animated-title">Face<br>Merge</h1>
+  <button class="btn" onclick="showLevelSelector()">Play Now</button>
+</div>
+
+<div id="levels-screen" class="screen hidden">
+  <h1 style="color:#fff; font-size:35px; text-shadow:0 4px 0 #000; margin-top:0;">Select Level</h1>
+  <div class="lvl-grid" id="lvl-grid"></div>
+  <button class="btn" style="margin-top:30px; font-size:18px; padding:10px 25px;" onclick="goToStart()">Back to Menu</button>
+</div>
+
+<div id="game-screen" class="screen hidden">
+  <div class="top-bar">
+      <button class="back-btn" onclick="showLevelSelector()">⬅ Levels</button>
+      <div class="coin-counter">🪙 <span id="ui-coins">50</span></div>
+  </div>
+
+  <div style="text-align:center;"><div id="ui-target">Target: Score 500 pts</div></div>
+
+  <div class="header">
+    <div class="stat">Level<span id="ui-lvl">1</span></div>
+    <div class="stat">Score<span id="ui-score">0</span></div>
+    <div class="stat">Moves<span id="ui-moves">15</span></div>
+  </div>
+  
+  <div class="powers">
+    <div class="power-slot">
+        <button class="power-btn" id="btn-hammer" onclick="togglePower('hammer')">🔨<span id="h-cnt">1</span></button>
+        <button class="buy-btn" id="buy-hammer" onclick="buyPower('hammer')">+ 100🪙</button>
+    </div>
+    <div class="power-slot">
+        <button class="power-btn" id="btn-bomb" onclick="togglePower('bomb')">💣<span id="b-cnt">1</span></button>
+        <button class="buy-btn" id="buy-bomb" onclick="buyPower('bomb')">+ 150🪙</button>
+    </div>
+    <div class="power-slot">
+        <button class="power-btn" id="btn-rocket" onclick="togglePower('rocket')">🚀<span id="r-cnt">1</span></button>
+        <button class="buy-btn" id="buy-rocket" onclick="buyPower('rocket')">+ 200🪙</button>
+    </div>
+    <div class="power-slot">
+        <button class="power-btn" id="btn-magic" onclick="togglePower('magic')">🌈<span id="m-cnt">1</span></button>
+        <button class="buy-btn" id="buy-magic" onclick="buyPower('magic')">+ 250🪙</button>
+    </div>
+  </div>
+  
+  <div class="game-layout">
+      <div class="dog-container">
+          <div id="dog-room" class="dog-room">
+              <div id="dog-speech" class="dog-speech">Help! 😰</div>
+              <div id="water-fill" class="water-fill"></div>
+              <div id="dog-char" class="dog-char">🐶</div>
+          </div>
+      </div>
+      <div id="board"></div>
+  </div>
+</div>
+
+<div id="modal" class="screen hidden" style="background:rgba(0,0,0,0.85); z-index:100;">
+  <div style="background:linear-gradient(135deg, #2c003e, #005c97); padding:35px; border-radius:20px; text-align:center; border:3px solid #fff; box-shadow:0 0 20px rgba(0,0,0,0.8); max-width:300px;">
+    <h2 id="m-title" style="margin-top:0; font-size:30px;">Game Over</h2>
+    <p id="m-desc" style="font-size:18px;">Out of moves!</p>
+    <button class="btn" id="m-btn">Try Again</button>
+  </div>
+</div>
+
+<script>
+  // ================= VARIABLES & DATA =================
+  const W = 8; 
+  const colors = ['red','blue','green','yellow','purple','orange'];
+  
+  let grid=[], iceGrid=[], score=0, moves=0, lvl=1, coins=250;
+  let targetAmount=0, targetType='score', targetColor='';
+  let isAnim=false, activePower=null;
+  
+  // Power Inventory & Costs
+  let powers = {hammer:1, bomb:1, rocket:1, magic:1};
+  const powerCosts = {hammer:100, bomb:150, rocket:200, magic:250};
+  let unlockedLevel = 1;
+
+  let dogTimer = null;
+  let fillPct = 0;
+  let timeLimit = 60; 
+
+  // ================= AUDIO SYSTEM =================
+  let audioCtx=null;
+  function beep(f, type='sine', d=0.1) {
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended') audioCtx.resume();
+    let o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type=type; o.frequency.value=f; g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+d);
+    o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+d);
+  }
+  const sndSwap = ()=>beep(300, 'sine', 0.1);
+  const sndCoin = ()=>{ beep(1200,'sine',0.1); setTimeout(()=>beep(1600,'sine',0.15), 80); };
+  const sndBlast = ()=>{ beep(200,'sawtooth',0.2); setTimeout(()=>beep(150,'square',0.2), 100); };
+  const sndWin = ()=>{ beep(400,'triangle',0.1); setTimeout(()=>beep(600,'triangle',0.2), 150); };
+  const sndLose = ()=>{ beep(200,'sawtooth',0.3); setTimeout(()=>beep(150,'sawtooth',0.4), 300); };
+  
+  const sndDogHappy = () => { beep(700, 'sine', 0.1); setTimeout(()=>beep(850, 'sine', 0.1), 100); };
+  const sndDogSad = () => { 
+      if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      let o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type='triangle'; o.frequency.setValueAtTime(400, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime+0.4);
+      g.gain.setValueAtTime(0.1, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.4);
+      o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.4);
+  };
+
+  const sndBirdFree = () => { beep(1200, 'sine', 0.1); setTimeout(()=>beep(1500, 'sine', 0.2), 100); };
+
+  function hideAll() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); }
+  function goToStart() { hideAll(); document.getElementById('start-screen').classList.remove('hidden'); }
+
+  function showLevelSelector() {
+      if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      hideAll(); clearInterval(dogTimer);
+      document.getElementById('levels-screen').classList.remove('hidden');
+      buildLevelGrid();
+  }
+
+  function buildLevelGrid() {
+      const lg = document.getElementById('lvl-grid');
+      lg.innerHTML = '';
+      for(let i=1; i<=25; i++) {
+          let btn = document.createElement('button');
+          if(i <= unlockedLevel) {
+              btn.className = 'lvl-btn lvl-unlocked';
+              btn.innerText = i; btn.onclick = () => loadLevel(i);
+          } else {
+              btn.className = 'lvl-btn lvl-locked'; btn.innerText = '?';
+          }
+          lg.appendChild(btn);
+      }
+  }
+
+  // ================= LEVEL TARGET LOGIC =================
+  function loadLevel(l) {
+    if(l>25){ alert("You completed all 25 levels!"); l=25; }
+    lvl=l; score=0; isAnim=false; activePower=null;
+    document.querySelectorAll('.power-btn').forEach(b=>b.classList.remove('active-power'));
+    
+    moves = 15 + Math.floor(l/2); timeLimit = 70 - Math.min(30, l);
+    
+    // Updated Cycle: Added 4th type "Bird/Cage"
+    let cycle = l % 4;
+    if(cycle === 1) { 
+        targetType='score'; targetAmount = 500 + (l*200); 
+    } else if(cycle === 2) { 
+        targetType='ice'; targetAmount = 4 + Math.floor(l/2); 
+    } else if(cycle === 3) { 
+        targetType='color'; targetColor = colors[l % colors.length]; targetAmount = 15 + l; 
+    } else {
+        targetType='bird'; targetAmount = 3 + Math.floor(l/3);
+    }
+    
+    hideAll(); document.getElementById('game-screen').classList.remove('hidden');
+    buildBoard(); updateUI(); startDogTimer();
+  }
+
+  function startDogTimer() {
+    clearInterval(dogTimer); fillPct = 0;
+    let waterFill = document.getElementById('water-fill'); let dogChar = document.getElementById('dog-char');
+    waterFill.style.height = '0%'; dogChar.style.bottom = '0%'; dogChar.innerText = '🐶'; dogChar.classList.remove('dog-panic');
+    updateDogSpeech("Help! 😰", true); sndDogSad();
+
+    let step = 100 / timeLimit; 
+    dogTimer = setInterval(() => {
+        if(!document.getElementById('modal').classList.contains('hidden')) return;
+        fillPct += step; if(fillPct >= 100) fillPct = 100;
+        waterFill.style.height = fillPct + '%'; dogChar.style.bottom = fillPct + '%'; 
+        
+        if(fillPct > 70 && fillPct < 100) { dogChar.innerText = '😰'; dogChar.classList.add('dog-panic'); updateDogSpeech("Panic! 😱", true); }
+        if(fillPct >= 100) { clearInterval(dogTimer); dogChar.innerText = '😭'; showModal(false, "Dog room completely flooded! ⏳"); }
+    }, 1000);
+  }
+
+  function updateDogSpeech(text, persistent = false) {
+      const speech = document.getElementById('dog-speech');
+      speech.innerText = text;
+      speech.style.opacity = 1;
+      if (!persistent) { setTimeout(() => { speech.style.opacity = 0; }, 2000); }
+  }
+
+  function getFaceHTML(c) {
+      return `<div class="face face-${c}"><div class="eye eye-l"></div><div class="eye eye-r"></div><div class="mouth"></div></div>`;
+  }
+
+  function getBirdHTML() {
+      return `<div class="cage-bars"></div><div class="bird-emoji">🐦</div><div class="bird-help">Help!</div>`;
+  }
+
+  function buildBoard() {
+    const b=document.getElementById('board'); b.innerHTML=''; grid=[]; iceGrid=[];
+    let iceSet=new Set(); let birdSet=new Set();
+    
+    if(targetType==='ice') {
+        while(iceSet.size < targetAmount) iceSet.add(Math.floor(Math.random()*(W*W)));
+    } else if(targetType==='bird') {
+        while(birdSet.size < targetAmount) {
+            let rnd = Math.floor(Math.random()*(W*W));
+            if(rnd > W*2) birdSet.add(rnd); // Better to put cages lower down
+        }
+    }
+
+    for(let i=0; i<W*W; i++) {
+      let wrap = document.createElement('div'); wrap.className = 'cell-wrapper';
+      let c = document.createElement('div'); c.className='cell'; c.dataset.id=i;
+      
+      let avoid = [];
+      if(i%W >= 2 && grid[i-1] && grid[i-1].color === grid[i-2].color) avoid.push(grid[i-1].color);
+      if(i >= W*2 && grid[i-W] && grid[i-W].color === grid[i-W*2].color) avoid.push(grid[i-W].color);
+      
+      let valid = colors.filter(x=>!avoid.includes(x));
+      
+      if(birdSet.has(i)) {
+          c.classList.add('bean-bird');
+          c.color = 'bird'; // Special unmatchable type
+          c.innerHTML = getBirdHTML();
+      } else {
+          let clr = valid[Math.floor(Math.random()*valid.length)] || colors[0];
+          c.classList.add('bean-'+clr); c.color=clr; c.innerHTML = getFaceHTML(clr);
+      }
+      
+      // BULLETPROOF TOUCH & MOUSE EVENTS
+      c.addEventListener('touchstart', handleInputStart, {passive: false});
+      c.addEventListener('mousedown', handleInputStart);
+      
+      wrap.appendChild(c);
+      
+      if(iceSet.has(i)){
+        let ice=document.createElement('div'); ice.className='ice'; ice.id='ice-'+i;
+        wrap.appendChild(ice); iceGrid[i]=true;
+      } else iceGrid[i]=false;
+      
+      b.appendChild(wrap); grid.push(c);
+    }
+  }
+
+  // ================= 100% BULLETPROOF GLOBAL DRAG LOGIC =================
+  let dragId=null, startX, startY;
+
+  function handleInputStart(e) {
+      if(isAnim || moves<=0) return;
+      e.preventDefault(); // STOPS SCROLLING BUG!
+      
+      if(this.color === 'bird' && !activePower) return; // Cannot drag cages normally!
+      
+      dragId = parseInt(this.dataset.id);
+      
+      if(activePower) { usePower(dragId); return; }
+      
+      this.classList.add('active-drag');
+      
+      if(e.type === 'touchstart') {
+          startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+      } else {
+          startX = e.clientX; startY = e.clientY;
+      }
+  }
+
+  // Catch the release anywhere on the screen
+  document.addEventListener('mouseup', handleInputEnd);
+  document.addEventListener('touchend', handleInputEnd);
+
+  function handleInputEnd(e) {
+      if(dragId === null) return;
+      
+      let activeCell = document.querySelector('.active-drag');
+      if(activeCell) activeCell.classList.remove('active-drag');
+      
+      let endX, endY;
+      if(e.type === 'touchend' && e.changedTouches) {
+          endX = e.changedTouches[0].clientX; endY = e.changedTouches[0].clientY;
+      } else {
+          endX = e.clientX; endY = e.clientY;
+      }
+      
+      let dx = endX - startX, dy = endY - startY;
+      
+      if(Math.abs(dx) > 15 || Math.abs(dy) > 15) {
+          let tId = dragId;
+          if(Math.abs(dx) > Math.abs(dy)) { tId += dx > 0 ? 1 : -1; } else { tId += dy > 0 ? W : -W; }
+          // Don't allow swapping WITH a bird cage
+          if(tId >= 0 && tId < W*W && isAdjacent(dragId, tId) && grid[tId].color !== 'bird') { 
+              animateSwap(dragId, tId); 
+          }
+      }
+      dragId = null;
+  }
+
+  function isAdjacent(id1, id2) {
+      let r1 = Math.floor(id1/W), c1 = id1%W;
+      let r2 = Math.floor(id2/W), c2 = id2%W;
+      return (Math.abs(r1-r2) + Math.abs(c1-c2)) === 1;
+  }
+
+  function animateSwap(id1, id2) {
+      isAnim = true; sndSwap();
+      let c1 = grid[id1], c2 = grid[id2];
+      let xDist = ((id2%W) - (id1%W)) * 100;
+      let yDist = (Math.floor(id2/W) - Math.floor(id1/W)) * 100;
+
+      c1.style.transform = `translate(${xDist}%, ${yDist}%)`;
+      c2.style.transform = `translate(${-xDist}%, ${-yDist}%)`;
+      c1.style.zIndex = "10"; c2.style.zIndex = "10";
+
+      setTimeout(() => {
+          c1.style.transform = ''; c2.style.transform = '';
+          c1.style.zIndex = "5"; c2.style.zIndex = "5";
+          swapLogic(id1, id2);
+          
+          if(!checkMatches(true)) {
+              sndSwap();
+              c1.style.transform = `translate(${xDist}%, ${yDist}%)`;
+              c2.style.transform = `translate(${-xDist}%, ${-yDist}%)`;
+              setTimeout(() => {
+                  c1.style.transform = ''; c2.style.transform = '';
+                  swapLogic(id1, id2); isAnim = false;
+              }, 250);
+          } else { moves--; updateUI(); doMatches(); }
+      }, 250);
+  }
+
+  function swapLogic(i1, i2) {
+    let c1=grid[i1].color, cls1=grid[i1].className, html1=grid[i1].innerHTML;
+    grid[i1].color=grid[i2].color; grid[i1].className=grid[i2].className; grid[i1].innerHTML=grid[i2].innerHTML;
+    grid[i2].color=c1; grid[i2].className=cls1; grid[i2].innerHTML=html1;
+  }
+
+  // ================= INVENTORY & BUY SYSTEM =================
+  function buyPower(p) {
+      if(isAnim) return;
+      if(coins >= powerCosts[p]) {
+          coins -= powerCosts[p];
+          powers[p]++;
+          sndCoin();
+          updateUI();
+      } else {
+          alert("Not enough coins! You need " + powerCosts[p] + " 🪙");
+      }
+  }
+
+  function togglePower(p) {
+    if(isAnim) return;
+    if(powers[p] <= 0) {
+        alert(`You don't have this power. Click '+' to buy for ${powerCosts[p]}🪙`);
+        return;
+    }
+    activePower = (activePower === p) ? null : p;
+    document.querySelectorAll('.power-btn').forEach(b=>b.classList.remove('active-power'));
+    if(activePower) document.getElementById('btn-'+p).classList.add('active-power');
+  }
+
+  function usePower(id) {
+    isAnim=true; moves--; 
+    powers[activePower]--; // Deduct from inventory
+    document.getElementById('btn-'+activePower).classList.remove('active-power');
+    
+    let t = [];
+    if(activePower === 'hammer') { t.push(id); } 
+    else if(activePower === 'bomb') {
+      let r=Math.floor(id/W), c=id%W;
+      for(let x=-1;x<=1;x++) for(let y=-1;y<=1;y++){
+        let nr=r+x, nc=c+y; if(nr>=0&&nr<W&&nc>=0&&nc<W) t.push(nr*W+nc);
+      }
+    } else if(activePower === 'rocket') {
+      let r=Math.floor(id/W), c=id%W;
+      for(let i=0; i<W; i++) { t.push(r*W + i); t.push(i*W + c); }
+    } else if(activePower === 'magic') {
+      let targetColor = grid[id].color;
+      for(let i=0; i<W*W; i++) if(grid[i].color === targetColor) t.push(i);
+    }
+
+    sndBlast(); 
+    let uniqueTargets = [...new Set(t)];
+    uniqueTargets.forEach(tid=>{ breakCell(tid); showCoin(tid); });
+    
+    activePower=null; updateUI(); setTimeout(fall, 400);
+  }
+
+  // ================= MATCHING ENGINE =================
+  function checkMatches(justCheck=false) {
+    let m=new Set();
+    for(let r=0;r<W;r++) for(let c=0;c<W-2;c++){
+      let i=r*W+c; let clr=grid[i].color; if(!clr || clr === 'bird') continue;
+      if(grid[i+1].color===clr && grid[i+2].color===clr) {
+        m.add(i); m.add(i+1); m.add(i+2);
+        if(c<W-3 && grid[i+3].color===clr) m.add(i+3); 
+        if(c<W-4 && grid[i+4].color===clr) m.add(i+4); 
+      }
+    }
+    for(let c=0;c<W;c++) for(let r=0;r<W-2;r++){
+      let i=r*W+c; let clr=grid[i].color; if(!clr || clr === 'bird') continue;
+      if(grid[i+W].color===clr && grid[i+W*2].color===clr) {
+        m.add(i); m.add(i+W); m.add(i+W*2);
+        if(r<W-3 && grid[i+W*3].color===clr) m.add(i+W*3); 
+        if(r<W-4 && grid[i+4*W].color===clr) m.add(i+4*W); 
+      }
+    }
+    if(justCheck) return m.size>0;
+    return m;
+  }
+
+  function doMatches() {
+    let m = checkMatches();
+    if(m.size>0) {
+      if(m.size>=4) { 
+        sndBlast();
+        coins += 10; // Extra coins for big matches!
+        let added=0, attempts=0;
+        while(added<4 && attempts<100) {
+          let rnd=Math.floor(Math.random()*(W*W));
+          if(!m.has(rnd) && grid[rnd].color && grid[rnd].color !== 'bird') { m.add(rnd); added++; }
+          attempts++;
+        }
+        document.getElementById('board').classList.add('shake');
+        setTimeout(()=>document.getElementById('board').classList.remove('shake'), 400);
+      } else { sndCoin(); coins += 2; }
+      
+      updateDogSpeech("Happy! 😍"); sndDogHappy();
+      
+      if(fillPct > 0) fillPct = Math.max(0, fillPct - (m.size * 2));
+      document.getElementById('water-fill').style.height = fillPct + '%';
+      document.getElementById('dog-char').style.bottom = fillPct + '%';
+      if(fillPct < 70) {
+          document.getElementById('dog-char').classList.remove('dog-panic');
+          document.getElementById('dog-char').innerText = '🐶';
+      }
+
+      m.forEach(id=>{ breakCell(id); showCoin(id); });
+      updateUI(); setTimeout(fall, 400);
+    } else {
+      isAnim=false; checkWin();
+    }
+  }
+
+  function breakBirdCage(id) {
+      if(grid[id].color !== 'bird') return; // Double check
+      sndBirdFree();
+      grid[id].color = null; // Important! Allow it to fall empty
+      grid[id].classList.remove('bean-bird');
+      grid[id].innerHTML = '<div class="bird-emoji">🐦</div>'; // Removes bars for animation
+      grid[id].classList.add('bird-fly-anim');
+      
+      score += 150;
+      if(targetType === 'bird') { targetAmount--; }
+  }
+
+  function breakCell(id) {
+    if(!grid[id].color) return;
+    
+    // Direct hits on birds via powerups
+    if(grid[id].color === 'bird') {
+        breakBirdCage(id); return;
+    }
+    
+    if(targetType === 'color' && grid[id].color === targetColor) {
+        targetAmount--;
+    }
+    
+    score+=10; grid[id].classList.add('pop'); grid[id].color=null; grid[id].innerHTML='';
+    
+    let adj=[id, id-1, id+1, id-W, id+W];
+    adj.forEach(a=>{
+      if(a>=0 && a<W*W) {
+        if((a===id-1 && id%W===0) || (a===id+1 && id%W===W-1)) return; 
+        
+        // Ice logic
+        if(iceGrid[a]) {
+            iceGrid[a]=false; score+=50;
+            let ice=document.getElementById('ice-'+a); if(ice) ice.remove();
+            if(targetType==='ice') targetAmount--;
+        }
+        
+        // Bird/Cage logic from adjacent hits
+        if(grid[a].color === 'bird') {
+            breakBirdCage(a);
+        }
+      }
+    });
+  }
+
+  function showCoin(id) {
+    let coin=document.createElement('div'); coin.className='coin'; coin.innerText='🪙';
+    let r=grid[id].getBoundingClientRect();
+    coin.style.left=(r.left+15)+'px'; coin.style.top=r.top+'px';
+    document.body.appendChild(coin); setTimeout(()=>coin.remove(), 1000);
+  }
+
+  function fall() {
+    for(let c=0; c<W; c++) {
+      let col=[];
+      // Preserve HTML for birds if they fell, and normal beans
+      for(let r=0; r<W; r++) { 
+          if(grid[r*W+c].color) col.push({clr:grid[r*W+c].color, cls:grid[r*W+c].className, html: grid[r*W+c].innerHTML}); 
+      }
+      
+      while(col.length<W) {
+        let clr=colors[Math.floor(Math.random()*colors.length)];
+        col.unshift({clr:clr, cls:'cell bean-'+clr, html: getFaceHTML(clr)});
+      }
+      
+      for(let r=0; r<W; r++) {
+        grid[r*W+c].color=col[r].clr; 
+        grid[r*W+c].className=col[r].cls;
+        grid[r*W+c].innerHTML=col[r].html;
+      }
+    }
+    setTimeout(doMatches, 300);
+  }
+
+  function updateUI() {
+    document.getElementById('ui-lvl').innerText=lvl; 
+    document.getElementById('ui-score').innerText=score;
+    document.getElementById('ui-moves').innerText=moves; 
+    document.getElementById('ui-coins').innerText=coins; 
+    
+    // Update inventory counts
+    document.getElementById('h-cnt').innerText=powers.hammer;
+    document.getElementById('b-cnt').innerText=powers.bomb;
+    document.getElementById('r-cnt').innerText=powers.rocket;
+    document.getElementById('m-cnt').innerText=powers.magic;
+
+    // Check if player can afford powers to dim the BUY buttons
+    document.getElementById('buy-hammer').style.opacity = coins >= powerCosts.hammer ? '1' : '0.4';
+    document.getElementById('buy-bomb').style.opacity = coins >= powerCosts.bomb ? '1' : '0.4';
+    document.getElementById('buy-rocket').style.opacity = coins >= powerCosts.rocket ? '1' : '0.4';
+    document.getElementById('buy-magic').style.opacity = coins >= powerCosts.magic ? '1' : '0.4';
+
+    let tText = '';
+    if(targetType === 'score') tText = `Score ${targetAmount} pts`;
+    else if(targetType === 'ice') tText = `Break ${targetAmount} Ice`;
+    else if(targetType === 'color') tText = `Collect ${targetAmount} ${targetColor} Beans`;
+    else if(targetType === 'bird') tText = `Free ${targetAmount} Birds 🐦`;
+    document.getElementById('ui-target').innerText = `Target: ${tText}`;
+  }
+
+  function checkWin() {
+    let win = false;
+    if(targetType==='score' && score>=targetAmount) win=true;
+    if(targetType==='ice' && targetAmount<=0) win=true;
+    if(targetType==='color' && targetAmount<=0) win=true;
+    if(targetType==='bird' && targetAmount<=0) win=true;
+    
+    if(win) {
+        document.getElementById('dog-char').innerText = '😎'; sndDogHappy();
+        if(lvl == unlockedLevel) unlockedLevel++; 
+        coins += 50; 
+        showModal(true);
+    } else if(moves<=0) {
+        document.getElementById('dog-char').innerText = '😭'; sndDogSad();
+        showModal(false, "Out of moves! Dog is underwater! 😢");
+    }
+  }
+
+  function showModal(win, reason = "") {
+    isAnim=true; clearInterval(dogTimer); 
+    if(win) sndWin(); else sndLose();
+    
+    let m=document.getElementById('modal'); m.classList.remove('hidden');
+    document.getElementById('m-title').innerText = win ? "Level Cleared! 🎉" : "Game Over!";
+    document.getElementById('m-title').style.color = win ? "#2ed573" : "#ff4757";
+    document.getElementById('m-desc').innerText = win ? "You saved the dog! Bonus 50 🪙!" : reason;
+    
+    let btn=document.getElementById('m-btn');
+    btn.innerText = win ? "Next Level ➡" : "Try Again 🔄";
+    btn.style.background = win ? "#2ed573" : "#ff4757"; btn.style.boxShadow = win ? "0 6px 0 #27ae60" : "0 6px 0 #c0392b";
+    btn.onclick = () => {
+        m.classList.add('hidden');
+        if(win) { if(lvl < 25) loadLevel(lvl+1); else showLevelSelector(); } else { loadLevel(lvl); }
+    };
+  }
+</script>
+</body>
+</html>
