@@ -27,14 +27,31 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-base);
-            background-image: 
-                radial-gradient(circle at 10% 30%, rgba(188, 19, 254, 0.04), transparent 35%),
-                radial-gradient(circle at 90% 70%, rgba(0, 243, 255, 0.04), transparent 35%);
+            background: linear-gradient(135deg, #06060a, #130a21, #06111f, #06060a);
+            background-size: 400% 400%;
+            animation: catchyBackground 15s ease infinite;
             color: var(--text-main);
             min-height: 100vh;
             overflow-x: hidden;
             scroll-behavior: smooth;
+        }
+
+        @keyframes catchyBackground {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            pointer-events: none;
         }
 
         h1, h2, h3, .pixel-font { font-family: 'Press Start 2P', cursive; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -225,6 +242,9 @@
             border-radius: 12px; border: 2px solid var(--bg-surface-light);
             box-shadow: 0 24px 48px rgba(0,0,0,0.6); position: relative; overflow: hidden;
         }
+        @media (max-width: 768px) {
+            .game-container { height: 400px; }
+        }
         .game-container iframe { width: 100%; height: 100%; border: none; display: block; }
         
         .game-details {
@@ -339,12 +359,14 @@
             .container { flex-direction: column; }
             .sidebar { width: 100%; }
             .game-grid { grid-template-columns: 1fr; }
-            .game-container { height: 320px; }
             .game-title-large { font-size: 1.15rem; }
         }
     </style>
 </head>
 <body>
+
+    <!-- HIDDEN AUDIO PLAYER FOR GAME BGM -->
+    <audio id="portal-bgm" loop style="display:none;"></audio>
 
     <!-- LOADING SCREEN -->
     <div id="loader">
@@ -357,7 +379,7 @@
         <div class="logo pixel-font" onclick="goHome()">Pixel <span>Gaunt</span></div>
         <nav class="nav-links">
             <button class="nav-btn" onclick="goHome()">Games</button>
-            <button class="nav-btn" onclick="openUploadWizard()">Upload</button>
+            <button class="nav-btn" onclick="openUploadWizard()" onmouseover="this.innerText='⏳ Coming Soon...'" onmouseout="this.innerText='Upload'">Upload</button>
             <button class="nav-btn primary" onclick="openLoginWizard()">Login</button>
         </nav>
     </header>
@@ -380,12 +402,15 @@
                     <li><button id="btn-cat-adventure" onclick="filterCategory('Adventure', null)">🧭 Quest Adventure</button></li>
                     <li><button id="btn-cat-simulation" onclick="filterCategory('Simulation', null)">🍕 Strategy & Sim</button></li>
                     <li><button id="btn-cat-roguelike" onclick="filterCategory('Rogue-like', null)">💀 Rogue Dungeon</button></li>
+                    <li><button id="btn-cat-puzzle" onclick="filterCategory('Puzzle', null)">🧩 Puzzle</button></li>
+                    <li><button id="btn-cat-racing" onclick="filterCategory('Racing', null)">🏎️ Racing</button></li>
+                    <li><button id="btn-cat-rpg" onclick="filterCategory('RPG', null)">⚔️ RPG</button></li>
                 </ul>
             </div>
             <div class="sidebar-box">
                 <h3 class="sidebar-title pixel-font">Developer</h3>
                 <ul class="sidebar-menu">
-                    <li><button onclick="openUploadWizard()">⬆️ Deploy Project (.ZIP)</button></li>
+                    <li><button onclick="openUploadWizard()" onmouseover="this.innerText='⏳ Coming Soon...'" onmouseout="this.innerText='⬆️ Deploy Project (.ZIP)'">⬆️ Deploy Project (.ZIP)</button></li>
                 </ul>
             </div>
         </aside>
@@ -399,6 +424,9 @@
                 <button class="cat-btn" onclick="filterCategory('Adventure', this)">Adventure</button>
                 <button class="cat-btn" onclick="filterCategory('Simulation', this)">Simulation</button>
                 <button class="cat-btn" onclick="filterCategory('Rogue-like', this)">Rogue-like</button>
+                <button class="cat-btn" onclick="filterCategory('Puzzle', this)">Puzzle</button>
+                <button class="cat-btn" onclick="filterCategory('Racing', this)">Racing</button>
+                <button class="cat-btn" onclick="filterCategory('RPG', this)">RPG</button>
             </div>
 
             <!-- Responsive Cards Layout -->
@@ -425,7 +453,7 @@
 
             <!-- Core Canvas Frame -->
             <div class="game-container" id="game-container-element">
-                <iframe src="" id="game-canvas" allowfullscreen></iframe>
+                <iframe src="" id="game-canvas" allowfullscreen allow="autoplay; fullscreen"></iframe>
             </div>
 
             <!-- Right Ads Space -->
@@ -570,65 +598,67 @@
                 <a href="#" onclick="openUploadWizard()">Distribution Panel</a>
                 <a href="#" onclick="openLoginWizard()">Terms of Entry</a>
             </div>
-            <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt Studios. All Rights Reserved.</p>
+            <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt. All Rights Reserved.</p>
         </div>
     </footer>
 
     <!-- LOGIC SYSTEM MODULE -->
     <script>
-        // --- FIXED DATA STORAGE - PROPER CATEGORY CLASSIFICATION ---
         const games = [
             { 
                 id: 1, 
                 title: 'Stickman Velocity', 
                 genre: 'Arcade', 
-                desc: 'Fast-paced precision platforming module. Precision timing grid to dodge obstacles, compile neon pulses, and map clean velocity vectors inside an acceleration environment.', 
-                controls: 'Arrow interface indicators to direct momentum. Spacebar triggers structural high-speed dash.', 
-                features: ['Procedural difficulty curves', 'High-refresh movement loops', 'Dynamic vectors mapping'],
+                desc: 'Fast-paced, endless running game with dynamic obstacle avoidance.', 
+                controls: 'Keyboard: Arrow Keys for movement, Spacebar to dash. Mobile: Onscreen touch buttons.', 
+                features: ['Procedural difficulty curves', 'Hidden collectibles'],
                 image: '11Gemini_Generated_Image_i6st3bi6st3bi6st.jpg',
-                url: 'Stick Man Velocity.html' 
+                url: 'Stick Man Velocity.html',
+                bgm: 'Midnight_Velocity.mp3'
             },
             { 
                 id: 2, 
                 title: 'Serpent Relic', 
                 genre: 'Adventure', 
-                desc: 'Deep multi-grid atmospheric adventure. Unravel maze puzzles, solve hidden ancient mechanism systems, and secure terminal sector elements without triggering traps.', 
-                controls: 'WASD keys for orientation translation, E button maps interaction loops, Shift key activates quick traversal.', 
-                features: ['Hidden crypt coordinates', 'Mechanism puzzle matrices', 'Complex pathing obstacles'],
+                desc: 'Delve deep into cursed tombs and ancient crypts to retrieve legendary artifacts.', 
+                controls: 'Keyboard: WASD to move, E to interact, Shift to sprint. Mobile: Onscreen interaction.', 
+                features: ['Dungeon-style exploration', 'Mechanism puzzle matrices'],
                 image: 'serpent relic thumbnail.jpg', 
-                url: 'Serpent Relic Browser Update.html' 
+                url: 'Serpent Relic Browser Update.html',
+                bgm: 'Calculated_Escape.mp3'
             },
             { 
                 id: 3, 
                 title: 'Pizza Chaos', 
                 genre: 'Simulation', 
-                desc: 'Real-time resource management, kitchen optimization, and culinary simulation loop. Streamline assembly lines under extreme traffic overhead bounds.', 
-                controls: 'Cursor coordinate selections to isolate ingredients, click-and-drag mechanics for processing.', 
-                features: ['Dynamic upgrade matrix', 'Highly volatile order queues', 'Complex time-slice management'],
+                desc: 'Manage a hectic pizza delivery service under chaotic traffic and tight deadlines.', 
+                controls: 'Keyboard: N/A. Mobile: Touch and drag interaction for resource selection and navigation.', 
+                features: ['Multiple delivery locations', 'Vehicle upgrade system'],
                 image: '11Gemini_Generated_Image_4jgrj54jgrj54jgr.jpg', 
-                url: 'Pizza Chaos Browser.html' 
+                url: 'Pizza Chaos Browser.html', 
+                bgm: 'Insert_Another_Quarter.mp3'
             },
             { 
                 id: 4, 
                 title: 'Face Merge', 
                 genre: 'Rogue-like', 
-                desc: 'Dungeon crawler structure integrated with modular mask power arrays. Combine, adapt, and rewrite build characteristics dynamically inside random environments.', 
-                controls: 'Direction keys for translation, Spacebar confirms target combination and transformation loops.', 
-                features: ['Random layout generations', 'Permadeath state triggers', 'Deep mask modification trees'],
+                desc: 'Procedurally generated dungeon crawler where you combine masks for unique character traits and powers.', 
+                controls: 'Keyboard: WASD/Arrow keys for translation, Space/E for interaction. Mobile: Touch screen buttons.', 
+                features: ['Permadeath state triggers', 'deep mask modification trees'],
                 image: '11Gemini_Generated_Image_knnan0knnan0knna.jpg', 
-                url: 'Face_Merge.html' 
+                url: 'Face_Merge.html',
+                bgm: 'One_Final_Move.mp3'
             }
         ];
 
-        // Cache elements
         const homepage = document.getElementById('homepage');
         const gameplayPage = document.getElementById('gameplay-page');
         const searchSection = document.getElementById('search-section');
         const gameGrid = document.getElementById('game-grid');
         const gameIframe = document.getElementById('game-canvas');
         const loader = document.getElementById('loader');
+        const portalBgm = document.getElementById('portal-bgm');
 
-        // Render Cards
         function renderGames(gameList) {
             gameGrid.innerHTML = '';
             if (gameList.length === 0) {
@@ -640,9 +670,11 @@
                 const card = document.createElement('div');
                 card.className = 'game-card';
                 card.onclick = () => launchViewport(game.id);
+                
+                const safeImg = encodeURI(game.image);
 
                 card.innerHTML = `
-                    <div class="card-thumb" style="background-image: url('${game.image}');">
+                    <div class="card-thumb" style="background-image: url('${safeImg}');">
                         <div class="play-overlay">
                             <div class="play-btn-circle"></div>
                         </div>
@@ -658,30 +690,24 @@
             });
         }
 
-        // Searching Logic
         function filterGames() {
             const query = document.getElementById('search-input').value.toLowerCase();
             const filtered = games.filter(g => g.title.toLowerCase().includes(query) || g.genre.toLowerCase().includes(query));
             renderGames(filtered);
             
-            // Unset category tabs
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.sidebar-menu button').forEach(b => b.classList.remove('active'));
         }
 
-        // Category Selection Filter System (Updates Top Bar and Sidebar Sync)
         function filterCategory(category, btnElement) {
             document.getElementById('search-input').value = ''; 
             
-            // Reset all highlights
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.sidebar-menu button').forEach(b => b.classList.remove('active'));
 
-            // Set Top Bar active element
             if (btnElement) {
                 btnElement.classList.add('active');
             } else {
-                // Find matching top bar button manually
                 const topButtons = document.querySelectorAll('.cat-btn');
                 topButtons.forEach(btn => {
                     if (category === 'All' && btn.innerText.includes('All')) btn.classList.add('active');
@@ -689,18 +715,19 @@
                 });
             }
 
-            // Set Sidebar Active Highlight
             const catIdMap = {
                 'All': 'btn-cat-all',
                 'Arcade': 'btn-cat-arcade',
                 'Adventure': 'btn-cat-adventure',
                 'Simulation': 'btn-cat-simulation',
-                'Rogue-like': 'btn-cat-roguelike'
+                'Rogue-like': 'btn-cat-roguelike',
+                'Puzzle': 'btn-cat-puzzle',
+                'Racing': 'btn-cat-racing',
+                'RPG': 'btn-cat-rpg'
             };
             const sideBtn = document.getElementById(catIdMap[category]);
             if (sideBtn) sideBtn.classList.add('active');
 
-            // Render matching list
             if (category === 'All') {
                 renderGames(games);
             } else {
@@ -709,12 +736,16 @@
             }
         }
 
-        // View Navigations
         function goHome() {
             gameplayPage.style.display = 'none';
             homepage.style.display = 'flex';
             searchSection.style.display = 'block';
+            
             gameIframe.src = ''; 
+            portalBgm.pause();
+            portalBgm.currentTime = 0;
+            portalBgm.src = '';
+
             window.scrollTo(0, 0);
         }
 
@@ -734,11 +765,14 @@
             const featuresList = document.getElementById('current-game-features');
             featuresList.innerHTML = game.features.map(f => `<li>${f}</li>`).join('');
 
-            // Fast local routing assignment
-            gameIframe.src = game.url; 
+            gameIframe.src = encodeURI(game.url); 
+
+            if(game.bgm) {
+                portalBgm.src = encodeURI(game.bgm);
+                portalBgm.play().catch(e => console.log('Autoplay handled.', e));
+            }
         }
 
-        // Fullscreen Toggle Wrapper
         function toggleFullscreen() {
             const container = document.getElementById('game-container-element');
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
@@ -750,7 +784,6 @@
             }
         }
 
-        // MODAL MULTI-WIZARD ROUTER MANAGEMENT
         function openLoginWizard() {
             openModal('login-modal');
             goToLoginStep('choice');
@@ -764,7 +797,6 @@
         function openUploadWizard() {
             openModal('upload-modal');
             goToUploadStep('agreement');
-            // reset checkbox
             document.getElementById('agreement-checkbox').checked = false;
             document.getElementById('agreement-next-btn').disabled = true;
             document.getElementById('file-selected-name').style.display = 'none';
@@ -811,7 +843,6 @@
             });
         }
 
-        // INITIALIZER LOOPS
         window.onload = () => {
             renderGames(games);
             setTimeout(() => {
