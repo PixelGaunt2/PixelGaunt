@@ -346,9 +346,6 @@
 </head>
 <body>
 
-    <!-- HIDDEN AUDIO PLAYER FOR GAME BGM -->
-    <audio id="portal-bgm" loop style="display:none;"></audio>
-
     <!-- LOADING SCREEN -->
     <div id="loader">
         <div class="loader-spinner"></div>
@@ -426,9 +423,9 @@
             <!-- Left Ads Space -->
             <div class="empty-zone-v"></div>
 
-            <!-- Core Canvas Frame - ADDED ALLOW AUTOPLAY to prevent iframe blocks -->
+            <!-- Core Canvas Frame -->
             <div class="game-container" id="game-container-element">
-                <iframe src="" id="game-canvas" allowfullscreen allow="autoplay; fullscreen"></iframe>
+                <iframe src="" id="game-canvas" allowfullscreen></iframe>
             </div>
 
             <!-- Right Ads Space -->
@@ -579,7 +576,7 @@
 
     <!-- LOGIC SYSTEM MODULE -->
     <script>
-        // --- FIXED DATA STORAGE WITH ENCODED URLS SO IFRAMES DONT BREAK LOCALLY ---
+        // --- FIXED DATA STORAGE - PROPER CATEGORY CLASSIFICATION ---
         const games = [
             { 
                 id: 1, 
@@ -588,9 +585,8 @@
                 desc: 'Fast-paced precision platforming module. Precision timing grid to dodge obstacles, compile neon pulses, and map clean velocity vectors inside an acceleration environment.', 
                 controls: 'Arrow interface indicators to direct momentum. Spacebar triggers structural high-speed dash.', 
                 features: ['Procedural difficulty curves', 'High-refresh movement loops', 'Dynamic vectors mapping'],
-                image: '11Gemini_Generated_Image_i6st3bi6st3bi6st.png',
-                url: 'Stick%20Man%20Velocity.html',
-                bgm: 'Stickman_Velocity_BGM.mp3' // Placeholder set for Stickman bgm!
+                image: '11Gemini_Generated_Image_i6st3bi6st3bi6st.jpg',
+                url: 'Stick Man Velocity.html' 
             },
             { 
                 id: 2, 
@@ -599,9 +595,8 @@
                 desc: 'Deep multi-grid atmospheric adventure. Unravel maze puzzles, solve hidden ancient mechanism systems, and secure terminal sector elements without triggering traps.', 
                 controls: 'WASD keys for orientation translation, E button maps interaction loops, Shift key activates quick traversal.', 
                 features: ['Hidden crypt coordinates', 'Mechanism puzzle matrices', 'Complex pathing obstacles'],
-                image: 'serpent%20relic%20thumbnail.png', 
-                url: 'Serpent%20Relic%20Browser%20Update.html',
-                bgm: 'Calculated_Escape.mp3'
+                image: 'serpent relic thumbnail.jpg', 
+                url: 'Serpent Relic Browser Update.html' 
             },
             { 
                 id: 3, 
@@ -610,9 +605,8 @@
                 desc: 'Real-time resource management, kitchen optimization, and culinary simulation loop. Streamline assembly lines under extreme traffic overhead bounds.', 
                 controls: 'Cursor coordinate selections to isolate ingredients, click-and-drag mechanics for processing.', 
                 features: ['Dynamic upgrade matrix', 'Highly volatile order queues', 'Complex time-slice management'],
-                image: '11Gemini_Generated_Image_4jgrj54jgrj54jgr.png', 
-                url: 'Pizza%20Chaos%20Browser.html',
-                bgm: 'Insert_Another_Quarter.mp3'
+                image: '11Gemini_Generated_Image_4jgrj54jgrj54jgr.jpg', 
+                url: 'Pizza Chaos Browser.html' 
             },
             { 
                 id: 4, 
@@ -621,9 +615,8 @@
                 desc: 'Dungeon crawler structure integrated with modular mask power arrays. Combine, adapt, and rewrite build characteristics dynamically inside random environments.', 
                 controls: 'Direction keys for translation, Spacebar confirms target combination and transformation loops.', 
                 features: ['Random layout generations', 'Permadeath state triggers', 'Deep mask modification trees'],
-                image: '11Gemini_Generated_Image_knnan0knnan0knna.png', 
-                url: 'Face_Merge.html',
-                bgm: 'One_Final_Move.mp3'
+                image: '11Gemini_Generated_Image_knnan0knnan0knna.jpg', 
+                url: 'Face_Merge.html' 
             }
         ];
 
@@ -634,7 +627,6 @@
         const gameGrid = document.getElementById('game-grid');
         const gameIframe = document.getElementById('game-canvas');
         const loader = document.getElementById('loader');
-        const portalBgm = document.getElementById('portal-bgm');
 
         // Render Cards
         function renderGames(gameList) {
@@ -722,13 +714,7 @@
             gameplayPage.style.display = 'none';
             homepage.style.display = 'flex';
             searchSection.style.display = 'block';
-            
-            // Stop game and background audio
             gameIframe.src = ''; 
-            portalBgm.pause();
-            portalBgm.currentTime = 0;
-            portalBgm.src = '';
-
             window.scrollTo(0, 0);
         }
 
@@ -750,12 +736,6 @@
 
             // Fast local routing assignment
             gameIframe.src = game.url; 
-
-            // BACKGROUND AUDIO LOGIC (Plays when game opens)
-            if(game.bgm) {
-                portalBgm.src = game.bgm;
-                portalBgm.play().catch(e => console.log('Browser blocked autoplay. User interaction required.', e));
-            }
         }
 
         // Fullscreen Toggle Wrapper
