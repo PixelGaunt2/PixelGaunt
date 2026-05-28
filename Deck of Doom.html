@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Deck of Doom</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Righteous&display=swap');
+
+        * { box-sizing: border-box; cursor: none !important; }
+        
+        body {
+            margin: 0; padding: 0; background-color: #12141c; color: #fff;
+            font-family: 'Nunito', sans-serif; overflow: hidden; 
+            user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+            overscroll-behavior: none; touch-action: none;
+        }
+
+        h1, h2, h3 { font-family: 'Righteous', cursive; text-align: center; margin: 0; letter-spacing: 1px;}
+
+        /* --- CURSOR --- */
+        #demon-cursor {
+            position: fixed; pointer-events: none; z-index: 100000; 
+            font-size: 85px; line-height: 1;
+            transform-origin: 50% 10%; transform: translate(-45%, -5%); 
+            transition: transform 0.05s ease-out, filter 0.1s; display: none; will-change: left, top, transform;
+            filter: invert(15%) sepia(90%) saturate(6000%) hue-rotate(340deg) brightness(110%) drop-shadow(0 10px 15px rgba(255, 0, 50, 0.8));
+            animation: creepTwitch 0.15s infinite alternate;
+        }
+        #demon-cursor.clicking {
+            transform: translate(-45%, -5%) scale(0.85) rotate(-15deg);
+            filter: invert(15%) sepia(90%) saturate(7000%) hue-rotate(340deg) brightness(130%) drop-shadow(0 5px 25px rgba(255, 0, 50, 1));
+        }
+        @keyframes creepTwitch { 0% { margin-left: 0px; margin-top: 0px; } 100% { margin-left: 3px; margin-top: -2px; } }
+
+        .screen { display: none; flex-direction: column; height: 100vh; height: 100dvh; width: 100vw; position: absolute; top: 0; left: 0; z-index: 100; }
+
+        /* --- TITLE SCREEN --- */
+        #title-screen { background: radial-gradient(circle at center, #1a2235 0%, #0d1017 100%); justify-content: center; align-items: center; }
+        .title-layout { display: flex; justify-content: center; align-items: center; gap: 40px; width: 100%; max-width: 900px; padding: 20px;}
+        .game-title { font-size: 55px; color: transparent; -webkit-text-stroke: 2px #f39c12; text-shadow: 0 0 15px rgba(243, 156, 18, 0.6); line-height: 1.1; margin-bottom: 20px; }
+        .vs-text { font-size: 80px; color: transparent; font-style: italic; -webkit-text-stroke: 3px #ff4757; text-shadow: 0 0 20px rgba(255, 71, 87, 0.8), inset 0 0 10px #ff4757; margin-bottom: 30px; }
+        .hero-portrait, .boss-portrait { background: #1e2532; border: 2px solid #3a4b66; border-radius: 25px; padding: 20px; text-align: center; width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
+        .hero-portrait { box-shadow: 0 0 40px rgba(52, 152, 219, 0.3); border-color: #3498db; }
+        .boss-portrait { box-shadow: 0 0 40px rgba(231, 76, 60, 0.3); border-color: #e74c3c; }
+        .portrait-img { font-size: 110px; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); line-height: 1; position: relative; z-index: 5;}
+        .portrait-name { font-size: 24px; font-weight: bold; margin-top: 10px; color: #ecf0f1; position: relative; z-index: 5;}
+        .hp-pill { background: #2c3e50; border-radius: 20px; padding: 5px 15px; font-weight: bold; font-size: 14px; margin-top: 10px; display: inline-block; border: 2px solid #e74c3c; color: #fff; box-shadow: inset 50px 0 0 #e74c3c; position: relative; z-index: 5;}
+        .title-buttons { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; align-items: center; }
+        .btn-play { background: #1e272e; color: #fff; border: 2px solid #f39c12; padding: 15px 40px; font-family: 'Righteous', cursive; font-size: 20px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.4); transition: all 0.2s; width: 280px;}
+        .btn-play.highlight { border-color: #3498db; background: linear-gradient(to bottom, #2980b9, #2c3e50); box-shadow: 0 0 20px rgba(52, 152, 219, 0.4);}
+        .btn-play.disabled { border-color: #7f8c8d; background: #2c3e50; opacity: 0.7;}
+        .btn-play:hover:not(.disabled) { transform: scale(1.05); filter: brightness(1.2); }
+
+        /* --- NEW SETUP SCREEN --- */
+        #setup-screen { background: radial-gradient(circle at center, #1a2235 0%, #0d1017 100%); align-items: center; justify-content: center; z-index: 150; }
+        .setup-container { background: #1e2532; border: 2px solid #3a4b66; border-radius: 20px; padding: 30px; display: flex; flex-direction: column; gap: 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .setup-header { color: #f39c12; font-size: 35px; margin-bottom: 5px; text-shadow: 0 0 10px rgba(243, 156, 18, 0.5);}
+        
+        .name-input { background: #111; border: 2px solid #57606f; color: #f1c40f; padding: 12px; border-radius: 8px; font-family: 'Righteous'; font-size: 20px; width: 100%; text-align: center; outline: none; transition: border-color 0.2s; }
+        .name-input:focus { border-color: #3498db; box-shadow: 0 0 15px rgba(52, 152, 219, 0.4); }
+        .name-input::placeholder { color: #57606f; font-family: 'Nunito'; font-weight: bold; font-size: 16px;}
+
+        .char-select-row { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 5px;}
+        .char-btn { font-size: 40px; background: #2c3e50; border: 2px solid #57606f; border-radius: 16px; width: 65px; height: 65px; display: flex; justify-content: center; align-items: center; transition: all 0.2s; position: relative; }
+        .char-btn:hover { transform: scale(1.1); z-index: 10; border-color: #bdc3c7;}
+        .char-btn.active { border-color: #3498db; background: #1e272e; box-shadow: 0 0 20px rgba(52, 152, 219, 0.7); transform: scale(1.15); z-index: 10;}
+
+        #difficulty-container { display: flex; gap: 5px; justify-content: center; align-items: center; background: #2f3542; padding: 6px 12px; border-radius: 20px; border: 1px solid #57606f; box-shadow: 0 5px 15px rgba(0,0,0,0.5); pointer-events: auto; margin: 0 auto; width: fit-content;}
+        .diff-btn { background: transparent; color: #bdc3c7; border: 1px solid transparent; border-radius: 12px; padding: 6px 15px; font-family: 'Righteous'; transition: all 0.2s; font-size: 14px; letter-spacing: 1px;}
+        .diff-btn:hover { color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.5); }
+        .diff-btn.active { background: #f39c12; color: #000; border-color: #f1c40f; box-shadow: 0 0 10px rgba(243, 156, 18, 0.5); text-shadow: none; }
+
+        /* --- MAP SCREEN --- */
+        #map-screen { background: #12141c; align-items: center; justify-content: flex-start; padding-top: 20px; position: relative;}
+        .map-title { font-size: 40px; color: #f39c12; margin-bottom: 20px; z-index: 10;}
+        #map-container { position: relative; width: 100%; max-width: 500px; height: 600px; margin: 0 auto; background: #1e2532; border-radius: 25px; border: 1px solid #2f3640; overflow: hidden;}
+        #map-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .map-node { position: absolute; width: 50px; height: 50px; border-radius: 50%; background: #2f3542; border: 2px solid #57606f; display: flex; justify-content: center; align-items: center; font-size: 24px; z-index: 2; transform: translate(-50%, -50%); transition: all 0.2s; }
+        .map-node.boss { border-color: #f39c12; font-size: 30px; background: #3d2a1d;}
+        .map-node.active { border-color: #3498db; box-shadow: 0 0 20px #3498db; animation: pulseNode 1.5s infinite; }
+        .map-node.completed { filter: grayscale(100%) opacity(0.5); border-color: #2f3542;}
+        .map-node.locked { filter: opacity(0.5);}
+        @keyframes pulseNode { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.15); } 100% { transform: translate(-50%, -50%) scale(1); } }
+
+        /* --- MISC SCREENS --- */
+        #loot-screen { background: rgba(18, 20, 28, 0.95); align-items: center; justify-content: center; z-index: 200; }
+        .loot-header { font-size: 45px; color: #f1c40f; margin-bottom: 10px;}
+        .loot-sub { font-size: 18px; color: #bdc3c7; margin-bottom: 40px;}
+        .loot-container { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 40px; }
+        .loot-column { display: flex; flex-direction: column; align-items: center; gap: 15px;}
+        
+        #death-screen { background: #12141c; justify-content: center; align-items: center; z-index: 300;}
+        .death-title { font-size: 80px; color: #ff4757; text-shadow: 0 5px 15px rgba(255, 71, 87, 0.5); margin-bottom: 10px;}
+        .death-sub { font-size: 20px; color: #ecf0f1; margin-bottom: 40px;}
+
+        /* --- BUTTONS --- */
+        .btn-green { background: linear-gradient(to bottom, #2ecc71, #27ae60); color: #fff; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 10px rgba(46, 204, 113, 0.4); transition: transform 0.1s; z-index: 10; position: relative;}
+        .btn-green:active { transform: scale(0.95); }
+        .btn-grey { background: linear-gradient(to bottom, #7f8c8d, #34495e); color: #fff; border: none; padding: 12px 30px; border-radius: 8px; font-weight: bold; }
+        .btn-top { background: #2f3542; color: #fff; border: 1px solid #57606f; padding: 8px 12px; border-radius: 12px; font-family: 'Nunito'; font-weight: bold; transition: background 0.2s;}
+        .btn-top:hover { background: #f39c12; color: #000; border-color: #f39c12; }
+
+        /* --- GAME SCREEN --- */
+        #game-screen { background: #181a21; }
+        #top-bar { background: #111; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #bdc3c7; z-index: 30; position: relative;}
+        .top-btn-group { display: flex; gap: 10px; align-items: center;}
+        
+        #battle-area { flex: 1; display: flex; flex-direction: column; position: relative; padding: 20px 5%; }
+        #battlefield { flex: 1; display: flex; justify-content: space-between; align-items: center; position: relative; }
+        .turn-indicator { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-family: 'Righteous'; font-size: 24px; color: #2ecc71; letter-spacing: 2px; z-index: 10;}
+
+        .team-container { display: flex; gap: 20px; }
+        .battle-entity { display: flex; flex-direction: column; align-items: center; width: 180px; position: relative;}
+        .entity-sprite-box { background: linear-gradient(to bottom, #2c3e50, #1a252f); border: 2px solid #34495e; border-radius: 24px; width: 140px; height: 140px; display: flex; justify-content: center; align-items: center; font-size: 100px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); position: relative; transition: all 0.2s ease; }
+        .player-box { border-color: #3498db; box-shadow: 0 0 30px rgba(52, 152, 219, 0.2); }
+        .enemy-box { border-color: #e74c3c; box-shadow: 0 0 30px rgba(231, 76, 60, 0.2); background: linear-gradient(to bottom, #4a2323, #2d1313);}
+        .selected-target { border-color: #f1c40f !important; box-shadow: 0 0 30px #f1c40f !important; transform: translateY(-10px); }
+
+        .entity-info { background: #1e2532; border: 1px solid #34495e; border-radius: 12px; width: 100%; padding: 10px; margin-top: 15px; text-align: center; z-index: 5;}
+        .entity-name { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
+        .player-name { color: #ecf0f1; } .enemy-name { color: #ff4757; }
+        
+        .hp-bar-bg { background: #000; height: 16px; border-radius: 8px; width: 100%; position: relative; overflow: hidden; border: 1px solid #555;}
+        .hp-bar-fill { background: #ff4757; height: 100%; width: 100%; transition: width 0.3s ease; }
+        .hp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 10px; font-weight: bold; color: #fff; z-index: 2;}
+
+        .intent-badge { position: absolute; top: -15px; right: -15px; background: #111; border: 2px solid #ff4757; border-radius: 20px; padding: 5px 10px; font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 5px; z-index: 10;}
+        .block-badge { position: absolute; bottom: -10px; right: -10px; background: #3498db; border: 2px solid #fff; border-radius: 50%; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; z-index: 10;}
+
+        .hud-layer { width: 100%; display: flex; justify-content: center; align-items: center; padding: 10px 0; z-index: 25; pointer-events: none; position: relative;}
+        .energy-orb-container { pointer-events: auto; position: absolute; left: 5%; bottom: -15px; z-index: 40;}
+        .energy-orb { width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #f1c40f, #e67e22, #d35400); border: 4px solid #fff; box-shadow: 0 0 30px rgba(243, 156, 18, 0.6), inset 0 0 15px rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; font-family: 'Righteous'; font-size: 32px; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
+
+        .end-turn-btn { pointer-events: auto; background: linear-gradient(to bottom, #4b6584, #2c3e50); border: 2px solid #778ca3; color: #fff; font-family: 'Righteous'; font-size: 20px; padding: 15px 50px; border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.6); transition: all 0.2s;}
+        .end-turn-btn:hover { filter: brightness(1.2); transform: scale(1.05); }
+
+        #hand-container { height: 280px; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 10px; gap: -30px; background: #111; border-top: 1px solid #333; perspective: 1000px; z-index: 20; position: relative; }
+        .card { width: 170px; height: 240px; background: #1a1a1a; border-radius: 20px; display: flex; flex-direction: column; box-shadow: 0 10px 20px rgba(0,0,0,0.7); transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), margin 0.2s; position: relative; overflow: hidden; margin-left: -20px; border: 2px solid #555; }
+        .card.attack { border-color: #ff4757; } .card.skill { border-color: #3498db; } .card.power { border-color: #9b59b6; box-shadow: 0 0 15px rgba(155, 89, 182, 0.5);}
+        .card-header { display: flex; background: rgba(0,0,0,0.8); padding: 5px; align-items: center; border-bottom: 1px solid #333; position: relative; z-index: 2;}
+        .card-cost { width: 30px; height: 30px; border-radius: 50%; background: #f1c40f; color: #000; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 18px; box-shadow: inset -2px -2px 5px rgba(0,0,0,0.5); margin-right: 5px; }
+        .card-title { font-weight: bold; font-size: 13px; flex: 1; text-align: center; color: #fff;}
+        .card-art { flex: 1; display: flex; justify-content: center; align-items: center; font-size: 60px; pointer-events: none; position: relative; z-index: 2;}
+        .card-desc { height: 70px; padding: 10px; text-align: center; font-size: 12px; color: #bdc3c7; border-top: 1px solid #333; display: flex; align-items: center; justify-content: center; line-height: 1.3; background: rgba(17, 17, 17, 0.9); position: relative; z-index: 2;}
+
+        #hand-container .card:hover { transform: translateY(-30px) scale(1.1); z-index: 10; margin-left: 5px; margin-right: 25px; border-color: #fff; }
+        .card-ready { transform: translateY(-100px) scale(1.15) !important; z-index: 50 !important; margin-left: 10px !important; margin-right: 30px !important; box-shadow: 0 20px 40px rgba(0,0,0,0.9) !important; border-color: #fff !important; }
+
+        /* --- EFFECTS & ANIMATIONS --- */
+        .ambient-effect { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: 1; }
+        .effect-smoke::before { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 100%, rgba(255, 60, 0, 0.3) 0%, rgba(80, 20, 20, 0.6) 50%, transparent 100%); filter: blur(5px); animation: smokePulse 3s infinite alternate ease-in-out; }
+        @keyframes smokePulse { 0% { transform: scale(1) translateY(10px); opacity: 0.6; } 100% { transform: scale(1.2) translateY(-20px); opacity: 1; } }
+        .effect-water::before { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(41, 128, 185, 0.5) 0%, transparent 100%); animation: waterRise 3s infinite alternate ease-in-out; }
+        .effect-water::after { content: ''; position: absolute; bottom: -20px; left: 30%; width: 12px; height: 12px; background: rgba(255, 255, 255, 0.6); border-radius: 50%; box-shadow: 30px 20px 0 -3px rgba(255,255,255,0.5), -20px 40px 0 2px rgba(255,255,255,0.4); animation: bubblesRise 4s infinite linear; }
+        @keyframes waterRise { 0% { transform: scaleY(0.8); } 100% { transform: scaleY(1.2); } }
+        @keyframes bubblesRise { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-160px); opacity: 0; } }
+        .effect-soil::before { content: ''; position: absolute; bottom: -50px; left: 0; width: 100%; height: 200%; background-image: radial-gradient(circle, rgba(139, 69, 19, 0.5) 3px, transparent 4px), radial-gradient(circle, rgba(160, 82, 45, 0.4) 4px, transparent 5px); background-size: 40px 50px, 60px 70px; background-position: 0 0, 20px 30px; animation: soilFloat 5s infinite linear; }
+        @keyframes soilFloat { 0% { transform: translateY(0); } 100% { transform: translateY(-70px); } }
+        .effect-wind::before, .effect-wind::after { content: ''; position: absolute; top: 20%; left: -100%; width: 50%; height: 3px; background: rgba(255, 255, 255, 0.6); box-shadow: 0 0 10px rgba(255,255,255,0.8); border-radius: 5px; animation: windSlice 1.5s infinite linear; }
+        .effect-wind::after { top: 60%; width: 70%; height: 2px; animation-duration: 2.2s; animation-delay: 0.7s; }
+        @keyframes windSlice { 0% { left: -100%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { left: 200%; opacity: 0; } }
+
+        @keyframes idleBreathe { 0% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(1.05); } 100% { transform: translateY(0) scale(1); } }
+        .anim-idle { animation: idleBreathe 2.5s infinite ease-in-out; display: inline-block; will-change: transform; }
+        @keyframes deathFall { 0% { transform: rotate(0deg) scale(1); opacity: 1; filter: grayscale(0%);} 100% { transform: rotate(90deg) translateY(30px) scale(0.8); opacity: 0.5; filter: grayscale(100%) brightness(0.4);} }
+        .anim-dead { animation: deathFall 0.6s forwards ease-in; display: inline-block; }
+        @keyframes powerUpGlow { 0% { filter: drop-shadow(0 0 0px #9b59b6) brightness(1); transform: scale(1); } 50% { filter: drop-shadow(0 0 40px #9b59b6) brightness(1.5); transform: scale(1.15); } 100% { filter: drop-shadow(0 0 0px #9b59b6) brightness(1); transform: scale(1); } }
+        .anim-power { animation: powerUpGlow 0.6s ease-in-out; display: inline-block; }
+
+        .emotion-box { position: absolute; top: -25px; right: -25px; font-size: 40px; opacity: 0; z-index: 30; pointer-events: none; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.8)); }
+        .emotion-box.show { animation: floatEmotion 0.8s ease-in-out forwards; }
+        @keyframes floatEmotion { 0% { transform: scale(0.5) translateY(20px); opacity: 0; } 20% { transform: scale(1.3) translateY(-10px); opacity: 1; } 80% { transform: scale(1) translateY(0); opacity: 1; } 100% { transform: scale(0.8) translateY(-20px); opacity: 0; } }
+
+        .floating-text { position: absolute; font-family: 'Righteous', cursive; font-size: 35px; font-weight: bold; pointer-events: none; z-index: 150; animation: floatUpText 1s ease-out forwards; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000; }
+        @keyframes floatUpText { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-60px) scale(1.3); opacity: 0; } }
+
+        @keyframes damageShake { 0% { transform: translateX(0) scale(1); filter: brightness(1) drop-shadow(0 0 0px red); } 25% { transform: translateX(-15px) scale(0.9); filter: brightness(2) drop-shadow(0 0 30px red); } 50% { transform: translateX(15px) scale(0.9); filter: brightness(2) drop-shadow(0 0 30px red); } 75% { transform: translateX(-15px) scale(0.9); filter: brightness(2) drop-shadow(0 0 30px red); } 100% { transform: translateX(0) scale(1); filter: brightness(1) drop-shadow(0 0 0px red); } }
+        .anim-damage { animation: damageShake 0.4s ease-in-out; }
+        
+        @keyframes blockFlash { 0% { filter: drop-shadow(0 0 0 #3498db) scale(1); } 50% { filter: drop-shadow(0 0 50px #3498db) brightness(1.8); transform: scale(1.1); } 100% { filter: drop-shadow(0 0 0 #3498db) scale(1); } }
+        .anim-block { animation: blockFlash 0.5s ease-in-out; }
+        
+        @keyframes drawCard { 0% { transform: translateY(300px) rotate(20deg) scale(0.5); opacity: 0; } 80% { transform: translateY(-20px) rotate(-5deg) scale(1.05); opacity: 1; } 100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; } }
+        .anim-draw { animation: drawCard 0.4s ease-out forwards; }
+        
+        .particle { position: absolute; font-size: 30px; pointer-events: none; z-index: 1000; filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8)); }
+
+        @media (max-width: 768px) {
+            .title-layout { flex-direction: column; gap: 20px; }
+            .vs-text { font-size: 50px; margin: 0;} .game-title { font-size: 40px; margin-top: 20px;}
+            .hero-portrait, .boss-portrait { width: 140px; padding: 10px; border-radius: 20px;} .portrait-img { font-size: 70px; }
+            #top-bar { flex-direction: column; gap: 10px; padding: 10px; align-items: center; }
+            .top-btn-group { width: 100%; justify-content: space-between; }
+            
+            #battle-area { padding: 10px 2%; gap: 10px; }
+            #battlefield { flex-direction: column; justify-content: flex-start; gap: 10px; }
+            .turn-indicator { position: relative; top: 0; margin-bottom: -5px; font-size: 16px;}
+            
+            #enemy-team { order: 1; width: 100%; justify-content: center; } 
+            #player-team { order: 2; width: 100%; justify-content: center; }
+
+            .team-container { gap: 10px; }
+            .battle-entity { width: auto; max-width: 140px; flex-direction: column; gap: 5px; }
+            .entity-sprite-box { width: 75px; height: 75px; font-size: 55px; border-radius: 16px; }
+            .entity-info { margin-top: 0; padding: 6px; border-radius: 8px;}
+            .entity-name { font-size: 12px; margin-bottom: 2px;}
+            .hp-text { font-size: 9px; }
+            
+            .hud-layer { padding: 5px 0; }
+            .energy-orb-container { bottom: 0; left: 10px;}
+            .energy-orb { width: 60px; height: 60px; font-size: 20px; border-width: 2px;}
+            .end-turn-btn { padding: 10px 30px; font-size: 14px;}
+
+            #hand-container { height: 150px; gap: -20px; }
+            .card { width: 90px; height: 140px; margin-left: -15px; border-width: 1px; border-radius: 12px; }
+            .card-header { padding: 3px; } .card-cost { width: 18px; height: 18px; font-size: 11px; margin-right: 2px;}
+            .card-title { font-size: 7px; } .card-art { font-size: 30px; } .card-desc { height: 40px; font-size: 7px; padding: 3px; }
+            #hand-container .card:hover { transform: translateY(-15px) scale(1.1); margin-left: 0; margin-right: 5px; }
+            .card-ready { transform: translateY(-40px) scale(1.1) !important; margin-left: 0 !important; margin-right: 10px !important;}
+            #demon-cursor { font-size: 50px; }
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <div id="demon-cursor">🖐️</div>
+
+    <!-- TITLE SCREEN -->
+    <div id="title-screen" class="screen" style="display:flex;">
+        <h1 class="game-title">Deck of Doom</h1>
+        <div class="title-layout">
+            <div class="hero-portrait">
+                <div class="ambient-effect effect-wind"></div>
+                <div class="portrait-img">🗡️</div><div class="portrait-name">Heroes</div>
+            </div>
+            <div class="vs-text">VS</div>
+            <div class="boss-portrait">
+                <div class="ambient-effect effect-smoke"></div>
+                <div class="portrait-img">👹</div><div class="portrait-name">The Spire</div>
+            </div>
+        </div>
+        <div class="title-buttons">
+            <button class="btn-play" onclick="openSetup('1v1')">Single Player</button>
+            <button class="btn-play highlight" onclick="openSetup('2v2')">2 Player Mode</button>
+            <button class="btn-play disabled" onclick="alert('Online Multiplayer Servers are currently Offline. Coming Soon!')">Multiplayer / Online</button>
+        </div>
+    </div>
+
+    <!-- HERO SETUP SCREEN -->
+    <div id="setup-screen" class="screen">
+        <div class="setup-container">
+            <h2 class="setup-header">HERO SETUP</h2>
+            
+            <div style="color:#bdc3c7; font-weight:bold; font-size: 14px; text-align: left;">ENTER NAME:</div>
+            <input type="text" id="player-name-input" class="name-input" placeholder="Wizard" autocomplete="off" maxlength="12">
+            
+            <div style="color:#bdc3c7; font-weight:bold; font-size: 14px; text-align: left; margin-top: 5px;">SELECT CLASS:</div>
+            <div class="char-select-row" id="char-select-row">
+                <div class="char-btn active" onclick="selectChar(this, '🧙‍♂️', 'Wizard')">🧙‍♂️</div>
+                <div class="char-btn" onclick="selectChar(this, '🧝‍♀️', 'Elf')">🧝‍♀️</div>
+                <div class="char-btn" onclick="selectChar(this, '🥷', 'Ninja')">🥷</div>
+                <div class="char-btn" onclick="selectChar(this, '🧛', 'Vampire')">🧛</div>
+                <div class="char-btn" onclick="selectChar(this, '🤖', 'Cyborg')">🤖</div>
+            </div>
+
+            <div style="color:#bdc3c7; font-weight:bold; font-size: 14px; text-align: left; margin-top: 10px;">DIFFICULTY:</div>
+            <div id="difficulty-container">
+                <button class="diff-btn" onclick="setDifficulty(0.7, this)">EASY</button>
+                <button class="diff-btn active" onclick="setDifficulty(1.0, this)">NORMAL</button>
+                <button class="diff-btn" onclick="setDifficulty(1.5, this)">HARD</button>
+            </div>
+
+            <button class="btn-play highlight" style="width:100%; margin-top:10px;" onclick="confirmSetup()">ENTER THE SPIRE</button>
+            <button class="btn-top" style="margin: 0 auto; margin-top: 5px; width: fit-content; border: none; background: transparent; text-decoration: underline;" onclick="showScreen('title-screen')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="map-screen" class="screen">
+        <div style="width:100%; display:flex; justify-content:flex-start; padding: 10px;">
+            <button class="btn-top" onclick="showScreen('title-screen')">🔙 Back to Title</button>
+        </div>
+        <h2 class="map-title">THE SPIRE</h2>
+        <div style="font-size: 12px; color: #bdc3c7; margin-bottom: 10px;">⚔️ Battle &nbsp; 🎁 Treasure &nbsp; 👹 Boss</div>
+        <div id="map-container"><svg id="map-svg"></svg><div id="map-nodes"></div></div>
+    </div>
+
+    <div id="loot-screen" class="screen">
+        <h2 class="loot-header">CARD REWARD</h2>
+        <div class="loot-sub">Choose one card to add to your deck.</div>
+        <div class="loot-container" id="loot-options"></div>
+        <button class="btn-grey" onclick="skipLoot()">SKIP REWARD</button>
+    </div>
+
+    <div id="death-screen" class="screen">
+        <h1 class="death-title">YOU DIED</h1>
+        <div class="death-sub">Your journey ends here.</div>
+        <button class="btn-green" style="font-size: 20px; padding: 15px 40px;" onclick="showScreen('title-screen')">RESTART RUN</button>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div id="top-bar">
+            <div class="top-btn-group">
+                <button class="btn-top" onclick="surrender()">🔙 Abandon</button>
+            </div>
+            
+            <div style="display:flex; gap: 15px;">
+                <div id="floor-display" style="font-weight:bold; color: #fff;">FLOOR 1</div>
+                <div>Deck: <span id="deck-count">10</span></div>
+            </div>
+        </div>
+
+        <div id="battle-area">
+            <div class="turn-indicator" id="turn-indicator">PLAYER TURN</div>
+            
+            <div id="battlefield">
+                <div class="team-container" id="player-team">
+                    <div class="battle-entity" id="player-container" onclick="selectTarget('player', 'player')">
+                        <div class="entity-sprite-box player-box" id="player-sprite">
+                            <div class="ambient-effect effect-wind"></div>
+                            <span class="emoji-char anim-idle" data-orig="🧙‍♂️" style="position:relative; z-index:5;">🧙‍♂️</span>
+                            <div class="block-badge" id="player-block-badge" style="display:none">0</div>
+                        </div>
+                        <div class="entity-info"><div class="entity-name player-name">Wizard</div><div class="hp-bar-bg"><div class="hp-bar-fill" id="player-hp-bar"></div><div class="hp-text"><span id="player-hp">80</span> / <span id="player-maxhp">80</span></div></div></div>
+                    </div>
+                    <div class="battle-entity" id="player2-container" style="display:none;" onclick="selectTarget('player2', 'player')">
+                        <div class="entity-sprite-box player-box" id="player2-sprite">
+                            <div class="ambient-effect effect-soil"></div>
+                            <span class="emoji-char anim-idle" data-orig="🛡️" style="position:relative; z-index:5;">🛡️</span>
+                            <div class="block-badge" id="player2-block-badge" style="display:none">0</div>
+                        </div>
+                        <div class="entity-info"><div class="entity-name player-name">Knight</div><div class="hp-bar-bg"><div class="hp-bar-fill" id="player2-hp-bar"></div><div class="hp-text"><span id="player2-hp">100</span> / <span id="player2-maxhp">100</span></div></div></div>
+                    </div>
+                </div>
+                
+                <div class="team-container" id="enemy-team">
+                    <div class="battle-entity" id="enemy-container" onclick="selectTarget('enemy', 'enemy')">
+                        <div class="entity-sprite-box enemy-box" id="enemy-sprite">
+                            <div class="ambient-effect effect-smoke"></div>
+                            <span class="emoji-char anim-idle" data-orig="👹" style="position:relative; z-index:5;">👹</span>
+                            <div class="intent-badge" id="enemy-intent">⚔️ 0</div><div class="block-badge" id="enemy-block-badge" style="display:none">0</div>
+                        </div>
+                        <div class="entity-info"><div class="entity-name enemy-name" id="enemy-name">Hexaghost</div><div class="hp-bar-bg"><div class="hp-bar-fill" id="enemy-hp-bar"></div><div class="hp-text"><span id="enemy-hp">120</span> / <span id="enemy-maxhp">120</span></div></div></div>
+                    </div>
+                    <div class="battle-entity" id="enemy2-container" style="display:none;" onclick="selectTarget('enemy2', 'enemy')">
+                        <div class="entity-sprite-box enemy-box" id="enemy2-sprite">
+                            <div class="ambient-effect effect-water"></div>
+                            <span class="emoji-char anim-idle" data-orig="🤢" style="position:relative; z-index:5;">🤢</span>
+                            <div class="intent-badge" id="enemy2-intent">⚔️ 0</div><div class="block-badge" id="enemy2-block-badge" style="display:none">0</div>
+                        </div>
+                        <div class="entity-info"><div class="entity-name enemy-name" id="enemy2-name">Slime Boss</div><div class="hp-bar-bg"><div class="hp-bar-fill" id="enemy2-hp-bar"></div><div class="hp-text"><span id="enemy2-hp">100</span> / <span id="enemy2-maxhp">100</span></div></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hud-layer">
+                <div class="energy-orb-container"><div class="energy-orb" id="energy-text">3/3</div></div>
+                <button class="end-turn-btn" onclick="endTurn()">END TURN</button>
+            </div>
+        </div>
+        
+        <div id="hand-container"></div>
+    </div>
+
+    <script>
+        const dCursor = document.getElementById('demon-cursor');
+        let isDragging = false;
+        let currentHoverTarget = null;
+
+        function updateCursorPosition(e) {
+            dCursor.style.display = 'block';
+            const x = e.touches ? e.touches[0].clientX : e.clientX;
+            const y = e.touches ? e.touches[0].clientY : e.clientY;
+            dCursor.style.left = x + 'px';
+            dCursor.style.top = y + 'px';
+        }
+
+        function checkCursorHover() {
+            if(isDragging) return;
+            if(currentHoverTarget && currentHoverTarget.closest('button, .card, .map-node, .battle-entity, .diff-btn, .btn-play, .btn-top, .btn-green, .btn-grey, .char-btn')) {
+                dCursor.innerText = '👆';
+            } else {
+                dCursor.innerText = '🖐️';
+            }
+        }
+
+        document.addEventListener('mousemove', updateCursorPosition);
+        document.addEventListener('touchmove', updateCursorPosition, {passive: true});
+        document.addEventListener('mouseover', (e) => { currentHoverTarget = e.target; checkCursorHover(); });
+        document.addEventListener('mousedown', () => { isDragging = true; dCursor.innerText = '✊'; dCursor.classList.add('clicking'); });
+        document.addEventListener('touchstart', (e) => { isDragging = true; dCursor.innerText = '✊'; dCursor.classList.add('clicking'); updateCursorPosition(e); }, {passive: true});
+        document.addEventListener('mouseup', () => { isDragging = false; dCursor.innerText = '🖐️'; dCursor.classList.remove('clicking'); checkCursorHover(); });
+        document.addEventListener('touchend', () => { isDragging = false; dCursor.innerText = '🖐️'; dCursor.classList.remove('clicking'); checkCursorHover(); });
+        document.addEventListener('mouseleave', () => dCursor.style.display = 'none');
+        document.addEventListener('mouseenter', () => dCursor.style.display = 'block');
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            document.getElementById(screenId).style.display = 'flex';
+        }
+        function surrender() { if(confirm("Abandon current battle and return to Map?")) { showScreen('map-screen'); } }
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const os = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            os.connect(gain); gain.connect(audioCtx.destination);
+            if (type === 'attack') { os.type = 'sawtooth'; os.frequency.setValueAtTime(150, audioCtx.currentTime); os.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.2); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2); os.start(); os.stop(audioCtx.currentTime + 0.2); }
+            else if (type === 'block') { os.type = 'sine'; os.frequency.setValueAtTime(300, audioCtx.currentTime); os.frequency.linearRampToValueAtTime(500, audioCtx.currentTime + 0.2); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2); os.start(); os.stop(audioCtx.currentTime + 0.2); }
+            else if (type === 'power') { os.type = 'square'; os.frequency.setValueAtTime(400, audioCtx.currentTime); os.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.4); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.4); os.start(); os.stop(audioCtx.currentTime + 0.4); }
+            else if (type === 'draw') { os.type = 'triangle'; os.frequency.setValueAtTime(600, audioCtx.currentTime); os.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); os.start(); os.stop(audioCtx.currentTime + 0.1); }
+            else if (type === 'error') { os.type = 'sawtooth'; os.frequency.setValueAtTime(100, audioCtx.currentTime); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15); os.start(); os.stop(audioCtx.currentTime + 0.15); }
+        }
+
+        const ALL_CARDS = [
+            { id: 1, name: "Strike", cost: 1, type: "attack", val: 6, desc: "Deal 6 damage.", img: "⚔️" },
+            { id: 2, name: "Defend", cost: 1, type: "skill", val: 5, desc: "Gain 5 Block.", img: "🛡️" },
+            { id: 3, name: "Twin Strike", cost: 1, type: "attack", val: 4, hits: 2, desc: "Deal 4 damage 2 times.", img: "🗡️🗡️" },
+            { id: 4, name: "Bash", cost: 2, type: "attack", val: 8, block: 4, desc: "Deal 8 damage. Gain 4 Block.", img: "🔨" },
+            { id: 5, name: "Apocalypse", cost: 2, type: "power", val: 3, desc: "Gain 3 Strength.", img: "🌀" },
+            { id: 6, name: "Quick Cast", cost: 0, type: "skill", val: 3, desc: "Gain 3 Block. Draw 1 card.", img: "⚡" },
+            { id: 7, name: "Bandage Up", cost: 1, type: "skill", heal: 8, desc: "Heal 8 HP.", img: "🩹" },
+            { id: 8, name: "Adrenaline", cost: 0, type: "skill", energy: 2, draw: 2, desc: "Gain 2 Energy. Draw 2 cards.", img: "💉" },
+            { id: 9, name: "Whirlwind", cost: 2, type: "attack", val: 5, aoe: true, desc: "Deal 5 damage to ALL enemies.", img: "🌪️" },
+            { id: 10, name: "Demon Form", cost: 3, type: "power", val: 5, desc: "Gain 5 Strength.", img: "👿" },
+            { id: 11, name: "Shiv", cost: 0, type: "attack", val: 4, desc: "Deal 4 damage.", img: "🗡️" },
+            { id: 12, name: "Fortify", cost: 2, type: "skill", val: 15, desc: "Gain 15 Block.", img: "🏰" },
+            { id: 13, name: "Bloodletting", cost: 0, type: "skill", energy: 2, selfDmg: 4, desc: "Lose 4 HP. Gain 2 Energy.", img: "🩸" }
+        ];
+
+        const ENEMIES = [
+            { name: "Cultist", img: "🦅", baseHp: 40, minDmg: 5, maxDmg: 7 },
+            { name: "Jaw Worm", img: "🐛", baseHp: 44, minDmg: 6, maxDmg: 9 },
+            { name: "Slime Boss", img: "🤢", baseHp: 100, minDmg: 8, maxDmg: 12 },
+            { name: "Hexaghost", img: "👹", baseHp: 120, minDmg: 4, maxDmg: 18 } 
+        ];
+
+        const MAP_DATA = [
+            { id: 0, row: 0, col: 1, type: 'battle', enemy: 0, icon: "⚔️" }, 
+            { id: 1, row: 1, col: 0, type: 'battle', enemy: 1, icon: "⚔️" },
+            { id: 2, row: 1, col: 2, type: 'battle', enemy: 1, icon: "⚔️" },
+            { id: 3, row: 2, col: 1, type: 'treasure', icon: "🎁" },
+            { id: 4, row: 3, col: 0, type: 'battle', enemy: 2, icon: "⚔️" },
+            { id: 5, row: 3, col: 2, type: 'treasure', icon: "🎁" },
+            { id: 6, row: 4, col: 1, type: 'boss', enemy: 3, icon: "👹" }
+        ];
+        const MAP_CONNECTIONS = [ [0,1], [0,2], [1,3], [2,3], [3,4], [3,5], [4,6], [5,6] ];
+
+        let state = {
+            mode: '1v1', currentNodeId: 0, visitedNodes: [], diffMult: 1.0,
+            activePlayer: 'player', activeEnemy: 'enemy',
+            player: { name: 'Wizard', emoji: '🧙‍♂️', hp: 80, maxHp: 80, block: 0, energy: 3, maxEnergy: 3, str: 0 },
+            player2: { hp: 100, maxHp: 100, block: 0, str: 0 },
+            enemy: { baseHp: 40, hp: 40, maxHp: 40, intent: 0, str: 0 },
+            enemy2: { baseHp: 40, hp: 40, maxHp: 40, intent: 0, str: 0 },
+            deck: [], hand: [], discard: []
+        };
+        let isPlayerTurn = true;
+
+        // --- SETUP SCREEN LOGIC ---
+        let setupData = { emoji: '🧙‍♂️', defaultName: 'Wizard' };
+
+        function openSetup(mode) {
+            state.mode = mode;
+            showScreen('setup-screen');
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function selectChar(el, emoji, defName) {
+            document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            setupData.emoji = emoji;
+            setupData.defaultName = defName;
+            document.getElementById('player-name-input').placeholder = defName;
+        }
+
+        function setDifficulty(val, btn) {
+            state.diffMult = val;
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function confirmSetup() {
+            let inputName = document.getElementById('player-name-input').value.trim();
+            state.player.name = inputName !== "" ? inputName : setupData.defaultName;
+            state.player.emoji = setupData.emoji;
+            
+            // Inject selected data into battle UI
+            const pSpan = document.querySelector('#player-sprite span.emoji-char');
+            pSpan.dataset.orig = state.player.emoji;
+            pSpan.innerText = state.player.emoji;
+            document.querySelector('#player-container .player-name').innerText = state.player.name;
+
+            startGame();
+        }
+
+        // --- GAME LOGIC ---
+        function getCardEffectClass(type) {
+            if (type === 'attack') return 'effect-smoke';
+            if (type === 'skill') return 'effect-water';
+            return 'effect-soil';
+        }
+
+        function renderMap() {
+            showScreen('map-screen'); 
+            const container = document.getElementById('map-nodes'); const svg = document.getElementById('map-svg');
+            container.innerHTML = ''; svg.innerHTML = '';
+            
+            const rows = 5; const cols = 3;
+            const w = container.parentElement.clientWidth; const h = container.parentElement.clientHeight;
+            const rowStep = h / (rows + 1); const colStep = w / (cols + 1);
+            let nodeElements = {};
+
+            MAP_DATA.forEach(node => {
+                const el = document.createElement('div');
+                let isCurrent = node.id === state.currentNodeId; let isVisited = state.visitedNodes.includes(node.id);
+                let isAvailable = isCurrent || MAP_CONNECTIONS.some(c => c[0] === state.currentNodeId && c[1] === node.id);
+                
+                el.className = `map-node ${node.type} ${isCurrent ? 'active' : ''} ${isVisited ? 'completed' : ''} ${!isAvailable && !isVisited ? 'locked' : ''}`;
+                el.innerHTML = node.icon;
+                
+                const topPos = h - (node.row + 1) * rowStep; const leftPos = (node.col + 1) * colStep;
+                el.style.top = `${topPos}px`; el.style.left = `${leftPos}px`;
+
+                if (isAvailable && !isVisited && !isCurrent) el.onclick = () => enterNode(node.id);
+                
+                container.appendChild(el); nodeElements[node.id] = { x: leftPos, y: topPos };
+            });
+
+            MAP_CONNECTIONS.forEach(conn => {
+                const n1 = nodeElements[conn[0]]; const n2 = nodeElements[conn[1]];
+                if(n1 && n2) {
+                    let isPathActive = state.visitedNodes.includes(conn[0]) && (state.visitedNodes.includes(conn[1]) || state.currentNodeId === conn[1]);
+                    let color = isPathActive ? '#3498db' : '#333'; let dash = isPathActive ? '' : 'stroke-dasharray="5,5"';
+                    svg.innerHTML += `<line x1="${n1.x}" y1="${n1.y}" x2="${n2.x}" y2="${n2.y}" stroke="${color}" stroke-width="3" ${dash} />`;
+                }
+            });
+        }
+
+        window.addEventListener('resize', () => { if(document.getElementById('map-screen').style.display === 'flex') renderMap(); });
+
+        function enterNode(nodeId) {
+            state.visitedNodes.push(state.currentNodeId); state.currentNodeId = nodeId;
+            const node = MAP_DATA.find(n => n.id === nodeId);
+            if (node.type === 'battle' || node.type === 'boss') { startBattle(node.enemy); } 
+            else if (node.type === 'treasure') { generateCombatLoot(); }
+        }
+
+        function generateCombatLoot() {
+            const container = document.getElementById('loot-options'); container.innerHTML = '';
+            const pool = [...ALL_CARDS]; shuffle(pool);
+            for(let i=0; i<3; i++) {
+                let item = pool[i]; let col = document.createElement('div'); col.className = 'loot-column';
+                let effectCls = getCardEffectClass(item.type);
+                col.innerHTML = `<div class="card ${item.type}"><div class="ambient-effect ${effectCls}"></div><div class="card-header"><div class="card-cost">${item.cost}</div><div class="card-title">${item.name}</div></div><div class="card-art">${item.img}</div><div class="card-desc">${item.desc}</div></div><button class="btn-green" onclick="takeCard(${item.id})">TAKE CARD</button>`;
+                container.appendChild(col);
+            }
+            showScreen('loot-screen');
+        }
+
+        function takeCard(cardId) { const card = ALL_CARDS.find(c => c.id === cardId); if(card) state.deck.push({...card}); completeNode(); }
+        function skipLoot() { completeNode(); }
+        function completeNode() {
+            const node = MAP_DATA.find(n => n.id === state.currentNodeId);
+            if(node.type === 'boss') { alert("VICTORY! You conquered The Spire."); showScreen('title-screen'); } else { renderMap(); }
+        }
+
+        function startGame() {
+            state.currentNodeId = 0; state.visitedNodes = [];
+            
+            // Keep user identity intact
+            state.player = { name: state.player.name, emoji: state.player.emoji, hp: 80, maxHp: 80, block: 0, energy: 3, maxEnergy: 3, str: 0 };
+            if (state.mode === '2v2') state.player2 = { hp: 100, maxHp: 100, block: 0, str: 0 }; 
+            
+            let baseDeck = []; 
+            for(let i=0; i<4; i++) baseDeck.push({...ALL_CARDS[0]}); 
+            for(let i=0; i<4; i++) baseDeck.push({...ALL_CARDS[1]}); 
+            baseDeck.push({...ALL_CARDS[3]}); 
+            
+            state.deck = [...baseDeck];
+            if(state.mode === '2v2') { state.deck = [...baseDeck, ...baseDeck]; } 
+            
+            document.getElementById('player2-container').style.display = state.mode === '2v2' ? 'flex' : 'none';
+            document.getElementById('enemy2-container').style.display = state.mode === '2v2' ? 'flex' : 'none';
+
+            renderMap();
+        }
+
+        function selectTarget(key, type) {
+            if (state[key] && state[key].hp <= 0) return; 
+            if (type === 'player') {
+                state.activePlayer = key;
+                document.getElementById('player-sprite').classList.remove('selected-target');
+                document.getElementById('player2-sprite').classList.remove('selected-target');
+                document.getElementById(key+'-sprite').classList.add('selected-target');
+            } else {
+                state.activeEnemy = key;
+                document.getElementById('enemy-sprite').classList.remove('selected-target');
+                document.getElementById('enemy2-sprite').classList.remove('selected-target');
+                document.getElementById(key+'-sprite').classList.add('selected-target');
+            }
+        }
+
+        function getPrimaryTarget(type) {
+            if (type === 'attack') {
+                let targetKey = state.activeEnemy;
+                if (state[targetKey].hp <= 0) {
+                    targetKey = targetKey === 'enemy' ? 'enemy2' : 'enemy';
+                    if (state.mode === '1v1' || state[targetKey].hp <= 0) return null;
+                }
+                return { id: targetKey + '-sprite', data: state[targetKey], key: targetKey };
+            } else {
+                let targetKey = state.activePlayer;
+                if (state[targetKey].hp <= 0) {
+                    targetKey = targetKey === 'player' ? 'player2' : 'player';
+                    if (state.mode === '1v1' || state[targetKey].hp <= 0) return null;
+                }
+                return { id: targetKey + '-sprite', data: state[targetKey], key: targetKey };
+            }
+        }
+
+        function autoSelectAliveTargets() {
+            if (state.player.hp <= 0 && state.mode === '2v2' && state.player2.hp > 0) selectTarget('player2', 'player');
+            else if (state.player.hp > 0) selectTarget('player', 'player');
+
+            if (state.enemy.hp <= 0 && state.mode === '2v2' && state.enemy2.hp > 0) selectTarget('enemy2', 'enemy');
+            else if (state.enemy.hp > 0) selectTarget('enemy', 'enemy');
+        }
+
+        function swapEmojiFace(prefix, tempEmoji, duration) {
+            const span = document.querySelector(`#${prefix}-sprite span.emoji-char`);
+            if(!span || span.classList.contains('anim-dead')) return;
+            const orig = span.dataset.orig;
+            span.innerText = tempEmoji;
+            setTimeout(() => { if(!span.classList.contains('anim-dead')) { span.innerText = orig; } }, duration);
+        }
+
+        function startBattle(enemyIndex) {
+            const enemyData = ENEMIES[enemyIndex];
+            document.getElementById('floor-display').innerText = `FLOOR ${state.currentNodeId + 1}`;
+            
+            let enemyEffect = enemyData.name === "Slime Boss" ? "effect-water" : "effect-smoke";
+            document.getElementById('enemy-sprite').innerHTML = `<div class="ambient-effect ${enemyEffect}"></div><span class="emoji-char anim-idle" data-orig="${enemyData.img}" style="position:relative; z-index:5;">${enemyData.img}</span><div class="intent-badge" id="enemy-intent">⚔️ 0</div><div class="block-badge" id="enemy-block-badge" style="display:none">0</div>`;
+            document.getElementById('enemy-name').innerText = enemyData.name;
+
+            ['player', 'player2'].forEach(p => {
+                const span = document.querySelector(`#${p}-sprite span.emoji-char`);
+                if(span) {
+                    span.classList.remove('anim-dead');
+                    span.classList.add('anim-idle');
+                    span.innerText = span.dataset.orig;
+                }
+            });
+
+            let eHp = Math.floor(enemyData.baseHp * state.diffMult);
+            state.enemy = { baseHp: enemyData.baseHp, hp: eHp, maxHp: eHp, intent: 0, str: 0, minDmg: enemyData.minDmg, maxDmg: enemyData.maxDmg };
+            
+            if (state.mode === '2v2') {
+                const e2Data = ENEMIES[2]; 
+                let e2Hp = Math.floor(e2Data.baseHp * state.diffMult);
+                state.enemy2 = { baseHp: e2Data.baseHp, hp: e2Hp, maxHp: e2Hp, intent: 0, str: 0, minDmg: e2Data.minDmg, maxDmg: e2Data.maxDmg };
+            }
+
+            state.player.block = 0; state.player.str = 0; 
+            if(state.mode === '2v2') { state.player2.block = 0; state.player2.str = 0; }
+
+            state.deck = [...state.deck, ...state.hand, ...state.discard]; state.hand = []; state.discard = [];
+            
+            selectTarget('player', 'player'); selectTarget('enemy', 'enemy');
+
+            shuffle(state.deck); generateEnemyIntent(); showScreen('game-screen'); startTurn();
+        }
+
+        function shuffle(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
+
+        function drawCards(num) {
+            for(let i=0; i<num; i++) {
+                if (state.deck.length === 0) { if (state.discard.length === 0) break; state.deck = [...state.discard]; state.discard = []; shuffle(state.deck); }
+                state.hand.push(state.deck.pop()); setTimeout(() => playSound('draw'), i * 100);
+            }
+            renderHand(); updateUI();
+        }
+
+        function startTurn() { 
+            isPlayerTurn = true; state.player.energy = state.player.maxEnergy; 
+            state.player.block = 0; if(state.mode==='2v2') state.player2.block = 0; 
+            document.getElementById('turn-indicator').innerText = "PLAYER TURN"; document.getElementById('turn-indicator').style.color = "#2ecc71";
+            drawCards(5); 
+        }
+
+        function prepareCard(el, type) { if(!isPlayerTurn) return; el.classList.add('card-ready'); }
+        function cancelCard(el) { el.classList.remove('card-ready'); }
+
+        function releaseCard(index, event) {
+            if(!isPlayerTurn) return;
+            const cardEls = document.querySelectorAll('#hand-container .card'); const originalCardEl = cardEls[index];
+            if(!originalCardEl || !originalCardEl.classList.contains('card-ready')) return; 
+            
+            const cardData = state.hand[index];
+            if (state.player.energy < cardData.cost) { playSound('error'); cancelCard(originalCardEl); return; }
+
+            const target = getPrimaryTarget(cardData.type);
+            if (!target) { cancelCard(originalCardEl); return; }
+
+            const rect = originalCardEl.getBoundingClientRect();
+            state.player.energy -= cardData.cost; state.hand.splice(index, 1); state.discard.push(cardData);
+
+            const clone = originalCardEl.cloneNode(true);
+            clone.style.position = 'fixed'; clone.style.left = rect.left + 'px'; clone.style.top = rect.top + 'px';
+            clone.style.width = rect.width + 'px'; clone.style.height = rect.height + 'px'; clone.style.margin = '0';
+            clone.style.zIndex = '1000'; clone.style.transition = 'none'; clone.classList.remove('card-ready');
+            document.body.appendChild(clone);
+
+            renderHand(); updateUI();
+
+            const tRect = document.getElementById(target.id).getBoundingClientRect();
+            const targetX = tRect.left + tRect.width / 2 - rect.width / 2;
+            const targetY = tRect.top + tRect.height / 2 - rect.height / 2;
+
+            if (cardData.type === 'attack') {
+                showEmotion(state.activePlayer+'-container', '💢', 600);
+                swapEmojiFace(state.activePlayer, '😡', 500);
+                dashAttack(state.activePlayer+'-sprite', target.id, 300, 200);
+            } else {
+                showEmotion(target.key+'-container', '✨', 600);
+                swapEmojiFace(target.key, '🤩', 600);
+            }
+
+            clone.animate([
+                { transform: 'translate(0, 0) scale(1) rotate(0deg)', opacity: 1 },
+                { transform: `translate(${targetX - rect.left}px, ${targetY - rect.top}px) scale(0.3) rotate(${cardData.type === 'attack' ? 360 : -360}deg)`, opacity: 0.5 }
+            ], { duration: 300, easing: 'cubic-bezier(.5,0,.2,1)' }).onfinish = () => {
+                clone.remove(); applyCardEffect(cardData, target); 
+            };
+        }
+
+        function applyCardEffect(card, target) {
+            spawnThrowAnimation(target.id, target.id, card.img, 10, 300);
+            let hits = card.hits || 1;
+            let attackerData = state[state.activePlayer]; 
+
+            if (card.heal) {
+                playSound('power');
+                target.data.hp = Math.min(target.data.maxHp, target.data.hp + card.heal);
+                showFloatingText(target.id, '+' + card.heal, '#2ecc71');
+            }
+            if (card.energy) {
+                state.player.energy += card.energy;
+                showFloatingText(state.activePlayer+'-sprite', '+' + card.energy + ' Energy', '#f1c40f');
+            }
+            if (card.draw) {
+                drawCards(card.draw);
+            }
+            if (card.selfDmg) {
+                attackerData.hp = Math.max(0, attackerData.hp - card.selfDmg);
+                showFloatingText(state.activePlayer+'-sprite', '-' + card.selfDmg, '#ff4757');
+                triggerAnim(state.activePlayer+'-sprite', 'anim-damage');
+                swapEmojiFace(state.activePlayer, '😖', 400);
+            }
+
+            let executeHit = (hitNum) => {
+                let dmg = card.val ? card.val + attackerData.str : 0; 
+                
+                if (card.type === 'attack') {
+                    playSound('attack'); 
+
+                    if (card.aoe) {
+                         ['enemy', 'enemy2'].forEach(eKey => {
+                             if(state[eKey] && state[eKey].hp > 0) {
+                                 let tData = state[eKey];
+                                 let tId = eKey + '-sprite';
+                                 triggerAnim(tId, 'anim-damage');
+                                 createHitSpark(tId);
+                                 showEmotion(eKey+'-container', '😵', 600);
+                                 swapEmojiFace(eKey, '😖', 400);
+                                 tData.hp = Math.max(0, tData.hp - dmg);
+                                 showFloatingText(tId, '-' + dmg, '#ff4757');
+                             }
+                         });
+                    } else {
+                        triggerAnim(target.id, 'anim-damage'); 
+                        createHitSpark(target.id);
+                        showEmotion(target.key+'-container', '😵', 600);
+                        swapEmojiFace(target.key, '😖', 400);
+                        target.data.hp = Math.max(0, target.data.hp - dmg);
+                        showFloatingText(target.id, '-' + dmg, '#ff4757');
+                    }
+
+                    if(card.block) { playSound('block'); attackerData.block += card.block; showFloatingText(state.activePlayer+'-sprite', '+' + card.block, '#3498db');}
+                } else if (card.type === 'skill') {
+                    if(card.val) {
+                        playSound('block'); triggerAnim(target.id, 'anim-block'); target.data.block += card.val;
+                        showFloatingText(target.id, '+' + card.val, '#3498db');
+                    }
+                } else if (card.type === 'power') {
+                    if(card.val) {
+                        playSound('power'); target.data.str += card.val;
+                        showFloatingText(target.id, 'STR UP!', '#f1c40f');
+                        triggerAnim(target.id.replace('-sprite', '') + '-sprite span.emoji-char', 'anim-power');
+                    }
+                }
+                
+                autoSelectAliveTargets();
+                updateUI(); checkWin();
+                
+                if (hitNum < hits && (card.aoe ? (state.enemy.hp > 0 || (state.mode === '2v2' && state.enemy2.hp > 0)) : target.data.hp > 0)) {
+                    setTimeout(() => executeHit(hitNum + 1), 200);
+                }
+            };
+            
+            if (card.val !== undefined || card.type === 'attack') {
+                 executeHit(1);
+            } else {
+                 autoSelectAliveTargets();
+                 updateUI(); checkWin();
+            }
+        }
+
+        function endTurn() {
+            if(!isPlayerTurn) return;
+            isPlayerTurn = false; state.discard.push(...state.hand); state.hand = []; renderHand();
+            document.getElementById('turn-indicator').innerText = "ENEMY TURN"; document.getElementById('turn-indicator').style.color = "#ff4757";
+            setTimeout(enemyTurn, 800);
+        }
+
+        function generateEnemyIntent() { 
+            let baseDmg = Math.floor(Math.random() * (state.enemy.maxDmg - state.enemy.minDmg + 1)) + state.enemy.minDmg;
+            state.enemy.intent = Math.floor((baseDmg + state.enemy.str) * state.diffMult); 
+            if(state.mode === '2v2') {
+                let e2Base = Math.floor(Math.random() * (state.enemy2.maxDmg - state.enemy2.minDmg + 1)) + state.enemy2.minDmg;
+                state.enemy2.intent = Math.floor((e2Base + state.enemy2.str) * state.diffMult);
+            }
+        }
+
+        function enemyTurn() {
+            executeEnemyAttack('enemy', state.enemy, () => {
+                if (state.mode === '2v2' && state.enemy2.hp > 0) {
+                    setTimeout(() => executeEnemyAttack('enemy2', state.enemy2, finishEnemyTurn), 600);
+                } else {
+                    finishEnemyTurn();
+                }
+            });
+        }
+
+        function executeEnemyAttack(enemyKey, enemyData, callback) {
+            if(enemyData.hp <= 0) return callback();
+            let dmg = enemyData.intent;
+            
+            let target = getPrimaryTarget('skill'); 
+            if(!target) return callback();
+
+            playSound('attack'); 
+            showEmotion(enemyKey+'-container', '💢', 600);
+            swapEmojiFace(enemyKey, '😡', 500);
+            spawnThrowAnimation(enemyKey+'-sprite', target.id, '🔥', 5, 400);
+            dashAttack(enemyKey+'-sprite', target.id, 400, 300);
+
+            setTimeout(() => {
+                triggerAnim(target.id, 'anim-damage'); 
+                createHitSpark(target.id);
+                showEmotion(target.key+'-container', '😵', 600);
+                swapEmojiFace(target.key, '😖', 400);
+                
+                let actualDmg = dmg;
+                if (target.data.block >= dmg) { target.data.block -= dmg; actualDmg = 0; }
+                else { actualDmg -= target.data.block; target.data.block = 0; target.data.hp = Math.max(0, target.data.hp - actualDmg); }
+
+                showFloatingText(target.id, '-' + actualDmg, '#ff4757');
+                autoSelectAliveTargets();
+                updateUI();
+                
+                if (state.player.hp <= 0 && (state.mode === '1v1' || state.player2.hp <= 0)) { 
+                    setTimeout(() => { showScreen('death-screen'); }, 1000); 
+                    return; 
+                }
+                callback();
+            }, 400); 
+        }
+
+        function finishEnemyTurn() { generateEnemyIntent(); updateUI(); startTurn(); }
+
+        function checkWin() { 
+            let won = state.enemy.hp <= 0 && (state.mode === '1v1' || state.enemy2.hp <= 0);
+            if (won) { isPlayerTurn = false; setTimeout(generateCombatLoot, 1200); } 
+        }
+
+        function showEmotion(containerId, emoji, duration = 800) {
+            const container = document.getElementById(containerId); if (!container) return;
+            let emotionBox = container.querySelector('.emotion-box');
+            if (!emotionBox) { emotionBox = document.createElement('div'); emotionBox.className = 'emotion-box'; container.appendChild(emotionBox); }
+            emotionBox.innerText = emoji; emotionBox.classList.remove('show'); void emotionBox.offsetWidth; emotionBox.classList.add('show');
+            
+            const head = container.querySelector('.entity-sprite-box');
+            if (head) {
+                if (emoji === '💢') head.style.filter = 'drop-shadow(0 0 20px red) sepia(0.5) hue-rotate(-30deg) saturate(3) brightness(0.8)';
+                else if (emoji === '😵') head.style.filter = 'drop-shadow(0 0 20px #fff) grayscale(100%) brightness(1.5)';
+                else if (emoji === '✨') head.style.filter = 'drop-shadow(0 0 30px gold) brightness(1.3)';
+                setTimeout(() => { if (head && head.style.filter.includes('drop-shadow')) head.style.filter = ''; }, duration);
+            }
+        }
+
+        function showFloatingText(targetId, text, color) {
+            const targetEl = document.getElementById(targetId); if (!targetEl) return;
+            const rect = targetEl.getBoundingClientRect(); const el = document.createElement('div');
+            el.className = 'floating-text'; el.innerText = text; el.style.color = color;
+            el.style.left = (rect.left + rect.width / 2 - 20) + 'px'; el.style.top = (rect.top + rect.height / 2 - 20) + 'px';
+            document.body.appendChild(el); setTimeout(() => el.remove(), 1000);
+        }
+
+        function createHitSpark(targetId) {
+            const targetEl = document.getElementById(targetId); if (!targetEl) return;
+            const rect = targetEl.getBoundingClientRect();
+            const spark = document.createElement('div');
+            spark.innerText = '💥';
+            spark.style.position = 'absolute';
+            spark.style.fontSize = '80px';
+            spark.style.zIndex = '2000';
+            spark.style.left = (rect.left + rect.width / 2 - 40) + 'px';
+            spark.style.top = (rect.top + rect.height / 2 - 40) + 'px';
+            spark.style.pointerEvents = 'none';
+            document.body.appendChild(spark);
+            spark.animate([
+                { transform: 'scale(0.3) rotate(-20deg)', opacity: 1 },
+                { transform: 'scale(2.5) rotate(20deg)', opacity: 0 }
+            ], { duration: 400, easing: 'ease-out' }).onfinish = () => spark.remove();
+        }
+
+        function dashAttack(attackerId, targetId, timeToHit, returnTime) {
+            const attacker = document.getElementById(attackerId); const target = document.getElementById(targetId);
+            if(!attacker || !target) return;
+            const aRect = attacker.getBoundingClientRect(); const tRect = target.getBoundingClientRect();
+            const moveX = (tRect.left - aRect.left) * 0.4; const signY = (tRect.top > aRect.top) ? 1 : -1; const moveY = (tRect.top - aRect.top) - (signY * 30); 
+            attacker.style.zIndex = '50'; const totalDuration = timeToHit + returnTime; const hitPercent = (timeToHit / totalDuration); 
+            attacker.animate([
+                { transform: 'translate(0, 0)', offset: 0 }, 
+                { transform: `translate(${moveX}px, ${moveY}px) scale(1.3) rotate(${signY * 15}deg)`, offset: hitPercent }, 
+                { transform: 'translate(0, 0)', offset: 1 }
+            ], { duration: totalDuration, easing: 'ease-in-out' }).onfinish = () => { attacker.style.zIndex = ''; };
+        }
+
+        function spawnThrowAnimation(sourceId, targetId, emoji, count = 6, duration = 400) {
+            const sourceEl = document.getElementById(sourceId); const targetEl = document.getElementById(targetId);
+            if (!sourceEl || !targetEl) return;
+            const sRect = sourceEl.getBoundingClientRect(); const tRect = targetEl.getBoundingClientRect();
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div'); particle.className = 'particle'; particle.innerText = emoji; document.body.appendChild(particle);
+                const startX = sRect.left + sRect.width / 2 + (Math.random() * 40 - 20); const startY = sRect.top + sRect.height / 2 + (Math.random() * 40 - 20);
+                let endX = startX + Math.cos(Math.random() * Math.PI * 2) * (50 + Math.random() * 40); let endY = startY + Math.sin(Math.random() * Math.PI * 2) * (50 + Math.random() * 40);
+                particle.style.left = startX + 'px'; particle.style.top = startY + 'px';
+                particle.animate([{ transform: 'translate(0, 0) scale(0.5) rotate(0deg)', opacity: 1 }, { transform: `translate(${endX - startX}px, ${endY - startY}px) scale(1.5) rotate(${360 + Math.random()*360}deg)`, opacity: 0 }], { duration: duration, easing: 'ease-out' }).onfinish = () => particle.remove(); 
+            }
+        }
+
+        function renderHand() {
+            const container = document.getElementById('hand-container'); container.innerHTML = '';
+            document.getElementById('deck-count').innerText = state.deck.length;
+            state.hand.forEach((card, i) => {
+                const el = document.createElement('div'); el.className = `card ${card.type} anim-draw`; el.style.animationDelay = `${i * 0.05}s`;
+                el.onmousedown = () => prepareCard(el, card.type); el.onmouseup = (e) => releaseCard(i, e); el.onmouseleave = () => cancelCard(el);
+                el.ontouchstart = (e) => { e.preventDefault(); prepareCard(el, card.type); }
+                el.ontouchend = (e) => { e.preventDefault(); releaseCard(i, e); }
+                el.ontouchcancel = () => cancelCard(el);
+                
+                let attackerData = state[state.activePlayer];
+                let desc = card.desc; if(card.type === 'attack' && attackerData.str > 0) desc = desc.replace(/\d+/, match => `<span style="color:#f1c40f">${parseInt(match) + attackerData.str}</span>`);
+                
+                let effectCls = getCardEffectClass(card.type);
+
+                el.innerHTML = `<div class="ambient-effect ${effectCls}"></div><div class="card-header"><div class="card-cost">${card.cost}</div><div class="card-title">${card.name}</div></div><div class="card-art">${card.img}</div><div class="card-desc">${desc}</div>`;
+                container.appendChild(el);
+            });
+        }
+
+        function updateStats(prefix, data) {
+            if(!data) return;
+            document.getElementById(prefix+'-hp').innerText = data.hp; document.getElementById(prefix+'-maxhp').innerText = data.maxHp;
+            document.getElementById(prefix+'-hp-bar').style.width = `${(data.hp / data.maxHp) * 100}%`;
+            
+            const pb = document.getElementById(prefix+'-block-badge');
+            if(data.block > 0) { pb.style.display = 'flex'; pb.innerText = data.block; } else { pb.style.display = 'none'; }
+            
+            const intentEl = document.getElementById(prefix+'-intent');
+            if(intentEl) intentEl.innerText = `⚔️ ${data.intent}`;
+            
+            const spriteSpan = document.querySelector(`#${prefix}-sprite span.emoji-char`);
+            if (data.hp <= 0 && spriteSpan && !spriteSpan.classList.contains('anim-dead')) {
+                spriteSpan.classList.remove('anim-idle', 'anim-power');
+                spriteSpan.classList.add('anim-dead');
+                spriteSpan.innerText = '💀';
+            } else if (data.hp > 0 && spriteSpan && spriteSpan.classList.contains('anim-dead')) {
+                spriteSpan.classList.remove('anim-dead');
+                spriteSpan.classList.add('anim-idle');
+                spriteSpan.innerText = spriteSpan.dataset.orig;
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('energy-text').innerText = `${state.player.energy}/${state.player.maxEnergy}`;
+            updateStats('player', state.player); updateStats('enemy', state.enemy);
+            if(state.mode === '2v2') { updateStats('player2', state.player2); updateStats('enemy2', state.enemy2); }
+        }
+
+        function triggerAnim(elementSelector, animClass) { 
+            const el = document.querySelector(elementSelector.startsWith('#') || elementSelector.startsWith('.') ? elementSelector : `#${elementSelector}`); 
+            if(el) { el.classList.remove(animClass); void el.offsetWidth; el.classList.add(animClass); } 
+        }
+    </script>
+</body>
+</html>
