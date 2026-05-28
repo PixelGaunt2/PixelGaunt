@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="generator" content="Made with Gemini AI Pro">
+    <title>Horse Turn</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            overflow: hidden; 
+            background-color: #020208; 
+            color: #00f5ff; 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            user-select: none;
+            touch-action: none;
+        }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        #uiLayer { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            background: rgba(2, 2, 8, 0.85); backdrop-filter: blur(5px);
+            transition: opacity 0.3s; z-index: 10;
+        }
+        .hidden { opacity: 0; pointer-events: none !important; display: none !important; }
+        
+        h1 { font-size: 4rem; text-shadow: 0 0 20px #00b4d8; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 5px; text-align: center;}
+        p { font-size: 1.2rem; margin-bottom: 30px; color: #ade8f4; text-align: center; max-width: 500px; line-height: 1.6;}
+        
+        button.main-btn { 
+            padding: 15px 45px; font-size: 1.4rem; 
+            background: linear-gradient(45deg, #0077b6, #00b4d8); color: #fff; border: none; border-radius: 50px; 
+            cursor: pointer; font-weight: bold; transition: all 0.2s;
+            box-shadow: 0 5px 20px rgba(0, 180, 216, 0.4); text-transform: uppercase;
+        }
+        button.main-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 245, 255, 0.6); }
+        
+        #hud { position: absolute; top: 20px; left: 30px; font-size: 1.5rem; font-weight: bold; text-shadow: 0 0 8px #00b4d8; z-index: 5; }
+        .hud-coin { color: #FFD700; text-shadow: 0 0 10px #FFA500; }
+        
+        #controls-hint { position: absolute; bottom: 20px; width: 100%; text-align: center; color: #ade8f4; font-size: 1.1rem; letter-spacing: 1px; z-index: 5;}
+        
+        /* Dash Button */
+        #dashBtn {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff0055, #ffaa00);
+            color: white;
+            font-size: 2rem;
+            border: none;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.6);
+            z-index: 8;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0.8;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        #dashBtn:active { transform: scale(0.9); opacity: 1; }
+
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            #hud { font-size: 1.1rem; left: 15px; }
+            #controls-hint { font-size: 0.9rem; padding: 0 10px; bottom: 35px; text-align: left; left: 15px; width: auto; max-width: 60%; }
+            #dashBtn { width: 60px; height: 60px; bottom: 20px; right: 20px; font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="hud">Score: <span id="scoreVal">0</span> | <span class="hud-coin">Coins: <span id="coinVal">0</span></span> | Level: <span id="levelVal">1</span></div>
+    <div id="controls-hint">Tap L/R to Steer | Swipe Up to Jump</div>
+    
+    <button id="dashBtn" class="hidden">⚡</button>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="uiLayer">
+        <h1 id="mainTitle">HORSE TURN</h1>
+        <p id="subText">Steer onto the walls! Jump gaps and collect coins. Hold Dash to speed up!</p>
+        <button id="startBtn" class="main-btn">START RUN</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const uiLayer = document.getElementById('uiLayer');
+        const startBtn = document.getElementById('startBtn');
+        const dashBtn = document.getElementById('dashBtn');
+        const scoreHUD = document.getElementById('scoreVal');
+        const coinHUD = document.getElementById('coinVal');
+        const levelHUD = document.getElementById('levelVal');
+        const mainTitle = document.getElementById('mainTitle');
+        const subText = document.getElementById('subText');
+
+        let width, height;
+        let gameState = 'menu';
+        let score = 0;
+        let coinsCount = 0;
+        let level = 1;
+        let baseGameSpeed = 8;
+        let gameSpeed = 8;
+        let distanceTraveled = 0;
+
+        // 3D Engine Constants
+        const R = 160; 
+        const FOV = 280; 
+        const SLICE_DZ = 50; 
+        const MAX_Z = 1600; 
+        let cameraAngle = 0;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            if(window.innerWidth > 768) {
+                document.getElementById('controls-hint').innerText = "LEFT/RIGHT to steer | SPACE to Jump | SHIFT to Dash";
+            } else {
+                document.getElementById('controls-hint').innerText = "Tap L/R to Steer | Swipe Up to Jump";
+            }
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- CONTROLS ---
+        const keys = { Left: false, Right: false, Space: false, Dash: false };
+        window.addEventListener('keydown', e => {
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.Left = true;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.Right = true;
+            if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.Dash = true;
+            if (e.code === 'Space') { e.preventDefault(); keys.Space = true; if(gameState === 'playing') horse.jump(); }
+        });
+        window.addEventListener('keyup', e => {
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.Left = false;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.Right = false;
+            if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.Dash = false;
+            if (e.code === 'Space') keys.Space = false;
+        });
+
+        // --- TOUCH CONTROLS (MOBILE) ---
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        window.addEventListener('touchstart', e => {
+            if (gameState !== 'playing' || e.target === dashBtn) return;
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            if (touchStartX < width / 2) keys.Left = true;
+            else keys.Right = true;
+        }, { passive: false });
+
+        window.addEventListener('touchmove', e => {
+            if (gameState !== 'playing' || e.target === dashBtn) return;
+            e.preventDefault(); 
+            const touch = e.touches[0];
+            
+            if (touchStartY - touch.clientY > 40) {
+                if (!keys.Space) { keys.Space = true; horse.jump(); }
+            }
+
+            if (touch.clientX < width / 2) { keys.Left = true; keys.Right = false; } 
+            else { keys.Right = true; keys.Left = false; }
+        }, { passive: false });
+
+        window.addEventListener('touchend', e => {
+            if (e.target !== dashBtn && e.touches.length === 0) { 
+                keys.Left = false; keys.Right = false; keys.Space = false;
+            }
+        });
+
+        // Dash Button Events
+        dashBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.Dash = true; dashBtn.style.opacity = '1'; });
+        dashBtn.addEventListener('touchend', e => { e.preventDefault(); keys.Dash = false; dashBtn.style.opacity = '0.8'; });
+        dashBtn.addEventListener('mousedown', e => { e.preventDefault(); keys.Dash = true; });
+        dashBtn.addEventListener('mouseup', e => { e.preventDefault(); keys.Dash = false; });
+        dashBtn.addEventListener('mouseleave', e => { e.preventDefault(); keys.Dash = false; });
+
+        // --- AUDIO ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let actx, bgmInterval;
+        function initAudio() { if (!actx) actx = new AudioContext(); if (actx.state === 'suspended') actx.resume(); }
+        function playSFX(type) {
+            if (!actx) return;
+            const osc = actx.createOscillator(), gain = actx.createGain();
+            osc.connect(gain); gain.connect(actx.destination);
+            if (type === 'jump') {
+                osc.frequency.setValueAtTime(200, actx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(500, actx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.1, actx.currentTime);
+                osc.start(); osc.stop(actx.currentTime + 0.15);
+            } else if (type === 'fall') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, actx.currentTime);
+                osc.frequency.linearRampToValueAtTime(30, actx.currentTime + 0.6);
+                gain.gain.setValueAtTime(0.2, actx.currentTime);
+                osc.start(); osc.stop(actx.currentTime + 0.6);
+            } else if (type === 'coin') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, actx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1500, actx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.15, actx.currentTime);
+                osc.start(); osc.stop(actx.currentTime + 0.1);
+            }
+        }
+        function manageBGM(play) {
+            clearInterval(bgmInterval);
+            if (!play || !actx) return;
+            let seq = [147, 165, 196, 220], step = 0;
+            bgmInterval = setInterval(() => {
+                const osc = actx.createOscillator(), gain = actx.createGain();
+                osc.type = 'triangle'; osc.frequency.value = seq[step];
+                gain.gain.setValueAtTime(0.03, actx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + (keys.Dash ? 0.1 : 0.2));
+                osc.connect(gain); gain.connect(actx.destination);
+                osc.start(); osc.stop(actx.currentTime + 0.2);
+                step = (step + 1) % seq.length;
+            }, keys.Dash ? 150 : 250); // Speed up music on dash
+        }
+
+        // --- BACKGROUND ---
+        let stars = [];
+        for (let i = 0; i < 120; i++) stars.push({ x: Math.random() - 0.5, y: Math.random() - 0.5, r: Math.random() * 2 });
+        function drawStars() {
+            ctx.fillStyle = '#ffffff';
+            stars.forEach(s => {
+                let sx = width/2 + s.x * width * 1.5;
+                let sy = height/2 + s.y * height * 1.5;
+                ctx.beginPath(); ctx.arc(sx, sy, s.r, 0, Math.PI*2); ctx.fill();
+            });
+        }
+
+        // --- 3D MATH ---
+        function getWorldPos(wall, localX, localY) {
+            let d = R - localY;
+            if (wall === 0) return { x: localX, y: d };     
+            if (wall === 1) return { x: d, y: -localX };    
+            if (wall === 2) return { x: -localX, y: -d };   
+            if (wall === 3) return { x: -d, y: localX };    
+        }
+
+        function project3D(pt) {
+            const cos = Math.cos(-cameraAngle);
+            const sin = Math.sin(-cameraAngle);
+            let rx = pt.x * cos - pt.y * sin;
+            let ry = pt.x * sin + pt.y * cos;
+
+            if (pt.z <= 0) return null;
+            let sx = width / 2 + (rx * FOV) / pt.z;
+            let sy = height / 2 + (ry * FOV) / pt.z;
+            return { x: sx, y: sy };
+        }
+
+        // --- TUNNEL & COIN GENERATION ---
+        let slices = [];
+        let patternTimer = 0, currentPattern = 'solid';
+
+        function createSlice(zValue) {
+            let slice = { z: zValue, walls: [], coin: null };
+            for(let w=0; w<4; w++) slice.walls.push([true, true, true]); 
+
+            // Create Gaps
+            if (zValue > 600) { 
+                patternTimer--;
+                if(patternTimer <= 0) {
+                    let r = Math.random();
+                    currentPattern = r < 0.4 ? 'missing-lane' : (r < 0.75 ? 'missing-wall' : 'solid');
+                    patternTimer = Math.floor(Math.random() * 8) + 4; 
+                }
+                if (currentPattern === 'missing-lane') {
+                    slice.walls[Math.floor(Math.random() * 4)][Math.floor(Math.random() * 3)] = false;
+                } else if (currentPattern === 'missing-wall') {
+                    slice.walls[Math.floor(Math.random() * 4)] = [false, false, false]; 
+                }
+            }
+
+            // Create Coins (30% chance per slice)
+            if (Math.random() < 0.3) {
+                let validLanes = [];
+                for(let w=0; w<4; w++) {
+                    for(let l=0; l<3; l++) {
+                        if(slice.walls[w][l]) validLanes.push({w, l});
+                    }
+                }
+                if (validLanes.length > 0) {
+                    let chosen = validLanes[Math.floor(Math.random() * validLanes.length)];
+                    slice.coin = { wall: chosen.w, lane: chosen.l, collected: false, rot: Math.random() * Math.PI };
+                }
+            }
+
+            return slice;
+        }
+
+        function initTunnel() {
+            slices = []; patternTimer = 15; currentPattern = 'solid';
+            for (let z = 100; z < MAX_Z; z += SLICE_DZ) slices.push(createSlice(z));
+        }
+
+        function updateTunnel() {
+            slices.forEach(s => s.z -= gameSpeed);
+            if (slices[0].z < 50) {
+                slices.shift();
+                slices.push(createSlice(slices[slices.length - 1].z + SLICE_DZ));
+            }
+        }
+
+        function drawTunnelAndCoins() {
+            for (let i = slices.length - 1; i >= 0; i--) {
+                let slice = slices[i];
+                let z1 = slice.z, z2 = slice.z + SLICE_DZ;
+                let depthFactor = Math.max(0, Math.min(1, 1 - z1 / MAX_Z));
+                let laneWidth = (2 * R) / 3;
+
+                // Draw Walls
+                for (let w = 0; w < 4; w++) {
+                    for (let l = 0; l < 3; l++) {
+                        if (!slice.walls[w][l]) continue; 
+
+                        let lx1 = -R + l * laneWidth, lx2 = lx1 + laneWidth;
+                        let wP1 = getWorldPos(w, lx1, 0), wP2 = getWorldPos(w, lx2, 0);
+
+                        let p1 = project3D({ x: wP1.x, y: wP1.y, z: z1 });
+                        let p2 = project3D({ x: wP2.x, y: wP2.y, z: z1 });
+                        let p3 = project3D({ x: wP2.x, y: wP2.y, z: z2 });
+                        let p4 = project3D({ x: wP1.x, y: wP1.y, z: z2 });
+
+                        if (!p1 || !p2 || !p3 || !p4) continue;
+
+                        // Speed warp effect on lines during dash
+                        let dashWarp = keys.Dash ? 0.8 : 0.4;
+                        ctx.fillStyle = `rgba(37, 117, 252, ${dashWarp * depthFactor})`; 
+                        ctx.strokeStyle = `rgba(0, 245, 255, ${(keys.Dash ? 1.0 : 0.7) * depthFactor})`; 
+                        ctx.lineWidth = 1;
+
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+                        ctx.lineTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y);
+                        ctx.closePath();
+                        ctx.fill(); ctx.stroke();
+                    }
+                }
+
+                // Draw Coins
+                if (slice.coin && !slice.coin.collected && z1 > 100) {
+                    let lx = -R + slice.coin.lane * laneWidth + laneWidth/2;
+                    let wP = getWorldPos(slice.coin.wall, lx, 30); // Hover height
+                    let p = project3D({ x: wP.x, y: wP.y, z: z1 });
+                    
+                    if (p) {
+                        let scale = FOV / z1;
+                        let s = 14 * scale;
+                        slice.coin.rot += 0.05; // Spin animation
+                        let spin = Math.cos(slice.coin.rot);
+                        
+                        ctx.save();
+                        ctx.translate(p.x, p.y);
+                        ctx.scale(spin, 1);
+                        
+                        // Outer Gold
+                        ctx.fillStyle = `rgba(255, 215, 0, ${depthFactor})`;
+                        ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI*2); ctx.fill();
+                        // Inner Orange
+                        ctx.fillStyle = `rgba(255, 165, 0, ${depthFactor})`;
+                        ctx.beginPath(); ctx.arc(0, 0, s*0.6, 0, Math.PI*2); ctx.fill();
+                        
+                        ctx.restore();
+                    }
+                }
+            }
+        }
+
+        // --- SHADOW-FREE HORSE ---
+        function drawCustomHorse(ctx, s, cycle) {
+            ctx.fillStyle = '#8B4513'; 
+            ctx.beginPath(); ctx.ellipse(0, 0, s*0.35, s*0.45, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#A0522D';
+            ctx.beginPath(); ctx.ellipse(0, -s*0.45, s*0.2, s*0.25, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#5C4033';
+            ctx.beginPath(); ctx.moveTo(-s*0.1, -s*0.65); ctx.lineTo(-s*0.2, -s*0.85); ctx.lineTo(-s*0.05, -s*0.7); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(s*0.1, -s*0.65); ctx.lineTo(s*0.2, -s*0.85); ctx.lineTo(s*0.05, -s*0.7); ctx.fill();
+            ctx.fillStyle = '#3E2723';
+            let tailSway = Math.sin(cycle) * s * 0.4;
+            ctx.beginPath(); ctx.moveTo(-s*0.05, s*0.3); ctx.lineTo(tailSway - s*0.1, s*0.8); ctx.lineTo(tailSway + s*0.1, s*0.8); ctx.lineTo(s*0.05, s*0.3); ctx.fill();
+            ctx.fillStyle = '#5C4033';
+            let legMovement = Math.sin(cycle*2) * s * 0.25;
+            ctx.beginPath(); ctx.rect(-s*0.25, s*0.2, s*0.15, s*0.4 + legMovement); ctx.fill();
+            ctx.beginPath(); ctx.rect(s*0.1, s*0.2, s*0.15, s*0.4 - legMovement); ctx.fill();
+            
+            // Dash visual effect on horse
+            if (keys.Dash) {
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.4)';
+                ctx.beginPath(); ctx.ellipse(0, 0, s*0.5, s*0.6, 0, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        // --- PLAYER MECHANICS ---
+        const horse = {
+            wall: 0, x: 0, y: 0, vy: 0, z: 220, size: 70,
+            isGrounded: true, isFallingOut: false,
+
+            reset() { this.wall = 0; this.x = 0; this.y = 0; this.vy = 0; this.isGrounded = true; this.isFallingOut = false; },
+
+            jump() {
+                if (this.isGrounded && !this.isFallingOut) {
+                    this.vy = 6.8; this.isGrounded = false; playSFX('jump');
+                }
+            },
+
+            update() {
+                if (this.isFallingOut) {
+                    this.y -= 8; 
+                    if (this.y < -300) endGame();
+                    return;
+                }
+
+                // Faster sideways movement during dash
+                let steerSpeed = keys.Dash ? 8.5 : 5.5;
+                if (keys.Left) this.x -= steerSpeed;
+                if (keys.Right) this.x += steerSpeed;
+
+                if (this.x < -R) { this.wall = (this.wall + 3) % 4; this.x += 2 * R; } 
+                else if (this.x > R) { this.wall = (this.wall + 1) % 4; this.x -= 2 * R; }
+
+                if (!this.isGrounded) {
+                    this.y += this.vy; this.vy -= 0.35; 
+                    if (this.y <= 0) { this.y = 0; this.vy = 0; this.isGrounded = true; }
+                }
+
+                // Collisions (Gaps & Coins)
+                let laneIndex = Math.max(0, Math.min(2, Math.floor((this.x + R) / ((2 * R) / 3))));
+                
+                slices.forEach(s => {
+                    // Coin Collision
+                    if (s.coin && !s.coin.collected && Math.abs(s.z - this.z) < SLICE_DZ) {
+                        if (s.coin.wall === this.wall && s.coin.lane === laneIndex && this.y < 60) {
+                            s.coin.collected = true;
+                            coinsCount++;
+                            score += 25; // Bonus score for coin
+                            scoreHUD.innerText = score;
+                            coinHUD.innerText = coinsCount;
+                            playSFX('coin');
+                        }
+                    }
+                    
+                    // Gap Collision (Only check the slice exactly under the horse)
+                    if (s.z <= this.z && s.z + SLICE_DZ > this.z && this.y <= 0) {
+                        if (!s.walls[this.wall][laneIndex]) {
+                            this.isFallingOut = true; this.isGrounded = false; playSFX('fall');
+                        }
+                    }
+                });
+            },
+
+            draw() {
+                let wPos = getWorldPos(this.wall, this.x, this.y);
+                let pProj = project3D({ x: wPos.x, y: wPos.y, z: this.z });
+                if (!pProj) return;
+
+                ctx.save();
+                ctx.translate(pProj.x, pProj.y);
+
+                let sizeScale = FOV / this.z;
+                let activeSize = this.size * sizeScale;
+                let renderAngle = (this.wall * Math.PI / 2) - cameraAngle;
+                
+                ctx.rotate(renderAngle);
+                
+                let jumpOffset = this.y > 0 ? -this.y * sizeScale * 1.2 : 0;
+                let runCycle = distanceTraveled * 0.15;
+                let bounce = this.y > 0 ? 0 : Math.abs(Math.sin(runCycle * (keys.Dash ? 3 : 2))) * activeSize * 0.1;
+                
+                ctx.translate(0, jumpOffset - bounce);
+                drawCustomHorse(ctx, activeSize, runCycle);
+                ctx.restore();
+            }
+        };
+
+        // --- GAME LOOP ---
+        function updateCamera() {
+            let targetAngle = horse.wall * (Math.PI / 2);
+            let diff = targetAngle - cameraAngle;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            cameraAngle += diff * (keys.Dash ? 0.18 : 0.12); 
+        }
+
+        function startGame() {
+            initAudio(); gameState = 'playing'; 
+            uiLayer.classList.add('hidden');
+            dashBtn.classList.remove('hidden'); // Show dash button
+            
+            score = 0; coinsCount = 0; level = 1; baseGameSpeed = 8; distanceTraveled = 0;
+            scoreHUD.innerText = score; coinHUD.innerText = coinsCount; levelHUD.innerText = level;
+            
+            horse.reset(); initTunnel(); manageBGM(true); loop();
+        }
+
+        function endGame() {
+            gameState = 'gameover'; manageBGM(false); 
+            uiLayer.classList.remove('hidden');
+            dashBtn.classList.add('hidden'); // Hide dash button
+            
+            mainTitle.innerText = "GAME OVER"; mainTitle.style.color = "#ff3333";
+            subText.innerHTML = `You drifted out into the deep cosmic abyss!<br><br><b>Final Score:</b> ${score} | <b>Coins:</b> ${coinsCount} | <b>Level:</b> ${level}`;
+            startBtn.innerText = "RUN AGAIN";
+            keys.Dash = false; // Reset dash state
+        }
+
+        function loop() {
+            if (gameState !== 'playing') return;
+            
+            // Dash Speed Control
+            gameSpeed = keys.Dash ? baseGameSpeed * 2.2 : baseGameSpeed;
+            
+            ctx.fillStyle = '#020208'; ctx.fillRect(0, 0, width, height);
+
+            drawStars(); updateTunnel(); drawTunnelAndCoins();
+            horse.update(); horse.draw(); updateCamera();
+
+            distanceTraveled += gameSpeed;
+            if (Math.floor(distanceTraveled) % 12 === 0) {
+                score += 5; scoreHUD.innerText = score;
+                if (score > 0 && score % 800 === 0) {
+                    level++; baseGameSpeed += 1.2; levelHUD.innerText = level;
+                }
+            }
+            requestAnimationFrame(loop);
+        }
+
+        startBtn.addEventListener('click', startGame);
+        startBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startGame(); });
+    </script>
+</body>
+</html>
