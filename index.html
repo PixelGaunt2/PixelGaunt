@@ -611,7 +611,7 @@
         const games = [
             { 
                 id: 1, 
-                studio: 'Pixel Gaunt Studios',
+                studio: 'Pixel Gaunt',
                 title: 'Stickman Velocity', 
                 genre: 'Arcade', 
                 controls: '<strong>Movement:</strong> Joystick (Mobile) / Keyboard (Desktop).<br><strong>Actions:</strong> Punch, Kick, Jump, Dash, Dive, and Fire.', 
@@ -620,14 +620,78 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'Single-file HTML5, CSS Flexbox, Vanilla ES6 JavaScript, Web Audio API, Canvas API',
-                aiPrompt: `"Act as a professional game developer. Create a single-file HTML5/CSS/JavaScript game titled 'Stickman Velocity'.\n\nGame Requirements:\n- Genre: 2D Side-Scrolling Beat 'em up.\n- Technical: Use a single HTML file with embedded CSS and Vanilla JS. No external dependencies or heavy libraries.\n- Core Features: A player sprite with physics (gravity, jump, dash, dive, punch, kick). Procedural enemy waves (Small, Spider, Goliath, and a Titan Boss). UI system for HP bars, a 'Boss Coming' progress bar, and score/coin tracking.\n- Controls: Mobile-friendly touch controls (Joystick and on-screen action buttons).\n- Sound: Simple sound synthesis using Web Audio API for effects like jump, punch, kick, and fire.\n- Visuals: Minimalist neon-style graphics on a dark background using Canvas API.\n- Architecture: Use Object-Oriented Programming (Classes) for game entities.\n- Attribution: Include 'Made with Gemini AI Pro' in the game's metadata and console.\n\nPlease write the complete, functional, 'click-to-play' code in one block."`,
+                aiPrompt: `"To help you recreate your "Stickman Velocity" game or build a clone using Gemini, you should use a structured, modular approach. Rather than asking for everything at once, it is best to provide the AI with a logical roadmap.
+
+Here are the step-by-step prompts you can use to build the game from scratch:
+
+Step 1: The Core Foundation (Engine)
+"Create a 2D side-scrolling stickman fighting game using a single HTML file (HTML5 Canvas, CSS, and JavaScript).
+
+Implement a player character with smooth movement (A, D keys), jumping (W), and attacks (J for Punch, L for Kick).
+
+Implement a gravity-based physics engine for the player and platform.
+
+Add dynamic enemies (different colors/types) that move towards the player and can attack.
+
+Include a simple particle system for hit effects (sparks/blood) and screen shake."
+
+Step 2: Camera and Environment
+"Enhance the game with a side-scrolling camera system:
+
+The camera should follow the player. When the player reaches the middle of the screen, the environment should scroll smoothly.
+
+Add a 'Wireframe/Notebook Sketch' style background using simple lines for mountains and trees.
+
+Implement a Level/Stage system where every 10 kills, the background theme/color changes and the difficulty (speed/health) increases."
+
+Step 3: Advanced Combat and Abilities
+"Add advanced combat mechanics:
+
+Add a Dash (SHIFT key) that grants invincibility during the move.
+
+Add a Crouch/Slide/Dive (S to crouch, U to dive) attack.
+
+Ensure the player can throw Fireballs (K key) while standing or crouching.
+
+Add cooldown bars for Dash and Dive in the UI, which refill over time."
+
+Step 4: Ultimate Power & AI Clones
+"Implement an 'Ultimate Power' system:
+
+Add a tracker UI that counts small kills (15), spiders (5), and big enemies (5).
+
+Once the requirements are met, enable the Ultimate by pressing J+K+L.
+
+Upon activation, spawn 5 AI-controlled clones that last for 15 seconds.
+
+Use logic to distribute the clones across multiple enemies so they don't merge into one spot."
+
+Step 5: Audio, UI, and Polish
+"Finalize the game with polish:
+
+Add a Web Audio API system to generate sound effects for punches, kicks, fireballs, and coins (without needing external files).
+
+Add an 'On/Off' toggle for background music.
+
+Add a 'Play Now' menu screen and an ESC-based Pause/Resume system.
+
+Ensure the game is a single-file HTML solution that runs in any browser."
+
+Tips for success when using these prompts:
+Keep the context: If you have already built the base in an AI chat, continue in the same chat session. This allows the AI to "remember" the code it previously wrote.
+
+Request "Single-File" output: Always specify: "Provide the result as a complete, single-file HTML code including CSS and JS."
+
+Debug incrementally: If an error occurs (like the "clones merging" issue), simply paste the code back into the chat and say: "The clones are merging into one spot. Please update the AI logic to distribute them across different enemies on screen."
+
+By following these modular steps, any AI can reconstruct the complex functionality of your "Stickman Velocity" game."`,
                 image: 'Stick Man Velocity.png',
                 url: 'Stick Man Velocity.html',
                 bgm: 'Stick Man Velocity.mp3'
             },
             { 
                 id: 2, 
-                studio: 'Pixel Gaunt Studios',
+                studio: 'Pixel Gaunt',
                 title: 'Serpent Relic', 
                 genre: 'Adventure', 
                 controls: '<strong>Movement:</strong> Swipe (Mobile) / Arrow Keys (Desktop).', 
@@ -636,14 +700,77 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5 Canvas, Vanilla JS',
-                aiPrompt: `"Act as a game developer. Create a game called 'Serpent Relic'. Genre: Adventure/Puzzle. Features: Grid-based snake movement, mirrors, darkness mechanics, and twin rescue logic. Include 'Made with Gemini AI Pro' in the game's metadata. Code it as a single HTML file."`,
+                aiPrompt: `"To create a game like "Serpent Relic" using Gemini or any other AI, you can use the step-by-step prompts below. Copy and paste them into the AI one by one to build, refine, and polish your game.
+
+Step 1: The Foundation (Game Engine & Movement)
+Prompt:
+
+"Create a complete, fully playable 2D grid-based puzzle-adventure game in a single HTML file using only HTML, CSS, and JavaScript.
+
+Use the Canvas API for rendering and requestAnimationFrame for the game loop.
+
+Implement a snake-like character with a 'dual-head' mechanic (front and back mouths) that moves in 4 directions on a grid.
+
+Create a level system where levels are defined as 2D arrays in the code.
+
+Ensure the movement feels smooth and responsive.
+
+Add responsive mobile touch controls and keyboard (WASD/Arrows) support.
+
+Keep the code clean, well-commented, and ensure it runs immediately in a browser without any external frameworks or libraries."
+
+Step 2: Adding Puzzle Mechanics (Interactions)
+Prompt:
+
+"Now, enhance the game logic with the following puzzle mechanics:
+
+'Rock' tiles (4): Block movement and can only be destroyed if the player collects a 'Tool' item (5) first.
+
+'Switch' tiles (6): Permanently change the state of 'Door' tiles (7) from closed to open when stepped on.
+
+'Twin Snake' Mechanic: Introduce a 'Key' (K) and 'Cage' (L). If a snake is in a cage, it cannot move until the player collects the key. Both snakes must reach the exit together.
+
+Implement a level transition effect and a persistent save system using localStorage to track unlocked levels."
+
+Step 3: Performance, Visuals, and Balancing
+Prompt:
+
+"Let's polish the game for performance and playability:
+
+Performance: The game is currently lagging. Optimize the rendering by limiting particle counts and only rendering heavy visual effects (like shadows) when necessary. Maintain a stable 60 FPS.
+
+Obstacle Balancing: If any obstacles are moving, set their speed to 50% of the player's movement speed to ensure the player has enough space and time to dodge them.
+
+Visuals: Implement a neon-minimalist style with glowing nodes and smooth transitions.
+
+Bug Fixes: Ensure the game automatically progresses to the next level when the win condition is met and fix any issues where the player gets stuck on Level 1."
+
+Step 4: Adding Atmosphere & Polish (Final Step)
+Prompt:
+
+"Finalizing the game:
+
+Darkness Mechanic: Add a 'fog of war' effect where the map is hidden in darkness, and only a circular area around the player is visible using a radial gradient on the canvas.
+
+Procedural Audio: Add simple Web Audio API functions for movement, collecting items, breaking rocks, and winning a level.
+
+Audio Loop: Add a background music loop that starts only after the user clicks the 'Start' button (to comply with browser auto-play policies).
+
+Final Review: Provide the complete, single-file HTML code containing all these mechanics, optimized for speed and a professional experience."
+
+Tips for Success:
+Sequential Usage: Always wait for the AI to finish one step before sending the next.
+
+Fixing Bugs: If the game breaks, ask: "The game is not starting (or is blank). Please add a window.onload wrapper to ensure the script only executes after the DOM is fully loaded."
+
+Customization: If you want to change a level, simply tell the AI: "Update the LEVELS array to include a new level layout with the following grid pattern: [Insert your grid array here]."`,
                 image: 'Serpent Relic.png', 
                 url: 'Serpent Relic.html',
                 bgm: 'Serpent Relic.mp3'
             },
             { 
                 id: 3, 
-                studio: 'Pixel Gaunt Studios',
+                studio: 'Pixel Gaunt',
                 title: 'Pizza Chaos', 
                 genre: 'Simulation', 
                 controls: '<strong>Movement:</strong> Touch/Drag (Mobile) / Mouse (Desktop).', 
@@ -652,14 +779,59 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5, CSS Flexbox, JavaScript',
-                aiPrompt: `"Create an HTML5 game 'Pizza Chaos: Multi-Boss Edition'. Genre: Simulation/Action. Mechanics: Deliver pizzas while surviving boss fights and leveling up. Needs touch controls and dynamic powerups. Include 'Made with Gemini AI Pro' in the metadata."`,
+                aiPrompt: `"Step 1: The "Master Architect" Prompt
+Copy and paste this prompt into an AI to get the complete code logic. This prompt explicitly instructs the AI to handle the missing mechanics you mentioned.
+
+Prompt: "Act as a Lead Game Developer. I need the complete source code for 'Pizza Chaos' in a single HTML5 file. The current structure is missing the core game logic. Please rewrite it including:
+
+Core Game Loop: Implement a requestAnimationFrame-based loop with deltaTime to ensure consistent speed across devices.
+
+Player Class: Define a Player object with properties: x, y, hp, maxHp, speed, dashCd, jumpCd, and methods: move(), dash(), jump(), shoot(). Add smooth keyboard and mobile-joystick input mapping.
+
+Enemy System: Define an Enemy base class and subclasses (e.g., 'Pizza Slice', 'Crust Monster', 'Boss'). Implement an auto-spawning system that reads from a levels configuration (spawning more enemies as the level number increases).
+
+Mechanics: >    - Implement collision detection (circle-circle).
+
+Add a 'Dash' mechanic with invincibility frames.
+
+Add a 'Projectile' class for player and enemy attacks.
+
+Progressive Difficulty: Integrate the 25-level data structure provided (killing enemies, collecting items, boss fights).
+
+Optimization: Clear off-screen projectiles and dead enemies to prevent memory leaks.
+
+Styling: Retain the 'Press Start 2P' theme, responsive HUD, and landscape-only mobile warning.
+
+Branding: Add 'Made with Gemini AI Pro' at the bottom of the HUD.
+
+Provide the full, functional code."
+
+Step 2: How to Identify and Fix Bugs
+Because you are building a browser-based game, here is how to troubleshoot the components if they don't work as expected:
+
+If the Player isn't moving: Check the joyCurrent logic in the mobile event listeners. Ensure the joystick's delta is being applied to the player's x and y coordinates in the main update() loop.
+
+If the game lags: Ensure that the enemies array is being "filtered" every frame.
+
+Prompt to add: "Fix memory leaks by adding: enemies = enemies.filter(e => e.hp > 0); inside the update loop."
+
+If the Level ends early: Check the targetAchieved logic.
+
+Prompt to add: "Review the level objective logic: Ensure the level only transitions to 'Level Cleared' when the enemy kill count or collection count meets the requirement set in levelObjectives."
+
+Step 3: Adding New Items (Example Prompt)
+If you want to add a specific item later, use this format:
+
+Prompt: "Add a new item class called 'FreezeBomb'. When the player touches it, it should: 1. Add it to the map. 2. When collected, spawn a visual explosion effect. 3. Set the speedMult of all enemies currently on screen to 0.2 for 3 seconds. Add this to the existing game loop."
+
+By using the Master Architect Prompt in Step 1, the AI will build the foundation (Player/Enemy/Loop) that was previously missing from your file, allowing you to then add specific features using the formatting in Step 3."`,
                 image: 'Pizza Chaos.png', 
                 url: 'Pizza Chaos.html', 
                 bgm: 'Pizza Chaos.mp3'
             },
             { 
                 id: 4, 
-                studio: 'Pixel Gaunt Studios',
+                studio: 'Pixel Gaunt',
                 title: 'Face Merge', 
                 genre: 'Puzzle', 
                 controls: '<strong>Interaction:</strong> Tap/Click on adjacent tiles to swap or merge.', 
@@ -668,14 +840,88 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5, CSS Grid, Vanilla JS',
-                aiPrompt: `"Generate a Match-3 / Merge puzzle game called 'Face Merge'. Features: Merge emojis, score targets, move limits, and a dog character that reacts to gameplay. Include 'Made with Gemini AI Pro' in the code."`,
+                aiPrompt: `"To create a game like "Face Merge" or your "Bean Crush Saga," you can use the following step-by-step prompts. By feeding these to Gemini AI in order, you can rebuild the game, customize it, and ensure it works perfectly in a browser.
+
+Step 1: Base Game (Core Engine)
+Start by asking the AI to build the foundation:
+
+Prompt: "Create a complete, fully playable Candy Crush-inspired Match-3 puzzle game using HTML, CSS, and JavaScript in a single file. The game must be mobile-friendly (9:16 portrait view).
+Requirements:
+
+An 8x8 grid with 6 unique, colorful game pieces.
+
+Smooth drag-and-drop mechanics (must work on both desktop mouse and mobile touchscreens).
+
+Match detection (3, 4, and 5 matches), gravity logic, cascading combos, and score calculation.
+
+A starting screen and the main game board.
+
+The code must be self-contained in one HTML file."
+
+Step 2: Customization (Faces & Visuals)
+Once the engine works, add your specific look:
+
+Prompt: "Replace the basic colorful circles (beans) with beautiful, pure CSS-based facial expressions (Angry, Sad, Happy, Cool, Sick). Use specific CSS classes for each face. The matching logic must look at the 'face' type rather than just the background color, ensuring different faces do not merge incorrectly."
+
+Step 3: Puzzle Mechanics (Bird Rescue)
+Add the puzzle element:
+
+Prompt: "Add a 'Bird Rescue' puzzle mechanic. Every few levels, replace some game pieces with 'Caged Birds' (blocked cells). Cages cannot be swapped. They should only be destroyed by matching adjacent pieces or using power-ups. Add a 'Help!' animation inside the cage."
+
+Step 4: Dog Room & Water Effect
+This creates your signature animation:
+
+Prompt: "Add a 'Dog Room' container on the left side of the board.
+
+Add a water-filling animation in the dog room with animated bubbles using CSS.
+
+Place the 'Help!' or 'Happy!' speech bubble animation directly inside the dog room area, positioned just above the dog character.
+
+Implement an inventory-based Power-up system:
+
+Add 4 buttons (Hammer, Bomb, Rocket, Magic) with an inventory count.
+
+Add a '+' button below each power-up to 'buy' them using coins.
+
+Coins are earned by making big matches (4 or 5 pieces).
+
+Make power-ups expensive (100-250 coins) to balance the game."
+
+Step 5: Mobile Optimization
+Ensure it fits mobile screens perfectly:
+
+Prompt: "Optimize this game for mobile (9:16 aspect ratio).
+
+Extend the dog room, water bar, menu, and board layout to fit the full mobile screen vertically without any black space.
+
+Use 'flex-grow: 1' and ensure all UI elements are responsive.
+
+Fix any touch/drag conflicts to ensure the drag-and-drop system is bulletproof on all mobile browsers."
+
+Step 6: Audio Integration
+Add sound effects to make it feel professional:
+
+Prompt: "Add audio feedback using the Web Audio API.
+
+Create unique tones for: Swapping pieces, Matching, Explosions, Winning, and Losing.
+
+Add custom sounds for the dog (Bark for 'Happy' and Whine for 'Help').
+
+Ensure the game loop triggers these sounds on the correct events."
+
+Tips for Success:
+The Single-File Rule: Always remind the AI: "Keep all HTML, CSS, and JavaScript in one single HTML file."
+
+If Code Cuts Off: If the AI stops writing mid-code, simply reply with: "Continue from where you left off; do not miss any part of the code."
+
+Testing: Save your work as a .html file and open it in Chrome or Safari on your phone or computer to test the mechanics."`,
                 image: 'Face Merge.png', 
                 url: 'Face Merge.html',
                 bgm: 'Face Merge.mp3'
             },
             { 
                 id: 5, 
-                studio: 'Pixel Gaunt Studios',
+                studio: 'Pixel Gaunt',
                 title: 'Panda The Ocean Hunter', 
                 genre: 'Adventure', 
                 controls: '<strong>Interaction:</strong> Tap/Click to cast line, Hold to pull/shoot.', 
@@ -684,14 +930,64 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5 Canvas, Vanilla JS',
-                aiPrompt: `"Create 'Panda The Ocean Hunter' HTML5 game. A panda fishing simulator with casting, waiting, hooking, and battle states. Include floating texts and particle effects. Attribution: 'Made with Gemini AI Pro'."`,
+                aiPrompt: `"To help others or yourself generate a similar high-quality game using any AI (like Gemini, GPT-4, or Claude), you can use the following Master Development Prompt. This prompt is structured to ensure the AI handles the game logic, animations, and bug fixes properly.
+
+The "Panda the Ocean Hunter" Master Prompt
+Copy and paste the text below into an AI:
+
+Role: You are an expert Game Developer specializing in 2D HTML5 Canvas and Vanilla JavaScript.
+
+Task: Create a complete, high-quality, 2D browser-based game titled "Panda the Ocean Hunter".
+
+Game Specifications:
+
+Tech Stack: Use only HTML5, CSS3, and pure Vanilla JavaScript. No external libraries or frameworks. Everything must be contained within a single index.html file so it can be run locally in any browser.
+
+Visuals & Atmosphere:
+
+Art Style: Colorful, 2D side-view cartoon/chibi style.
+
+Environment: Deep cyan/blue water gradient background with an illustrated ocean floor and animated bubbles rising to the surface.
+
+Animations: - Panda: Needs a subtle "breathing" animation (subtle scaling up/down).
+
+Sea Creatures: All sea animals (Normal Fish, Heavy Fish, Mutant Fish, Golden Fish, Boss Octopus, Crabs, Jellyfish, Sea Snakes, Baby Octopus) must have fluid animations (tail wagging, leg movement for crabs, stretch-squish for jellyfish).
+
+Core Mechanics:
+
+Fishing Logic: A fishing rod system where the player hooks a fish.
+
+Basket Logic (Critical): Create a "Woven Basket" graphic next to the Panda. When a fish is caught, it should not just disappear; trigger a "Toss to Basket" parabolic arc animation. Once it hits the basket, the fish object must be completely deleted/removed from memory to prevent "stuck" or "ghost" creatures.
+
+Combat: Include a "Gun Shooting" mechanic to battle Mutants and the Boss Octopus.
+
+Progression: A shop menu (Upgrades Shop) where players can spend earned coins on 'Pro Rod', 'Armor Vest', and 'Golden Lure'.
+
+Technical Requirements & Bug Prevention:
+
+Collision Physics: Use hard-clamping for boundaries so creatures never get stuck at screen edges. If a creature hits a boundary, force its velocity to flip and snap it back to the safe zone.
+
+UI: Include a health bar, coin display, and notification text for events.
+
+Audio: Use the Web Audio API for basic sounds (splash, cast, shoot, coin collection, hit).
+
+Responsiveness: The canvas must resize to fit the browser window perfectly.
+
+Instruction: Please write the complete, optimized, and bug-free code. Ensure the "Toss to Basket" logic is integrated into the fish update loop so that no fish ever remains stuck in the water after being caught.
+
+How to use this to maintain your game:
+For new features: If you want to add something new (like a new fish type or a weather effect), use the prompt above but add a sentence at the end: "Update the code to also include [New Feature]."
+
+For bug fixes: If you encounter a bug, provide the AI with the specific function that is acting up. For example: "The collision detection in the update() function for the Crabs is still causing them to stick. Review the if conditions for the X-axis and rewrite them to force the crab to turn around instantly."
+
+Save your work: Always save the result as an .html file. If the AI gets confused or starts "forgetting" parts of the code because the game has grown too large, copy your current working code into the chat and say: "Here is my current game code. I need you to add [X feature] while keeping all existing mechanics, especially the basket removal logic, perfectly intact'."`,
                 image: 'Panda The Ocean Hunter.png', 
                 url: 'Panda The Ocean Hunter.html',
                 bgm: 'Panda The Ocean Hunter.mp3'
             },
             { 
                 id: 6, 
-                studio: 'Pixel Gaunt Studios',
+                studio: 'Pixel Gaunt',
                 title: 'Beggar Catcher', 
                 genre: 'Simulation', 
                 controls: '<strong>Movement:</strong> WASD <br><strong>Interaction:</strong> Hold Right Click to Search/Scan.', 
@@ -700,14 +996,70 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser Desktop',
                 technology: 'Three.js, WebGL, HTML5',
-                aiPrompt: `"Develop 'Beggar Catcher' using Three.js in a single HTML file. Features: 3D roaming, scanning crosshair, level system, shop menu, and object interaction. Must include 'Made with Gemini AI Pro'."`,
+                aiPrompt: `"To build an exact, professional-grade clone of this project, you need a modular approach. Here are the step-by-step prompts you should use to rebuild and expand the system, optimized for your single-file HTML5/JS workflow.
+
+Step 1: Core Engine & World Setup
+This prompt establishes the 3D environment and the "PixelGaunt" architectural foundation.
+
+Prompt: "Create a base HTML5 file using Three.js (r128) for a 3D game named 'Beggar Catcher'. Setup a scene with:
+
+A ground plane (300x300, green) and a road (300x25, dark grey).
+
+A city generator function that places 30 buildings of varying heights (8-25 units) and random colors, and 40 trees.
+
+Add fog for depth, and a DirectionalLight with shadows enabled.
+
+Implement a first-person controller (PointerLockControls) for movement.
+
+Constraint: Keep all code in a single HTML file with CSS and JS tags."
+
+Step 2: Player & Character System
+This addresses the missing details regarding the player's physical model and stats.
+
+Prompt: "Develop a character creation function createCharacterMesh(isPlayer, bodyColor) that returns a Three.js Group containing:
+
+A head (box, skin-colored), a torso (box, 'bodyColor'), and arms/legs as pivots.
+
+Attach this to a player object with the following stats: HP: 100, Speed: 7, SprintMultiplier: 1.8, CrouchMultiplier: 0.4.
+
+Add a 'Cap' (invisible by default) and 'Trolley' mesh as child objects.
+
+Add a saveData object to track player upgrades for these items."
+
+Step 3: Enemy Mechanics & Levels
+This solves the missing enemy behavior and level-based logic.
+
+Prompt: "Implement a LEVEL_DATA array containing 10 levels. Each level object must include:
+ID, Title, Description, Color, HP, Speed, Scale, Role (e.g., 'thief', 'aggressive'), SuspicionMultiplier, Bounty, and SpookThreshold.
+
+Behavior: 'Thief' role NPCs should run away when the player is in a 20-unit radius. 'Aggressive' NPCs should move toward the player if in range.
+
+Detection: Use the SuspicionMultiplier to calculate how fast the 'Suspicion' bar fills when the player looks at an NPC."
+
+Step 4: Interaction, Bugs, & Items
+This is where you implement the "Search" mechanic and fix the "Gliding" bug.
+
+Prompt: "Add the following mechanics:
+
+Interaction: If Right Click is held, trigger the 'Investigation' logic. If the bar fills, trigger 'Arrest' and award coins.
+
+Shop System: Create an applyUpgrades() function that changes the player's model appearance or unlocks abilities like carrying an NPC.
+
+Bug Fix: Implement a logic to fix the 'gliding' bug when an NPC is carried; ensure their position is locked to the player's carriedNPC offset with consistent interpolation."
+
+Implementation Guidelines:
+Attribution: Always include // Made with AI at the top of your script.
+
+Mobile Readiness: Since your target audience is browser-based, after you get the PC version working, use this prompt: "Add a virtual joystick for mobile touch devices, ensuring that it remains on the left side of the screen while keeping the camera rotation on the right."
+
+Vibe Coding: When you execute these prompts, tell me specifically which step you want to implement first, and I will provide the raw code blocks you can copy directly into your HTML file."`,
                 image: 'Beggar Catcher.png', 
                 url: 'Beggar Catcher.html',
                 bgm: 'Beggar Catcher.mp3'
             },
             { 
                 id: 7, 
-                studio: 'Pixel Gaunt Studios',
+                studio: 'Pixel Gaunt',
                 title: 'Horse Turn', 
                 genre: 'Racing', 
                 controls: '<strong>Movement:</strong> Left/Right Arrows or Tap <br><strong>Action:</strong> Spacebar to Dash.', 
@@ -716,14 +1068,80 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5 Canvas, RequestAnimationFrame',
-                aiPrompt: `"Build an endless runner/racing game 'Horse Turn'. The player navigates a cosmic tunnel, dodges obstacles, collects coins, and levels up based on distance. Include 'Made with Gemini AI Pro' in the code."`,
+                aiPrompt: `"Step 1: The Core Engine (The Framework)
+Use this prompt to set up the foundation:
+
+"Act as a Lead Game Developer. Create the base HTML5 structure for a 3D-perspective 'endless runner' game.
+
+Set up a full-screen canvas using CSS that locks the viewport (no scrolling/zooming).
+
+Create the 3D-to-2D projection math for a 4-walled tunnel (using variables: R, FOV, MAX_Z).
+
+Implement a rendering loop that draws a continuous, moving grid representing the tunnel walls.
+
+Use a 'cameraAngle' variable to handle the rotation of the player/tunnel when moving between walls."
+
+Step 2: The Player Logic (The Horse)
+Use this prompt to define the character:
+
+"Now, add the player character to the engine.
+
+Create a horse object with x, y, and wall-index properties.
+
+Draw a modular, shadow-free 2D representation of a horse on the canvas using basic ctx.ellipse and ctx.rect shapes (torso, head, legs, tail).
+
+Implement an animation cycle for the legs and tail based on the distanceTraveled.
+
+Add jump physics: Apply gravity (0.35) and upward velocity (6.8) to the Y property when the Spacebar or Swipe-Up input is detected."
+
+Step 3: Game Mechanics & Collision
+Use this prompt for the "challenge":
+
+"Implement the game's core mechanics and collision.
+
+Create a procedural level generator that fills the tunnel with slices containing 'solid' walls or 'gaps'.
+
+Logic: Define a slices array. If a slice is generated with wall[index] = false, it is a gap.
+
+Collision: Detect if the player is at the exact depth of a slice (z = 220). If the current wall/lane has no wall (a gap) and the player Y is 0 (grounded), trigger an 'isFallingOut' game-over state.
+
+Add a Game-Over sequence that clears the loop and displays the score."
+
+Step 4: The Economy & Dash (Items)
+Use this prompt for the gameplay loop:
+
+"Expand the game with an economy and a dash mechanic.
+
+Coin System: Add a 30% chance for a slice to contain a 'coin' object. Define the coin as a spinning ellipse. If the player's coordinate matches the coin's, increment coinsCount and give +25 score.
+
+Fast-Forward (Dash): Add a gameSpeed variable. When a 'Dash' button (or Shift key) is active, multiply gameSpeed by 2.2x.
+
+Visuals: Add a cyan aura effect around the player when the Dash is active."
+
+Step 5: Advanced Features (Leveling & Audio)
+Use this prompt for polish:
+
+"Finalize the game mechanics.
+
+Level Scaling: Every 800 score points, increment level and increase baseGameSpeed by 1.2 to make it harder over time.
+
+Audio Engine: Use the Web Audio API (Oscillators) to generate a 'Jump', 'Fall', and 'Coin' sound effect programmatically. Add a simple background synth loop that speeds up when the player uses the Dash."
+
+How to use these properly:
+Never skip a step: If you try to do everything in one go, the AI will "forget" parts of the code.
+
+"Fixing" existing code: If you have a bug (e.g., the jump isn't working), use this specific template:
+
+"My jump mechanic currently glitches when I am on the left wall. The Y-coordinate calculation is not resetting correctly. Please review the horse.update() function and fix the gravity logic so it is wall-independent."
+
+Tracking Data: To keep track of enemies or levels in your clone, ask the AI to "Define a JSON object for Level Data" so you can easily change the difficulty, wall speed, or coin spawn rate in one central place."`,
                 image: 'Horse Turn.png', 
                 url: 'Horse Turn.html',
                 bgm: 'Horse Turn.mp3'
             },
             { 
                 id: 8, 
-                studio: 'Pixel Gaunt Studios',
+                studio: 'Pixel Gaunt',
                 title: 'Deck of Doom', 
                 genre: 'Rogue-like', 
                 controls: '<strong>Interaction:</strong> Mouse/Touch to play cards from deck.', 
@@ -732,7 +1150,109 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5, CSS Animations, JS',
-                aiPrompt: `"Code a single-file HTML5 rogue-like card game 'Deck of Doom'. Turn-based card combat with custom demon cursor, HP/energy management, and 2v2 support. Must have 'Made with Gemini AI Pro' in metadata."`,
+                aiPrompt: `"Step 1: Core Engine, Setup Screen, Player & Difficulty Prompt
+Why Use It: This builds the game’s baseline database structure, state tracker, and screen controllers, enforcing strict initialization rules before matches load.
+
+Act as an expert Game Developer. Build Step 1 of a single-file HTML5 Roguelike Deckbuilder game. All HTML, CSS, and JS must be strictly in ONE single code block. 
+
+Implement a fully animated Title/Setup Screen with these exact specifications:
+1. Character Selection: Include 5 distinct playable classes with their specific native emojis: Wizard (🧙‍♂️), Elf (🧝‍♀️), Ninja (🥷), Vampire (🧛), and Cyborg (🤖).
+2. Name Input System: Add a text box for custom player name input, fallback to the class name if left blank.
+3. Difficulty Selector System: Add 3 distinct difficulty modes that MUST be selected and locked BEFORE the game starts:
+   - Easy: Player faces standard balance, CPU HP is low.
+   - Normal: Standard scaling.
+   - Hard/Pro: Enemy scaling multipliers active (CPU HP is higher, enemy attacks do 1.5x to 2x damage).
+4. Player Stats Initialization: Setup a global player object tracking maxHp (80), current hp (80), maxEnergy (3), current energy (3), block (0), strength (0), weak (0), and poison (0).
+5. State Management: The game must initialize these arrays: deck, hand, drawPile, and discardPile. Populate the base deck with exactly 4x 'Strike', 4x 'Defend', and 1x 'Bash'.
+
+Ensure the screen has a beautiful dark gradient background with floating magical particles via CSS animations, and a prominent "PLAY NOW" button that shifts the state from Title Screen to the Map screen. Give me the complete working code.
+Step 2: The Roguelike Branching Map & Node Logic Prompt
+Why Use It: Path progression vectors can suffer alignment bugs on multi-device viewports. This prompt structures static grid tiers and renders pixel-perfect dynamic SVG paths.
+
+We are expanding our HTML5 game. Keep all previous mechanics intact and implement Step 2: The Branching Roguelike Map.
+
+Requirements:
+1. Map Array Data Structure: Create a 5-tier vertical progression grid array where each tier contains nodes linked to the next tier via a 'next' ID reference array.
+2. Node Types: Define 4 node types with distinct icons and behavior:
+   - Battle (⚔️): Triggers standard enemy combat.
+   - Rest (⛺): Triggers a campfire scene to heal exactly 24 HP.
+   - Treasure (🎁): Triggers a card reward picker screen.
+   - Boss (👹): Placed strictly at Tier 5 (Top node).
+3. Dynamic Map Renderer: Generate the nodes using CSS Grid/Flexbox arranged from bottom to top.
+4. SVG Path Overlay: Create an overlaying HTML SVG canvas that draws actual connection lines between current nodes and their specified 'next' child nodes. Use getBoundingClientRect() inside a window resize listener to keep lines pixel-perfect.
+5. Interactive Node Verification: Nodes must dynamically check state. Completed nodes become translucent. Current node scales up. Connected nodes in the next tier get an '.available' class with neon blinking yellow pulse animations and click events. Non-connected nodes must block click events completely.
+
+Integrate this smoothly with the Setup screen so hitting "PLAY NOW" opens this map, and clicking the first node initializes the map route. Return the complete updated file.
+Step 3: Card Database & Card Interaction Engine Prompt
+Why Use It: This builds the interactive parser engine, managing hover scaling thresholds, micro-interaction click states, and dynamic status modifications.
+
+We are expanding our game. Keep everything intact and implement Step 3: Card Library & Rendering Engine.
+
+1. Card Database Object: Build a dictionary containing these exact cards with properties (id, name, type, cost, val, block, weak, poison, img, desc):
+   - strike: Attack, 1 Energy, 6 Damage.
+   - twin_strike: Attack, 1 Energy, 4 Damage x 2 hits.
+   - dash: Attack, 2 Energy, 10 Damage, 10 Block.
+   - bash: Attack, 2 Energy, 8 Damage, Apply 2 Weak.
+   - neutralize: Attack, 0 Energy, 3 Damage, Apply 1 Weak.
+   - bane: Attack, 1 Energy, 7 Damage (If enemy has Poison, deals damage twice).
+   - defend: Skill, 1 Energy, 5 Block.
+   - deadly_poison: Skill, 1 Energy, Apply 5 Poison.
+   - catalyst: Skill, 1 Energy, Doubles enemy current Poison stacks.
+   - piercing_wail: Skill, 1 Energy, 4 Block, Apply 2 Weak.
+   - flex/inflame: Power, 1 Energy, Gain 2 permanent Strength.
+
+2. Dynamic Text Parsing: Create a rendering function that replaces tokens like '{val}' or '{block}' with current calculated variables. If the player has active Strength buffs, display the boosted attack value in neon green, or if Weakened, display it in a strike-through text style.
+3. Card Container Interaction: On the battle screen, render cards inside a hand container. Use CSS transforms to create a smooth curved fan-out look. Child elements inside cards must have 'pointer-events: none' to stop hover flickering. Hovering a card must shift it up by 35px smoothly.
+Step 4: Enemy AI, Intents & Battle Loop Engine Prompt
+Why Use It: This structures the foundational logic for turn-based state switches, enemy combat behavior tables, stat counters, and math modifiers.
+
+We are expanding the game. Implement Step 4: Enemy AI and Turn-Based Combat Loop.
+
+1. Enemy Pool Array: Define 4 procedural standard enemies and 1 final boss:
+   - Acid Slime (🦠, 35 HP): Pattern alternating between [5 Damage Attack] -> [Apply 2 Poison Debuff] -> [8 Damage Heavy Attack].
+   - Cultist (🦅, 50 HP): Pattern [Gain 2 Strength Buff] -> [6 Damage Attack] -> [6 Damage Attack].
+   - Thief (🦹, 60 HP): Pattern [10 Damage Attack] -> [Gain 10 Block Defend] -> [6 Damage Attack & Apply 1 Weak].
+   - Fungi Beast (🍄, 75 HP): Pattern [8 Damage Attack & Apply 3 Poison] -> [12 Damage Attack] -> [Gain 12 Block].
+   - Hexaghost (👹, 120 HP, BOSS): Pattern [4 Damage x 3 Multi-Attack] -> [Apply 2 Weak & 3 Poison] -> [18 Mega Attack] -> [Gain 20 Block].
+
+2. The Intent System: At the start of the player's turn, calculate the enemy's next move based on their incremental turn counter. Render a floating intent box above the enemy display showing the exact icon (⚔️, 🛡️, 🔥, 📉) and calculated final numerical damage/block value, factoring in enemy Strength or Weakness states.
+3. Combat Turn Manager Flow:
+   - Draw Phase: Reset Player Energy to 3, clear block, draw 5 cards. Calculate active Player Poison ticks before unblocking cards.
+   - Action Phase: Player plays cards. Validate energy cost vs current pool.
+   - Discard Phase: Pressing "End Turn" triggers an immediate card block lockdown to prevent double-casting. Hand clears into discardPile.
+   - Enemy Phase: Read the active Intent, perform math calculations against player block, deduct HP, apply debuffs, advance enemy turn count, update intents, and call player draw phase again.
+Step 5: Visual Polish, Particle Throw, and Floating Damage Numbers Prompt
+Why Use It: Enhances the game feel with advanced styling hooks, motion feedback frames, dynamic scaling indicators, and hit responses.
+
+We are enhancing the visual polish of our game. Keep all engine logic intact and inject an advanced CSS/JS animation layer:
+
+1. Web Animations API Particle Throw: Create a dynamic floating emoji projectile launcher. When an attack card is played, grab the card's native emoji character image and trigger an automated linear canvas glide translation projecting multiple particle duplicates shooting directly from the center coordinates of the player avatar to the enemy avatar. On enemy attacks, throw weapon emojis (🗡️, 💥) back toward the player.
+2. Floating Damage Text: Generate text elements dynamically with unique fonts on entity hits. Critical hits or clean unblocked damage must spawn massive bold red numbers that scale up rapidly, float upwards, and fade out using a smooth ease-out curve. Blocked hits must display text like "+Block" in neon blue.
+3. Combat Impact Shakes: If an entity takes unblocked damage, trigger a heavy horizontal CSS 'shake' animation on their frame box while flashing the background container tint. Gaining block must trigger a scaling pulse and a temporary blue glowing flash border.
+Step 6: Native Web Audio Synthesizer Engine Prompt
+Why Use It: Implements a direct runtime chiptune synthesizer loop, preventing path-not-found sound errors on browser platforms like Itch.io.
+
+We are adding full audio functionality. Since external file assets are blocked, integrate a native JavaScript Web Audio API Chiptune Synthesizer Engine.
+
+1. Audio Context Guard: Initialize a window AudioContext master handler. Put it behind an internal click/touch user-interaction gate to safely bypass browser strict autoplay block policies.
+2. Custom Waveform SFX Library: Build sound triggers using oscillator nodes with custom waveform nodes (sine, square, sawtooth, triangle) and automated exponential value gains for linear ramps:
+   - Card Hover: Fast high-pitch soft sine wave chirp.
+   - Button Click: Linear down-slide triangle pitch drop.
+   - Attack Cast: Heavy jagged sawtooth wave crunch diving downwards.
+   - Block Cast: High-resonance crisp square wave rising upwards.
+   - Buff/Debuff: Multi-layered sine wave chime scaling frequencies.
+   - Victory State: Harmonious arpeggio major chord sweep sequence.
+   - Defeat State: Low-frequency descending sawtooth drone fadeout.
+3. Master Audio Control HUD: Render a circular floating button in the upper corner of the game frame displaying an interactive master Mute/Unmute state (🔊/🔇) toggling internal synthesizer volume gain routers instantly.
+Step 7: Automated Bug Fixes & New Item Expansion Framework Prompt
+Why Use It: Eliminates memory leaks, endless draw state freezes, and array sequence overlap exceptions during prolonged runs.
+
+Review the current full application code and strictly execute this optimization blueprint to patch hidden state-machine bugs, game locks, and prepare item frameworks:
+
+1. Card State Lockup Fix: Ensure that inside the playCard() method, the absolute first step sets 'gameState.turnInProgress = true' instantly, and resetting it back to 'false' must only happen after all asynchronous card resolution timers and projectile throw animations have completely finished executing.
+2. Draw Pile Recycle Loop Fix: If drawPile length hits 0 mid-draw, clone the discardPile array contents into drawPile, empty out discardPile completely, execute a complete array element randomized index array shuffle function, and then continue pulling the remaining card draws seamlessly without breaking the evaluation loops.
+3. Dead Target Auto-Erase Fix: Implement internal logic check verifying entity health state on every event trigger. If enemy HP reaches zero or less, break all pending turn execution lines, trigger the victory transition sequences, clear combat arrays, and open the Map screen safely. If player HP reaches zero, wipe states and trigger the Game Over interface screen immediately.
+4. Extensible Item Pool: Setup an empty array called 'player.relics'. Create an item eval."`,
                 image: 'Deck of Doom.png', 
                 url: 'Deck of Doom.html',
                 bgm: 'Deck of Doom.mp3'
