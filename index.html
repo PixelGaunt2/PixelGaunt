@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Gaunt | Modern Retro Games Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* ====================================
+           CSS VARIABLES & GLOBAL RESET
+           ==================================== */
+        :root {
+            --bg-base: #06060a;
+            --bg-surface: #0f0f16;
+            --bg-surface-light: #181824;
+            --neon-cyan: #00f3ff;
+            --neon-purple: #bc13fe;
+            --text-main: #e2e8f0;
+            --text-muted: #64748b;
+            --glass-bg: rgba(15, 15, 22, 0.75);
+            --shadow-glow-cyan: 0 0 15px rgba(0, 243, 255, 0.25);
+            --shadow-glow-purple: 0 0 15px rgba(188, 19, 254, 0.25);
+            --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #06060a, #130a21, #06111f, #06060a);
+            background-size: 400% 400%;
+            animation: catchyBackground 15s ease infinite;
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        @keyframes catchyBackground {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        h1, h2, h3, .pixel-font { font-family: 'Press Start 2P', cursive; text-transform: uppercase; letter-spacing: 0.5px; }
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; }
+        button, input, select, textarea { font-family: inherit; color: inherit; }
+        button { cursor: pointer; border: none; outline: none; background: none; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-surface-light); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--neon-purple); }
+
+        #loader {
+            position: fixed; inset: 0; background: var(--bg-base); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.4s ease;
+        }
+        .loader-spinner {
+            width: 45px; height: 45px;
+            border: 4px solid var(--bg-surface);
+            border-top: 4px solid var(--neon-cyan);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* ====================================
+           HEADER & NAVIGATION
+           ==================================== */
+        header {
+            position: sticky; top: 0; z-index: 100;
+            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 16px 5%;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-size: 1.15rem; color: #fff; text-shadow: 0 0 10px var(--neon-cyan); cursor: pointer; }
+        .logo span { color: var(--neon-purple); text-shadow: 0 0 10px var(--neon-purple); }
+        
+        .nav-links { display: flex; gap: 16px; align-items: center; }
+        .nav-btn {
+            color: var(--text-main); font-weight: 500; padding: 8px 16px; border-radius: 6px;
+            transition: var(--transition-smooth); font-size: 0.9rem;
+        }
+        .nav-btn:hover { color: var(--neon-cyan); background: rgba(0, 243, 255, 0.08); }
+        .nav-btn.primary {
+            background: var(--neon-purple); color: #fff; font-weight: 600;
+            box-shadow: 0 0 12px rgba(188, 19, 254, 0.3);
+        }
+        .nav-btn.primary:hover {
+            background: #cd28ff; box-shadow: 0 0 20px rgba(188, 19, 254, 0.6); transform: translateY(-1px);
+        }
+
+        /* SEARCH BAR */
+        .search-container { margin: 24px 5% 12px 5%; position: relative; }
+        .search-bar {
+            width: 100%; max-width: 580px; margin: 0 auto; display: block;
+            background: var(--bg-surface); border: 1px solid var(--bg-surface-light);
+            color: #fff; padding: 14px 22px; border-radius: 30px; font-size: 0.95rem;
+            transition: var(--transition-smooth);
+        }
+        .search-bar:focus { border-color: var(--neon-cyan); box-shadow: var(--shadow-glow-cyan); outline: none; }
+
+        /* ====================================
+           MAIN LAYOUT (2 Columns)
+           ==================================== */
+        .container { display: flex; gap: 30px; padding: 12px 5% 60px 5%; max-width: 1600px; margin: 0 auto; }
+        
+        .sidebar { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; }
+        .sidebar-box {
+            background: var(--bg-surface); border-radius: 14px; padding: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .sidebar-title { font-size: 0.7rem; color: var(--neon-cyan); margin-bottom: 16px; letter-spacing: 1px; }
+        
+        .sidebar-menu li { margin-bottom: 8px; }
+        .sidebar-menu button {
+            width: 100%; text-align: left; padding: 11px 14px; border-radius: 8px;
+            color: #94a3b8; font-weight: 500; font-size: 0.9rem; transition: var(--transition-smooth);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .sidebar-menu button:hover, .sidebar-menu button.active {
+            color: #fff; background: rgba(255, 255, 255, 0.04); border-left: 3px solid var(--neon-cyan);
+        }
+        .sidebar-menu button.active { border-left-color: var(--neon-purple); color: #fff; background: rgba(188, 19, 254, 0.05); }
+
+        .main-content { flex-grow: 1; }
+
+        .category-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 24px; }
+        .category-bar::-webkit-scrollbar { height: 3px; }
+        .cat-btn {
+            background: var(--bg-surface); border: 1px solid var(--bg-surface-light);
+            color: #94a3b8; padding: 8px 18px; border-radius: 20px;
+            font-size: 0.85rem; font-weight: 500; white-space: nowrap; transition: var(--transition-smooth);
+        }
+        .cat-btn:hover, .cat-btn.active {
+            border-color: var(--neon-purple); color: #fff; background: rgba(188, 19, 254, 0.08);
+            box-shadow: 0 0 10px rgba(188, 19, 254, 0.2);
+        }
+
+        /* ====================================
+           GAME GRID & CARDS
+           ==================================== */
+        .game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+        .game-card {
+            background: var(--bg-surface); border-radius: 14px; overflow: hidden;
+            border: 1px solid var(--bg-surface-light); position: relative;
+            transition: var(--transition-smooth); cursor: pointer;
+            display: flex; flex-direction: column;
+        }
+        .game-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 12px 24px rgba(0, 243, 255, 0.12);
+        }
+        .card-thumb {
+            width: 100%; height: 210px; position: relative;
+            background-size: cover; background-position: center; overflow: hidden;
+        }
+        .card-thumb::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(to bottom, transparent, var(--bg-surface)); opacity: 0.85;
+        }
+        
+        .play-overlay {
+            position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; transition: var(--transition-smooth);
+        }
+        .game-card:hover .play-overlay { opacity: 1; backdrop-filter: blur(3px); }
+        .play-btn-circle {
+            width: 52px; height: 52px; background: var(--neon-cyan); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 18px var(--neon-cyan); transform: scale(0.85); transition: var(--transition-smooth);
+        }
+        .game-card:hover .play-btn-circle { transform: scale(1); }
+        .play-btn-circle::after { content: '▶'; color: #000; font-size: 1.15rem; margin-left: 3px; }
+
+        .card-info { padding: 18px 20px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .card-title { font-size: 1.05rem; color: #fff; margin-bottom: 6px; font-weight: 800; }
+        .card-genre { font-size: 0.72rem; color: var(--neon-purple); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+        /* ====================================
+           PAGE 2 — GAMEPLAY AREA UI
+           ==================================== */
+        #gameplay-page { display: none; padding: 0 5% 60px 5%; max-width: 1600px; margin: 0 auto; animation: fadeIn 0.35s ease-out; }
+        
+        .game-header { text-align: center; margin-bottom: 24px; }
+        .game-title-large { font-size: 1.4rem; color: #fff; text-shadow: 0 0 12px rgba(0, 243, 255, 0.35); margin-top: 16px; }
+        
+        .game-controls-top {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 920px; margin: 0 auto 16px auto;
+        }
+        .back-btn { color: #94a3b8; font-weight: 600; font-size: 0.9rem; transition: var(--transition-smooth); }
+        .back-btn:hover { color: #fff; }
+
+        .gameplay-layout { display: flex; justify-content: center; align-items: flex-start; gap: 24px; width: 100%; }
+        
+        .empty-zone-v {
+            width: 160px; height: 600px; flex-shrink: 0; border-radius: 8px;
+            background: rgba(255, 255, 255, 0.01); border: 1px dashed rgba(255, 255, 255, 0.04);
+        }
+        .empty-zone-h {
+            width: 100%; max-width: 920px; height: 95px; margin: 32px auto 0 auto; border-radius: 8px;
+            background: rgba(255, 255, 255, 0.01); border: 1px dashed rgba(255, 255, 255, 0.04);
+        }
+
+        .game-container-wrapper { flex-grow: 1; max-width: 920px; width: 100%; }
+        
+        .game-container {
+            width: 100%; height: 600px; background: #000;
+            border-radius: 12px; border: 2px solid var(--bg-surface-light);
+            box-shadow: 0 24px 48px rgba(0,0,0,0.6); position: relative; overflow: hidden;
+        }
+        @media (max-width: 768px) {
+            .game-container { height: 400px; }
+        }
+        .game-container iframe { width: 100%; height: 100%; border: none; display: block; }
+
+        /* ACTION BAR (Buttons below the game) */
+        .game-action-bar {
+            display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 18px;
+            background: var(--bg-surface); padding: 14px; border-radius: 12px;
+            border: 1px solid var(--bg-surface-light); box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .action-btn {
+            background: var(--bg-surface-light); border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #e2e8f0; padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+            transition: var(--transition-smooth); display: flex; align-items: center; gap: 8px; cursor: pointer;
+        }
+        .action-btn:hover {
+            color: #fff; border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.08);
+            box-shadow: 0 0 12px rgba(0, 243, 255, 0.2); transform: translateY(-2px);
+        }
+        .action-btn.share:hover { border-color: var(--neon-purple); box-shadow: 0 0 12px rgba(188, 19, 254, 0.2); background: rgba(188, 19, 254, 0.08); }
+        
+        /* META DESCRIPTIONS AREA */
+        .game-details {
+            max-width: 920px; margin: 32px auto 0 auto; background: var(--bg-surface);
+            border-radius: 14px; padding: 28px; border: 1px solid var(--bg-surface-light);
+        }
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+        .detail-section h3 { font-size: 0.85rem; color: var(--neon-cyan); margin-bottom: 14px; }
+        .detail-section p { color: #94a3b8; font-size: 0.92rem; line-height: 1.6; margin-bottom: 10px; }
+        .detail-section p strong { color: #e2e8f0; }
+        .prompt-box {
+            background: var(--bg-base); padding: 16px; border-radius: 8px; 
+            border: 1px solid var(--bg-surface-light); font-size: 0.85rem; color: #94a3b8; 
+            white-space: pre-wrap; font-family: monospace; overflow-x: auto; line-height: 1.5; margin-top: 8px;
+        }
+
+        /* ====================================
+           MODALS SYSTEMS (MULTI-STEP & OPTIONS)
+           ==================================== */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(4, 4, 6, 0.85); backdrop-filter: blur(6px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+            opacity: 0; transition: opacity 0.25s ease;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        
+        .modal-content {
+            background: var(--bg-surface); padding: 36px; border-radius: 16px;
+            width: 92%; max-width: 460px; border: 1px solid var(--bg-surface-light);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); transform: scale(0.92); transition: transform 0.25s ease;
+            position: relative;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); border-color: var(--neon-purple); }
+        .close-modal { position: absolute; top: 18px; right: 20px; color: #64748b; font-size: 1.4rem; font-weight: bold; }
+        .close-modal:hover { color: #fff; }
+        
+        .modal-title { font-size: 0.95rem; color: #fff; margin-bottom: 24px; text-align: center; }
+        .modal-step { display: none; }
+        .modal-step.active { display: block; }
+
+        .option-grid { display: flex; flex-direction: column; gap: 14px; margin-bottom: 10px; }
+        .opt-btn {
+            background: var(--bg-surface-light); border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 14px 20px; border-radius: 10px; text-align: left; font-size: 0.95rem;
+            font-weight: 600; display: flex; align-items: center; gap: 14px; transition: var(--transition-smooth);
+        }
+        .opt-btn:hover {
+            border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.05); transform: translateX(4px);
+        }
+        .opt-btn.whatsapp:hover {
+            border-color: #25d366; background: rgba(37, 211, 102, 0.05);
+        }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; font-weight: 500; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; background: var(--bg-base); border: 1px solid var(--bg-surface-light);
+            color: #fff; padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; transition: var(--transition-smooth);
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--neon-purple); outline: none; }
+        
+        .file-upload-box {
+            border: 2px dashed var(--bg-surface-light); padding: 20px; text-align: center; border-radius: 10px;
+            cursor: pointer; transition: var(--transition-smooth); background: rgba(0,0,0,0.2);
+        }
+        .file-upload-box:hover { border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.02); }
+        .file-info-text { font-size: 0.8rem; color: #64748b; margin-top: 6px; }
+        .file-badge { color: var(--neon-cyan); font-weight: 600; }
+
+        .agreement-text {
+            background: var(--bg-base); border: 1px solid var(--bg-surface-light);
+            padding: 16px; border-radius: 8px; max-height: 180px; overflow-y: auto;
+            font-size: 0.82rem; color: #94a3b8; line-height: 1.5; margin-bottom: 18px;
+        }
+        .checkbox-container { display: flex; align-items: flex-start; gap: 10px; font-size: 0.85rem; color: #e2e8f0; cursor: pointer; margin-bottom: 24px; }
+        .checkbox-container input { width: 16px; height: 16px; margin-top: 2px; cursor: pointer; }
+
+        .action-btns { display: flex; gap: 12px; justify-content: flex-end; }
+        .wizard-btn {
+            background: var(--neon-purple); color: #fff; font-weight: 600; padding: 11px 22px;
+            border-radius: 8px; font-size: 0.88rem; transition: var(--transition-smooth);
+        }
+        .wizard-btn:hover:not(:disabled) { background: #cd28ff; box-shadow: 0 0 15px rgba(188, 19, 254, 0.4); }
+        .wizard-btn:disabled { background: #2e2e3a; color: #64748b; cursor: not-allowed; }
+        .wizard-btn.secondary { background: transparent; border: 1px solid var(--bg-surface-light); color: #94a3b8; }
+        .wizard-btn.secondary:hover { color: #fff; border-color: #64748b; }
+
+        .join-link-container { text-align: center; margin-top: 16px; font-size: 0.85rem; }
+        .join-channel-link { color: #25d366; font-weight: 600; text-decoration: underline; }
+        .join-channel-link:hover { color: #4ef087; }
+
+        /* ====================================
+           PREMIUM CLEAN FOOTER
+           ==================================== */
+        footer {
+            background: #09090e; padding: 40px 5%; border-top: 1px solid rgba(255,255,255,0.03);
+            color: #475569; font-size: 0.85rem; text-align: center; margin-top: auto;
+        }
+        .footer-content { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; align-items: center; }
+        .footer-links { display: flex; gap: 24px; color: #64748b; font-weight: 500; }
+        .footer-links a:hover { color: var(--neon-cyan); }
+        .footer-copyright { font-size: 0.7rem; color: #334155; margin-top: 8px; letter-spacing: 0.5px; }
+
+        /* ANIMATIONS */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* RESPONSIVENESS */
+        @media (max-width: 1024px) {
+            .empty-zone-v { display: none; }
+            .details-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            header { flex-direction: column; gap: 16px; padding: 16px; }
+            .container { flex-direction: column; }
+            .sidebar { width: 100%; }
+            .game-grid { grid-template-columns: 1fr; }
+            .game-title-large { font-size: 1.15rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="portal-bgm" loop style="display:none;"></audio>
+
+    <div id="loader">
+        <div class="loader-spinner"></div>
+        <p class="pixel-font" style="font-size: 0.65rem; color: var(--neon-cyan); letter-spacing: 2px;">LOADING PORTAL...</p>
+    </div>
+
+    <header>
+        <div class="logo pixel-font" onclick="goHome()">Pixel <span>Gaunt</span></div>
+        <nav class="nav-links">
+            <button class="nav-btn" onclick="goHome()">Games</button>
+            <button class="nav-btn" onclick="openUploadWizard()" onmouseover="this.innerText='⏳ Coming Soon...'" onmouseout="this.innerText='Upload'">Upload</button>
+            <button class="nav-btn primary" onclick="openLoginWizard()">Login</button>
+        </nav>
+    </header>
+
+    <div class="search-container" id="search-section">
+        <input type="text" class="search-bar" id="search-input" placeholder="Search across retro database..." onkeyup="filterGames()">
+    </div>
+
+    <main class="container" id="homepage">
+        
+        <aside class="sidebar">
+            <div class="sidebar-box">
+                <h3 class="sidebar-title pixel-font">Navigation</h3>
+                <ul class="sidebar-menu">
+                    <li><button class="active" id="btn-cat-all" onclick="filterCategory('All', null)">🕹️ All Games List</button></li>
+                    <li><button id="btn-cat-arcade" onclick="filterCategory('Arcade', null)">⚡ Arcade Database</button></li>
+                    <li><button id="btn-cat-adventure" onclick="filterCategory('Adventure', null)">🧭 Quest Adventure</button></li>
+                    <li><button id="btn-cat-simulation" onclick="filterCategory('Simulation', null)">🍕 Strategy & Sim</button></li>
+                    <li><button id="btn-cat-roguelike" onclick="filterCategory('Rogue-like', null)">💀 Rogue Dungeon</button></li>
+                    <li><button id="btn-cat-puzzle" onclick="filterCategory('Puzzle', null)">🧩 Puzzle</button></li>
+                    <li><button id="btn-cat-racing" onclick="filterCategory('Racing', null)">🏎️ Racing</button></li>
+                    <li><button id="btn-cat-rpg" onclick="filterCategory('RPG', null)">⚔️ RPG</button></li>
+                </ul>
+            </div>
+            <div class="sidebar-box">
+                <h3 class="sidebar-title pixel-font">Developer</h3>
+                <ul class="sidebar-menu">
+                    <li><button onclick="openUploadWizard()" onmouseover="this.innerText='⏳ Coming Soon...'" onmouseout="this.innerText='⬆️ Deploy Project (.ZIP)'">⬆️ Deploy Project (.ZIP)</button></li>
+                </ul>
+            </div>
+        </aside>
+
+        <section class="main-content">
+            <div class="category-bar" id="top-cat-bar">
+                <button class="cat-btn active" onclick="filterCategory('All', this)">All Games</button>
+                <button class="cat-btn" onclick="filterCategory('Arcade', this)">Arcade</button>
+                <button class="cat-btn" onclick="filterCategory('Adventure', this)">Adventure</button>
+                <button class="cat-btn" onclick="filterCategory('Simulation', this)">Simulation</button>
+                <button class="cat-btn" onclick="filterCategory('Rogue-like', this)">Rogue-like</button>
+                <button class="cat-btn" onclick="filterCategory('Puzzle', this)">Puzzle</button>
+                <button class="cat-btn" onclick="filterCategory('Racing', this)">Racing</button>
+                <button class="cat-btn" onclick="filterCategory('RPG', this)">RPG</button>
+            </div>
+
+            <div class="game-grid" id="game-grid">
+                </div>
+        </section>
+    </main>
+
+    <main id="gameplay-page">
+        <div class="game-header">
+            <h2 class="game-title-large pixel-font" id="current-game-title">Game Viewport</h2>
+        </div>
+
+        <div class="game-controls-top">
+            <button class="back-btn" onclick="goHome()">← Return to Database</button>
+        </div>
+
+        <div class="gameplay-layout">
+            <div class="empty-zone-v"></div>
+
+            <div class="game-container-wrapper">
+                <div class="game-container" id="game-container-element">
+                    <iframe src="" id="game-canvas" allowfullscreen allow="autoplay; fullscreen"></iframe>
+                </div>
+                
+                <div class="game-action-bar">
+                    <button class="action-btn" onclick="actionLike()">❤️ Like</button>
+                    <button class="action-btn" onclick="actionBug()">🐛 Report Bug</button>
+                    <button class="action-btn" onclick="toggleMute()" id="mute-btn">🔊 Sound: ON</button>
+                    <button class="action-btn share" onclick="actionShare()">🔗 Share</button>
+                    <button class="action-btn pixel-font" onclick="toggleFullscreen()" style="font-size: 0.75rem;">⛶ Fullscreen</button>
+                </div>
+            </div>
+
+            <div class="empty-zone-v"></div>
+        </div>
+
+        <div class="game-details">
+            <div class="details-grid">
+                <div class="detail-section">
+                    <h3 class="pixel-font">Game Identity</h3>
+                    <p><strong>Studio:</strong> <span id="current-game-studio"></span></p>
+                    <p><strong>Release Date:</strong> <span id="current-game-releasedate"></span></p>
+                    <p><strong>Platform:</strong> <span id="current-game-platform"></span></p>
+                    <p><strong>Technology Core:</strong> <span id="current-game-technology"></span></p>
+                    <p><strong>Player Rating:</strong> <span id="current-game-rating" style="color: #fbbf24;"></span></p>
+                    <br>
+                    <h3 class="pixel-font">How to Play</h3>
+                    <p id="current-game-howtoplay"></p>
+                </div>
+                
+                <div class="detail-section">
+                    <h3 class="pixel-font">Input / Controls</h3>
+                    <p id="current-game-controls" style="margin-bottom: 24px;"></p>
+                    
+                    <div id="ai-prompt-container" style="display: none;">
+                        <h3 class="pixel-font">AI Prompt Architecture</h3>
+                        <div class="prompt-box" id="current-game-aiprompt"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="empty-zone-h"></div>
+    </main>
+
+    <div class="modal-overlay" id="login-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModals()">&times;</button>
+            
+            <div class="modal-step active" id="login-step-choice">
+                <h3 class="modal-title pixel-font">Select Authentication</h3>
+                <div class="option-grid">
+                    <button class="opt-btn" onclick="goToLoginStep('gmail')">
+                        <span>📧</span> Login via Gmail Account
+                    </button>
+                    <button class="opt-btn whatsapp" onclick="goToLoginStep('whatsapp')">
+                        <span>💬</span> Login via WhatsApp Code
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-step" id="login-step-gmail">
+                <h3 class="modal-title pixel-font">Gmail Access</h3>
+                <div class="form-group">
+                    <label>Enter Registered Email Address</label>
+                    <input type="email" id="login-email-input" placeholder="developer@pixelgaunt.com">
+                </div>
+                <div class="action-btns">
+                    <button class="wizard-btn secondary" onclick="goToLoginStep('choice')">Back</button>
+                    <button class="wizard-btn" onclick="simulateAuthSuccess('Gmail Link dispatched! Check inbox.')">Send Magic Link</button>
+                </div>
+            </div>
+
+            <div class="modal-step" id="login-step-whatsapp">
+                <h3 class="modal-title pixel-font">WhatsApp Verification</h3>
+                <div class="form-group">
+                    <label>Enter Phone Number (With Country Code)</label>
+                    <input type="tel" id="login-phone-input" placeholder="+92 300 1234567">
+                </div>
+                <div class="action-btns">
+                    <button class="wizard-btn secondary" onclick="goToLoginStep('choice')">Back</button>
+                    <button class="wizard-btn" onclick="simulateAuthSuccess('Verification code triggered over WhatsApp!')">Request Code</button>
+                </div>
+                <div class="join-link-container">
+                    <p style="font-size: 0.8rem; color:#64748b; margin-bottom:6px;">Or instantly stay synced:</p>
+                    <a href="#" class="join-channel-link" onclick="alert('Redirecting to Pixel Gaunt WhatsApp Community Group/Page for updates!')">
+                        📢 Join Official Notification Channel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="upload-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModals()">&times;</button>
+            
+            <div class="modal-step active" id="upload-step-agreement">
+                <h3 class="modal-title pixel-font">Developer Agreement</h3>
+                <div class="agreement-text">
+                    Welcome to Pixel Gaunt Studios. By launching web modules on this platform, you grant Pixel Gaunt localized browser-hosting privileges.<br><br>
+                    1. Ensure modules contain optimized HTML5/JS files.<br>
+                    2. Strict compliance against harmful code execution, malware vectors, or unoptimized infinite loop threads.<br>
+                    3. Upload archives must be single bundled entities using strictly supported formats (.zip, .rar). Everything should load instantly natively without fetching illegal external assets.
+                </div>
+                <label class="checkbox-container">
+                    <input type="checkbox" id="agreement-checkbox" onchange="toggleAgreementNextBtn()">
+                    <span>I review, verify, and agree to the Developer Distribution Guidelines specified above.</span>
+                </label>
+                <div class="action-btns">
+                    <button class="wizard-btn" id="agreement-next-btn" disabled onclick="goToUploadStep('form')">Next Step</button>
+                </div>
+            </div>
+
+            <div class="modal-step" id="upload-step-form">
+                <h3 class="modal-title pixel-font">Deploy Archive</h3>
+                <div class="form-group">
+                    <label>Project Title</label>
+                    <input type="text" placeholder="e.g. Neon Runner 2D">
+                </div>
+                <div class="form-group">
+                    <label>Select Deployment Stream (Genre)</label>
+                    <select>
+                        <option>Arcade</option>
+                        <option>Adventure</option>
+                        <option>Simulation</option>
+                        <option>Rogue-like</option>
+                        <option>Puzzle</option>
+                        <option>Racing</option>
+                        <option>RPG</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Upload Build Package (<span class="file-badge">.ZIP / .RAR only</span>)</label>
+                    <div class="file-upload-box" onclick="document.getElementById('hidden-file-input').click()">
+                        <span style="font-size:1.5rem; color:var(--neon-cyan);">📦</span>
+                        <p style="font-weight:600; margin-top:8px; font-size:0.85rem;">Click to attach project package</p>
+                        <p class="file-info-text">Supported formats: <span class="file-badge">.zip</span> or <span class="file-badge">.rar</span> extensions</p>
+                    </div>
+                    <input type="file" id="hidden-file-input" accept=".zip,.rar" style="display:none;" onchange="handleFileSelection(this)">
+                    <p id="file-selected-name" style="font-size:0.8rem; color:var(--neon-cyan); margin-top:8px; text-align:center; display:none; font-weight:600;"></p>
+                </div>
+                <div class="action-btns">
+                    <button class="wizard-btn secondary" onclick="goToUploadStep('agreement')">Back</button>
+                    <button class="wizard-btn" onclick="simulateUploadSuccess()">Compile & Deploy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="#" onclick="goHome()">Databases</a>
+                <a href="#" onclick="openUploadWizard()">Distribution Panel</a>
+                <a href="#" onclick="openLoginWizard()">Terms of Entry</a>
+            </div>
+            <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const games = [
+            { 
+                id: 1, 
+                studio: 'Pixel Gaunt Studios',
+                title: 'Stickman Velocity', 
+                genre: 'Arcade', 
+                controls: '<strong>Movement:</strong> Joystick (Mobile) / Keyboard (Desktop).<br><strong>Actions:</strong> Punch, Kick, Jump, Dash, Dive, and Fire.', 
+                howToPlay: 'Navigate through the levels, defeat enemy waves (Small, Spider, Goliath), and conquer the Titan Boss. Track HP and collect coins to boost your score.',
+                rating: '⭐⭐⭐⭐⭐ (4.8/5)',
+                releaseDate: 'May 2026',
+                platform: 'Web Browser, Mobile',
+                technology: 'Single-file HTML5, CSS Flexbox, Vanilla ES6 JavaScript, Web Audio API, Canvas API',
+                aiPrompt: `"Act as a professional game developer. Create a single-file HTML5/CSS/JavaScript game titled 'Stickman Velocity'.\n\nGame Requirements:\n- Genre: 2D Side-Scrolling Beat 'em up.\n- Technical: Use a single HTML file with embedded CSS and Vanilla JS. No external dependencies or heavy libraries.\n- Core Features: A player sprite with physics (gravity, jump, dash, dive, punch, kick). Procedural enemy waves (Small, Spider, Goliath, and a Titan Boss). UI system for HP bars, a 'Boss Coming' progress bar, and score/coin tracking.\n- Controls: Mobile-friendly touch controls (Joystick and on-screen action buttons).\n- Sound: Simple sound synthesis using Web Audio API for effects like jump, punch, kick, and fire.\n- Visuals: Minimalist neon-style graphics on a dark background using Canvas API.\n- Architecture: Use Object-Oriented Programming (Classes) for game entities.\n- Attribution: Include 'Made with Gemini AI Pro' in the game's metadata and console.\n\nPlease write the complete, functional, 'click-to-play' code in one block."`,
+                image: 'Stick Man Velocity.png',
+                url: 'Stick Man Velocity.html',
+                bgm: 'Stick Man Velocity.mp3'
+            },
+            { 
+                id: 2, 
+                studio: 'Pixel Gaunt Studios',
+                title: 'Serpent Relic', 
+                genre: 'Adventure', 
+                controls: '<strong>Movement:</strong> Swipe (Mobile) / Arrow Keys (Desktop).', 
+                howToPlay: 'Navigate the serpent through dark tombs and ancient crypts. Avoid traps, use mirrors, and rescue your twin to escape before the darkness consumes you.',
+                rating: '⭐⭐⭐⭐ (4.5/5)',
+                releaseDate: 'May 2026',
+                platform: 'Web Browser, Mobile',
+                technology: 'HTML5 Canvas, Vanilla JS',
+                aiPrompt: `"Act as a game developer. Create a game called 'Serpent Relic'. Genre: Adventure/Puzzle. Features: Grid-based snake movement, mirrors, darkness mechanics, and twin rescue logic. Include 'Made with Gemini AI Pro' in the game's metadata. Code it as a single HTML file."`,
+                image: 'Serpent Relic.png', 
+                url: 'Serpent Relic.html',
+                bgm: 'Serpent Relic.mp3'
+            },
+            { 
+                id: 3, 
+                studio: 'Pixel Gaunt Studios',
+                title: 'Pizza Chaos', 
+                genre: 'Simulation', 
+                controls: '<strong>Movement:</strong> Touch/Drag (Mobile) / Mouse (Desktop).', 
+                howToPlay: 'Deliver pizzas in a chaotic environment. Fight multi-boss enemies, gather power-ups to level up, and complete campaign objectives before the timer runs out.',
+                rating: '⭐⭐⭐⭐ (4.6/5)',
+                releaseDate: 'May 2026',
+                platform: 'Web Browser, Mobile',
+                technology: 'HTML5, CSS Flexbox, JavaScript',
+                aiPrompt: `"Create an HTML5 game 'Pizza Chaos: Multi-Boss Edition'. Genre: Simulation/Action. Mechanics: Deliver pizzas while surviving boss fights and leveling up. Needs touch controls and dynamic powerups. Include 'Made with Gemini AI Pro' in the metadata."`,
+                image: 'Pizza Chaos.png', 
+                url: 'Pizza Chaos.html', 
+                bgm: 'Pizza Chaos.mp3'
+            },
+            { 
+                id: 4, 
+                studio: 'Pixel Gaunt Studios',
+                title: 'Face Merge', 
+                genre: 'Puzzle', 
+                controls: '<strong>Interaction:</strong> Tap/Click on adjacent tiles to swap or merge.', 
+                howToPlay: 'Merge matching emoji faces to clear the board, achieve the score target, and save the dog from going underwater within the given move limit.',
+                rating: '⭐⭐⭐⭐ (4.3/5)',
+                releaseDate: 'May 2026',
+                platform: 'Web Browser, Mobile',
+                technology: 'HTML5, CSS Grid, Vanilla JS',
+                aiPrompt: `"Generate a Match-3 / Merge puzzle game called 'Face Merge'. Features: Merge emojis, score targets, move limits, and a dog character that reacts to gameplay. Include 'Made with Gemini AI Pro' in the code."`,
+                image: 'Face Merge.png', 
+                url: 'Face Merge.html',
+                bgm: 'Face Merge.mp3'
+            },
+            { 
+                id: 5, 
+                studio: 'Pixel Gaunt Studios',
+                title: 'Panda The Ocean Hunter', 
+                genre: 'Adventure', 
+                controls: '<strong>Interaction:</strong> Tap/Click to cast line, Hold to pull/shoot.', 
+                howToPlay: 'Play as a panda fishing in the ocean. Cast your line, hook the fish, and pull them out in an intensive battle mode mini-game. Gather resources to upgrade.',
+                rating: '⭐⭐⭐⭐ (4.7/5)',
+                releaseDate: 'May 2026',
+                platform: 'Web Browser, Mobile',
+                technology: 'HTML5 Canvas, Vanilla JS',
+                aiPrompt: `"Create 'Panda The Ocean Hunter' HTML5 game. A panda fishing simulator with casting, waiting, hooking, and battle states. Include floating texts and particle effects. Attribution: 'Made with Gemini AI Pro'."`,
+                image: 'Panda The Ocean Hunter.png', 
+                url: 'Panda The Ocean Hunter.html',
+                bgm: 'Panda The Ocean Hunter.mp3'
+            },
+            { 
+                id: 6, 
+                studio: 'Pixel Gaunt Studios',
+                title: 'Beggar Catcher', 
+                genre: 'Simulation', 
+                controls: '<strong>Movement:</strong> WASD <br><strong>Interaction:</strong> Hold Right Click to Search/Scan.', 
+                howToPlay: 'Explore the 3D environment, search for targets using the crosshair, and manage your caught entities. Use the shop to buy upgrades and progress through levels.',
+                rating: '⭐⭐⭐⭐⭐ (4.9/5)',
+                releaseDate: 'May 2026',
+                platform: 'Web Browser Desktop',
+                technology: 'Three.js, WebGL, HTML5',
+                aiPrompt: `"Develop 'Beggar Catcher' using Three.js in a single HTML file. Features: 3D roaming, scanning crosshair, level system, shop menu, and object interaction. Must include 'Made with Gemini AI Pro'."`,
+                image: 'Beggar Catcher.png', 
+                url: 'Beggar Catcher.html',
+                bgm: 'Beggar Catcher.mp3'
+            },
+            { 
+                id: 7, 
+                studio: 'Pixel Gaunt Studios',
+                title: 'Horse Turn', 
+                genre: 'Racing', 
+                controls: '<strong>Movement:</strong> Left/Right Arrows or Tap <br><strong>Action:</strong> Spacebar to Dash.', 
+                howToPlay: 'Race through an endless cosmic tunnel. Avoid drifting out into the deep cosmic abyss, collect coins, and use your dash speed to blast through levels.',
+                rating: '⭐⭐⭐⭐ (4.4/5)',
+                releaseDate: 'May 2026',
+                platform: 'Web Browser, Mobile',
+                technology: 'HTML5 Canvas, RequestAnimationFrame',
+                aiPrompt: `"Build an endless runner/racing game 'Horse Turn'. The player navigates a cosmic tunnel, dodges obstacles, collects coins, and levels up based on distance. Include 'Made with Gemini AI Pro' in the code."`,
+                image: 'Horse Turn.png', 
+                url: 'Horse Turn.html',
+                bgm: 'Horse Turn.mp3'
+            },
+            { 
+                id: 8, 
+                studio: 'Pixel Gaunt Studios',
+                title: 'Deck of Doom', 
+                genre: 'Rogue-like', 
+                controls: '<strong>Interaction:</strong> Mouse/Touch to play cards from deck.', 
+                howToPlay: 'Engage in a turn-based card battle against a demon. Manage your energy, play attack and defense cards, and reduce the enemy HP to zero to survive.',
+                rating: '⭐⭐⭐⭐⭐ (4.8/5)',
+                releaseDate: 'May 2026',
+                platform: 'Web Browser, Mobile',
+                technology: 'HTML5, CSS Animations, JS',
+                aiPrompt: `"Code a single-file HTML5 rogue-like card game 'Deck of Doom'. Turn-based card combat with custom demon cursor, HP/energy management, and 2v2 support. Must have 'Made with Gemini AI Pro' in metadata."`,
+                image: 'Deck of Doom.png', 
+                url: 'Deck of Doom.html',
+                bgm: 'Deck of Doom.mp3'
+            }
+        ];
+
+        const homepage = document.getElementById('homepage');
+        const gameplayPage = document.getElementById('gameplay-page');
+        const searchSection = document.getElementById('search-section');
+        const gameGrid = document.getElementById('game-grid');
+        const gameIframe = document.getElementById('game-canvas');
+        const loader = document.getElementById('loader');
+        const portalBgm = document.getElementById('portal-bgm');
+
+        function renderGames(gameList) {
+            gameGrid.innerHTML = '';
+            if (gameList.length === 0) {
+                gameGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px; font-size:0.9rem;">No entries found fitting active matrix fields.</p>';
+                return;
+            }
+
+            gameList.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.onclick = () => launchViewport(game.id);
+                
+                const safeImg = encodeURI(game.image);
+                card.innerHTML = `
+                    <div class="card-thumb" style="background-image: url('${safeImg}');">
+                        <div class="play-overlay"><div class="play-btn-circle"></div></div>
+                    </div>
+                    <div class="card-info">
+                        <div>
+                            <div class="card-genre">${game.genre}</div>
+                            <div class="card-title">${game.title}</div>
+                        </div>
+                    </div>
+                `;
+                gameGrid.appendChild(card);
+            });
+        }
+
+        function filterGames() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const filtered = games.filter(g => g.title.toLowerCase().includes(query) || g.genre.toLowerCase().includes(query));
+            renderGames(filtered);
+            
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sidebar-menu button').forEach(b => b.classList.remove('active'));
+        }
+
+        function filterCategory(category, btnElement) {
+            document.getElementById('search-input').value = ''; 
+            
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sidebar-menu button').forEach(b => b.classList.remove('active'));
+
+            if (btnElement) {
+                btnElement.classList.add('active');
+            } else {
+                const topButtons = document.querySelectorAll('.cat-btn');
+                topButtons.forEach(btn => {
+                    if (category === 'All' && btn.innerText.includes('All')) btn.classList.add('active');
+                    else if (btn.innerText.trim() === category) btn.classList.add('active');
+                });
+            }
+
+            const catIdMap = {
+                'All': 'btn-cat-all',
+                'Arcade': 'btn-cat-arcade',
+                'Adventure': 'btn-cat-adventure',
+                'Simulation': 'btn-cat-simulation',
+                'Rogue-like': 'btn-cat-roguelike',
+                'Puzzle': 'btn-cat-puzzle',
+                'Racing': 'btn-cat-racing',
+                'RPG': 'btn-cat-rpg'
+            };
+            const sideBtn = document.getElementById(catIdMap[category]);
+            if (sideBtn) sideBtn.classList.add('active');
+
+            if (category === 'All') {
+                renderGames(games);
+            } else {
+                const filtered = games.filter(g => g.genre === category);
+                renderGames(filtered);
+            }
+        }
+
+        function goHome() {
+            gameplayPage.style.display = 'none';
+            homepage.style.display = 'flex';
+            searchSection.style.display = 'block';
+            
+            gameIframe.src = ''; 
+            portalBgm.pause();
+            portalBgm.currentTime = 0;
+            portalBgm.src = '';
+
+            window.scrollTo(0, 0);
+        }
+
+        function launchViewport(gameId) {
+            const game = games.find(g => g.id === gameId);
+            if (!game) return;
+
+            homepage.style.display = 'none';
+            searchSection.style.display = 'none';
+            gameplayPage.style.display = 'block';
+            window.scrollTo(0, 0);
+
+            // BINDING ALL DATA EXTRACTED FROM GAMES
+            document.getElementById('current-game-title').innerText = game.title;
+            document.getElementById('current-game-studio').innerHTML = game.studio;
+            document.getElementById('current-game-releasedate').innerHTML = game.releaseDate;
+            document.getElementById('current-game-platform').innerHTML = game.platform;
+            document.getElementById('current-game-technology').innerHTML = game.technology;
+            document.getElementById('current-game-rating').innerHTML = game.rating;
+            document.getElementById('current-game-howtoplay').innerHTML = game.howToPlay;
+            document.getElementById('current-game-controls').innerHTML = game.controls;
+            
+            const aiBox = document.getElementById('current-game-aiprompt');
+            const aiContainer = document.getElementById('ai-prompt-container');
+            if (game.aiPrompt && game.aiPrompt !== '') {
+                aiBox.innerText = game.aiPrompt;
+                aiContainer.style.display = 'block';
+            } else {
+                aiContainer.style.display = 'none';
+            }
+
+            gameIframe.src = encodeURI(game.url); 
+            if(game.bgm) {
+                portalBgm.src = encodeURI(game.bgm);
+                portalBgm.play().catch(e => console.log('Autoplay handled.', e));
+            }
+        }
+
+        // ==========================================
+        // ACTION BAR BUTTON LOGIC
+        // ==========================================
+        function actionLike() { alert("❤️ Game Added to Liked Collection!"); }
+        
+        function actionBug() { alert("🐛 Bug Report System Activated. Ready to record error."); }
+        
+        function actionShare() {
+            const title = document.getElementById('current-game-title').innerText;
+            alert(`🔗 Shareable link created for [ ${title} ]!`);
+        }
+
+        function toggleMute() {
+            const bgm = document.getElementById('portal-bgm');
+            const muteBtn = document.getElementById('mute-btn');
+            bgm.muted = !bgm.muted;
+            muteBtn.innerHTML = bgm.muted ? '🔇 Sound: OFF' : '🔊 Sound: ON';
+            if(bgm.muted) {
+                muteBtn.style.color = '#ff4757';
+                muteBtn.style.borderColor = '#ff4757';
+            } else {
+                muteBtn.style.color = '#e2e8f0';
+                muteBtn.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+            }
+        }
+
+        function toggleFullscreen() {
+            const container = document.getElementById('game-container-element');
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (container.requestFullscreen) container.requestFullscreen();
+                else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+        }
+
+        // ==========================================
+        // MODAL WIZARD LOGIC (RESTORED)
+        // ==========================================
+        function openLoginWizard() {
+            openModal('login-modal');
+            goToLoginStep('choice');
+        }
+
+        function goToLoginStep(step) {
+            document.querySelectorAll('#login-modal .modal-step').forEach(s => s.classList.remove('active'));
+            document.getElementById(`login-step-${step}`).classList.add('active');
+        }
+
+        function openUploadWizard() {
+            openModal('upload-modal');
+            goToUploadStep('agreement');
+            document.getElementById('agreement-checkbox').checked = false;
+            document.getElementById('agreement-next-btn').disabled = true;
+            document.getElementById('file-selected-name').style.display = 'none';
+        }
+
+        function goToUploadStep(step) {
+            document.querySelectorAll('#upload-modal .modal-step').forEach(s => s.classList.remove('active'));
+            document.getElementById(`upload-step-${step}`).classList.add('active');
+        }
+
+        function toggleAgreementNextBtn() {
+            const checked = document.getElementById('agreement-checkbox').checked;
+            document.getElementById('agreement-next-btn').disabled = !checked;
+        }
+
+        function handleFileSelection(input) {
+            const fileDisplay = document.getElementById('file-selected-name');
+            if (input.files && input.files[fileDisplay.innerText = input.files[0].name]) {
+                fileDisplay.innerText = `Attached Build: ${input.files[0].name}`;
+                fileDisplay.style.display = 'block';
+            }
+        }
+
+        function simulateAuthSuccess(msg) {
+            alert(msg);
+            closeModals();
+        }
+
+        function simulateUploadSuccess() {
+            alert("Package safely transmitted to compiler! Deployment complete upon validation checks.");
+            closeModals();
+        }
+
+        function openModal(modalId) { 
+            const m = document.getElementById(modalId);
+            m.style.display = 'flex';
+            setTimeout(() => m.classList.add('active'), 10);
+        }
+        
+        function closeModals() { 
+            document.querySelectorAll('.modal-overlay').forEach(m => {
+                m.classList.remove('active');
+                setTimeout(() => m.style.display = 'none', 250);
+            });
+        }
+
+        window.onload = () => {
+            renderGames(games);
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 400);
+            }, 600);
+        };
+
+        window.onclick = (e) => { if (e.target.classList.contains('modal-overlay')) closeModals(); }
+        window.onkeydown = (e) => { if (e.key === 'Escape') closeModals(); }
+    </script>
+</body>
+</html>
