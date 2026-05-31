@@ -172,6 +172,7 @@
         .card-thumb {
             width: 100%; height: 210px; position: relative;
             background-size: cover; background-position: center; overflow: hidden;
+            transition: background-image 0.2s ease-in-out;
         }
         .card-thumb::before {
             content: ''; position: absolute; inset: 0;
@@ -294,14 +295,15 @@
         .opt-btn {
             background: var(--bg-surface-light); border: 1px solid rgba(255, 255, 255, 0.05);
             padding: 14px 20px; border-radius: 10px; text-align: left; font-size: 0.95rem;
-            font-weight: 600; display: flex; align-items: center; gap: 14px; transition: var(--transition-smooth);
+            font-weight: 600; display: flex; align-items: center; gap: 14px; transition: var(--transition-smooth); cursor: pointer; color: #e2e8f0;
         }
         .opt-btn:hover {
-            border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.05); transform: translateX(4px);
+            border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.05); transform: translateX(4px); color: #fff;
         }
-        .opt-btn.whatsapp:hover {
-            border-color: #25d366; background: rgba(37, 211, 102, 0.05);
-        }
+        
+        .opt-btn.whatsapp:hover { border-color: #25d366; background: rgba(37, 211, 102, 0.05); }
+        .opt-btn.facebook:hover { border-color: #1877F2; background: rgba(24, 119, 242, 0.05); }
+        .opt-btn.twitter:hover { border-color: #1DA1F2; background: rgba(29, 161, 242, 0.05); }
 
         .form-group { margin-bottom: 18px; }
         .form-group label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; font-weight: 500; }
@@ -317,15 +319,6 @@
         }
         .file-upload-box:hover { border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.02); }
         .file-info-text { font-size: 0.8rem; color: #64748b; margin-top: 6px; }
-        .file-badge { color: var(--neon-cyan); font-weight: 600; }
-
-        .agreement-text {
-            background: var(--bg-base); border: 1px solid var(--bg-surface-light);
-            padding: 16px; border-radius: 8px; max-height: 180px; overflow-y: auto;
-            font-size: 0.82rem; color: #94a3b8; line-height: 1.5; margin-bottom: 18px;
-        }
-        .checkbox-container { display: flex; align-items: flex-start; gap: 10px; font-size: 0.85rem; color: #e2e8f0; cursor: pointer; margin-bottom: 24px; }
-        .checkbox-container input { width: 16px; height: 16px; margin-top: 2px; cursor: pointer; }
 
         .action-btns { display: flex; gap: 12px; justify-content: flex-end; }
         .wizard-btn {
@@ -337,10 +330,6 @@
         .wizard-btn.secondary { background: transparent; border: 1px solid var(--bg-surface-light); color: #94a3b8; }
         .wizard-btn.secondary:hover { color: #fff; border-color: #64748b; }
 
-        .join-link-container { text-align: center; margin-top: 16px; font-size: 0.85rem; }
-        .join-channel-link { color: #25d366; font-weight: 600; text-decoration: underline; }
-        .join-channel-link:hover { color: #4ef087; }
-
         /* ====================================
            PREMIUM CLEAN FOOTER
            ==================================== */
@@ -349,9 +338,16 @@
             color: #475569; font-size: 0.85rem; text-align: center; margin-top: auto;
         }
         .footer-content { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; align-items: center; }
-        .footer-links { display: flex; gap: 24px; color: #64748b; font-weight: 500; }
-        .footer-links a:hover { color: var(--neon-cyan); }
-        .footer-copyright { font-size: 0.7rem; color: #334155; margin-top: 8px; letter-spacing: 0.5px; }
+        .footer-copyright { font-size: 0.7rem; color: #64748b; letter-spacing: 0.5px; }
+
+        /* SCROLL TO TOP ARROW */
+        #scrollToTopBtn {
+            position: fixed; bottom: 30px; right: 30px; width: 45px; height: 45px; 
+            background: var(--neon-purple); color: #fff; border: none; border-radius: 50%; 
+            font-size: 1.5rem; cursor: pointer; display: none; z-index: 1000; 
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.4); transition: transform 0.2s;
+        }
+        #scrollToTopBtn:hover { transform: translateY(-3px); background: #cd28ff; }
 
         /* ANIMATIONS */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -372,13 +368,16 @@
 </head>
 <body>
 
+    <!-- HIDDEN AUDIO PLAYER FOR GAME BGM -->
     <audio id="portal-bgm" loop style="display:none;"></audio>
 
+    <!-- LOADING SCREEN -->
     <div id="loader">
         <div class="loader-spinner"></div>
         <p class="pixel-font" style="font-size: 0.65rem; color: var(--neon-cyan); letter-spacing: 2px;">LOADING PORTAL...</p>
     </div>
 
+    <!-- STICKY HEADER -->
     <header>
         <div class="logo pixel-font" onclick="goHome()">Pixel <span>Gaunt</span></div>
         <nav class="nav-links">
@@ -388,24 +387,28 @@
         </nav>
     </header>
 
+    <!-- SEARCH COMPONENT -->
     <div class="search-container" id="search-section">
         <input type="text" class="search-bar" id="search-input" placeholder="Search across retro database..." onkeyup="filterGames()">
     </div>
 
+    <!-- PAGE 1 — HOMEPAGE LAYOUT -->
     <main class="container" id="homepage">
         
+        <!-- LEFT SIDEBAR SECTION -->
         <aside class="sidebar">
             <div class="sidebar-box">
                 <h3 class="sidebar-title pixel-font">Navigation</h3>
                 <ul class="sidebar-menu">
-                    <li><button class="active" id="btn-cat-all" onclick="filterCategory('All', null)">🕹️ All Games List</button></li>
-                    <li><button id="btn-cat-arcade" onclick="filterCategory('Arcade', null)">⚡ Arcade Database</button></li>
-                    <li><button id="btn-cat-adventure" onclick="filterCategory('Adventure', null)">🧭 Quest Adventure</button></li>
-                    <li><button id="btn-cat-simulation" onclick="filterCategory('Simulation', null)">🍕 Strategy & Sim</button></li>
-                    <li><button id="btn-cat-roguelike" onclick="filterCategory('Rogue-like', null)">💀 Rogue Dungeon</button></li>
-                    <li><button id="btn-cat-puzzle" onclick="filterCategory('Puzzle', null)">🧩 Puzzle</button></li>
+                    <li><button class="active" id="btn-cat-all" onclick="filterCategory('All', null)">🕹️ All Games</button></li>
+                    <li><button id="btn-cat-fighting" onclick="filterCategory('Fighting', null)">🥊 Fighting</button></li>
+                    <li><button id="btn-cat-action" onclick="filterCategory('Action', null)">🔥 Action</button></li>
+                    <li><button id="btn-cat-3d-sim" onclick="filterCategory('3D Simulation', null)">🌐 3D Simulation</button></li>
+                    <li><button id="btn-cat-puzzle-adv" onclick="filterCategory('Puzzle Adventure', null)">🧩 Puzzle Adv.</button></li>
+                    <li><button id="btn-cat-casual-adv" onclick="filterCategory('Casual Adventure', null)">🎣 Casual Adv.</button></li>
+                    <li><button id="btn-cat-puzzle" onclick="filterCategory('Puzzle', null)">🎲 Puzzle</button></li>
                     <li><button id="btn-cat-racing" onclick="filterCategory('Racing', null)">🏎️ Racing</button></li>
-                    <li><button id="btn-cat-rpg" onclick="filterCategory('RPG', null)">⚔️ RPG</button></li>
+                    <li><button id="btn-cat-roguelike" onclick="filterCategory('Rogue-like', null)">💀 Rogue-like</button></li>
                 </ul>
             </div>
             <div class="sidebar-box">
@@ -416,44 +419,53 @@
             </div>
         </aside>
 
+        <!-- GAME GRID FILTERS & ITEMS -->
         <section class="main-content">
+            <!-- Top Horizon Filters -->
             <div class="category-bar" id="top-cat-bar">
                 <button class="cat-btn active" onclick="filterCategory('All', this)">All Games</button>
-                <button class="cat-btn" onclick="filterCategory('Arcade', this)">Arcade</button>
-                <button class="cat-btn" onclick="filterCategory('Adventure', this)">Adventure</button>
-                <button class="cat-btn" onclick="filterCategory('Simulation', this)">Simulation</button>
-                <button class="cat-btn" onclick="filterCategory('Rogue-like', this)">Rogue-like</button>
+                <button class="cat-btn" onclick="filterCategory('Fighting', this)">Fighting</button>
+                <button class="cat-btn" onclick="filterCategory('Action', this)">Action</button>
+                <button class="cat-btn" onclick="filterCategory('3D Simulation', this)">3D Simulation</button>
+                <button class="cat-btn" onclick="filterCategory('Puzzle Adventure', this)">Puzzle Adventure</button>
+                <button class="cat-btn" onclick="filterCategory('Casual Adventure', this)">Casual Adventure</button>
                 <button class="cat-btn" onclick="filterCategory('Puzzle', this)">Puzzle</button>
                 <button class="cat-btn" onclick="filterCategory('Racing', this)">Racing</button>
-                <button class="cat-btn" onclick="filterCategory('RPG', this)">RPG</button>
+                <button class="cat-btn" onclick="filterCategory('Rogue-like', this)">Rogue-like</button>
             </div>
 
+            <!-- Responsive Cards Layout -->
             <div class="game-grid" id="game-grid">
-                </div>
+                <!-- Data populated dynamically via JavaScript mapping -->
+            </div>
         </section>
     </main>
 
+    <!-- PAGE 2 — GAMEPLAY VIEWPORT -->
     <main id="gameplay-page">
         <div class="game-header">
             <h2 class="game-title-large pixel-font" id="current-game-title">Game Viewport</h2>
         </div>
 
         <div class="game-controls-top">
-            <button class="back-btn" onclick="goHome()">← Return to Database</button>
+            <button class="back-btn" onclick="goHome()">← Back to Main Menu</button>
         </div>
 
         <div class="gameplay-layout">
             <div class="empty-zone-v"></div>
 
+            <!-- CORE CANVAS FRAME AND BUTTONS BELOW -->
             <div class="game-container-wrapper">
                 <div class="game-container" id="game-container-element">
                     <iframe src="" id="game-canvas" allowfullscreen allow="autoplay; fullscreen"></iframe>
                 </div>
                 
+                <!-- ACTION BUTTONS BELOW SCREEN -->
                 <div class="game-action-bar">
                     <button class="action-btn" onclick="actionLike()">❤️ Like</button>
                     <button class="action-btn" onclick="actionBug()">🐛 Report Bug</button>
                     <button class="action-btn" onclick="toggleMute()" id="mute-btn">🔊 Sound: ON</button>
+                    <!-- SHARE BUTTON UNLOCKED -->
                     <button class="action-btn share" onclick="actionShare()">🔗 Share</button>
                     <button class="action-btn pixel-font" onclick="toggleFullscreen()" style="font-size: 0.75rem;">⛶ Fullscreen</button>
                 </div>
@@ -462,6 +474,7 @@
             <div class="empty-zone-v"></div>
         </div>
 
+        <!-- META DESCRIPTIONS AREA -->
         <div class="game-details">
             <div class="details-grid">
                 <div class="detail-section">
@@ -482,7 +495,15 @@
                     
                     <div id="ai-prompt-container" style="display: none;">
                         <h3 class="pixel-font">AI Prompt Architecture</h3>
-                        <div class="prompt-box" id="current-game-aiprompt"></div>
+                        
+                        <!-- HIDDEN LOCK MESSAGE FOR NON-LOGGED IN USERS -->
+                        <div id="ai-prompt-hidden-msg" style="background: var(--bg-surface-light); padding: 20px; border-radius: 8px; text-align: center; border: 1px dashed var(--neon-cyan); margin-top: 8px;">
+                            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 12px; line-height: 1.5;">🔒 This prompt is locked. Login to view the complete AI generation prompt used by the developer to create this game.</p>
+                            <button class="action-btn" onclick="openLoginWizard()" style="margin: 0 auto; border-color: var(--neon-purple); background: rgba(188, 19, 254, 0.1); color: #fff;">Login to Unlock Prompt</button>
+                        </div>
+
+                        <!-- ACTUAL PROMPT BOX (SHOWN UPON LOGIN) -->
+                        <div class="prompt-box" id="current-game-aiprompt" style="display: none;"></div>
                     </div>
                 </div>
             </div>
@@ -491,136 +512,114 @@
         <div class="empty-zone-h"></div>
     </main>
 
+    <!-- SHARE MODAL (SOCIAL PLATFORMS) -->
+    <div class="modal-overlay" id="share-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModals()">&times;</button>
+            <h3 class="modal-title pixel-font">Share Game</h3>
+            <p style="text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px;">Share <span id="share-game-title" style="color:var(--neon-cyan); font-weight:bold;"></span> with your friends!</p>
+            <div class="option-grid">
+                <button class="opt-btn whatsapp" onclick="shareToPlatform('WhatsApp')">📱 Share via WhatsApp</button>
+                <button class="opt-btn facebook" onclick="shareToPlatform('Facebook')">📘 Share on Facebook</button>
+                <button class="opt-btn twitter" onclick="shareToPlatform('Twitter / X')">🐦 Share on Twitter / X</button>
+                <button class="opt-btn" onclick="shareToPlatform('Copy Link')">🔗 Copy Direct Link</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MULTI-OPTION LOGIN MODAL WITH GMAIL & WHATSAPP -->
     <div class="modal-overlay" id="login-modal">
         <div class="modal-content">
             <button class="close-modal" onclick="closeModals()">&times;</button>
             
             <div class="modal-step active" id="login-step-choice">
-                <h3 class="modal-title pixel-font">Select Authentication</h3>
+                <h3 class="modal-title pixel-font">Authentication</h3>
+                
+                <!-- GMAIL LOGIN -->
                 <div class="option-grid">
                     <button class="opt-btn" onclick="goToLoginStep('gmail')">
                         <span>📧</span> Login via Gmail Account
                     </button>
-                    <button class="opt-btn whatsapp" onclick="goToLoginStep('whatsapp')">
-                        <span>💬</span> Login via WhatsApp Code
-                    </button>
                 </div>
-            </div>
-
-            <div class="modal-step" id="login-step-gmail">
-                <h3 class="modal-title pixel-font">Gmail Access</h3>
-                <div class="form-group">
-                    <label>Enter Registered Email Address</label>
-                    <input type="email" id="login-email-input" placeholder="developer@pixelgaunt.com">
-                </div>
-                <div class="action-btns">
-                    <button class="wizard-btn secondary" onclick="goToLoginStep('choice')">Back</button>
-                    <button class="wizard-btn" onclick="simulateAuthSuccess('Gmail Link dispatched! Check inbox.')">Send Magic Link</button>
-                </div>
-            </div>
-
-            <div class="modal-step" id="login-step-whatsapp">
-                <h3 class="modal-title pixel-font">WhatsApp Verification</h3>
-                <div class="form-group">
-                    <label>Enter Phone Number (With Country Code)</label>
-                    <input type="tel" id="login-phone-input" placeholder="+92 300 1234567">
-                </div>
-                <div class="action-btns">
-                    <button class="wizard-btn secondary" onclick="goToLoginStep('choice')">Back</button>
-                    <button class="wizard-btn" onclick="simulateAuthSuccess('Verification code triggered over WhatsApp!')">Request Code</button>
-                </div>
-                <div class="join-link-container">
-                    <p style="font-size: 0.8rem; color:#64748b; margin-bottom:6px;">Or instantly stay synced:</p>
-                    <a href="#" class="join-channel-link" onclick="alert('Redirecting to Pixel Gaunt WhatsApp Community Group/Page for updates!')">
-                        📢 Join Official Notification Channel
+                
+                <!-- WHATSAPP NOTIFICATION LINK -->
+                <div style="margin-top: 24px; text-align: center; border-top: 1px solid var(--bg-surface-light); padding-top: 20px;">
+                    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px;">Get Instant Updates & Notifications:</p>
+                    <a href="https://whatsapp.com/channel/0029VbBo20lLo4hmsAJODc2u" target="_blank" class="opt-btn whatsapp" style="display: flex; justify-content: center; text-decoration: none; color: #fff; width: 100%;">
+                        <span>💬</span> Follow Official WhatsApp Channel
                     </a>
+                </div>
+            </div>
+
+            <!-- GMAIL FAKE FLOW -->
+            <div class="modal-step" id="login-step-gmail">
+                <h3 class="modal-title pixel-font">Gmail Login</h3>
+                <div class="form-group">
+                    <label>Enter Registered Gmail Address</label>
+                    <input type="email" id="login-email-input" placeholder="developer@gmail.com">
+                </div>
+                <div class="action-btns">
+                    <button class="wizard-btn secondary" onclick="goToLoginStep('choice')">Back</button>
+                    <!-- Login Button triggers Auth Success -->
+                    <button class="wizard-btn" onclick="simulateAuthSuccess('Login Successful! You can now use Action Buttons and view Full AI Prompts.')">Log In</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- DEVELOPER UPLOAD MODAL -->
     <div class="modal-overlay" id="upload-modal">
         <div class="modal-content">
             <button class="close-modal" onclick="closeModals()">&times;</button>
             
-            <div class="modal-step active" id="upload-step-agreement">
-                <h3 class="modal-title pixel-font">Developer Agreement</h3>
-                <div class="agreement-text">
-                    Welcome to Pixel Gaunt Studios. By launching web modules on this platform, you grant Pixel Gaunt localized browser-hosting privileges.<br><br>
-                    1. Ensure modules contain optimized HTML5/JS files.<br>
-                    2. Strict compliance against harmful code execution, malware vectors, or unoptimized infinite loop threads.<br>
-                    3. Upload archives must be single bundled entities using strictly supported formats (.zip, .rar). Everything should load instantly natively without fetching illegal external assets.
-                </div>
-                <label class="checkbox-container">
-                    <input type="checkbox" id="agreement-checkbox" onchange="toggleAgreementNextBtn()">
-                    <span>I review, verify, and agree to the Developer Distribution Guidelines specified above.</span>
-                </label>
-                <div class="action-btns">
-                    <button class="wizard-btn" id="agreement-next-btn" disabled onclick="goToUploadStep('form')">Next Step</button>
-                </div>
-            </div>
-
-            <div class="modal-step" id="upload-step-form">
+            <div class="modal-step active" id="upload-step-form">
                 <h3 class="modal-title pixel-font">Deploy Archive</h3>
-                <div class="form-group">
-                    <label>Project Title</label>
-                    <input type="text" placeholder="e.g. Neon Runner 2D">
+                <p style="font-size: 0.85rem; color: #94a3b8; line-height: 1.5; margin-bottom: 20px; text-align: center;">
+                    To deploy your game, please share your .ZIP file directly to our official Google Account. Our team will review and publish it.
+                </p>
+                
+                <!-- EMAIL LINK BOX -->
+                <div class="file-upload-box" onclick="window.open('mailto:pixelgaunt@gmail.com?subject=New Game Upload Submission')">
+                    <span style="font-size:1.5rem; color:var(--neon-cyan);">📧</span>
+                    <p style="font-weight:600; margin-top:8px; font-size:0.85rem;">Send File via Gmail</p>
+                    <p class="file-info-text" style="color: var(--neon-purple); font-weight: bold; margin-top: 5px;">pixelgaunt@gmail.com</p>
                 </div>
-                <div class="form-group">
-                    <label>Select Deployment Stream (Genre)</label>
-                    <select>
-                        <option>Arcade</option>
-                        <option>Adventure</option>
-                        <option>Simulation</option>
-                        <option>Rogue-like</option>
-                        <option>Puzzle</option>
-                        <option>Racing</option>
-                        <option>RPG</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Upload Build Package (<span class="file-badge">.ZIP / .RAR only</span>)</label>
-                    <div class="file-upload-box" onclick="document.getElementById('hidden-file-input').click()">
-                        <span style="font-size:1.5rem; color:var(--neon-cyan);">📦</span>
-                        <p style="font-weight:600; margin-top:8px; font-size:0.85rem;">Click to attach project package</p>
-                        <p class="file-info-text">Supported formats: <span class="file-badge">.zip</span> or <span class="file-badge">.rar</span> extensions</p>
-                    </div>
-                    <input type="file" id="hidden-file-input" accept=".zip,.rar" style="display:none;" onchange="handleFileSelection(this)">
-                    <p id="file-selected-name" style="font-size:0.8rem; color:var(--neon-cyan); margin-top:8px; text-align:center; display:none; font-weight:600;"></p>
-                </div>
-                <div class="action-btns">
-                    <button class="wizard-btn secondary" onclick="goToUploadStep('agreement')">Back</button>
-                    <button class="wizard-btn" onclick="simulateUploadSuccess()">Compile & Deploy</button>
+                
+                <div class="action-btns" style="margin-top: 20px;">
+                    <button class="wizard-btn" onclick="closeModals()">Close Panel</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- STYLISH CLEAN RETRO FOOTER -->
     <footer>
         <div class="footer-content">
-            <div class="footer-links">
-                <a href="#" onclick="goHome()">Databases</a>
-                <a href="#" onclick="openUploadWizard()">Distribution Panel</a>
-                <a href="#" onclick="openLoginWizard()">Terms of Entry</a>
-            </div>
-            <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt. All Rights Reserved.</p>
+            <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt Studios. All Rights Reserved.</p>
         </div>
     </footer>
 
+    <!-- SCROLL TO TOP ARROW BUTTON -->
+    <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
+
+    <!-- LOGIC SYSTEM MODULE -->
     <script>
+        // Check Login Status globally
+        let isLoggedIn = false;
+
         const games = [
             { 
                 id: 1, 
                 studio: 'Pixel Gaunt',
                 title: 'Stick Man Velocity', 
-                genre: 'Arcade', 
+                genre: 'Fighting', // Updated category
                 controls: '<strong>Movement:</strong> Joystick (Mobile) / Keyboard (Desktop).<br><strong>Actions:</strong> Punch, Kick, Jump, Dash, Dive, and Fire.', 
                 howToPlay: 'Navigate through the levels, defeat enemy waves (Small, Spider, Goliath), and conquer the Titan Boss. Track HP and collect coins to boost your score.',
                 rating: '⭐⭐⭐⭐⭐ (4.8/5)',
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'Single-file HTML5, CSS Flexbox, Vanilla ES6 JavaScript, Web Audio API, Canvas API',
-                aiPrompt: `"To help you recreate your "Stickman Velocity" game or build a clone using Gemini, you should use a structured, modular approach. Rather than asking for everything at once, it is best to provide the AI with a logical roadmap.
+                aiPrompt: `To help you recreate your "Stickman Velocity" game or build a clone using Gemini, you should use a structured, modular approach. Rather than asking for everything at once, it is best to provide the AI with a logical roadmap.
 
 Here are the step-by-step prompts you can use to build the game from scratch:
 
@@ -684,8 +683,9 @@ Request "Single-File" output: Always specify: "Provide the result as a complete,
 
 Debug incrementally: If an error occurs (like the "clones merging" issue), simply paste the code back into the chat and say: "The clones are merging into one spot. Please update the AI logic to distribute them across different enemies on screen."
 
-By following these modular steps, any AI can reconstruct the complex functionality of your "Stickman Velocity" game."`,
+By following these modular steps, any AI can reconstruct the complex functionality of your "Stickman Velocity" game.`,
                 image: 'Stick Man Velocity.png',
+                preview: 'Stick Man Velocity.gif', 
                 url: 'Stick Man Velocity.html',
                 bgm: 'Stick Man Velocity.mp3'
             },
@@ -693,14 +693,14 @@ By following these modular steps, any AI can reconstruct the complex functionali
                 id: 2, 
                 studio: 'Pixel Gaunt',
                 title: 'Serpent Relic', 
-                genre: 'Adventure', 
+                genre: 'Puzzle Adventure', // Updated category
                 controls: '<strong>Movement:</strong> Swipe (Mobile) / Arrow Keys (Desktop).', 
                 howToPlay: 'Navigate the serpent through dark tombs and ancient crypts. Avoid traps, use mirrors, and rescue your twin to escape before the darkness consumes you.',
                 rating: '⭐⭐⭐⭐ (4.5/5)',
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5 Canvas, Vanilla JS',
-                aiPrompt: `"To create a game like "Serpent Relic" using Gemini or any other AI, you can use the step-by-step prompts below. Copy and paste them into the AI one by one to build, refine, and polish your game.
+                aiPrompt: `To create a game like "Serpent Relic" using Gemini or any other AI, you can use the step-by-step prompts below. Copy and paste them into the AI one by one to build, refine, and polish your game.
 
 Step 1: The Foundation (Game Engine & Movement)
 Prompt:
@@ -765,6 +765,7 @@ Fixing Bugs: If the game breaks, ask: "The game is not starting (or is blank). P
 
 Customization: If you want to change a level, simply tell the AI: "Update the LEVELS array to include a new level layout with the following grid pattern: [Insert your grid array here]."`,
                 image: 'Serpent Relic.png', 
+                preview: 'Serpent Relic.gif',
                 url: 'Serpent Relic.html',
                 bgm: 'Serpent Relic.mp3'
             },
@@ -772,14 +773,14 @@ Customization: If you want to change a level, simply tell the AI: "Update the LE
                 id: 3, 
                 studio: 'Pixel Gaunt',
                 title: 'Pizza Chaos', 
-                genre: 'Simulation', 
+                genre: 'Action', // Updated category
                 controls: '<strong>Movement:</strong> Touch/Drag (Mobile) / Mouse (Desktop).', 
                 howToPlay: 'Deliver pizzas in a chaotic environment. Fight multi-boss enemies, gather power-ups to level up, and complete campaign objectives before the timer runs out.',
                 rating: '⭐⭐⭐⭐ (4.6/5)',
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5, CSS Flexbox, JavaScript',
-                aiPrompt: `"Step 1: The "Master Architect" Prompt
+                aiPrompt: `Step 1: The "Master Architect" Prompt
 Copy and paste this prompt into an AI to get the complete code logic. This prompt explicitly instructs the AI to handle the missing mechanics you mentioned.
 
 Prompt: "Act as a Lead Game Developer. I need the complete source code for 'Pizza Chaos' in a single HTML5 file. The current structure is missing the core game logic. Please rewrite it including:
@@ -824,8 +825,9 @@ If you want to add a specific item later, use this format:
 
 Prompt: "Add a new item class called 'FreezeBomb'. When the player touches it, it should: 1. Add it to the map. 2. When collected, spawn a visual explosion effect. 3. Set the speedMult of all enemies currently on screen to 0.2 for 3 seconds. Add this to the existing game loop."
 
-By using the Master Architect Prompt in Step 1, the AI will build the foundation (Player/Enemy/Loop) that was previously missing from your file, allowing you to then add specific features using the formatting in Step 3."`,
+By using the Master Architect Prompt in Step 1, the AI will build the foundation (Player/Enemy/Loop) that was previously missing from your file, allowing you to then add specific features using the formatting in Step 3.`,
                 image: 'Pizza Chaos.png', 
+                preview: 'Pizza Chaos.gif',
                 url: 'Pizza Chaos.html', 
                 bgm: 'Pizza Chaos.mp3'
             },
@@ -840,7 +842,7 @@ By using the Master Architect Prompt in Step 1, the AI will build the foundation
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5, CSS Grid, Vanilla JS',
-                aiPrompt: `"To create a game like "Face Merge" or your "Bean Crush Saga," you can use the following step-by-step prompts. By feeding these to Gemini AI in order, you can rebuild the game, customize it, and ensure it works perfectly in a browser.
+                aiPrompt: `To create a game like "Face Merge" or your "Bean Crush Saga," you can use the following step-by-step prompts. By feeding these to Gemini AI in order, you can rebuild the game, customize it, and ensure it works perfectly in a browser.
 
 Step 1: Base Game (Core Engine)
 Start by asking the AI to build the foundation:
@@ -914,8 +916,9 @@ The Single-File Rule: Always remind the AI: "Keep all HTML, CSS, and JavaScript 
 
 If Code Cuts Off: If the AI stops writing mid-code, simply reply with: "Continue from where you left off; do not miss any part of the code."
 
-Testing: Save your work as a .html file and open it in Chrome or Safari on your phone or computer to test the mechanics."`,
+Testing: Save your work as a .html file and open it in Chrome or Safari on your phone or computer to test the mechanics.`,
                 image: 'Face Merge.png', 
+                preview: 'Face Merge.gif',
                 url: 'Face Merge.html',
                 bgm: 'Face Merge.mp3'
             },
@@ -923,14 +926,14 @@ Testing: Save your work as a .html file and open it in Chrome or Safari on your 
                 id: 5, 
                 studio: 'Pixel Gaunt',
                 title: 'Panda The Ocean Hunter', 
-                genre: 'Adventure', 
+                genre: 'Casual Adventure', // Updated category
                 controls: '<strong>Interaction:</strong> Tap/Click to cast line, Hold to pull/shoot.', 
                 howToPlay: 'Play as a panda fishing in the ocean. Cast your line, hook the fish, and pull them out in an intensive battle mode mini-game. Gather resources to upgrade.',
                 rating: '⭐⭐⭐⭐ (4.7/5)',
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5 Canvas, Vanilla JS',
-                aiPrompt: `"To help others or yourself generate a similar high-quality game using any AI (like Gemini, GPT-4, or Claude), you can use the following Master Development Prompt. This prompt is structured to ensure the AI handles the game logic, animations, and bug fixes properly.
+                aiPrompt: `To help others or yourself generate a similar high-quality game using any AI (like Gemini, GPT-4, or Claude), you can use the following Master Development Prompt. This prompt is structured to ensure the AI handles the game logic, animations, and bug fixes properly.
 
 The "Panda the Ocean Hunter" Master Prompt
 Copy and paste the text below into an AI:
@@ -982,6 +985,7 @@ For bug fixes: If you encounter a bug, provide the AI with the specific function
 
 Save your work: Always save the result as an .html file. If the AI gets confused or starts "forgetting" parts of the code because the game has grown too large, copy your current working code into the chat and say: "Here is my current game code. I need you to add [X feature] while keeping all existing mechanics, especially the basket removal logic, perfectly intact'."`,
                 image: 'Panda The Ocean Hunter.png', 
+                preview: 'Panda The Ocean Hunter.gif',
                 url: 'Panda The Ocean Hunter.html',
                 bgm: 'Panda The Ocean Hunter.mp3'
             },
@@ -989,14 +993,14 @@ Save your work: Always save the result as an .html file. If the AI gets confused
                 id: 6, 
                 studio: 'Pixel Gaunt',
                 title: 'Beggar Catcher', 
-                genre: 'Simulation', 
+                genre: '3D Simulation', // Updated category
                 controls: '<strong>Movement:</strong> WASD <br><strong>Interaction:</strong> Hold Right Click to Search/Scan.', 
                 howToPlay: 'Explore the 3D environment, search for targets using the crosshair, and manage your caught entities. Use the shop to buy upgrades and progress through levels.',
                 rating: '⭐⭐⭐⭐⭐ (4.9/5)',
                 releaseDate: 'May 2026',
                 platform: 'Web Browser Desktop',
                 technology: 'Three.js, WebGL, HTML5',
-                aiPrompt: `"To build an exact, professional-grade clone of this project, you need a modular approach. Here are the step-by-step prompts you should use to rebuild and expand the system, optimized for your single-file HTML5/JS workflow.
+                aiPrompt: `To build an exact, professional-grade clone of this project, you need a modular approach. Here are the step-by-step prompts you should use to rebuild and expand the system, optimized for your single-file HTML5/JS workflow.
 
 Step 1: Core Engine & World Setup
 This prompt establishes the 3D environment and the "PixelGaunt" architectural foundation.
@@ -1054,6 +1058,7 @@ Mobile Readiness: Since your target audience is browser-based, after you get the
 
 Vibe Coding: When you execute these prompts, tell me specifically which step you want to implement first, and I will provide the raw code blocks you can copy directly into your HTML file."`,
                 image: 'Beggar Catcher.png', 
+                preview: 'Beggar Catcher.gif',
                 url: 'Beggar Catcher.html',
                 bgm: 'Beggar Catcher.mp3'
             },
@@ -1068,7 +1073,7 @@ Vibe Coding: When you execute these prompts, tell me specifically which step you
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5 Canvas, RequestAnimationFrame',
-                aiPrompt: `"Step 1: The Core Engine (The Framework)
+                aiPrompt: `Step 1: The Core Engine (The Framework)
 Use this prompt to set up the foundation:
 
 "Act as a Lead Game Developer. Create the base HTML5 structure for a 3D-perspective 'endless runner' game.
@@ -1136,6 +1141,7 @@ Never skip a step: If you try to do everything in one go, the AI will "forget" p
 
 Tracking Data: To keep track of enemies or levels in your clone, ask the AI to "Define a JSON object for Level Data" so you can easily change the difficulty, wall speed, or coin spawn rate in one central place."`,
                 image: 'Horse Turn.png', 
+                preview: 'Horse Turn.gif',
                 url: 'Horse Turn.html',
                 bgm: 'Horse Turn.mp3'
             },
@@ -1150,7 +1156,7 @@ Tracking Data: To keep track of enemies or levels in your clone, ask the AI to "
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5, CSS Animations, JS',
-                aiPrompt: `"Step 1: Core Engine, Setup Screen, Player & Difficulty Prompt
+                aiPrompt: `Step 1: Core Engine, Setup Screen, Player & Difficulty Prompt
 Why Use It: This builds the game’s baseline database structure, state tracker, and screen controllers, enforcing strict initialization rules before matches load.
 
 Act as an expert Game Developer. Build Step 1 of a single-file HTML5 Roguelike Deckbuilder game. All HTML, CSS, and JS must be strictly in ONE single code block. 
@@ -1252,23 +1258,24 @@ Review the current full application code and strictly execute this optimization 
 1. Card State Lockup Fix: Ensure that inside the playCard() method, the absolute first step sets 'gameState.turnInProgress = true' instantly, and resetting it back to 'false' must only happen after all asynchronous card resolution timers and projectile throw animations have completely finished executing.
 2. Draw Pile Recycle Loop Fix: If drawPile length hits 0 mid-draw, clone the discardPile array contents into drawPile, empty out discardPile completely, execute a complete array element randomized index array shuffle function, and then continue pulling the remaining card draws seamlessly without breaking the evaluation loops.
 3. Dead Target Auto-Erase Fix: Implement internal logic check verifying entity health state on every event trigger. If enemy HP reaches zero or less, break all pending turn execution lines, trigger the victory transition sequences, clear combat arrays, and open the Map screen safely. If player HP reaches zero, wipe states and trigger the Game Over interface screen immediately.
-4. Extensible Item Pool: Setup an empty array called 'player.relics'. Create an item eval."`,
+4. Extensible Item Pool: Setup an empty array called 'player.relics'. Create an item eval.`,
                 image: 'Deck of Doom.png', 
+                preview: 'Deck of Doom.gif',
                 url: 'Deck of Doom.html',
                 bgm: 'Deck of Doom.mp3'
             },
             { 
-                id: 9, 
+                id: 9, // ADDED BACK 
                 studio: 'Pixel Gaunt',
                 title: 'Stick Man Velocity 1.0', 
-                genre: 'Arcade',
+                genre: 'Fighting', // Assigned to Fighting Category
                 controls: '<strong>Movement:</strong> Joystick (Mobile) / Keyboard (Desktop).<br><strong>Actions:</strong> Punch, Kick, Jump, Dash, Dive, and Fire.', 
                 howToPlay: 'Navigate through the levels, defeat enemy waves (Small, Spider, Goliath), and conquer the Titan Boss. Track HP and collect coins to boost your score.',
                 rating: '⭐⭐⭐⭐⭐ (4.8/5)',
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'Single-file HTML5, CSS Flexbox, Vanilla ES6 JavaScript, Web Audio API, Canvas API',
-                aiPrompt: `"To help you recreate your "Stickman Velocity" game or build a clone using Gemini, you should use a structured, modular approach. Rather than asking for everything at once, it is best to provide the AI with a logical roadmap.
+                aiPrompt: `To help you recreate your "Stickman Velocity" game or build a clone using Gemini, you should use a structured, modular approach. Rather than asking for everything at once, it is best to provide the AI with a logical roadmap.
 
 Here are the step-by-step prompts you can use to build the game from scratch:
 
@@ -1332,8 +1339,9 @@ Request "Single-File" output: Always specify: "Provide the result as a complete,
 
 Debug incrementally: If an error occurs (like the "clones merging" issue), simply paste the code back into the chat and say: "The clones are merging into one spot. Please update the AI logic to distribute them across different enemies on screen."
 
-By following these modular steps, any AI can reconstruct the complex functionality of your "Stickman Velocity" game."`,
+By following these modular steps, any AI can reconstruct the complex functionality of your "Stickman Velocity" game.`,
                 image: 'Stick Man Velocity 1.0.png', 
+                preview: 'Stick Man Velocity 1.0.gif',
                 url: 'Stick Man Velocity 1.0.html',
                 bgm: 'Stick Man Velocity 1.0.mp3'
             }    
@@ -1347,6 +1355,7 @@ By following these modular steps, any AI can reconstruct the complex functionali
         const loader = document.getElementById('loader');
         const portalBgm = document.getElementById('portal-bgm');
 
+        // Render Games Function (With hover preview logic)
         function renderGames(gameList) {
             gameGrid.innerHTML = '';
             if (gameList.length === 0) {
@@ -1360,8 +1369,14 @@ By following these modular steps, any AI can reconstruct the complex functionali
                 card.onclick = () => launchViewport(game.id);
                 
                 const safeImg = encodeURI(game.image);
+                // Preview gif logic
+                const safePreview = encodeURI(game.preview || game.image.replace('.png', '.gif')); 
+                
+                // Added onmouseenter and onmouseleave to change background image for gameplay preview
                 card.innerHTML = `
-                    <div class="card-thumb" style="background-image: url('${safeImg}');">
+                    <div class="card-thumb" style="background-image: url('${safeImg}');" 
+                         onmouseenter="this.dataset.origBg = this.style.backgroundImage; this.style.backgroundImage = 'url(${safePreview})';" 
+                         onmouseleave="this.style.backgroundImage = this.dataset.origBg;">
                         <div class="play-overlay"><div class="play-btn-circle"></div></div>
                     </div>
                     <div class="card-info">
@@ -1400,16 +1415,19 @@ By following these modular steps, any AI can reconstruct the complex functionali
                 });
             }
 
+            // Exact Category Map
             const catIdMap = {
                 'All': 'btn-cat-all',
-                'Arcade': 'btn-cat-arcade',
-                'Adventure': 'btn-cat-adventure',
-                'Simulation': 'btn-cat-simulation',
-                'Rogue-like': 'btn-cat-roguelike',
+                'Fighting': 'btn-cat-fighting',
+                'Action': 'btn-cat-action',
+                '3D Simulation': 'btn-cat-3d-sim',
+                'Puzzle Adventure': 'btn-cat-puzzle-adv',
+                'Casual Adventure': 'btn-cat-casual-adv',
                 'Puzzle': 'btn-cat-puzzle',
                 'Racing': 'btn-cat-racing',
-                'RPG': 'btn-cat-rpg'
+                'Rogue-like': 'btn-cat-roguelike'
             };
+            
             const sideBtn = document.getElementById(catIdMap[category]);
             if (sideBtn) sideBtn.classList.add('active');
 
@@ -1455,9 +1473,13 @@ By following these modular steps, any AI can reconstruct the complex functionali
             
             const aiBox = document.getElementById('current-game-aiprompt');
             const aiContainer = document.getElementById('ai-prompt-container');
+            
+            // Save prompt data directly into HTML element memory to switch later
+            aiBox.dataset.promptText = game.aiPrompt || ''; 
+
             if (game.aiPrompt && game.aiPrompt !== '') {
-                aiBox.innerText = game.aiPrompt;
                 aiContainer.style.display = 'block';
+                updatePromptVisibility(); // Check login and hide/show accordingly
             } else {
                 aiContainer.style.display = 'none';
             }
@@ -1469,16 +1491,49 @@ By following these modular steps, any AI can reconstruct the complex functionali
             }
         }
 
+        // Check login to hide or show prompt
+        function updatePromptVisibility() {
+            const aiBox = document.getElementById('current-game-aiprompt');
+            const hiddenMsg = document.getElementById('ai-prompt-hidden-msg');
+            
+            if(isLoggedIn) {
+                aiBox.innerText = aiBox.dataset.promptText;
+                aiBox.style.display = 'block';
+                hiddenMsg.style.display = 'none';
+            } else {
+                aiBox.style.display = 'none';
+                hiddenMsg.style.display = 'block';
+            }
+        }
+
         // ==========================================
-        // ACTION BAR BUTTON LOGIC
+        // ACTION BAR BUTTON LOGIC 
         // ==========================================
-        function actionLike() { alert("❤️ Game Added to Liked Collection!"); }
+        function actionLike() {
+            if(!isLoggedIn) { openLoginWizard(); return; }
+            alert("❤️ Game Added to Liked Collection!"); 
+        }
         
-        function actionBug() { alert("🐛 Bug Report System Activated. Ready to record error."); }
+        function actionBug() {
+            if(!isLoggedIn) { openLoginWizard(); return; }
+            alert("🐛 Bug Report System Activated. Ready to record error."); 
+        }
         
+        // UNLOCKED SHARE FUNCTION & MODAL LOGIC
         function actionShare() {
             const title = document.getElementById('current-game-title').innerText;
-            alert(`🔗 Shareable link created for [ ${title} ]!`);
+            document.getElementById('share-game-title').innerText = title;
+            openModal('share-modal');
+        }
+
+        function shareToPlatform(platform) {
+            const title = document.getElementById('current-game-title').innerText;
+            if(platform === 'Copy Link') {
+                alert(`🔗 Direct Game Link copied to clipboard!`);
+            } else {
+                alert(`Redirecting to ${platform} to share [ ${title} ]...`);
+            }
+            closeModals();
         }
 
         function toggleMute() {
@@ -1507,7 +1562,7 @@ By following these modular steps, any AI can reconstruct the complex functionali
         }
 
         // ==========================================
-        // MODAL WIZARD LOGIC (RESTORED)
+        // MODAL WIZARD LOGIC
         // ==========================================
         function openLoginWizard() {
             openModal('login-modal');
@@ -1521,37 +1576,12 @@ By following these modular steps, any AI can reconstruct the complex functionali
 
         function openUploadWizard() {
             openModal('upload-modal');
-            goToUploadStep('agreement');
-            document.getElementById('agreement-checkbox').checked = false;
-            document.getElementById('agreement-next-btn').disabled = true;
-            document.getElementById('file-selected-name').style.display = 'none';
-        }
-
-        function goToUploadStep(step) {
-            document.querySelectorAll('#upload-modal .modal-step').forEach(s => s.classList.remove('active'));
-            document.getElementById(`upload-step-${step}`).classList.add('active');
-        }
-
-        function toggleAgreementNextBtn() {
-            const checked = document.getElementById('agreement-checkbox').checked;
-            document.getElementById('agreement-next-btn').disabled = !checked;
-        }
-
-        function handleFileSelection(input) {
-            const fileDisplay = document.getElementById('file-selected-name');
-            if (input.files && input.files[fileDisplay.innerText = input.files[0].name]) {
-                fileDisplay.innerText = `Attached Build: ${input.files[0].name}`;
-                fileDisplay.style.display = 'block';
-            }
         }
 
         function simulateAuthSuccess(msg) {
             alert(msg);
-            closeModals();
-        }
-
-        function simulateUploadSuccess() {
-            alert("Package safely transmitted to compiler! Deployment complete upon validation checks.");
+            isLoggedIn = true; // Turn ON login access
+            updatePromptVisibility(); // Refresh prompt area if currently on game screen
             closeModals();
         }
 
@@ -1567,6 +1597,16 @@ By following these modular steps, any AI can reconstruct the complex functionali
                 setTimeout(() => m.style.display = 'none', 250);
             });
         }
+
+        // Upward Scroll Arrow Logic
+        window.addEventListener('scroll', () => {
+            const scrollBtn = document.getElementById('scrollToTopBtn');
+            if (window.scrollY > 300) {
+                scrollBtn.style.display = 'block';
+            } else {
+                scrollBtn.style.display = 'none';
+            }
+        });
 
         window.onload = () => {
             renderGames(games);
