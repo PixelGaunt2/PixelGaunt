@@ -172,15 +172,22 @@
         .card-thumb {
             width: 100%; height: 210px; position: relative;
             background-size: cover; background-position: center; overflow: hidden;
-            transition: background-image 0.2s ease-in-out;
-        }
-        .card-thumb::before {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(to bottom, transparent, var(--bg-surface)); opacity: 0.85;
         }
         
+        /* Fixed GIF Hover Logic */
+        .gif-overlay {
+            position: absolute; inset: 0; z-index: 1;
+            background-size: cover; background-position: center;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .game-card:hover .gif-overlay { opacity: 1; }
+        
+        .card-thumb::before {
+            content: ''; position: absolute; inset: 0; z-index: 2;
+            background: linear-gradient(to bottom, transparent, var(--bg-surface)); opacity: 0.85;
+        }
         .play-overlay {
-            position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45);
+            position: absolute; inset: 0; z-index: 3; background: rgba(0, 0, 0, 0.45);
             display: flex; justify-content: center; align-items: center;
             opacity: 0; transition: var(--transition-smooth);
         }
@@ -235,7 +242,7 @@
         }
         .game-container iframe { width: 100%; height: 100%; border: none; display: block; }
 
-        /* ACTION BAR (Buttons below the game) */
+        /* ACTION BAR */
         .game-action-bar {
             display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 18px;
             background: var(--bg-surface); padding: 14px; border-radius: 12px;
@@ -313,13 +320,6 @@
         }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--neon-purple); outline: none; }
         
-        .file-upload-box {
-            border: 2px dashed var(--bg-surface-light); padding: 20px; text-align: center; border-radius: 10px;
-            cursor: pointer; transition: var(--transition-smooth); background: rgba(0,0,0,0.2);
-        }
-        .file-upload-box:hover { border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.02); }
-        .file-info-text { font-size: 0.8rem; color: #64748b; margin-top: 6px; }
-
         .action-btns { display: flex; gap: 12px; justify-content: flex-end; }
         .wizard-btn {
             background: var(--neon-purple); color: #fff; font-weight: 600; padding: 11px 22px;
@@ -338,6 +338,12 @@
             color: #475569; font-size: 0.85rem; text-align: center; margin-top: auto;
         }
         .footer-content { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; align-items: center; }
+        
+        /* FOOTER LINKS STYLES */
+        .footer-links { display: flex; gap: 24px; color: #64748b; font-weight: 500; font-size: 0.85rem; }
+        .footer-links a { transition: var(--transition-smooth); }
+        .footer-links a:hover { color: var(--neon-cyan); text-shadow: 0 0 8px rgba(0, 243, 255, 0.3); }
+
         .footer-copyright { font-size: 0.7rem; color: #64748b; letter-spacing: 0.5px; }
 
         /* SCROLL TO TOP ARROW */
@@ -363,6 +369,7 @@
             .sidebar { width: 100%; }
             .game-grid { grid-template-columns: 1fr; }
             .game-title-large { font-size: 1.15rem; }
+            .footer-links { gap: 16px; }
         }
     </style>
 </head>
@@ -382,7 +389,7 @@
         <div class="logo pixel-font" onclick="goHome()">Pixel <span>Gaunt</span></div>
         <nav class="nav-links">
             <button class="nav-btn" onclick="goHome()">Games</button>
-            <button class="nav-btn" onclick="openUploadWizard()" onmouseover="this.innerText='⏳ Coming Soon...'" onmouseout="this.innerText='Upload'">Upload</button>
+            <button class="nav-btn" style="cursor: default;" onmouseover="this.innerText='⏳ Coming Soon...'" onmouseout="this.innerText='Upload'">Upload</button>
             <button class="nav-btn primary" onclick="openLoginWizard()">Login</button>
         </nav>
     </header>
@@ -414,7 +421,7 @@
             <div class="sidebar-box">
                 <h3 class="sidebar-title pixel-font">Developer</h3>
                 <ul class="sidebar-menu">
-                    <li><button onclick="openUploadWizard()" onmouseover="this.innerText='⏳ Coming Soon...'" onmouseout="this.innerText='⬆️ Deploy Project (.ZIP)'">⬆️ Deploy Project (.ZIP)</button></li>
+                    <li><button style="cursor: default;" onmouseover="this.innerText='⏳ Coming Soon...'" onmouseout="this.innerText='⬆️ Deploy Project (.ZIP)'">⬆️ Deploy Project (.ZIP)</button></li>
                 </ul>
             </div>
         </aside>
@@ -465,7 +472,6 @@
                     <button class="action-btn" onclick="actionLike()">❤️ Like</button>
                     <button class="action-btn" onclick="actionBug()">🐛 Report Bug</button>
                     <button class="action-btn" onclick="toggleMute()" id="mute-btn">🔊 Sound: ON</button>
-                    <!-- SHARE BUTTON UNLOCKED -->
                     <button class="action-btn share" onclick="actionShare()">🔗 Share</button>
                     <button class="action-btn pixel-font" onclick="toggleFullscreen()" style="font-size: 0.75rem;">⛶ Fullscreen</button>
                 </div>
@@ -491,7 +497,7 @@
                 
                 <div class="detail-section">
                     <h3 class="pixel-font">Input / Controls</h3>
-                    <p id="current-game-controls" style="margin-bottom: 24px;"></p>
+                    <p id="current-game-controls" style="margin-bottom: 24px; line-height: 1.6;"></p>
                     
                     <div id="ai-prompt-container" style="display: none;">
                         <h3 class="pixel-font">AI Prompt Architecture</h3>
@@ -567,35 +573,17 @@
         </div>
     </div>
 
-    <!-- DEVELOPER UPLOAD MODAL -->
-    <div class="modal-overlay" id="upload-modal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeModals()">&times;</button>
-            
-            <div class="modal-step active" id="upload-step-form">
-                <h3 class="modal-title pixel-font">Deploy Archive</h3>
-                <p style="font-size: 0.85rem; color: #94a3b8; line-height: 1.5; margin-bottom: 20px; text-align: center;">
-                    To deploy your game, please share your .ZIP file directly to our official Google Account. Our team will review and publish it.
-                </p>
-                
-                <!-- EMAIL LINK BOX -->
-                <div class="file-upload-box" onclick="window.open('mailto:pixelgaunt@gmail.com?subject=New Game Upload Submission')">
-                    <span style="font-size:1.5rem; color:var(--neon-cyan);">📧</span>
-                    <p style="font-weight:600; margin-top:8px; font-size:0.85rem;">Send File via Gmail</p>
-                    <p class="file-info-text" style="color: var(--neon-purple); font-weight: bold; margin-top: 5px;">pixelgaunt@gmail.com</p>
-                </div>
-                
-                <div class="action-btns" style="margin-top: 20px;">
-                    <button class="wizard-btn" onclick="closeModals()">Close Panel</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- STYLISH CLEAN RETRO FOOTER -->
     <footer>
         <div class="footer-content">
-            <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt Studios. All Rights Reserved.</p>
+            <!-- NEW FOOTER LINKS (FAQ, CONTACT, ABOUT) -->
+            <div class="footer-links">
+                <a href="#" onclick="alert('FAQ - Feature Coming Soon')">FAQ</a>
+                <a href="#" onclick="alert('Contact Us - Feature Coming Soon')">Contact</a>
+                <a href="#" onclick="alert('About Pixel Gaunt - Feature Coming Soon')">About</a>
+            </div>
+            
+            <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt. All Rights Reserved.</p>
         </div>
     </footer>
 
@@ -612,8 +600,8 @@
                 id: 1, 
                 studio: 'Pixel Gaunt',
                 title: 'Stick Man Velocity', 
-                genre: 'Fighting', // Updated category
-                controls: '<strong>Movement:</strong> Joystick (Mobile) / Keyboard (Desktop).<br><strong>Actions:</strong> Punch, Kick, Jump, Dash, Dive, and Fire.', 
+                genre: 'Fighting', 
+                controls: '<strong>Movement:</strong> Joystick (Mobile) / A, D Keys (Desktop).<br><strong>Actions:</strong> W (Jump), S (Crouch/Slide), J (Punch), L (Kick), K (Fireball), SHIFT (Dash), U (Dive).<br><strong>Ultimate:</strong> J+K+L (When charged).', 
                 howToPlay: 'Navigate through the levels, defeat enemy waves (Small, Spider, Goliath), and conquer the Titan Boss. Track HP and collect coins to boost your score.',
                 rating: '⭐⭐⭐⭐⭐ (4.8/5)',
                 releaseDate: 'May 2026',
@@ -693,8 +681,8 @@ By following these modular steps, any AI can reconstruct the complex functionali
                 id: 2, 
                 studio: 'Pixel Gaunt',
                 title: 'Serpent Relic', 
-                genre: 'Puzzle Adventure', // Updated category
-                controls: '<strong>Movement:</strong> Swipe (Mobile) / Arrow Keys (Desktop).', 
+                genre: 'Puzzle Adventure', 
+                controls: '<strong>Movement:</strong> Swipe Up/Down/Left/Right (Mobile) / WASD or Arrow Keys (Desktop).', 
                 howToPlay: 'Navigate the serpent through dark tombs and ancient crypts. Avoid traps, use mirrors, and rescue your twin to escape before the darkness consumes you.',
                 rating: '⭐⭐⭐⭐ (4.5/5)',
                 releaseDate: 'May 2026',
@@ -773,8 +761,8 @@ Customization: If you want to change a level, simply tell the AI: "Update the LE
                 id: 3, 
                 studio: 'Pixel Gaunt',
                 title: 'Pizza Chaos', 
-                genre: 'Action', // Updated category
-                controls: '<strong>Movement:</strong> Touch/Drag (Mobile) / Mouse (Desktop).', 
+                genre: 'Action', 
+                controls: '<strong>Movement:</strong> On-screen Joystick (Mobile) / WASD or Arrows (Desktop).<br><strong>Actions:</strong> On-screen buttons or Keyboard keys to Jump, Dash, and Shoot.', 
                 howToPlay: 'Deliver pizzas in a chaotic environment. Fight multi-boss enemies, gather power-ups to level up, and complete campaign objectives before the timer runs out.',
                 rating: '⭐⭐⭐⭐ (4.6/5)',
                 releaseDate: 'May 2026',
@@ -836,7 +824,7 @@ By using the Master Architect Prompt in Step 1, the AI will build the foundation
                 studio: 'Pixel Gaunt',
                 title: 'Face Merge', 
                 genre: 'Puzzle', 
-                controls: '<strong>Interaction:</strong> Tap/Click on adjacent tiles to swap or merge.', 
+                controls: '<strong>Interaction:</strong> Touch/Drag (Mobile) / Mouse Click & Drag (Desktop) to swap adjacent emoji faces.', 
                 howToPlay: 'Merge matching emoji faces to clear the board, achieve the score target, and save the dog from going underwater within the given move limit.',
                 rating: '⭐⭐⭐⭐ (4.3/5)',
                 releaseDate: 'May 2026',
@@ -926,8 +914,8 @@ Testing: Save your work as a .html file and open it in Chrome or Safari on your 
                 id: 5, 
                 studio: 'Pixel Gaunt',
                 title: 'Panda The Ocean Hunter', 
-                genre: 'Casual Adventure', // Updated category
-                controls: '<strong>Interaction:</strong> Tap/Click to cast line, Hold to pull/shoot.', 
+                genre: 'Casual Adventure', 
+                controls: '<strong>Fishing:</strong> Tap/Click to cast the line.<br><strong>Combat:</strong> Hold screen/mouse to pull fish, Tap to shoot weapon.', 
                 howToPlay: 'Play as a panda fishing in the ocean. Cast your line, hook the fish, and pull them out in an intensive battle mode mini-game. Gather resources to upgrade.',
                 rating: '⭐⭐⭐⭐ (4.7/5)',
                 releaseDate: 'May 2026',
@@ -993,8 +981,8 @@ Save your work: Always save the result as an .html file. If the AI gets confused
                 id: 6, 
                 studio: 'Pixel Gaunt',
                 title: 'Beggar Catcher', 
-                genre: '3D Simulation', // Updated category
-                controls: '<strong>Movement:</strong> WASD <br><strong>Interaction:</strong> Hold Right Click to Search/Scan.', 
+                genre: '3D Simulation', 
+                controls: '<strong>Movement:</strong> WASD keys.<br><strong>Camera:</strong> Mouse movement.<br><strong>Interaction:</strong> Hold Right Click to Scan/Investigate, Left Click to interact/catch.', 
                 howToPlay: 'Explore the 3D environment, search for targets using the crosshair, and manage your caught entities. Use the shop to buy upgrades and progress through levels.',
                 rating: '⭐⭐⭐⭐⭐ (4.9/5)',
                 releaseDate: 'May 2026',
@@ -1067,7 +1055,7 @@ Vibe Coding: When you execute these prompts, tell me specifically which step you
                 studio: 'Pixel Gaunt',
                 title: 'Horse Turn', 
                 genre: 'Racing', 
-                controls: '<strong>Movement:</strong> Left/Right Arrows or Tap <br><strong>Action:</strong> Spacebar to Dash.', 
+                controls: '<strong>Movement:</strong> Left/Right Arrow Keys or Screen Swipe.<br><strong>Actions:</strong> Spacebar or Swipe Up to Jump. Shift or Dash Button to Fast-Forward.', 
                 howToPlay: 'Race through an endless cosmic tunnel. Avoid drifting out into the deep cosmic abyss, collect coins, and use your dash speed to blast through levels.',
                 rating: '⭐⭐⭐⭐ (4.4/5)',
                 releaseDate: 'May 2026',
@@ -1150,7 +1138,7 @@ Tracking Data: To keep track of enemies or levels in your clone, ask the AI to "
                 studio: 'Pixel Gaunt',
                 title: 'Deck of Doom', 
                 genre: 'Rogue-like', 
-                controls: '<strong>Interaction:</strong> Mouse/Touch to play cards from deck.', 
+                controls: '<strong>Combat:</strong> Mouse Click/Drag or Touch to select and play cards from your hand. Click "End Turn" when out of energy.', 
                 howToPlay: 'Engage in a turn-based card battle against a demon. Manage your energy, play attack and defense cards, and reduce the enemy HP to zero to survive.',
                 rating: '⭐⭐⭐⭐⭐ (4.8/5)',
                 releaseDate: 'May 2026',
@@ -1265,11 +1253,11 @@ Review the current full application code and strictly execute this optimization 
                 bgm: 'Deck of Doom.mp3'
             },
             { 
-                id: 9, // ADDED BACK 
+                id: 9,
                 studio: 'Pixel Gaunt',
                 title: 'Stick Man Velocity 1.0', 
-                genre: 'Fighting', // Assigned to Fighting Category
-                controls: '<strong>Movement:</strong> Joystick (Mobile) / Keyboard (Desktop).<br><strong>Actions:</strong> Punch, Kick, Jump, Dash, Dive, and Fire.', 
+                genre: 'Fighting', 
+                controls: '<strong>Movement:</strong> Joystick (Mobile) / A, D Keys (Desktop).<br><strong>Actions:</strong> W (Jump), S (Crouch/Slide), J (Punch), L (Kick), K (Fireball), SHIFT (Dash), U (Dive).<br><strong>Ultimate:</strong> J+K+L (When charged).', 
                 howToPlay: 'Navigate through the levels, defeat enemy waves (Small, Spider, Goliath), and conquer the Titan Boss. Track HP and collect coins to boost your score.',
                 rating: '⭐⭐⭐⭐⭐ (4.8/5)',
                 releaseDate: 'May 2026',
@@ -1355,7 +1343,6 @@ By following these modular steps, any AI can reconstruct the complex functionali
         const loader = document.getElementById('loader');
         const portalBgm = document.getElementById('portal-bgm');
 
-        // Render Games Function (With hover preview logic)
         function renderGames(gameList) {
             gameGrid.innerHTML = '';
             if (gameList.length === 0) {
@@ -1369,14 +1356,12 @@ By following these modular steps, any AI can reconstruct the complex functionali
                 card.onclick = () => launchViewport(game.id);
                 
                 const safeImg = encodeURI(game.image);
-                // Preview gif logic
                 const safePreview = encodeURI(game.preview || game.image.replace('.png', '.gif')); 
                 
-                // Added onmouseenter and onmouseleave to change background image for gameplay preview
+                // Hover Fixed: Overlay method prevents original image from disappearing if GIF is missing
                 card.innerHTML = `
-                    <div class="card-thumb" style="background-image: url('${safeImg}');" 
-                         onmouseenter="this.dataset.origBg = this.style.backgroundImage; this.style.backgroundImage = 'url(${safePreview})';" 
-                         onmouseleave="this.style.backgroundImage = this.dataset.origBg;">
+                    <div class="card-thumb" style="background-image: url('${safeImg}');">
+                        <div class="gif-overlay" style="background-image: url('${safePreview}');"></div>
                         <div class="play-overlay"><div class="play-btn-circle"></div></div>
                     </div>
                     <div class="card-info">
@@ -1415,7 +1400,6 @@ By following these modular steps, any AI can reconstruct the complex functionali
                 });
             }
 
-            // Exact Category Map
             const catIdMap = {
                 'All': 'btn-cat-all',
                 'Fighting': 'btn-cat-fighting',
@@ -1461,7 +1445,6 @@ By following these modular steps, any AI can reconstruct the complex functionali
             gameplayPage.style.display = 'block';
             window.scrollTo(0, 0);
 
-            // BINDING ALL DATA EXTRACTED FROM GAMES
             document.getElementById('current-game-title').innerText = game.title;
             document.getElementById('current-game-studio').innerHTML = game.studio;
             document.getElementById('current-game-releasedate').innerHTML = game.releaseDate;
@@ -1474,12 +1457,11 @@ By following these modular steps, any AI can reconstruct the complex functionali
             const aiBox = document.getElementById('current-game-aiprompt');
             const aiContainer = document.getElementById('ai-prompt-container');
             
-            // Save prompt data directly into HTML element memory to switch later
             aiBox.dataset.promptText = game.aiPrompt || ''; 
 
             if (game.aiPrompt && game.aiPrompt !== '') {
                 aiContainer.style.display = 'block';
-                updatePromptVisibility(); // Check login and hide/show accordingly
+                updatePromptVisibility();
             } else {
                 aiContainer.style.display = 'none';
             }
@@ -1491,7 +1473,6 @@ By following these modular steps, any AI can reconstruct the complex functionali
             }
         }
 
-        // Check login to hide or show prompt
         function updatePromptVisibility() {
             const aiBox = document.getElementById('current-game-aiprompt');
             const hiddenMsg = document.getElementById('ai-prompt-hidden-msg');
@@ -1506,9 +1487,6 @@ By following these modular steps, any AI can reconstruct the complex functionali
             }
         }
 
-        // ==========================================
-        // ACTION BAR BUTTON LOGIC 
-        // ==========================================
         function actionLike() {
             if(!isLoggedIn) { openLoginWizard(); return; }
             alert("❤️ Game Added to Liked Collection!"); 
@@ -1519,7 +1497,6 @@ By following these modular steps, any AI can reconstruct the complex functionali
             alert("🐛 Bug Report System Activated. Ready to record error."); 
         }
         
-        // UNLOCKED SHARE FUNCTION & MODAL LOGIC
         function actionShare() {
             const title = document.getElementById('current-game-title').innerText;
             document.getElementById('share-game-title').innerText = title;
@@ -1561,9 +1538,6 @@ By following these modular steps, any AI can reconstruct the complex functionali
             }
         }
 
-        // ==========================================
-        // MODAL WIZARD LOGIC
-        // ==========================================
         function openLoginWizard() {
             openModal('login-modal');
             goToLoginStep('choice');
@@ -1574,14 +1548,10 @@ By following these modular steps, any AI can reconstruct the complex functionali
             document.getElementById(`login-step-${step}`).classList.add('active');
         }
 
-        function openUploadWizard() {
-            openModal('upload-modal');
-        }
-
         function simulateAuthSuccess(msg) {
             alert(msg);
-            isLoggedIn = true; // Turn ON login access
-            updatePromptVisibility(); // Refresh prompt area if currently on game screen
+            isLoggedIn = true; 
+            updatePromptVisibility(); 
             closeModals();
         }
 
@@ -1598,7 +1568,6 @@ By following these modular steps, any AI can reconstruct the complex functionali
             });
         }
 
-        // Upward Scroll Arrow Logic
         window.addEventListener('scroll', () => {
             const scrollBtn = document.getElementById('scrollToTopBtn');
             if (window.scrollY > 300) {
