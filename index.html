@@ -1256,7 +1256,86 @@ Review the current full application code and strictly execute this optimization 
                 image: 'Deck of Doom.png', 
                 url: 'Deck of Doom.html',
                 bgm: 'Deck of Doom.mp3'
-            }
+            },
+            {
+            id: 9, 
+                studio: 'Pixel Gaunt',
+                title: 'Stick Man Velocity 1.0', 
+                genre: 'Arcade', 
+                controls: '<strong>Movement:</strong> Joystick (Mobile) / Keyboard (Desktop).<br><strong>Actions:</strong> Punch, Kick, Jump, Dash, Dive, and Fire.', 
+                howToPlay: 'Navigate through the levels, defeat enemy waves (Small, Spider, Goliath), and conquer the Titan Boss. Track HP and collect coins to boost your score.',
+                rating: '⭐⭐⭐⭐⭐ (4.8/5)',
+                releaseDate: 'May 2026',
+                platform: 'Web Browser, Mobile',
+                technology: 'Single-file HTML5, CSS Flexbox, Vanilla ES6 JavaScript, Web Audio API, Canvas API',
+                aiPrompt: `"To help you recreate your "Stickman Velocity" game or build a clone using Gemini, you should use a structured, modular approach. Rather than asking for everything at once, it is best to provide the AI with a logical roadmap.
+
+Here are the step-by-step prompts you can use to build the game from scratch:
+
+Step 1: The Core Foundation (Engine)
+"Create a 2D side-scrolling stickman fighting game using a single HTML file (HTML5 Canvas, CSS, and JavaScript).
+
+Implement a player character with smooth movement (A, D keys), jumping (W), and attacks (J for Punch, L for Kick).
+
+Implement a gravity-based physics engine for the player and platform.
+
+Add dynamic enemies (different colors/types) that move towards the player and can attack.
+
+Include a simple particle system for hit effects (sparks/blood) and screen shake."
+
+Step 2: Camera and Environment
+"Enhance the game with a side-scrolling camera system:
+
+The camera should follow the player. When the player reaches the middle of the screen, the environment should scroll smoothly.
+
+Add a 'Wireframe/Notebook Sketch' style background using simple lines for mountains and trees.
+
+Implement a Level/Stage system where every 10 kills, the background theme/color changes and the difficulty (speed/health) increases."
+
+Step 3: Advanced Combat and Abilities
+"Add advanced combat mechanics:
+
+Add a Dash (SHIFT key) that grants invincibility during the move.
+
+Add a Crouch/Slide/Dive (S to crouch, U to dive) attack.
+
+Ensure the player can throw Fireballs (K key) while standing or crouching.
+
+Add cooldown bars for Dash and Dive in the UI, which refill over time."
+
+Step 4: Ultimate Power & AI Clones
+"Implement an 'Ultimate Power' system:
+
+Add a tracker UI that counts small kills (15), spiders (5), and big enemies (5).
+
+Once the requirements are met, enable the Ultimate by pressing J+K+L.
+
+Upon activation, spawn 5 AI-controlled clones that last for 15 seconds.
+
+Use logic to distribute the clones across multiple enemies so they don't merge into one spot."
+
+Step 5: Audio, UI, and Polish
+"Finalize the game with polish:
+
+Add a Web Audio API system to generate sound effects for punches, kicks, fireballs, and coins (without needing external files).
+
+Add an 'On/Off' toggle for background music.
+
+Add a 'Play Now' menu screen and an ESC-based Pause/Resume system.
+
+Ensure the game is a single-file HTML solution that runs in any browser."
+
+Tips for success when using these prompts:
+Keep the context: If you have already built the base in an AI chat, continue in the same chat session. This allows the AI to "remember" the code it previously wrote.
+
+Request "Single-File" output: Always specify: "Provide the result as a complete, single-file HTML code including CSS and JS."
+
+Debug incrementally: If an error occurs (like the "clones merging" issue), simply paste the code back into the chat and say: "The clones are merging into one spot. Please update the AI logic to distribute them across different enemies on screen."
+
+By following these modular steps, any AI can reconstruct the complex functionality of your "Stickman Velocity" game."`,
+                image: 'Stick Man Velocity 1.0.png',
+                url: 'Stick Man Velocity 1.0.html',
+                bgm: 'Stick Man Velocity 1.0.mp3'
         ];
 
         const homepage = document.getElementById('homepage');
