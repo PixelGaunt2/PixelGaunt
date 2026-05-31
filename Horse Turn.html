@@ -9,8 +9,8 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             overflow: hidden; 
-            background-color: #020208; 
-            color: #00f5ff; 
+            background-color: #87CEEB; /* Day Sky Color */
+            color: #fff; 
             font-family: 'Segoe UI', Arial, sans-serif; 
             user-select: none;
             touch-action: none;
@@ -20,26 +20,26 @@
         #uiLayer { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            background: rgba(2, 2, 8, 0.85); backdrop-filter: blur(5px);
+            background: rgba(34, 139, 34, 0.7); backdrop-filter: blur(5px);
             transition: opacity 0.3s; z-index: 10;
         }
         .hidden { opacity: 0; pointer-events: none !important; display: none !important; }
         
-        h1 { font-size: 4rem; text-shadow: 0 0 20px #00b4d8; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 5px; text-align: center;}
-        p { font-size: 1.2rem; margin-bottom: 30px; color: #ade8f4; text-align: center; max-width: 500px; line-height: 1.6;}
+        h1 { font-size: 4rem; text-shadow: 0 0 20px #000; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 5px; text-align: center; color: #fff;}
+        p { font-size: 1.2rem; margin-bottom: 30px; color: #eee; text-align: center; max-width: 500px; line-height: 1.6; text-shadow: 0 2px 4px #000;}
         
         button.main-btn { 
             padding: 15px 45px; font-size: 1.4rem; 
-            background: linear-gradient(45deg, #0077b6, #00b4d8); color: #fff; border: none; border-radius: 50px; 
+            background: linear-gradient(45deg, #8B4513, #D2691E); color: #fff; border: none; border-radius: 50px; 
             cursor: pointer; font-weight: bold; transition: all 0.2s;
-            box-shadow: 0 5px 20px rgba(0, 180, 216, 0.4); text-transform: uppercase;
+            box-shadow: 0 5px 20px rgba(139, 69, 19, 0.6); text-transform: uppercase;
         }
-        button.main-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 245, 255, 0.6); }
+        button.main-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(210, 105, 30, 0.8); }
         
-        #hud { position: absolute; top: 20px; left: 30px; font-size: 1.5rem; font-weight: bold; text-shadow: 0 0 8px #00b4d8; z-index: 5; }
+        #hud { position: absolute; top: 20px; left: 30px; font-size: 1.5rem; font-weight: bold; text-shadow: 0 2px 5px #000; z-index: 5; }
         .hud-coin { color: #FFD700; text-shadow: 0 0 10px #FFA500; }
         
-        #controls-hint { position: absolute; bottom: 20px; width: 100%; text-align: center; color: #ade8f4; font-size: 1.1rem; letter-spacing: 1px; z-index: 5;}
+        #controls-hint { position: absolute; bottom: 20px; width: 100%; text-align: center; color: #fff; font-size: 1.1rem; letter-spacing: 1px; z-index: 5; text-shadow: 0 2px 4px #000;}
         
         /* Dash Button */
         #dashBtn {
@@ -64,19 +64,18 @@
         }
         #dashBtn:active { transform: scale(0.9); opacity: 1; }
 
-        /* Mobile adjustments */
         @media (max-width: 768px) {
             h1 { font-size: 2.5rem; }
             #hud { font-size: 1.1rem; left: 15px; }
             #controls-hint { font-size: 0.9rem; padding: 0 10px; bottom: 35px; text-align: left; left: 15px; width: auto; max-width: 60%; }
-            #dashBtn { width: 60px; height: 60px; bottom: 20px; right: 20px; font-size: 1.5rem; }
+            #dashBtn { display: none !important; }
         }
     </style>
 </head>
 <body>
 
     <div id="hud">Score: <span id="scoreVal">0</span> | <span class="hud-coin">Coins: <span id="coinVal">0</span></span> | Level: <span id="levelVal">1</span></div>
-    <div id="controls-hint">Tap L/R to Steer | Swipe Up to Jump</div>
+    <div id="controls-hint">Swipe L/R to Steer | Swipe Up to Jump</div>
     
     <button id="dashBtn" class="hidden">⚡</button>
 
@@ -84,7 +83,7 @@
 
     <div id="uiLayer">
         <h1 id="mainTitle">HORSE TURN</h1>
-        <p id="subText">Steer onto the walls! Jump gaps and collect coins. Hold Dash to speed up!</p>
+        <p id="subText">Dodge trees, jump over rocks and holes! Hold Dash to speed up!</p>
         <button id="startBtn" class="main-btn">START RUN</button>
     </div>
 
@@ -110,7 +109,6 @@
         let gameSpeed = 8;
         let distanceTraveled = 0;
 
-        // 3D Engine Constants
         const R = 160; 
         const FOV = 280; 
         const SLICE_DZ = 50; 
@@ -121,64 +119,104 @@
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
             if(window.innerWidth > 768) {
-                document.getElementById('controls-hint').innerText = "LEFT/RIGHT to steer | SPACE to Jump | SHIFT to Dash";
+                document.getElementById('controls-hint').innerText = "Keys L/R Steer | UP Arrow Jump | SHIFT/Btn Dash";
             } else {
-                document.getElementById('controls-hint').innerText = "Tap L/R to Steer | Swipe Up to Jump";
+                document.getElementById('controls-hint').innerText = "Swipe L/R Steer | Swipe Up Jump | Double Tap Dash";
             }
         }
         window.addEventListener('resize', resize);
         resize();
 
-        // --- CONTROLS ---
-        const keys = { Left: false, Right: false, Space: false, Dash: false };
+        // --- SUBWAY SURFER LANE MOVEMENT SYSTEM ---
+        function moveLeft() {
+            if (gameState !== 'playing' || horse.isFallingOut) return;
+            horse.lane--;
+            if (horse.lane < 0) {
+                horse.wall = (horse.wall + 3) % 4; 
+                horse.lane = 2; 
+                horse.x += 2 * R; 
+            }
+        }
+        
+        function moveRight() {
+            if (gameState !== 'playing' || horse.isFallingOut) return;
+            horse.lane++;
+            if (horse.lane > 2) {
+                horse.wall = (horse.wall + 1) % 4; 
+                horse.lane = 0; 
+                horse.x -= 2 * R; 
+            }
+        }
+
+        // --- KEYBOARD CONTROLS (PC) ---
+        const keys = { Dash: false };
+        const pressed = {};
+        
         window.addEventListener('keydown', e => {
-            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.Left = true;
-            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.Right = true;
+            if (pressed[e.code]) return;
+            pressed[e.code] = true;
+            
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') moveLeft();
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') moveRight();
+            
+            if (e.code === 'ArrowUp' || e.code === 'KeyW') { 
+                e.preventDefault(); 
+                if (gameState === 'playing') horse.jump(); 
+            }
+            
             if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.Dash = true;
-            if (e.code === 'Space') { e.preventDefault(); keys.Space = true; if(gameState === 'playing') horse.jump(); }
         });
+        
         window.addEventListener('keyup', e => {
-            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.Left = false;
-            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.Right = false;
+            pressed[e.code] = false;
             if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.Dash = false;
-            if (e.code === 'Space') keys.Space = false;
         });
 
-        // --- TOUCH CONTROLS (MOBILE) ---
+        // --- SWIPE & DOUBLE TAP CONTROLS (MOBILE) ---
         let touchStartX = 0;
         let touchStartY = 0;
+        let swipeHandled = false;
+        let lastTapTime = 0;
+        let mobileDashTimer = null;
 
         window.addEventListener('touchstart', e => {
             if (gameState !== 'playing' || e.target === dashBtn) return;
             const touch = e.touches[0];
             touchStartX = touch.clientX;
             touchStartY = touch.clientY;
-            if (touchStartX < width / 2) keys.Left = true;
-            else keys.Right = true;
+            swipeHandled = false;
+
+            const now = Date.now();
+            if (now - lastTapTime < 300) {
+                keys.Dash = true;
+                dashBtn.style.opacity = '1';
+                clearTimeout(mobileDashTimer);
+                mobileDashTimer = setTimeout(() => { 
+                    keys.Dash = false; 
+                    dashBtn.style.opacity = '0.8'; 
+                }, 3000);
+            }
+            lastTapTime = now;
         }, { passive: false });
 
         window.addEventListener('touchmove', e => {
-            if (gameState !== 'playing' || e.target === dashBtn) return;
+            if (gameState !== 'playing' || e.target === dashBtn || swipeHandled) return;
             e.preventDefault(); 
             const touch = e.touches[0];
+            const dx = touch.clientX - touchStartX;
+            const dy = touch.clientY - touchStartY;
             
-            if (touchStartY - touch.clientY > 40) {
-                if (!keys.Space) { keys.Space = true; horse.jump(); }
+            if (Math.abs(dx) > 30 || Math.abs(dy) > 30) {
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    if (dx > 0) moveRight();
+                    else moveLeft();
+                } else {
+                    if (dy < 0) horse.jump(); 
+                }
+                swipeHandled = true;
             }
-
-            if (touch.clientX < width / 2) { keys.Left = true; keys.Right = false; } 
-            else { keys.Right = true; keys.Left = false; }
         }, { passive: false });
 
-        window.addEventListener('touchend', e => {
-            if (e.target !== dashBtn && e.touches.length === 0) { 
-                keys.Left = false; keys.Right = false; keys.Space = false;
-            }
-        });
-
-        // Dash Button Events
-        dashBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.Dash = true; dashBtn.style.opacity = '1'; });
-        dashBtn.addEventListener('touchend', e => { e.preventDefault(); keys.Dash = false; dashBtn.style.opacity = '0.8'; });
         dashBtn.addEventListener('mousedown', e => { e.preventDefault(); keys.Dash = true; });
         dashBtn.addEventListener('mouseup', e => { e.preventDefault(); keys.Dash = false; });
         dashBtn.addEventListener('mouseleave', e => { e.preventDefault(); keys.Dash = false; });
@@ -196,7 +234,7 @@
                 osc.frequency.exponentialRampToValueAtTime(500, actx.currentTime + 0.15);
                 gain.gain.setValueAtTime(0.1, actx.currentTime);
                 osc.start(); osc.stop(actx.currentTime + 0.15);
-            } else if (type === 'fall') {
+            } else if (type === 'fall' || type === 'crash') {
                 osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, actx.currentTime);
                 osc.frequency.linearRampToValueAtTime(30, actx.currentTime + 0.6);
                 gain.gain.setValueAtTime(0.2, actx.currentTime);
@@ -220,19 +258,7 @@
                 osc.connect(gain); gain.connect(actx.destination);
                 osc.start(); osc.stop(actx.currentTime + 0.2);
                 step = (step + 1) % seq.length;
-            }, keys.Dash ? 150 : 250); // Speed up music on dash
-        }
-
-        // --- BACKGROUND ---
-        let stars = [];
-        for (let i = 0; i < 120; i++) stars.push({ x: Math.random() - 0.5, y: Math.random() - 0.5, r: Math.random() * 2 });
-        function drawStars() {
-            ctx.fillStyle = '#ffffff';
-            stars.forEach(s => {
-                let sx = width/2 + s.x * width * 1.5;
-                let sy = height/2 + s.y * height * 1.5;
-                ctx.beginPath(); ctx.arc(sx, sy, s.r, 0, Math.PI*2); ctx.fill();
-            });
+            }, keys.Dash ? 150 : 250); 
         }
 
         // --- 3D MATH ---
@@ -256,39 +282,53 @@
             return { x: sx, y: sy };
         }
 
-        // --- TUNNEL & COIN GENERATION ---
+        // --- TUNNEL & ENVIRONMENT GENERATION ---
         let slices = [];
-        let patternTimer = 0, currentPattern = 'solid';
+        let patternTimer = 0;
 
         function createSlice(zValue) {
-            let slice = { z: zValue, walls: [], coin: null };
-            for(let w=0; w<4; w++) slice.walls.push([true, true, true]); 
+            let slice = { z: zValue, walls: [], coin: null, obstacle: null };
+            for(let w=0; w<4; w++) slice.walls.push([true, true, true]); // Initial Solid Ground
 
-            // Create Gaps
-            if (zValue > 600) { 
+            // --- HOLES GENERATION (Gaps) ---
+            if (zValue > 600) {
                 patternTimer--;
-                if(patternTimer <= 0) {
+                if (patternTimer <= 0) {
                     let r = Math.random();
-                    currentPattern = r < 0.4 ? 'missing-lane' : (r < 0.75 ? 'missing-wall' : 'solid');
+                    if (r < 0.25) { 
+                        // Small Hole: Missing Lane
+                        slice.walls[Math.floor(Math.random() * 4)][Math.floor(Math.random() * 3)] = false;
+                    } else if (r < 0.45) { 
+                        // Big Hole: Entire Wall Missing
+                        slice.walls[Math.floor(Math.random() * 4)] = [false, false, false]; 
+                    }
                     patternTimer = Math.floor(Math.random() * 8) + 4; 
-                }
-                if (currentPattern === 'missing-lane') {
-                    slice.walls[Math.floor(Math.random() * 4)][Math.floor(Math.random() * 3)] = false;
-                } else if (currentPattern === 'missing-wall') {
-                    slice.walls[Math.floor(Math.random() * 4)] = [false, false, false]; 
                 }
             }
 
-            // Create Coins (30% chance per slice)
-            if (Math.random() < 0.3) {
-                let validLanes = [];
-                for(let w=0; w<4; w++) {
-                    for(let l=0; l<3; l++) {
-                        if(slice.walls[w][l]) validLanes.push({w, l});
-                    }
+            // Get valid lanes (where ground exists)
+            let validLanes = [];
+            for(let w=0; w<4; w++) {
+                for(let l=0; l<3; l++) {
+                    if(slice.walls[w][l]) validLanes.push({w, l}); 
                 }
-                if (validLanes.length > 0) {
-                    let chosen = validLanes[Math.floor(Math.random() * validLanes.length)];
+            }
+
+            // --- OBSTACLES GENERATION (Rocks/Trees) ---
+            if (validLanes.length > 0 && zValue > 600 && Math.random() < 0.25) {
+                let chosen = validLanes[Math.floor(Math.random() * validLanes.length)];
+                slice.obstacle = {
+                    type: Math.random() > 0.5 ? 'tree' : 'rock',
+                    wall: chosen.w,
+                    lane: chosen.l
+                };
+            }
+
+            // --- COINS GENERATION ---
+            if (validLanes.length > 0 && Math.random() < 0.3) {
+                let chosen = validLanes[Math.floor(Math.random() * validLanes.length)];
+                // Ensure coin doesn't spawn exactly inside an obstacle
+                if (!slice.obstacle || slice.obstacle.lane !== chosen.l || slice.obstacle.wall !== chosen.w) {
                     slice.coin = { wall: chosen.w, lane: chosen.l, collected: false, rot: Math.random() * Math.PI };
                 }
             }
@@ -297,7 +337,7 @@
         }
 
         function initTunnel() {
-            slices = []; patternTimer = 15; currentPattern = 'solid';
+            slices = []; patternTimer = 15;
             for (let z = 100; z < MAX_Z; z += SLICE_DZ) slices.push(createSlice(z));
         }
 
@@ -309,17 +349,17 @@
             }
         }
 
-        function drawTunnelAndCoins() {
+        function drawTunnelAndEnvironment() {
             for (let i = slices.length - 1; i >= 0; i--) {
                 let slice = slices[i];
                 let z1 = slice.z, z2 = slice.z + SLICE_DZ;
                 let depthFactor = Math.max(0, Math.min(1, 1 - z1 / MAX_Z));
                 let laneWidth = (2 * R) / 3;
 
-                // Draw Walls
+                // 1. Draw Grass Path
                 for (let w = 0; w < 4; w++) {
                     for (let l = 0; l < 3; l++) {
-                        if (!slice.walls[w][l]) continue; 
+                        if (!slice.walls[w][l]) continue; // Hides the lane to create a Hole
 
                         let lx1 = -R + l * laneWidth, lx2 = lx1 + laneWidth;
                         let wP1 = getWorldPos(w, lx1, 0), wP2 = getWorldPos(w, lx2, 0);
@@ -331,11 +371,10 @@
 
                         if (!p1 || !p2 || !p3 || !p4) continue;
 
-                        // Speed warp effect on lines during dash
-                        let dashWarp = keys.Dash ? 0.8 : 0.4;
-                        ctx.fillStyle = `rgba(37, 117, 252, ${dashWarp * depthFactor})`; 
-                        ctx.strokeStyle = `rgba(0, 245, 255, ${(keys.Dash ? 1.0 : 0.7) * depthFactor})`; 
-                        ctx.lineWidth = 1;
+                        let dashWarp = keys.Dash ? 0.8 : 0.6;
+                        ctx.fillStyle = `rgba(34, 139, 34, ${dashWarp * depthFactor})`; 
+                        ctx.strokeStyle = `rgba(139, 69, 19, ${(keys.Dash ? 1.0 : 0.7) * depthFactor})`; 
+                        ctx.lineWidth = 2;
 
                         ctx.beginPath();
                         ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
@@ -345,26 +384,58 @@
                     }
                 }
 
-                // Draw Coins
+                // 2. Draw Obstacles (Rocks / Trees)
+                if (slice.obstacle && z1 > 100) {
+                    let lx = -R + slice.obstacle.lane * laneWidth + laneWidth/2;
+                    let wP = getWorldPos(slice.obstacle.wall, lx, 0); 
+                    let p = project3D({ x: wP.x, y: wP.y, z: z1 });
+                    
+                    if (p) {
+                        let scale = FOV / z1;
+                        let s = 35 * scale; 
+                        
+                        ctx.save();
+                        ctx.translate(p.x, p.y);
+                        let renderAngle = (slice.obstacle.wall * Math.PI / 2) - cameraAngle;
+                        ctx.rotate(renderAngle); 
+                        
+                        if (slice.obstacle.type === 'rock') {
+                            ctx.fillStyle = `rgba(100, 100, 100, ${depthFactor})`; 
+                            ctx.beginPath();
+                            ctx.moveTo(-s*0.8, 0); ctx.lineTo(-s*0.4, -s*0.8);
+                            ctx.lineTo(s*0.3, -s*1.1); ctx.lineTo(s*0.9, 0); ctx.fill();
+                            ctx.fillStyle = `rgba(70, 70, 70, ${depthFactor})`;
+                            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-s*0.4, -s*0.8); ctx.lineTo(s*0.3, -s*1.1); ctx.fill();
+                        } else if (slice.obstacle.type === 'tree') {
+                            ctx.fillStyle = `rgba(92, 64, 51, ${depthFactor})`; 
+                            ctx.fillRect(-s*0.2, -s*0.5, s*0.4, s*0.5);
+                            ctx.fillStyle = `rgba(0, 100, 0, ${depthFactor})`; 
+                            ctx.beginPath(); ctx.moveTo(-s*1.2, -s*0.5); ctx.lineTo(0, -s*2.5); ctx.lineTo(s*1.2, -s*0.5); ctx.fill();
+                            ctx.fillStyle = `rgba(34, 139, 34, ${depthFactor})`; 
+                            ctx.beginPath(); ctx.moveTo(-s*0.8, -s*1.2); ctx.lineTo(0, -s*3.5); ctx.lineTo(s*0.8, -s*1.2); ctx.fill();
+                        }
+                        ctx.restore();
+                    }
+                }
+
+                // 3. Draw Coins
                 if (slice.coin && !slice.coin.collected && z1 > 100) {
                     let lx = -R + slice.coin.lane * laneWidth + laneWidth/2;
-                    let wP = getWorldPos(slice.coin.wall, lx, 30); // Hover height
+                    let wP = getWorldPos(slice.coin.wall, lx, 30); 
                     let p = project3D({ x: wP.x, y: wP.y, z: z1 });
                     
                     if (p) {
                         let scale = FOV / z1;
                         let s = 14 * scale;
-                        slice.coin.rot += 0.05; // Spin animation
+                        slice.coin.rot += 0.05; 
                         let spin = Math.cos(slice.coin.rot);
                         
                         ctx.save();
                         ctx.translate(p.x, p.y);
                         ctx.scale(spin, 1);
                         
-                        // Outer Gold
                         ctx.fillStyle = `rgba(255, 215, 0, ${depthFactor})`;
                         ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI*2); ctx.fill();
-                        // Inner Orange
                         ctx.fillStyle = `rgba(255, 165, 0, ${depthFactor})`;
                         ctx.beginPath(); ctx.arc(0, 0, s*0.6, 0, Math.PI*2); ctx.fill();
                         
@@ -391,66 +462,75 @@
             ctx.beginPath(); ctx.rect(-s*0.25, s*0.2, s*0.15, s*0.4 + legMovement); ctx.fill();
             ctx.beginPath(); ctx.rect(s*0.1, s*0.2, s*0.15, s*0.4 - legMovement); ctx.fill();
             
-            // Dash visual effect on horse
             if (keys.Dash) {
-                ctx.fillStyle = 'rgba(0, 255, 255, 0.4)';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; 
                 ctx.beginPath(); ctx.ellipse(0, 0, s*0.5, s*0.6, 0, 0, Math.PI*2); ctx.fill();
             }
         }
 
         // --- PLAYER MECHANICS ---
         const horse = {
-            wall: 0, x: 0, y: 0, vy: 0, z: 220, size: 70,
+            wall: 0, x: 0, lane: 1, y: 0, vy: 0, z: 220, size: 70,
             isGrounded: true, isFallingOut: false,
 
-            reset() { this.wall = 0; this.x = 0; this.y = 0; this.vy = 0; this.isGrounded = true; this.isFallingOut = false; },
+            reset() { this.wall = 0; this.lane = 1; this.x = 0; this.y = 0; this.vy = 0; this.isGrounded = true; this.isFallingOut = false; },
 
             jump() {
                 if (this.isGrounded && !this.isFallingOut) {
-                    this.vy = 6.8; this.isGrounded = false; playSFX('jump');
+                    this.vy = 7.0; this.isGrounded = false; playSFX('jump'); // Jump thoda high kiya gaps clear karne k liye
                 }
             },
 
             update() {
                 if (this.isFallingOut) {
                     this.y -= 8; 
-                    if (this.y < -300) endGame();
+                    if (this.y < -300) endGame("You fell into the abyss!");
                     return;
                 }
 
-                // Faster sideways movement during dash
-                let steerSpeed = keys.Dash ? 8.5 : 5.5;
-                if (keys.Left) this.x -= steerSpeed;
-                if (keys.Right) this.x += steerSpeed;
-
-                if (this.x < -R) { this.wall = (this.wall + 3) % 4; this.x += 2 * R; } 
-                else if (this.x > R) { this.wall = (this.wall + 1) % 4; this.x -= 2 * R; }
+                // Snap to Lane
+                let targetX = (this.lane - 1) * ((2 * R) / 3);
+                this.x += (targetX - this.x) * 0.3; 
 
                 if (!this.isGrounded) {
                     this.y += this.vy; this.vy -= 0.35; 
                     if (this.y <= 0) { this.y = 0; this.vy = 0; this.isGrounded = true; }
                 }
 
-                // Collisions (Gaps & Coins)
                 let laneIndex = Math.max(0, Math.min(2, Math.floor((this.x + R) / ((2 * R) / 3))));
                 
                 slices.forEach(s => {
+                    // Hole (Gap) Collision - Check if horse is over a gap and on ground
+                    if (s.z <= this.z && s.z + SLICE_DZ > this.z && this.y <= 0) {
+                        if (!s.walls[this.wall][laneIndex]) {
+                            this.isFallingOut = true; 
+                            this.isGrounded = false; 
+                            playSFX('fall');
+                        }
+                    }
+
                     // Coin Collision
                     if (s.coin && !s.coin.collected && Math.abs(s.z - this.z) < SLICE_DZ) {
                         if (s.coin.wall === this.wall && s.coin.lane === laneIndex && this.y < 60) {
                             s.coin.collected = true;
                             coinsCount++;
-                            score += 25; // Bonus score for coin
+                            score += 25; 
                             scoreHUD.innerText = score;
                             coinHUD.innerText = coinsCount;
                             playSFX('coin');
                         }
                     }
                     
-                    // Gap Collision (Only check the slice exactly under the horse)
-                    if (s.z <= this.z && s.z + SLICE_DZ > this.z && this.y <= 0) {
-                        if (!s.walls[this.wall][laneIndex]) {
-                            this.isFallingOut = true; this.isGrounded = false; playSFX('fall');
+                    // Obstacle Collision (Rocks & Trees)
+                    if (s.obstacle && Math.abs(s.z - this.z) < SLICE_DZ && !this.isFallingOut) {
+                        if (s.obstacle.wall === this.wall && s.obstacle.lane === laneIndex) {
+                            let collisionHeight = s.obstacle.type === 'tree' ? 120 : 50; 
+                            if (this.y < collisionHeight) {
+                                this.isFallingOut = true; 
+                                this.isGrounded = false; 
+                                playSFX('crash');
+                                endGame("You hit an obstacle!");
+                            }
                         }
                     }
                 });
@@ -492,7 +572,7 @@
         function startGame() {
             initAudio(); gameState = 'playing'; 
             uiLayer.classList.add('hidden');
-            dashBtn.classList.remove('hidden'); // Show dash button
+            dashBtn.classList.remove('hidden'); 
             
             score = 0; coinsCount = 0; level = 1; baseGameSpeed = 8; distanceTraveled = 0;
             scoreHUD.innerText = score; coinHUD.innerText = coinsCount; levelHUD.innerText = level;
@@ -500,33 +580,40 @@
             horse.reset(); initTunnel(); manageBGM(true); loop();
         }
 
-        function endGame() {
+        function endGame(reasonStr) {
             gameState = 'gameover'; manageBGM(false); 
             uiLayer.classList.remove('hidden');
-            dashBtn.classList.add('hidden'); // Hide dash button
+            dashBtn.classList.add('hidden'); 
             
             mainTitle.innerText = "GAME OVER"; mainTitle.style.color = "#ff3333";
-            subText.innerHTML = `You drifted out into the deep cosmic abyss!<br><br><b>Final Score:</b> ${score} | <b>Coins:</b> ${coinsCount} | <b>Level:</b> ${level}`;
+            
+            if(!reasonStr) reasonStr = "You fell into the abyss!";
+            subText.innerHTML = `${reasonStr}<br><br><b>Final Score:</b> ${score} | <b>Coins:</b> ${coinsCount} | <b>Level:</b> ${level}`;
             startBtn.innerText = "RUN AGAIN";
-            keys.Dash = false; // Reset dash state
+            keys.Dash = false; 
+            clearTimeout(mobileDashTimer);
         }
 
         function loop() {
             if (gameState !== 'playing') return;
             
-            // Dash Speed Control
             gameSpeed = keys.Dash ? baseGameSpeed * 2.2 : baseGameSpeed;
             
-            ctx.fillStyle = '#020208'; ctx.fillRect(0, 0, width, height);
+            // Sky Background
+            ctx.fillStyle = '#87CEEB'; ctx.fillRect(0, 0, width, height);
 
-            drawStars(); updateTunnel(); drawTunnelAndCoins();
+            updateTunnel(); drawTunnelAndEnvironment();
             horse.update(); horse.draw(); updateCamera();
 
             distanceTraveled += gameSpeed;
             if (Math.floor(distanceTraveled) % 12 === 0) {
                 score += 5; scoreHUD.innerText = score;
-                if (score > 0 && score % 800 === 0) {
-                    level++; baseGameSpeed += 1.2; levelHUD.innerText = level;
+                
+                // SPEED & LEVEL PROGRESSION: Tezi se level barhega (har 500 score par)
+                if (score > 0 && score % 500 === 0) {
+                    level++; 
+                    baseGameSpeed += 1.5; // Speed multiplier barha diya gaya hai
+                    levelHUD.innerText = level;
                 }
             }
             requestAnimationFrame(loop);
