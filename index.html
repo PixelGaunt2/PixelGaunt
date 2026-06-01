@@ -1332,7 +1332,112 @@ By following these modular steps, any AI can reconstruct the complex functionali
                 preview: 'Stick Man Velocity 1.0.gif',
                 url: 'Stick Man Velocity 1.0.html',
                 bgm: 'Stick Man Velocity 1.0.mp3'
-            }    
+            },
+            { 
+                id: 10,
+                studio: 'Pixel Gaunt',
+                title: 'Tetris Reimagine', 
+                genre: 'Puzzle', 
+                controls: 'Use the on screen buttons provided on the interface Left, Right Turn Float or Use Keyboard Arrow Keys Up , Down ,  Left ,  Right.', 
+                howToPlay: 'Organize the rising balloons into complete rows to clear them. Survive up to 100 levels and aim for the high score.',
+                rating: '⭐⭐⭐⭐⭐ (4.8/5)',
+                releaseDate: 'June 1, 2026',
+                platform: 'Web Browser (Desktop & Mobile Responsive)',
+                technology: 'HTML5, CSS3, JavaScript (Vanilla), Web Audio API',
+                aiPrompt: `Create a complete browser-based game called "Tetris Reimagine".
+
+Core Concept:
+This game is inspired by Tetris but with a completely unique gameplay mechanic.
+
+Instead of geometric Tetris blocks falling downward from the top of the screen, colorful balloons float upward from the bottom of the screen due to buoyancy.
+
+The player must guide and position each balloon into a grid-based puzzle area before it reaches the top boundary.
+
+Gameplay Rules:
+
+- Balloons continuously spawn from the bottom.
+- Every balloon occupies exactly one grid cell.
+- Balloons naturally rise upward.
+- Player can move the active balloon left or right while it is floating.
+- Player can slightly slow down or speed up the balloon.
+- Once a balloon touches another balloon or reaches its target position, it becomes fixed.
+- Filled horizontal rows disappear and award points.
+- New balloons keep spawning.
+- If balloons reach the danger line at the top of the screen, game over.
+
+Unique Mechanics:
+
+- Reverse Tetris gravity.
+- Upward balloon physics.
+- Floating movement.
+- Smooth buoyancy animation.
+- Balloon wobbling effect.
+- Balloon collision detection.
+- Dynamic difficulty scaling.
+
+Controls:
+
+Desktop:
+← Move Left
+→ Move Right
+↑ Boost Upward Speed
+↓ Slow Balloon
+Space = Instant Lock Position
+P = Pause
+
+Mobile:
+Touch buttons
+Left
+Right
+Boost
+Slow
+Lock
+
+Visual Style:
+
+- Bright colorful balloons.
+- Cartoon arcade style.
+- Smooth animations.
+- Soft shadows.
+- Modern UI.
+- Floating particle effects.
+- Score display.
+- Combo indicator.
+- Level indicator.
+
+Game Systems:
+
+- Main Menu
+- Start Game
+- Pause Menu
+- Restart
+- High Score System
+- Level Progression
+- Combo System
+- Sound Effects
+- Background Music
+- Mobile Responsive Layout
+
+Technical Requirements:
+
+- Single HTML file.
+- All CSS and JavaScript embedded.
+- No external libraries.
+- No frameworks.
+- Works offline.
+- 60 FPS gameplay.
+- Mobile and desktop support.
+- Touch controls included.
+- Save high score using localStorage.
+
+Winning Experience:
+
+The game should feel like a fresh combination of Tetris and balloon physics where players carefully organize rising balloons into complete rows before the screen fills up.`,
+                image: 'Tetris Reimagine.png', 
+                preview: 'Tetris Reimagine.gif',
+                url: 'Tetris Reimagine.html',
+                bgm: 'Tetris Reimagine.mp3'
+            }        
         ];
 
         const homepage = document.getElementById('homepage');
@@ -1588,5 +1693,30 @@ By following these modular steps, any AI can reconstruct the complex functionali
         window.onclick = (e) => { if (e.target.classList.contains('modal-overlay')) closeModals(); }
         window.onkeydown = (e) => { if (e.key === 'Escape') closeModals(); }
     </script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+  //
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "pixelgaunt.firebaseapp.com",
+    projectId: "pixelgaunt",
+    storageBucket: "pixelgaunt.appspot.com",
+    messagingSenderId: "...",
+    appId: "..."
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Example: Game play hone par data save karna
+  async function updateGameStats(gameId, playCount) {
+    await setDoc(doc(db, "games", gameId), {
+      views: playCount,
+      lastUpdated: new Date()
+    });
+  }
+</script>
 </body>
 </html>
