@@ -410,12 +410,15 @@
                     <li><button class="active" id="btn-cat-all" onclick="filterCategory('All', null)">🕹️ All Games</button></li>
                     <li><button id="btn-cat-fighting" onclick="filterCategory('Fighting', null)">🥊 Fighting</button></li>
                     <li><button id="btn-cat-action" onclick="filterCategory('Action', null)">🔥 Action</button></li>
+                    <li><button id="btn-cat-action" onclick="filterCategory('Arcade', null)">🕹️ Arcade</button></li>
                     <li><button id="btn-cat-3d-sim" onclick="filterCategory('3D Simulation', null)">🌐 3D Simulation</button></li>
+                    <li><button id="btn-cat-3d-sim" onclick="filterCategory('3D Shooting', null)">🔥 3D Shooting</button></li>
                     <li><button id="btn-cat-puzzle-adv" onclick="filterCategory('Puzzle Adventure', null)">🧩 Puzzle Adv.</button></li>
                     <li><button id="btn-cat-casual-adv" onclick="filterCategory('Casual Adventure', null)">🎣 Casual Adv.</button></li>
                     <li><button id="btn-cat-puzzle" onclick="filterCategory('Puzzle', null)">🎲 Puzzle</button></li>
                     <li><button id="btn-cat-racing" onclick="filterCategory('Racing', null)">🏎️ Racing</button></li>
                     <li><button id="btn-cat-roguelike" onclick="filterCategory('Rogue-like', null)">💀 Rogue-like</button></li>
+                    <li><button id="btn-cat-roguelike" onclick="filterCategory('RPG', null)">💀 RPG</button></li>
                 </ul>
             </div>
             <div class="sidebar-box">
@@ -433,12 +436,15 @@
                 <button class="cat-btn active" onclick="filterCategory('All', this)">All Games</button>
                 <button class="cat-btn" onclick="filterCategory('Fighting', this)">Fighting</button>
                 <button class="cat-btn" onclick="filterCategory('Action', this)">Action</button>
+                <button class="cat-btn" onclick="filterCategory('Arcade', this)">Arcade</button>
                 <button class="cat-btn" onclick="filterCategory('3D Simulation', this)">3D Simulation</button>
+                <button class="cat-btn" onclick="filterCategory('3D Shooting', this)">3D Shooting</button>
                 <button class="cat-btn" onclick="filterCategory('Puzzle Adventure', this)">Puzzle Adventure</button>
                 <button class="cat-btn" onclick="filterCategory('Casual Adventure', this)">Casual Adventure</button>
                 <button class="cat-btn" onclick="filterCategory('Puzzle', this)">Puzzle</button>
                 <button class="cat-btn" onclick="filterCategory('Racing', this)">Racing</button>
                 <button class="cat-btn" onclick="filterCategory('Rogue-like', this)">Rogue-like</button>
+                <button class="cat-btn" onclick="filterCategory('RPG', this)">RPG</button>
             </div>
 
             <!-- Responsive Cards Layout -->
@@ -1437,7 +1443,348 @@ The game should feel like a fresh combination of Tetris and balloon physics wher
                 preview: 'Tetris Reimagine.gif',
                 url: 'Tetris Reimagine.html',
                 bgm: 'Tetris Reimagine.mp3'
-            }        
+            },
+            { 
+                id: 11,
+                studio: 'Pixel Gaunt',
+                title: 'Iron Tide Rising', 
+                genre: '3D Shooting', 
+                controls: 'Movement: W (Forward), S (Backward), A (Left), D (Right) Action: SPACE (Jump), SHIFT (Sprint/Fast run) Combat: Left Click (Smart Automatic/Single Fire), TAB (Weapon Switch: Rifle/Bazooka), G (Throw Bomb/Grenade) Dodging: Q (Left Dash), E (Right Dash) System: ESC (Pause Menu).', 
+                howToPlay: 'Objective: Survive against waves of enemies and maximize your score.Tactics:Cover: Buildings and cars act as solid objects. Use them to block enemy movement and incoming projectiles.Smart Weaponry: The rifle automatically detects enemy speed; it fires slowly on normal targets but switches to rapid-fire (AK-47 style) against fast runners.Dodging: Use Q or E to dash when you see fireballs or when a Tank gets too close.AoE Damage: Use the Bazooka or Bombs to deal massive area-of-effect damage to Tank units or groups of enemies.Win/Loss: The game continues as long as your HP is above zero. If HP hits zero, you lose.',
+                rating: '⭐⭐⭐⭐⭐ (4.8/5)',
+                releaseDate: 'June 2, 2026',
+                platform: 'Web Browser (Desktop & Mobile Responsive)',
+                technology: 'Three.js: The 3D rendering engine responsible for the scene, geometry, and lighting.HTML5 / CSS3: The structural and styling layers for the User Interface (HUD, Menus, Buttons).JavaScript (ES6): The core engine for logic, physics, collision detection (Box3), and event handling.Web Audio API: Used for procedural audio generation, allowing the game to produce sound effects without needing external .mp3 or .wav files.Browser APIs: Specifically the PointerLockAPI to hide the mouse cursor and lock it within the game window for camera control.',
+                aiPrompt: `Create a complete offline 3D browser game inspired by battle royale and tactical shooter gameplay. The game must be playable directly in a web browser and generated as a single project containing HTML, CSS, and JavaScript files.
+
+Game Title
+Animal Battle Arena
+
+Core Concept
+Create a low-poly 3D third-person shooter where all characters are anthropomorphic animals.
+The player controls one animal soldier while AI-controlled animal soldiers fight across the map.
+The game is fully offline and does not require internet connectivity.
+
+Playable Characters
+Create low-poly animal soldiers:
+
+
+Bear Soldier
+
+Lion Soldier
+
+Wolf Soldier
+
+Rhino Soldier
+
+Pig Soldier
+Each animal should have:
+
+
+Unique appearance
+
+Same gameplay balance
+
+Walking animation
+
+Running animation
+
+Shooting animation
+
+Reload animation
+
+Death animation
+Camera
+Third-person camera.
+Features:
+
+
+Mouse look
+
+Camera zoom
+
+Smooth follow camera
+
+Aim mode
+Weapons
+Add:
+
+
+Assault Rifle
+
+SMG
+
+Shotgun
+
+Sniper Rifle
+
+Pistol
+Each weapon needs:
+
+
+Different damage
+
+Different fire rate
+
+Recoil
+
+Reload system
+
+Muzzle flash
+
+Bullet tracers
+
+Sound effects
+Map Design
+Create a medium-sized industrial combat zone.
+Map must contain:
+
+
+Warehouses
+
+Shipping containers
+
+Corridors
+
+Concrete walls
+
+Pipes
+
+Towers
+
+Buildings
+
+Crates
+
+Cover locations
+
+Rooftops
+
+Narrow passages
+Map should encourage tactical movement and hiding.
+
+AI Bots
+Create advanced offline bots inspired by Counter-Strike 1.6 expert bots.
+Bots must:
+
+
+Search for enemies
+
+Patrol map
+
+Use cover intelligently
+
+Hide behind walls
+
+Hide behind containers
+
+Peek from corners
+
+Reload when needed
+
+Flank enemies
+
+Chase weak enemies
+
+React to gunfire
+
+Detect enemies using vision cones
+
+Fight each other
+
+Fight player
+
+Avoid standing still
+Difficulty levels:
+
+
+Easy
+
+Normal
+
+Hard
+
+Expert
+Expert bots should feel highly competitive.
+
+Combat System
+Implement:
+
+
+Health system
+
+Armor system
+
+Headshots
+
+Body shots
+
+Kill counter
+
+Death counter
+
+Respawning
+
+Blood effects
+
+Hit markers
+Game Modes
+Deathmatch
+Free-for-all.
+Every character fights everyone.
+
+Team Battle
+Two teams:
+
+
+Red Team
+
+Blue Team
+First team reaching target score wins.
+
+Survival Mode
+Player fights endless AI waves.
+
+Character Movement
+Add:
+
+
+Walk
+
+Run
+
+Sprint
+
+Jump
+
+Crouch
+
+Aim
+
+Shoot
+
+Reload
+Movement should feel smooth and responsive.
+
+User Interface
+Display:
+
+
+Health
+
+Armor
+
+Ammo
+
+Weapon Icon
+
+Score
+
+Remaining Bots
+
+Mini Map
+
+Crosshair
+Audio
+Add:
+
+
+Gun sounds
+
+Footsteps
+
+Reload sounds
+
+Hit sounds
+
+Ambient industrial sounds
+
+Victory sound
+
+Defeat sound
+Graphics Style
+Use:
+
+
+Low-poly art style
+
+Optimized geometry
+
+Bright readable colors
+
+Real-time shadows
+
+Good performance
+Target:
+
+
+60 FPS on low-end PCs
+
+Fast loading
+Technical Requirements
+Use:
+
+
+HTML5
+
+CSS3
+
+JavaScript
+
+Three.js
+Requirements:
+
+
+No external game engine
+
+Offline playable
+
+No multiplayer
+
+No login system
+
+No internet dependency
+
+All assets generated procedurally when possible
+Win Conditions
+
+Highest score wins
+
+Survival wave completion
+
+Team score victory
+Additional Features
+
+Weapon pickups
+
+Health pickups
+
+Armor pickups
+
+Random bot spawning
+
+Random weapon spawning
+
+Save settings locally
+
+Adjustable graphics quality
+
+Adjustable bot count
+Deliverables
+Generate complete production-ready source code with:
+
+
+index.html
+
+style.css
+
+script.js
+Game should run immediately after opening index.html in a browser.`,
+                image: 'Iron Tide Rising.png', 
+                preview: 'Iron Tide Rising.gif',
+                url: 'Iron Tide Rising.html',
+                bgm: 'Iron Tide Rising.mp3'
+            }                
         ];
 
         const homepage = document.getElementById('homepage');
