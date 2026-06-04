@@ -27,32 +27,98 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #06060a, #130a21, #06111f, #06060a);
-            background-size: 400% 400%;
-            animation: catchyBackground 15s ease infinite;
-            color: var(--text-main);
+            background: linear-gradient(135deg, #2D114A 0%, #8A2BE2 100%);
+            background-attachment: fixed;
+            color: #fff;
             min-height: 100vh;
             overflow-x: hidden;
             scroll-behavior: smooth;
-        }
-
-        @keyframes catchyBackground {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
         }
         
         body::before {
             content: "";
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-image: 
-                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            z-index: -1;
+            background-image: radial-gradient(#d1d5db 2px, transparent 2px);
+            background-size: 30px 30px;
+            opacity: 0.1;
+            z-index: -2;
             pointer-events: none;
         }
+
+        /* BALLOONS CSS */
+        .balloon {
+            position: fixed;
+            bottom: -100px;
+            width: 40px;
+            height: 55px;
+            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+            opacity: 0.5;
+            z-index: -1;
+            pointer-events: none;
+            animation: floatUp 15s linear infinite;
+            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.2), 0 0 10px rgba(255,255,255,0.2);
+        }
+        .balloon::before {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 20px;
+            background: rgba(255,255,255,0.4);
+        }
+        .balloon::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 6px;
+            background: inherit;
+            border-radius: 50%;
+            filter: brightness(0.8);
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-60vh) rotate(5deg); }
+            100% { transform: translateY(-120vh) rotate(-5deg); }
+        }
+
+        /* CAROUSEL ARROWS */
+        .carousel-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 24px;
+        }
+        .carousel-arrow {
+            position: absolute;
+            z-index: 10;
+            background: var(--bg-surface);
+            color: #fff;
+            border: 2px solid var(--neon-purple);
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);
+            transition: var(--transition-smooth);
+        }
+        .carousel-arrow:hover {
+            background: var(--neon-purple);
+            box-shadow: 0 0 25px rgba(188, 19, 254, 0.6);
+        }
+        .carousel-arrow.left { left: -22px; display: none; }
+        .carousel-arrow.right { right: -22px; }
+
 
         h1, h2, h3, .pixel-font { font-family: 'Press Start 2P', cursive; text-transform: uppercase; letter-spacing: 0.5px; }
         a { text-decoration: none; color: inherit; }
@@ -150,15 +216,27 @@
             font-size: 0.85rem; font-weight: 500; white-space: nowrap; transition: var(--transition-smooth);
         }
         .cat-btn:hover, .cat-btn.active {
-            border-color: var(--neon-purple); color: #fff; background: rgba(188, 19, 254, 0.08);
+            border-color: var(--neon-purple); color: #000 !important; background: rgba(188, 19, 254, 0.8);
             box-shadow: 0 0 10px rgba(188, 19, 254, 0.2);
         }
 
         /* ====================================
            GAME GRID & CARDS
            ==================================== */
-        .game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+        .game-grid { 
+            display: flex; 
+            gap: 24px; 
+            overflow-x: auto; 
+            scroll-behavior: smooth;
+            padding-bottom: 20px;
+            width: 100%;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .game-grid::-webkit-scrollbar { display: none; }
         .game-card {
+            flex: 0 0 calc(25% - 18px); /* 4 items per row */
+            min-width: 220px;
             background: var(--bg-surface); border-radius: 14px; overflow: hidden;
             border: 1px solid var(--bg-surface-light); position: relative;
             transition: var(--transition-smooth); cursor: pointer;
@@ -432,7 +510,9 @@
         <!-- GAME GRID FILTERS & ITEMS -->
         <section class="main-content">
             <!-- Top Horizon Filters -->
-            <div class="category-bar" id="top-cat-bar">
+            <div class="carousel-wrapper">
+                <button class="carousel-arrow left" id="cat-left" onclick="scrollCarousel('top-cat-bar', -1)">&#10094;</button>
+                <div class="category-bar" id="top-cat-bar" onscroll="updateArrows('top-cat-bar', 'cat-left', 'cat-right')"  id="top-cat-bar">
                 <button class="cat-btn active" onclick="filterCategory('All', this)">All Games</button>
                 <button class="cat-btn" onclick="filterCategory('Fighting', this)">Fighting</button>
                 <button class="cat-btn" onclick="filterCategory('Action', this)">Action</button>
@@ -446,10 +526,16 @@
                 <button class="cat-btn" onclick="filterCategory('Rogue-like', this)">Rogue-like</button>
                 <button class="cat-btn" onclick="filterCategory('RPG', this)">RPG</button>
             </div>
+                <button class="carousel-arrow right" id="cat-right" onclick="scrollCarousel('top-cat-bar', 1)">&#10095;</button>
+            </div>
 
             <!-- Responsive Cards Layout -->
-            <div class="game-grid" id="game-grid">
+            <div class="carousel-wrapper">
+                <button class="carousel-arrow left" id="game-left" onclick="scrollCarousel('game-grid', -1)">&#10094;</button>
+                <div class="game-grid" id="game-grid" onscroll="updateArrows('game-grid', 'game-left', 'game-right')">
                 <!-- Data populated dynamically via JavaScript mapping -->
+            </div>
+                <button class="carousel-arrow right" id="game-right" onclick="scrollCarousel('game-grid', 1)">&#10095;</button>
             </div>
         </section>
     </main>
@@ -1795,6 +1881,52 @@ Game should run immediately after opening index.html in a browser.`,
         const loader = document.getElementById('loader');
         const portalBgm = document.getElementById('portal-bgm');
 
+        
+        // =========================================================
+        // BALLOONS CREATION LOGIC
+        // =========================================================
+        function createBalloons() {
+            const colors = ['#FF4E50', '#FC913A', '#F9D423', '#EDE574', '#E1F5C4', '#bc13fe', '#00f3ff', '#ff00ff', '#00ff00'];
+            for(let i=0; i<20; i++) {
+                let balloon = document.createElement('div');
+                balloon.className = 'balloon';
+                balloon.style.left = Math.random() * 95 + 'vw';
+                balloon.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                balloon.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                balloon.style.animationDelay = (Math.random() * 10) + 's';
+                document.body.appendChild(balloon);
+            }
+        }
+
+        // =========================================================
+        // CAROUSEL LOGIC
+        // =========================================================
+        function scrollCarousel(containerId, direction) {
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            const scrollAmount = container.clientWidth * 0.8;
+            container.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+        }
+
+        function updateArrows(containerId, leftBtnId, rightBtnId) {
+            const container = document.getElementById(containerId);
+            const leftBtn = document.getElementById(leftBtnId);
+            const rightBtn = document.getElementById(rightBtnId);
+            if(!container || !leftBtn || !rightBtn) return;
+
+            if (container.scrollLeft > 5) {
+                leftBtn.style.display = 'flex';
+            } else {
+                leftBtn.style.display = 'none';
+            }
+
+            if (Math.ceil(container.scrollLeft + container.clientWidth) >= container.scrollWidth - 5) {
+                rightBtn.style.display = 'none';
+            } else {
+                rightBtn.style.display = 'flex';
+            }
+        }
+
         function renderGames(gameList) {
             gameGrid.innerHTML = '';
             if (gameList.length === 0) {
@@ -2030,6 +2162,11 @@ Game should run immediately after opening index.html in a browser.`,
         });
 
         window.onload = () => {
+            createBalloons();
+            setTimeout(() => {
+                updateArrows('top-cat-bar', 'cat-left', 'cat-right');
+                updateArrows('game-grid', 'game-left', 'game-right');
+            }, 500);
             renderGames(games);
             setTimeout(() => {
                 loader.style.opacity = '0';
