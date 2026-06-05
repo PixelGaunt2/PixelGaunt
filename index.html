@@ -1453,7 +1453,7 @@ The game should feel like a fresh combination of Tetris and balloon physics wher
                 howToPlay: 'Objective: Survive against waves of enemies and maximize your score.Tactics:Cover: Buildings and cars act as solid objects. Use them to block enemy movement and incoming projectiles.Smart Weaponry: The rifle automatically detects enemy speed; it fires slowly on normal targets but switches to rapid-fire (AK-47 style) against fast runners.Dodging: Use Q or E to dash when you see fireballs or when a Tank gets too close.AoE Damage: Use the Bazooka or Bombs to deal massive area-of-effect damage to Tank units or groups of enemies.Win/Loss: The game continues as long as your HP is above zero. If HP hits zero, you lose.',
                 rating: '⭐⭐⭐⭐⭐ (4.8/5)',
                 releaseDate: 'June 2, 2026',
-                platform: 'Web Browser (Desktop & Mobile Responsive)',
+                platform: 'Web Browser (Desktop Responsive)',
                 technology: 'Three.js: The 3D rendering engine responsible for the scene, geometry, and lighting.HTML5 / CSS3: The structural and styling layers for the User Interface (HUD, Menus, Buttons).JavaScript (ES6): The core engine for logic, physics, collision detection (Box3), and event handling.Web Audio API: Used for procedural audio generation, allowing the game to produce sound effects without needing external .mp3 or .wav files.Browser APIs: Specifically the PointerLockAPI to hide the mouse cursor and lock it within the game window for camera control.',
                 aiPrompt: `Create a complete offline 3D browser game inspired by battle royale and tactical shooter gameplay. The game must be playable directly in a web browser and generated as a single project containing HTML, CSS, and JavaScript files.
 
@@ -1784,6 +1784,376 @@ Game should run immediately after opening index.html in a browser.`,
                 preview: 'Iron Tide Rising.gif',
                 url: 'Iron Tide Rising.html',
                 bgm: 'Iron Tide Rising.mp3'
+            },
+            { 
+                id: 12,
+                studio: 'Pixel Gaunt',
+                title: 'ReBounce', 
+                genre: 'Arcade', 
+                controls: 'Mouse / Touch).', 
+                howToPlay: 'Launch: Drag and release the Skull Ball to launch.
+
+Goal: Collect all Energy Orbs to unlock the Portal and reach it.
+
+Obstacles: Use Black Holes to teleport, dodge moving Drones, and bounce off walls.
+
+Rating: Finish levels quickly to earn up to 3 Stars and bonus points.
+
+Auto-Retry: If your ball gets stuck, the level resets automatically after 10 seconds.',
+                rating: '⭐⭐⭐⭐⭐ (4.8/5)',
+                releaseDate: 'June 5, 2026',
+                platform: 'Web Browser (Desktop & Mobile Responsive)',
+                technology: 'HTML5 Web Technologies.',
+                aiPrompt: `Create a highly polished commercial-quality physics action game called:
+
+STICKMAN BOUNCE
+
+Genre:
+Physics-Based Action Platformer + Skill Puzzle + Arcade
+
+Target Platforms:
+- Web Browser (HTML5)
+- Android
+- Windows PC
+
+Core Gameplay:
+
+The player launches a stickman from the bottom of the level using a slingshot-style aiming system.
+
+The stickman flies through the level while bouncing realistically from walls, platforms, bumpers, and obstacles.
+
+The goal is to reach the exit portal while collecting rewards, defeating enemies, avoiding traps, and maintaining momentum.
+
+The game should feel addictive, satisfying, and easy to learn but difficult to master.
+
+=================================================
+CORE MECHANICS
+=================================================
+
+- Drag to aim
+- Release to launch
+- Physics-based movement
+- Dynamic wall bouncing
+- Momentum preservation
+- Collision reactions
+- Chain bounces
+- Combo multipliers
+
+The player must calculate bounce angles and use the environment strategically.
+
+=================================================
+GAME MODES
+=================================================
+
+1. Adventure Mode
+- 100 handcrafted levels
+- Increasing difficulty
+- Multiple world themes
+
+2. Challenge Mode
+- Time attack
+- Survival
+- One-shot levels
+
+3. Endless Mode
+- Infinite generated stages
+- High-score chasing
+
+4. Boss Mode
+- Giant enemy encounters
+- Unique mechanics
+
+=================================================
+LEVEL OBJECTS
+=================================================
+
+Walls
+Moving platforms
+Bounce pads
+Gravity fields
+Teleporters
+Breakable blocks
+Switches
+Locked gates
+Speed tunnels
+Portals
+
+=================================================
+TRAPS
+=================================================
+
+Spikes
+Saw blades
+Laser beams
+Flamethrowers
+Electric barriers
+Falling crushers
+Explosive mines
+Poison zones
+
+=================================================
+ENEMIES
+=================================================
+
+Walker Enemy
+Flying Drone
+Turret Enemy
+Shield Enemy
+Explosive Enemy
+Boss Enemies
+
+Enemies can be defeated by:
+- High-speed collision
+- Environmental hazards
+- Power-up attacks
+
+=================================================
+COLLECTABLES
+=================================================
+
+Coins
+Gems
+Stars
+Keys
+Energy Orbs
+
+Collectables should create satisfying visual and audio feedback.
+
+=================================================
+POWER UPS
+=================================================
+
+Shield
+Magnet
+Speed Boost
+Double Impact
+Slow Motion
+Freeze Time
+Bounce Boost
+Ghost Mode
+
+=================================================
+UPGRADE SYSTEM
+=================================================
+
+Players can spend collected coins to upgrade:
+
+Launch Power
+Bounce Strength
+Maximum Health
+Critical Damage
+Magnet Radius
+Coin Multiplier
+
+=================================================
+WORLD THEMES
+=================================================
+
+World 1:
+Training Facility
+
+World 2:
+Industrial Factory
+
+World 3:
+Ancient Jungle
+
+World 4:
+Frozen Kingdom
+
+World 5:
+Volcano Core
+
+World 6:
+Space Station
+
+World 7:
+Cyber City
+
+World 8:
+Dark Dimension
+
+=================================================
+BOSS FIGHTS
+=================================================
+
+Every world ends with a boss battle.
+
+Bosses should have:
+
+Multiple attack phases
+Weak points
+Special abilities
+Unique visual designs
+
+=================================================
+SCORING SYSTEM
+=================================================
+
+Score based on:
+
+Coins
+Gems
+Enemy kills
+Bounce combos
+Speed
+Level completion time
+
+Display:
+3-Star Rating System
+
+=================================================
+ACHIEVEMENTS
+=================================================
+
+First Bounce
+Combo Master
+Speed Demon
+Treasure Hunter
+Boss Slayer
+Perfect Run
+
+=================================================
+DAILY CONTENT
+=================================================
+
+Daily Challenges
+Weekly Missions
+Special Events
+
+=================================================
+LEADERBOARDS
+=================================================
+
+Global Scores
+Friends Scores
+Fastest Completion Times
+
+Design architecture to support future online leaderboards.
+
+=================================================
+VISUAL STYLE
+=================================================
+
+Modern 2.5D Look
+
+Character:
+Animated stickman hero
+
+Graphics:
+High-quality vector visuals
+Smooth effects
+Particle systems
+Glow effects
+Impact flashes
+Motion trails
+
+Animations:
+Idle
+Launch
+Bounce
+Hit
+Victory
+Defeat
+
+=================================================
+CAMERA
+=================================================
+
+Smooth camera follow
+Dynamic zoom
+Impact shake
+Boss zoom effects
+
+=================================================
+AUDIO
+=================================================
+
+Energetic arcade soundtrack
+
+Sound Effects:
+Launch
+Bounce
+Enemy hit
+Coin collect
+Power-up pickup
+Explosion
+Victory
+
+=================================================
+USER INTERFACE
+=================================================
+
+Main Menu
+World Map
+Level Select
+Pause Menu
+Settings
+Achievements
+Statistics
+Shop
+
+=================================================
+SAVE SYSTEM
+=================================================
+
+Save progress automatically
+
+Store:
+Unlocked levels
+Coins
+Upgrades
+Achievements
+
+Use Local Storage for browser version.
+
+=================================================
+MONETIZATION READY
+=================================================
+
+Design architecture for:
+
+Rewarded Ads
+Interstitial Ads
+Cosmetic Skins
+Premium Worlds
+
+Monetization should be optional and not required for gameplay.
+
+=================================================
+TECHNICAL REQUIREMENTS
+=================================================
+
+- HTML5
+- CSS3
+- JavaScript
+- Mobile responsive
+- Touch support
+- Keyboard support
+- Mouse support
+- 60 FPS target
+- Optimized performance
+- Clean modular code
+- Production-ready architecture
+
+=================================================
+EXTRA POLISH
+=================================================
+
+Screen shake
+Particle explosions
+Slow-motion impacts
+Combo notifications
+Floating score text
+Level intro animations
+Victory celebrations
+Smooth transitions
+
+Create a complete professional game that feels like a mix of Angry Birds, Bounce physics games, platform action games, and arcade skill challenges while maintaining its own original identity under the name STICKMAN BOUNCE..`,
+                image: 'ReBounce.png', 
+                preview: 'ReBounce.gif',
+                url: 'ReBounce.html',
+                bgm: 'ReBounce.mp3'
             }                
         ];
 
