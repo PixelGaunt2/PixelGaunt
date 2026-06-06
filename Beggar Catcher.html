@@ -43,10 +43,11 @@
         #stats-bar { position: absolute; top: 20px; left: 20px; font-size: 20px; font-weight: bold; color: #FFD700; z-index: 30; display: none;}
         #combat-flash { position: absolute; top:0; left:0; width:100%; height:100%; background: red; opacity: 0; transition: opacity 0.1s; z-index: 5; pointer-events: none;}
 
-        /* MOBILE CONTROLS */
-        #mobile-controls { position: absolute; bottom: 80px; right: 20px; display: flex; gap: 15px; z-index: 50; }
-        .mobile-btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); border: 2px solid #FFD700; color: #fff; font-size: 24px; font-weight: bold; pointer-events: auto; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; box-shadow: 0px 0px 10px rgba(0,0,0,0.5); }
+        /* MOBILE CONTROLS (F & E Buttons ONLY) */
+        #mobile-action-buttons { position: absolute; bottom: 80px; right: 20px; display: flex; gap: 15px; z-index: 50; pointer-events: auto; }
+        .mobile-btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); border: 2px solid #FFD700; color: #fff; font-size: 24px; font-weight: bold; cursor: pointer; user-select: none; touch-action: manipulation; box-shadow: 0px 0px 10px rgba(0,0,0,0.5); }
         .mobile-btn:active { background: #FFD700; color: #000; }
+        @media (min-width: 1024px) { #mobile-action-buttons { display: none; } }
     </style>
 </head>
 <body>
@@ -55,7 +56,6 @@
     
     <div id="stats-bar">💰 Coins: <span id="menu-coins">0</span></div>
 
-    <!-- MAIN MENU -->
     <div id="main-menu" class="menu-screen">
         <div class="menu-title">BEGGAR CATCHER<br><span style="font-size:20px; color:#fff;">Bounty Hunter Edition</span></div>
         <button id="btn-resume" class="btn" style="display:none; border-color:#00ffcc;">Resume Game</button>
@@ -64,14 +64,12 @@
         <button id="btn-shop" class="btn">Upgrades Shop</button>
     </div>
 
-    <!-- LEVEL SELECT -->
     <div id="level-menu" class="menu-screen" style="display:none;">
         <div class="menu-title">Select Level</div>
         <div class="grid-container" id="level-grid"></div>
         <button class="btn btn-back" onclick="showMenu('main-menu')">Back to Menu</button>
     </div>
 
-    <!-- SHOP MENU -->
     <div id="shop-menu" class="menu-screen" style="display:none;">
         <div class="menu-title">Upgrades Shop</div>
         <div class="grid-container">
@@ -91,7 +89,6 @@
         <button class="btn btn-back" onclick="showMenu('main-menu')">Back</button>
     </div>
 
-    <!-- LEVEL COMPLETE -->
     <div id="complete-menu" class="menu-screen" style="display:none;">
         <div class="menu-title" style="color:#00ffcc;">MISSION COMPLETE!</div>
         <div style="font-size: 24px; margin-bottom: 30px;">Bounty Collected: <span id="reward-text" style="color:#FFD700;"></span></div>
@@ -99,14 +96,12 @@
         <button class="btn" onclick="quitToMenu()">Main Menu</button>
     </div>
 
-    <!-- PAUSE MENU -->
     <div id="pause-menu" class="menu-screen" style="display:none; background:rgba(0,0,0,0.5);">
         <div class="menu-title">PAUSED</div>
         <button class="btn" onclick="resumeGame()">Resume</button>
         <button class="btn" onclick="quitToMenu()">Save & Quit</button>
     </div>
 
-    <!-- IN-GAME UI -->
     <div id="ui-layer">
         <div id="crosshair">◉</div>
         <div id="top-ui">
@@ -135,10 +130,9 @@
             </div>
         </div>
         
-        <!-- MOBILE BUTTONS ADDED HERE -->
-        <div id="mobile-controls">
-            <button id="btn-f" class="mobile-btn">F</button>
-            <button id="btn-e" class="mobile-btn">E</button>
+        <div id="mobile-action-buttons">
+            <button id="mobile-btn-f" class="mobile-btn">F</button>
+            <button id="mobile-btn-e" class="mobile-btn">E</button>
         </div>
     </div>
 
@@ -829,27 +823,35 @@
 
         loadGameData(); showMenu('main-menu'); animate();
 
-        // --- MOBILE BUTTONS LOGIC ---
-        function handleMobileF(e) {
+        // --- NEW: F AND E MOBILE BUTTONS LOGIC ---
+        document.getElementById('mobile-btn-f').addEventListener('touchstart', (e) => {
             e.preventDefault(); e.stopPropagation();
             if (gameState !== 'PLAYING') return;
             if (!player.carriedNPC) {
                 player.holdingGun = !player.holdingGun; gunMesh.visible = player.holdingGun;
                 weaponMesh.visible = !player.holdingGun && player.weapon.name !== 'Fists'; updatePlayerUI();
             }
-        }
-        
-        function handleMobileE(e) {
+        });
+
+        document.getElementById('mobile-btn-e').addEventListener('touchstart', (e) => {
             e.preventDefault(); e.stopPropagation();
             if (gameState !== 'PLAYING') return;
             tryInteract();
-        }
-
-        document.getElementById('btn-f').addEventListener('touchstart', handleMobileF, {passive: false});
-        document.getElementById('btn-e').addEventListener('touchstart', handleMobileE, {passive: false});
+        });
         
-        document.getElementById('btn-f').addEventListener('click', handleMobileF);
-        document.getElementById('btn-e').addEventListener('click', handleMobileE);
+        // Added click fallback just in case testing on a browser emulator
+        document.getElementById('mobile-btn-f').addEventListener('click', (e) => {
+            if (gameState !== 'PLAYING') return;
+            if (!player.carriedNPC) {
+                player.holdingGun = !player.holdingGun; gunMesh.visible = player.holdingGun;
+                weaponMesh.visible = !player.holdingGun && player.weapon.name !== 'Fists'; updatePlayerUI();
+            }
+        });
+
+        document.getElementById('mobile-btn-e').addEventListener('click', (e) => {
+            if (gameState !== 'PLAYING') return;
+            tryInteract();
+        });
 
     </script>
 </body>
