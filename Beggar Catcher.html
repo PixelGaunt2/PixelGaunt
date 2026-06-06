@@ -42,6 +42,11 @@
         
         #stats-bar { position: absolute; top: 20px; left: 20px; font-size: 20px; font-weight: bold; color: #FFD700; z-index: 30; display: none;}
         #combat-flash { position: absolute; top:0; left:0; width:100%; height:100%; background: red; opacity: 0; transition: opacity 0.1s; z-index: 5; pointer-events: none;}
+
+        /* MOBILE CONTROLS */
+        #mobile-controls { position: absolute; bottom: 80px; right: 20px; display: flex; gap: 15px; z-index: 50; }
+        .mobile-btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); border: 2px solid #FFD700; color: #fff; font-size: 24px; font-weight: bold; pointer-events: auto; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; box-shadow: 0px 0px 10px rgba(0,0,0,0.5); }
+        .mobile-btn:active { background: #FFD700; color: #000; }
     </style>
 </head>
 <body>
@@ -128,6 +133,12 @@
                 <div>Target Suspicion (Shak)</div>
                 <div class="progress-bar"><div id="suspicion-fill"></div></div>
             </div>
+        </div>
+        
+        <!-- MOBILE BUTTONS ADDED HERE -->
+        <div id="mobile-controls">
+            <button id="btn-f" class="mobile-btn">F</button>
+            <button id="btn-e" class="mobile-btn">E</button>
         </div>
     </div>
 
@@ -817,93 +828,29 @@
         document.getElementById('btn-shop').onclick = () => showMenu('shop-menu');
 
         loadGameData(); showMenu('main-menu'); animate();
-    </script>
 
-<!-- MOBILE TOUCH CONTROLS (Made with Gemini AI Pro) -->
-<style>
-  #mobile-controls { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none; }
-  .mobile-btn { pointer-events: auto; position: absolute; background: rgba(0, 255, 204, 0.2); border: 2px solid #00ffcc; border-radius: 50%; color: #fff; font-weight: bold; font-size: 12px; text-align: center; display: flex; align-items: center; justify-content: center; user-select: none; touch-action: none; text-shadow: 1px 1px 2px #000; }
-  #joystick-zone { pointer-events: auto; position: absolute; bottom: 30px; left: 30px; width: 140px; height: 140px; background: rgba(255, 255, 255, 0.1); border-radius: 50%; touch-action: none; border: 2px dashed rgba(255, 255, 255, 0.3); }
-  #joystick-knob { position: absolute; top: 45px; left: 45px; width: 50px; height: 50px; background: rgba(0, 255, 204, 0.6); border-radius: 50%; pointer-events: none; }
-  #touch-look-zone { pointer-events: auto; position: absolute; top: 0; right: 0; width: 50%; height: 100%; touch-action: none; }
-  #btn-attack { bottom: 100px; right: 30px; width: 65px; height: 65px; background: rgba(255, 51, 51, 0.3); border-color: #ff3333; }
-  #btn-investigate { bottom: 180px; right: 30px; width: 60px; height: 60px; }
-  #btn-crouch { bottom: 30px; right: 110px; width: 55px; height: 55px; }
-  #btn-sprint { bottom: 30px; right: 180px; width: 55px; height: 55px; }
-</style>
-<div id="mobile-controls">
-  <div id="joystick-zone"><div id="joystick-knob"></div></div>
-  <div id="touch-look-zone"></div>
-  <div id="btn-attack" class="mobile-btn">ATK</div>
-  <div id="btn-investigate" class="mobile-btn">SCAN</div>
-  <div id="btn-crouch" class="mobile-btn">CRCH</div>
-  <div id="btn-sprint" class="mobile-btn">RUN</div>
-</div>
-<script>
-(function() {
-    const mobileUI = document.getElementById('mobile-controls');
-    let touchMode = false;
-    window.addEventListener('touchstart', function enableTouch() {
-        if (!touchMode) { touchMode = true; mobileUI.style.display = 'block'; if(document.pointerLockElement) document.exitPointerLock(); }
-    }, { passive: true });
-    window.addEventListener('mousemove', function(e) {
-        if (touchMode && (Math.abs(e.movementX) > 0 || Math.abs(e.movementY) > 0)) {
-            touchMode = false; mobileUI.style.display = 'none';
+        // --- MOBILE BUTTONS LOGIC ---
+        function handleMobileF(e) {
+            e.preventDefault(); e.stopPropagation();
+            if (gameState !== 'PLAYING') return;
+            if (!player.carriedNPC) {
+                player.holdingGun = !player.holdingGun; gunMesh.visible = player.holdingGun;
+                weaponMesh.visible = !player.holdingGun && player.weapon.name !== 'Fists'; updatePlayerUI();
+            }
         }
-    }, { passive: true });
-    function simKey(keyChar, type) { document.dispatchEvent(new KeyboardEvent(type, { key: keyChar, bubbles: true })); }
-    function simMouse(btn, type) { document.dispatchEvent(new MouseEvent(type, { button: btn, bubbles: true })); }
-    let lastTouchX = 0, lastTouchY = 0;
-    const lookZone = document.getElementById('touch-look-zone');
-    lookZone.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY; }, {passive: false});
-    lookZone.addEventListener('touchmove', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        const deltaX = e.touches[0].clientX - lastTouchX; const deltaY = e.touches[0].clientY - lastTouchY;
-        lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY;
-        try { if(typeof cameraPivot !== 'undefined' && typeof cameraArm !== 'undefined') {
-            cameraPivot.rotation.y -= deltaX * 0.003; cameraArm.rotation.x -= deltaY * 0.003;
-            cameraArm.rotation.x = Math.max(-Math.PI / 6, Math.min(Math.PI / 3, cameraArm.rotation.x));
-        }} catch(err) {}
-    }, {passive: false});
-    lookZone.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); }, {passive: false});
-    const bindBtn = (id, downAction, upAction) => {
-        const btn = document.getElementById(id); if(!btn) return;
-        btn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); downAction(); btn.style.transform = 'scale(0.9)'; }, {passive: false});
-        btn.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); upAction(); btn.style.transform = 'scale(1)'; }, {passive: false});
-    };
-    bindBtn('btn-attack', () => simMouse(0, 'mousedown'), () => simMouse(0, 'mouseup'));
-    bindBtn('btn-investigate', () => simMouse(2, 'mousedown'), () => simMouse(2, 'mouseup')); 
-    bindBtn('btn-crouch', () => simKey('c', 'keydown'), () => simKey('c', 'keyup'));
-    bindBtn('btn-sprint', () => simKey('shift', 'keydown'), () => simKey('shift', 'keyup'));
-    const joyZone = document.getElementById('joystick-zone'); const joyKnob = document.getElementById('joystick-knob');
-    let joyActive = false, joyTouchId = null; const center = { x: 70, y: 70 }; let currentKeys = { w: false, a: false, s: false, d: false };
-    function updateKeys(x, y) {
-        const nx = x / 50; const ny = y / 50; const thresh = 0.3;
-        const newKeys = { w: ny < -thresh, s: ny > thresh, a: nx < -thresh, d: nx > thresh };
-        if(newKeys.w !== currentKeys.w) simKey('w', newKeys.w ? 'keydown' : 'keyup');
-        if(newKeys.s !== currentKeys.s) simKey('s', newKeys.s ? 'keydown' : 'keyup');
-        if(newKeys.a !== currentKeys.a) simKey('a', newKeys.a ? 'keydown' : 'keyup');
-        if(newKeys.d !== currentKeys.d) simKey('d', newKeys.d ? 'keydown' : 'keyup');
-        currentKeys = newKeys;
-    }
-    joyZone.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); joyActive = true; joyTouchId = e.changedTouches[0].identifier; handleJoy(e.changedTouches[0]); }, {passive: false});
-    joyZone.addEventListener('touchmove', (e) => {
-        e.preventDefault(); e.stopPropagation(); if(!joyActive) return;
-        for(let i=0; i<e.changedTouches.length; i++) { if(e.changedTouches[i].identifier === joyTouchId) handleJoy(e.changedTouches[i]); }
-    }, {passive: false});
-    const endJoy = (e) => {
-        e.preventDefault(); e.stopPropagation(); if(!joyActive) return;
-        for(let i=0; i<e.changedTouches.length; i++) { if(e.changedTouches[i].identifier === joyTouchId) { joyActive = false; joyTouchId = null; joyKnob.style.transform = `translate(0px, 0px)`; updateKeys(0, 0); } }
-    };
-    joyZone.addEventListener('touchend', endJoy, {passive: false}); joyZone.addEventListener('touchcancel', endJoy, {passive: false});
-    function handleJoy(touch) {
-        const rect = joyZone.getBoundingClientRect(); let dx = touch.clientX - (rect.left + center.x); let dy = touch.clientY - (rect.top + center.y);
-        const distance = Math.sqrt(dx*dx + dy*dy); const maxDist = 45;
-        if(distance > maxDist) { dx = (dx / distance) * maxDist; dy = (dy / distance) * maxDist; }
-        joyKnob.style.transform = `translate(${dx}px, ${dy}px)`; updateKeys(dx, dy);
-    }
-})();
-</script>
+        
+        function handleMobileE(e) {
+            e.preventDefault(); e.stopPropagation();
+            if (gameState !== 'PLAYING') return;
+            tryInteract();
+        }
 
+        document.getElementById('btn-f').addEventListener('touchstart', handleMobileF, {passive: false});
+        document.getElementById('btn-e').addEventListener('touchstart', handleMobileE, {passive: false});
+        
+        document.getElementById('btn-f').addEventListener('click', handleMobileF);
+        document.getElementById('btn-e').addEventListener('click', handleMobileE);
+
+    </script>
 </body>
 </html>
