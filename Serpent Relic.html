@@ -205,11 +205,11 @@
     </div>
 
     <div id="dpad">
-        <div class="d-btn" id="btnUp">W</div>
-        <div class="d-btn" id="btnLeft">A</div>
+        <div class="d-btn" id="btnUp">▲</div>
+        <div class="d-btn" id="btnLeft">◀</div>
         <div class="d-btn" id="btnAction">PUSH</div>
-        <div class="d-btn" id="btnRight">D</div>
-        <div class="d-btn" id="btnDown">S</div>
+        <div class="d-btn" id="btnRight">▶</div>
+        <div class="d-btn" id="btnDown">▼</div>
     </div>
 
     <div id="popup"></div>
@@ -466,6 +466,9 @@ window.onload = () => {
     }
 
     window.addEventListener('keydown', (e) => {
+        if(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+            e.preventDefault();
+        }
         if(currentState === STATE.MENU || currentState === STATE.LEVEL_SELECT) return;
         if(e.key === 'Escape') togglePause();
         if(e.key.toLowerCase() === 'r') resetLevel();
