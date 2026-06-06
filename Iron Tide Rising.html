@@ -28,6 +28,33 @@
         #crosshair::after { left: 50%; top: -10px; height: 26px; width: 2px; transform: translateX(-50%); }
         #hitMarker { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: red; font-size: 28px; font-weight: bold; opacity: 0; transition: opacity 0.1s; text-shadow: 0 0 5px darkred;}
         #damageOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; transition: opacity 0.2s;}
+
+        /* --- MOBILE CONTROLS CSS (ADDED) --- */
+        #mobile-controls {
+            display: none; /* Controlled via JS */
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none;
+        }
+        .mc-btn {
+            position: absolute; background: rgba(0, 0, 0, 0.4); border: 2px solid rgba(255, 255, 255, 0.4); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-family: inherit; font-size: 14px; pointer-events: auto; user-select: none; touch-action: none;
+        }
+        .mc-btn:active { background: rgba(255, 255, 255, 0.5); color: black; }
+        #joystick-zone {
+            position: absolute; bottom: 30px; left: 30px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255,255,255,0.2); pointer-events: auto; touch-action: none;
+        }
+        #joystick-stick {
+            position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255, 255, 255, 0.6); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        #touch-look-zone {
+            position: absolute; top: 0; left: 50%; width: 50%; height: 100%; pointer-events: auto; touch-action: none;
+        }
+        /* Buttons Positioning */
+        #btn-shoot { bottom: 40px; right: 40px; width: 80px; height: 80px; background: rgba(255, 0, 0, 0.3); border-color: red; font-size: 18px; }
+        #btn-jump { bottom: 140px; right: 40px; width: 60px; height: 60px; }
+        #btn-sprint { bottom: 40px; right: 140px; width: 60px; height: 60px; }
+        #btn-bomb { bottom: 220px; right: 40px; width: 50px; height: 50px; border-color: orange; color: orange; }
+        #btn-dash-l { bottom: 120px; right: 190px; width: 50px; height: 50px; border-color: #00ff00; color: #00ff00;}
+        #btn-dash-r { bottom: 120px; right: 120px; width: 50px; height: 50px; border-color: #00ff00; color: #00ff00;}
+        #btn-weap { top: 30px; right: 30px; width: 60px; height: 60px; border-radius: 10px; border-color: #00ccff; color: #00ccff; }
     </style>
 </head>
 <body>
@@ -44,7 +71,6 @@
             </div>
         </div>
 
-        <!-- MAIN MENU: COMPLETELY CLEANED -->
         <div id="main-menu" class="screen">
             <h1>Iron Tide<br>Rising</h1>
             <button class="btn btn-green" id="btn-play-now">Play Now</button>
@@ -65,6 +91,20 @@
                 <button class="btn" id="btn-gameover-menu">Menu</button>
             </div>
         </div>
+    </div>
+
+    <div id="mobile-controls">
+        <div id="touch-look-zone"></div>
+        <div id="joystick-zone">
+            <div id="joystick-stick"></div>
+        </div>
+        <div id="btn-shoot" class="mc-btn">FIRE</div>
+        <div id="btn-jump" class="mc-btn">JUMP</div>
+        <div id="btn-sprint" class="mc-btn">RUN</div>
+        <div id="btn-bomb" class="mc-btn">BOMB</div>
+        <div id="btn-dash-l" class="mc-btn">< DASH</div>
+        <div id="btn-dash-r" class="mc-btn">DASH ></div>
+        <div id="btn-weap" class="mc-btn">WEAP</div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -220,7 +260,8 @@
         
         const raycaster = new THREE.Raycaster();
         function executeShooting() {
-            if (!isMouseDown || gameState !== 'playing') return;
+            let gpShoot = false; if (navigator.getGamepads) { const gp = navigator.getGamepads()[0]; if (gp && gp.connected && gp.buttons[7] && gp.buttons[7].pressed) gpShoot = true; }
+            if (!(isMouseDown || gpShoot) || gameState !== 'playing') return;
             if (currentWeapon === 0 && rifleCooldown <= 0) {
                 raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
                 const targetMeshes = [...arrays.bots.map(b => b.group), ...environmentGroup.children];
@@ -313,14 +354,30 @@
                 velocity.z -= velocity.z * 10.0 * delta; 
                 velocity.y -= 9.8 * 12.0 * delta;
                 
-                direction.z = Number(moveForward) - Number(moveBackward); 
-                direction.x = Number(moveRight) - Number(moveLeft); 
+                let gpF = false, gpB = false, gpL = false, gpR = false;
+                if (navigator.getGamepads) {
+                    const gp = navigator.getGamepads()[0];
+                    if (gp && gp.connected) {
+                        if (gp.axes[1] < -0.2) gpF = true; if (gp.axes[1] > 0.2) gpB = true;
+                        if (gp.axes[0] < -0.2) gpL = true; if (gp.axes[0] > 0.2) gpR = true;
+                        if (Math.abs(gp.axes[2]) > 0.2 || Math.abs(gp.axes[3]) > 0.2) {
+                            euler.setFromQuaternion(camera.quaternion);
+                            euler.y -= gp.axes[2] * 0.04; euler.x -= gp.axes[3] * 0.04;
+                            euler.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, euler.x));
+                            camera.quaternion.setFromEuler(euler);
+                        }
+                        if (gp.buttons[0] && gp.buttons[0].pressed && canJump) { velocity.y += 20; canJump = false; }
+                    }
+                }
+                
+                direction.z = Number(moveForward || gpF) - Number(moveBackward || gpB); 
+                direction.x = Number(moveRight || gpR) - Number(moveLeft || gpL); 
                 direction.normalize();
                 
                 const currentSpeed = isSprinting ? 50.0 : 30.0;
                 
-                if (moveForward || moveBackward) velocity.z -= direction.z * currentSpeed * delta;
-                if (moveLeft || moveRight) velocity.x += direction.x * currentSpeed * delta;
+                if (moveForward || moveBackward || gpF || gpB) velocity.z -= direction.z * currentSpeed * delta;
+                if (moveLeft || moveRight || gpL || gpR) velocity.x += direction.x * currentSpeed * delta;
 
                 const oldPos = camera.position.clone();
                 camera.translateX(velocity.x * delta); 
@@ -337,7 +394,7 @@
                     velocity.x = 0; velocity.z = 0;
                 }
 
-                if (moveForward || moveBackward || moveLeft || moveRight) { bobTime += delta * (isSprinting ? 14 : 9); camera.position.y = playerHeight + Math.sin(bobTime) * 0.2; } else camera.position.y = THREE.MathUtils.lerp(camera.position.y, playerHeight, 0.1);
+                if (moveForward || moveBackward || moveLeft || moveRight || gpF || gpB || gpL || gpR) { bobTime += delta * (isSSprint? 14 : 9); camera.position.y = playerHeight + Math.sin(bobTime) * 0.2; } else camera.position.y = THREE.MathUtils.lerp(camera.position.y, playerHeight, 0.1);
                 if (camera.position.y < playerHeight) { velocity.y = 0; camera.position.y = playerHeight; canJump = true; }
 
                 weaponPivot.position.z = THREE.MathUtils.lerp(weaponPivot.position.z, -0.8, 0.15);
@@ -389,6 +446,141 @@
         window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         
         setScreen('main-menu'); animate();
+
+        // ==========================================
+        // --- MOBILE CONTROLS LOGIC (ADDED HERE) ---
+        // ==========================================
+        
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const mobileControls = document.getElementById('mobile-controls');
+
+        // Override original setScreen ONLY to show/hide the mobile UI
+        const origSetScreen = setScreen;
+        setScreen = function(screenId) {
+            origSetScreen(screenId);
+            if (isMobile && screenId === 'game-hud') {
+                mobileControls.style.display = 'block';
+            } else {
+                mobileControls.style.display = 'none';
+            }
+        };
+
+        if (isMobile) {
+            // Prevent pointer lock on mobile to avoid the game auto-pausing when clicking
+            document.body.requestPointerLock = function() {};
+            
+            // Fix menu buttons sometimes not working properly on touch
+            const fixTouchBtn = (id, action) => {
+                const b = document.getElementById(id);
+                if(b) b.addEventListener('touchstart', (e) => { e.preventDefault(); action(); }, {passive: false});
+            };
+            fixTouchBtn('btn-play-now', startGame);
+            fixTouchBtn('btn-resume', () => { gameState = 'playing'; setScreen('game-hud'); });
+            fixTouchBtn('btn-retry', startGame);
+            fixTouchBtn('btn-menu-back', returnToMenu);
+            fixTouchBtn('btn-gameover-menu', returnToMenu);
+        }
+
+        // --- Joystick Logic ---
+        const jZone = document.getElementById('joystick-zone');
+        const jStick = document.getElementById('joystick-stick');
+        let jCenter = { x: 0, y: 0 }, jActive = false;
+
+        jZone.addEventListener('touchstart', (e) => {
+            e.preventDefault(); jActive = true;
+            const rect = jZone.getBoundingClientRect();
+            jCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+            handleJoystick(e.touches[0]);
+        }, {passive: false});
+
+        jZone.addEventListener('touchmove', (e) => {
+            e.preventDefault(); if(jActive) handleJoystick(e.touches[0]);
+        }, {passive: false});
+
+        const resetJoystick = () => {
+            jActive = false; jStick.style.transform = `translate(-50%, -50%)`;
+            moveForward = moveBackward = moveLeft = moveRight = false;
+        };
+        jZone.addEventListener('touchend', resetJoystick);
+        jZone.addEventListener('touchcancel', resetJoystick);
+
+        function handleJoystick(touch) {
+            let dx = touch.clientX - jCenter.x;
+            let dy = touch.clientY - jCenter.y;
+            const maxR = 45;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if(dist > maxR) { dx = (dx/dist)*maxR; dy = (dy/dist)*maxR; }
+            jStick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            
+            // Link to original game variables
+            moveForward = dy < -15; 
+            moveBackward = dy > 15;
+            moveLeft = dx < -15; 
+            moveRight = dx > 15;
+        }
+
+        // --- Touch Look Around ---
+        const lookZone = document.getElementById('touch-look-zone');
+        let lastTouchX = 0, lastTouchY = 0, isLooking = false;
+
+        lookZone.addEventListener('touchstart', (e) => {
+            e.preventDefault(); isLooking = true;
+            lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY;
+        }, {passive: false});
+
+        lookZone.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if(!isLooking || gameState !== 'playing') return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - lastTouchX;
+            const dy = touch.clientY - lastTouchY;
+            lastTouchX = touch.clientX; lastTouchY = touch.clientY;
+
+            // Link to original camera look logic
+            euler.setFromQuaternion(camera.quaternion);
+            euler.y -= dx * 0.005;
+            euler.x -= dy * 0.005;
+            euler.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, euler.x));
+            camera.quaternion.setFromEuler(euler);
+        }, {passive: false});
+
+        const stopLook = () => { isLooking = false; };
+        lookZone.addEventListener('touchend', stopLook);
+        lookZone.addEventListener('touchcancel', stopLook);
+
+        // --- Action Buttons ---
+        const bindBtn = (id, onStart, onEnd) => {
+            const btn = document.getElementById(id);
+            if(!btn) return;
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); if(onStart) onStart(); }, {passive: false});
+            if(onEnd) {
+                btn.addEventListener('touchend', (e) => { e.preventDefault(); onEnd(); }, {passive: false});
+                btn.addEventListener('touchcancel', (e) => { e.preventDefault(); onEnd(); }, {passive: false});
+            }
+        };
+
+        // Connect to original logic functions and variables
+        bindBtn('btn-shoot', () => isMouseDown = true, () => isMouseDown = false);
+        bindBtn('btn-jump', () => { if(canJump) { velocity.y+=20; canJump=false; } });
+        bindBtn('btn-bomb', () => throwBomb());
+        bindBtn('btn-dash-l', () => dash(-1));
+        bindBtn('btn-dash-r', () => dash(1));
+        
+        // Sprint Toggle
+        const btnSprint = document.getElementById('btn-sprint');
+        bindBtn('btn-sprint', () => {
+            isSprinting = !isSSprint;
+            btnSprint.style.backgroundColor = isSprinting ? 'rgba(0, 255, 0, 0.5)' : 'rgba(0, 0, 0, 0.4)';
+        });
+
+        // Weapon Switch
+        bindBtn('btn-weap', () => {
+            currentWeapon = currentWeapon === 0 ? 1 : 0;
+            rifleGroup.visible = currentWeapon === 0;
+            bazookaGroup.visible = currentWeapon === 1;
+            ui.wepTxt.innerText = currentWeapon === 0 ? "RIFLE (SMART)" : "BAZOOKA";
+            ui.wepTxt.style.color = currentWeapon === 0 ? "#00ffcc" : "#ff5500";
+        });
     </script>
 </body>
 </html>
