@@ -86,10 +86,9 @@
             <div id="timeDisplay" class="timer-display">Time: 0.0s</div>
         </div>
         <div id="warningMessage">GATHER ALL ENERGY FIRST!</div>
-        <div class="perf-badge">Performance Mode: ON</div>
+        <div class="perf-badge">Anti-Tunneling Physics: ON</div>
     </div>
 
-    <!-- MAIN MENU -->
     <div id="menuScreen" class="overlay">
         <div class="menu-box">
             <h1>REBOUNCE</h1>
@@ -97,7 +96,6 @@
         </div>
     </div>
 
-    <!-- GAME OVER -->
     <div id="gameOverScreen" class="overlay hidden">
         <div class="menu-box" style="border-color: rgba(255, 51, 102, 0.3);">
             <h1 style="color: var(--danger); text-shadow: 0 0 20px var(--danger); margin-bottom: 25px;">Destroyed!</h1>
@@ -105,7 +103,6 @@
         </div>
     </div>
 
-    <!-- VICTORY -->
     <div id="victoryScreen" class="overlay hidden">
         <div class="menu-box" style="border-color: rgba(16, 185, 129, 0.3);">
             <h1 style="color: var(--unlocked); text-shadow: 0 0 20px var(--unlocked);">Sector Cleared</h1>
@@ -116,7 +113,7 @@
     </div>
 
 <script>
-// --- CORE ENGINE (OPTIMIZED) ---
+// --- CORE ENGINE ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d', { alpha: false }); 
 
@@ -138,29 +135,45 @@ let screenShake = 0;
 let time = 0; 
 let levelStartTime = 0;
 
-// Variables for Stuck Logic
 let idleFrames = 0;
 let hasLaunched = false;
 
-function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+function resize() { 
+    const targetHeight = 900; 
+    const aspect = window.innerWidth / window.innerHeight;
+    canvas.width = targetHeight * aspect; 
+    canvas.height = targetHeight; 
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+}
 window.addEventListener('resize', resize); resize();
 
 const input = { isDragging: false, startX: 0, startY: 0, currentX: 0, currentY: 0 };
 
-function handleDragStart(e) {
-    if (GAME_STATE !== 'PLAYING') return;
+function getPointerPos(e) {
+    const rect = canvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+        x: (clientX - rect.left) * (canvas.width / rect.width),
+        y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+}
+
+function handleDragStart(e) {
+    if (GAME_STATE !== 'PLAYING') return;
+    const pos = getPointerPos(e);
     if (Math.abs(player.vx) < 0.5 && Math.abs(player.vy) < 0.5) {
         input.isDragging = true;
-        input.startX = clientX; input.startY = clientY;
-        input.currentX = clientX; input.currentY = clientY;
+        input.startX = pos.x; input.startY = pos.y;
+        input.currentX = pos.x; input.currentY = pos.y;
     }
 }
 function handleDragMove(e) {
     if (!input.isDragging) return;
-    input.currentX = e.touches ? e.touches[0].clientX : e.clientX;
-    input.currentY = e.touches ? e.touches[0].clientY : e.clientY;
+    const pos = getPointerPos(e);
+    input.currentX = pos.x;
+    input.currentY = pos.y;
 }
 function handleDragEnd() {
     if (!input.isDragging) return;
@@ -169,10 +182,10 @@ function handleDragEnd() {
     const maxPull = 150; const distance = Math.sqrt(dx*dx + dy*dy);
     if (distance > maxPull) { dx = (dx / distance) * maxPull; dy = (dy / distance) * maxPull; }
     
-    const powerMultiplier = 0.18;
+    const powerMultiplier = 0.25;
     if (distance > 10) {
         player.vx = dx * powerMultiplier; player.vy = dy * powerMultiplier;
-        hasLaunched = true; // Mark as launched so stuck timer can work
+        hasLaunched = true; 
         spawnParticles(player.x, player.y, '#00ffcc', 10, 4); triggerShake(5); 
     }
 }
@@ -203,9 +216,7 @@ function spawnParticles(x, y, color, count, speed = 5, size = 4) {
 }
 function triggerShake(intensity) { screenShake = intensity; }
 
-function drawFastRect(ctx, x, y, width, height) {
-    ctx.fillRect(x, y, width, height);
-}
+function drawFastRect(ctx, x, y, width, height) { ctx.fillRect(x, y, width, height); }
 
 class Player {
     constructor(x, y) {
@@ -216,11 +227,40 @@ class Player {
     update() {
         if (this.teleportCooldown > 0) this.teleportCooldown--;
 
-        this.vy += this.gravity; this.vx *= this.friction; this.vy *= this.friction;
-        const maxSpeed = 20; let currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-        if (currentSpeed > maxSpeed) { this.vx = (this.vx / currentSpeed) * maxSpeed; this.vy = (this.vy / currentSpeed) * maxSpeed; }
+        this.vy += this.gravity; 
+        this.vx *= this.friction; 
+        this.vy *= this.friction;
         
-        this.x += this.vx; this.y += this.vy;
+        const maxSpeed = 35; 
+        let currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+        if (currentSpeed > maxSpeed) { 
+            this.vx = (this.vx / currentSpeed) * maxSpeed; 
+            this.vy = (this.vy / currentSpeed) * maxSpeed; 
+            currentSpeed = maxSpeed;
+        }
+        
+        // TUNNELING FIX: Physics Sub-stepping
+        // Pura distance ek sath travel karne k bajaye ball ko chote steps me move karenge.
+        let steps = Math.max(1, Math.ceil(currentSpeed / 5)); // 5 pixels per step limit
+        let stepVx = this.vx / steps;
+        let stepVy = this.vy / steps;
+
+        for(let i = 0; i < steps; i++) {
+            this.x += stepVx;
+            this.y += stepVy;
+            
+            let bounced = checkWallCollisions(this);
+            if (GAME_STATE === 'GAMEOVER') break; // Agar spike hit ho jaye tou rukk jao
+            
+            // Agar diwar se takra jaye tou agli bachi hui steps nai speed k hisaab se hogi
+            if (bounced) {
+                stepVx = this.vx / steps;
+                stepVy = this.vy / steps;
+            }
+        }
+
+        checkOtherCollisions(this);
+
         this.rotation += this.vx * 0.05;
 
         if (currentSpeed > 3 && time % 2 === 0) { 
@@ -231,39 +271,30 @@ class Player {
         
         if (this.y > canvas.height + 100) gameOver();
     }
+    
     draw(ctx) {
         if (this.trail.length > 1) {
-            ctx.lineCap = 'round';
-            ctx.beginPath();
+            ctx.lineCap = 'round'; ctx.beginPath();
             ctx.moveTo(this.trail[0].x, this.trail[0].y);
-            for (let i = 1; i < this.trail.length; i++) {
-                ctx.lineTo(this.trail[i].x, this.trail[i].y);
-            }
+            for (let i = 1; i < this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
             ctx.strokeStyle = `rgba(0, 255, 204, 0.3)`; ctx.lineWidth = this.radius; ctx.stroke();
         }
         
         ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
-
         ctx.fillStyle = 'rgba(0, 255, 204, 0.15)'; 
         ctx.beginPath(); ctx.arc(0, 0, this.radius * 1.5, 0, Math.PI * 2); ctx.fill();
-        
         ctx.fillStyle = 'rgba(0, 255, 204, 0.4)'; ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-
         ctx.fillStyle = '#fff';
-        ctx.beginPath(); ctx.arc(0, -2, 7, 0, Math.PI*2); ctx.fill(); 
-        ctx.fillRect(-4, 2, 8, 5); 
-        
+        ctx.beginPath(); ctx.arc(0, -2, 7, 0, Math.PI*2); ctx.fill(); ctx.fillRect(-4, 2, 8, 5); 
         ctx.fillStyle = '#050810'; 
         ctx.beginPath(); ctx.arc(-3, -2, 2.5, 0, Math.PI*2); ctx.fill(); 
         ctx.beginPath(); ctx.arc(3, -2, 2.5, 0, Math.PI*2); ctx.fill();  
         ctx.beginPath(); ctx.moveTo(0, 1); ctx.lineTo(-1, 3); ctx.lineTo(1, 3); ctx.fill(); 
-        
         ctx.strokeStyle = '#050810'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(-3, 5); ctx.lineTo(3, 5); ctx.stroke(); 
         ctx.beginPath(); ctx.moveTo(-1.5, 4); ctx.lineTo(-1.5, 6); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(1.5, 4); ctx.lineTo(1.5, 6); ctx.stroke();
-
         ctx.restore();
     }
 }
@@ -271,7 +302,6 @@ class Player {
 class Block {
     constructor(x, y, w, h, type = 'wall') {
         this.x = x; this.y = y; this.w = w; this.h = h; this.type = type;
-        this.isMoving = false;
     }
     draw(ctx) {
         if (this.type === 'wall') {
@@ -301,45 +331,33 @@ class Drone {
     draw(ctx) {
         ctx.fillStyle = '#4c0519'; drawFastRect(ctx, this.x, this.y, this.w, this.h);
         ctx.strokeStyle = '#ff3366'; ctx.lineWidth = 2; ctx.strokeRect(this.x, this.y, this.w, this.h);
-        
         ctx.fillStyle = '#ff3366';
         ctx.beginPath(); ctx.arc(this.x + this.w/2, this.y + this.h/2, 4, 0, Math.PI*2); ctx.fill();
     }
 }
 
 class Teleporter {
-    constructor(x, y, linkedId) {
-        this.x = x; this.y = y; this.radius = 25; this.linkedId = linkedId; this.angle = 0;
-    }
+    constructor(x, y, linkedId) { this.x = x; this.y = y; this.radius = 25; this.linkedId = linkedId; this.angle = 0; }
     update() { this.angle -= 0.05; }
     draw(ctx) {
         ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
-        
         ctx.fillStyle = 'rgba(139, 92, 246, 0.3)';
         ctx.beginPath(); ctx.arc(0, 0, this.radius * 1.3, 0, Math.PI*2); ctx.fill();
-        
         ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI*2); ctx.fill();
-        
         ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 3;
-        for(let i=0; i<4; i++) {
-            ctx.beginPath(); ctx.arc(0, 0, this.radius + 3, (Math.PI*2/4)*i, (Math.PI*2/4)*(i+0.5)); ctx.stroke();
-        }
+        for(let i=0; i<4; i++) { ctx.beginPath(); ctx.arc(0, 0, this.radius + 3, (Math.PI*2/4)*i, (Math.PI*2/4)*(i+0.5)); ctx.stroke(); }
         ctx.restore(); 
     }
 }
 
 class Collectable {
-    constructor(x, y) {
-        this.x = x; this.y = y; this.radius = 12; this.collected = false; this.hover = Math.random() * Math.PI * 2;
-    }
+    constructor(x, y) { this.x = x; this.y = y; this.radius = 12; this.collected = false; this.hover = Math.random() * Math.PI * 2; }
     update() { this.hover += 0.05; }
     draw(ctx) {
         if (this.collected) return;
         const drawY = this.y + Math.sin(this.hover) * 6;
-        
         ctx.fillStyle = 'rgba(251, 191, 36, 0.2)';
         ctx.beginPath(); ctx.arc(this.x, drawY, this.radius * 1.5, 0, Math.PI * 2); ctx.fill();
-
         ctx.fillStyle = '#fbbf24'; 
         ctx.beginPath(); ctx.moveTo(this.x, drawY - 10); ctx.lineTo(this.x + 8, drawY); ctx.lineTo(this.x, drawY + 10); ctx.lineTo(this.x - 8, drawY); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(this.x, drawY, 3, 0, Math.PI*2); ctx.fill(); 
@@ -347,24 +365,19 @@ class Collectable {
 }
 
 class Portal {
-    constructor(x, y) {
-        this.x = x; this.y = y; this.radius = 35; this.angle = 0; this.isUnlocked = false;
-    }
+    constructor(x, y) { this.x = x; this.y = y; this.radius = 35; this.angle = 0; this.isUnlocked = false; }
     update() { this.angle += 0.04; }
     draw(ctx) {
         ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
         let color = this.isUnlocked ? '#10b981' : '#ef4444'; 
         let glowColor = this.isUnlocked ? '#00ffcc' : '#ff3366';
-        
         ctx.fillStyle = this.isUnlocked ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
         ctx.beginPath(); ctx.arc(0, 0, this.radius * 1.2, 0, Math.PI*2); ctx.fill();
-
         ctx.strokeStyle = color; ctx.lineWidth = 4;
         for(let i=0; i<4; i++) { ctx.beginPath(); ctx.ellipse(0, 0, this.radius, this.radius * 0.3, (Math.PI/4)*i, 0, Math.PI*2); ctx.stroke(); }
         ctx.rotate(-this.angle * 2); ctx.strokeStyle = glowColor; ctx.lineWidth = 2;
         for(let i=0; i<3; i++) { ctx.beginPath(); ctx.ellipse(0, 0, this.radius * 0.6, this.radius * 0.2, (Math.PI/3)*i, 0, Math.PI*2); ctx.stroke(); }
         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2); ctx.fill();
-        
         if (!this.isUnlocked) {
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(10, 10); ctx.moveTo(10, -10); ctx.lineTo(-10, 10); ctx.stroke();
@@ -379,10 +392,7 @@ function loadLevel() {
     player = new Player(canvas.width / 2, canvas.height - 100);
     blocks = []; collectables = []; particles = []; teleporters = [];
     coinsCollectedInLevel = 0; levelStartTime = Date.now();
-    
-    // Reset idle tracking for new level
-    idleFrames = 0;
-    hasLaunched = false;
+    idleFrames = 0; hasLaunched = false;
 
     blocks.push(new Block(0, canvas.height - 40, canvas.width, 40, 'wall'));
     blocks.push(new Block(0, 0, 40, canvas.height, 'wall'));
@@ -391,76 +401,83 @@ function loadLevel() {
 
     let numObstacles = 4 + Math.floor(currentLevel / 1.5); 
     for (let i = 0; i < numObstacles; i++) {
-        let rx = 100 + Math.random() * (canvas.width - 200); 
-        let ry = 100 + Math.random() * (canvas.height - 300); 
+        let maxW = Math.min(100 + Math.random() * 50, canvas.width * 0.3); 
+        let rx = 50 + Math.random() * Math.max(20, (canvas.width - maxW - 100)); 
+        let ry = 150 + Math.random() * Math.max(20, (canvas.height - 400)); 
         let typeRoll = Math.random();
         
-        if (typeRoll > 0.8) {
-            blocks.push(new Block(rx, ry, 100 + Math.random() * 50, 20, 'bounce'));
-        } else if (typeRoll > 0.6) {
-            blocks.push(new Block(rx, ry, 35 + Math.random() * 20, 45, 'spike'));
-        } else if (typeRoll > 0.4) {
-            blocks.push(new Drone(rx, ry, 50, 20, 100 + Math.random() * 150));
-        } else {
-            blocks.push(new Block(rx, ry, 100 + Math.random() * 100, 20, 'wall'));
-        }
+        if (typeRoll > 0.8) blocks.push(new Block(rx, ry, maxW, 20, 'bounce'));
+        else if (typeRoll > 0.6) blocks.push(new Block(rx, ry, 35 + Math.random() * 20, 45, 'spike'));
+        else if (typeRoll > 0.4) {
+            let travel = Math.min(100 + Math.random() * 150, canvas.width - rx - 60);
+            blocks.push(new Drone(rx, ry, 50, 20, Math.max(20, travel)));
+        } else blocks.push(new Block(rx, ry, maxW, 20, 'wall'));
     }
 
-    let t1x = 100 + Math.random() * (canvas.width/2 - 150);
-    let t1y = 200 + Math.random() * (canvas.height - 400);
-    let t2x = canvas.width/2 + Math.random() * (canvas.width/2 - 150);
-    let t2y = 100 + Math.random() * (canvas.height - 300);
-    teleporters.push(new Teleporter(t1x, t1y, 1));
-    teleporters.push(new Teleporter(t2x, t2y, 0));
+    teleporters.push(new Teleporter(50 + Math.random() * Math.max(10, (canvas.width/2 - 100)), 200 + Math.random() * Math.max(10, (canvas.height - 400)), 1));
+    teleporters.push(new Teleporter(canvas.width/2 + 20 + Math.random() * Math.max(10, (canvas.width/2 - 100)), 100 + Math.random() * Math.max(10, (canvas.height - 300)), 0));
 
     totalCoinsInLevel = 3 + Math.floor(currentLevel / 2);
     for (let i = 0; i < totalCoinsInLevel; i++) {
-        collectables.push(new Collectable(100 + Math.random() * (canvas.width - 200), 100 + Math.random() * (canvas.height - 300)));
+        collectables.push(new Collectable(50 + Math.random() * Math.max(10, (canvas.width - 100)), 120 + Math.random() * Math.max(10, (canvas.height - 350))));
     }
 
-    portal = new Portal(80 + Math.random() * (canvas.width - 160), 80);
+    portal = new Portal(80 + Math.random() * Math.max(10, (canvas.width - 160)), 90);
     updateHUD();
 }
 
-function showWarning() {
-    warningMessage.style.opacity = 1; setTimeout(() => { warningMessage.style.opacity = 0; }, 1500);
-}
+function showWarning() { warningMessage.style.opacity = 1; setTimeout(() => { warningMessage.style.opacity = 0; }, 1500); }
 
-function checkCollisions() {
+// TUNNELING FIX: Yahan diwaron ki collision alag se sub-step mein test hoti hai
+function checkWallCollisions(p) {
+    let collided = false;
     for (let b of blocks) {
-        let closestX = Math.max(b.x, Math.min(player.x, b.x + b.w));
-        let closestY = Math.max(b.y, Math.min(player.y, b.y + b.h));
-        let distanceX = player.x - closestX; let distanceY = player.y - closestY;
+        let closestX = Math.max(b.x, Math.min(p.x, b.x + b.w));
+        let closestY = Math.max(b.y, Math.min(p.y, b.y + b.h));
+        let distanceX = p.x - closestX; 
+        let distanceY = p.y - closestY;
         let distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
 
-        if (distanceSquared < (player.radius * player.radius)) {
-            if (b.type === 'spike' || b.type === 'enemy') { gameOver(); return; }
+        if (distanceSquared < (p.radius * p.radius)) {
+            if (b.type === 'spike' || b.type === 'enemy') { gameOver(); return false; }
 
-            let distance = Math.sqrt(distanceSquared); let overlap = player.radius - distance;
-            let nx = distance === 0 ? 0 : distanceX / distance; let ny = distance === 0 ? 0 : distanceY / distance;
-            player.x += nx * overlap; player.y += ny * overlap;
+            let distance = Math.sqrt(distanceSquared); 
+            let overlap = p.radius - distance;
+            let nx = distance === 0 ? 0 : distanceX / distance; 
+            let ny = distance === 0 ? 0 : distanceY / distance;
+            
+            p.x += nx * overlap; 
+            p.y += ny * overlap;
 
-            let dotProduct = (player.vx * nx) + (player.vy * ny);
-            player.vx -= 2 * dotProduct * nx; player.vy -= 2 * dotProduct * ny;
+            let dotProduct = (p.vx * nx) + (p.vy * ny);
+            
+            // Sirf us waqt bounce karo jab ball diwar ki taraf ja rahi ho
+            if (dotProduct < 0) {
+                p.vx -= 2 * dotProduct * nx; 
+                p.vy -= 2 * dotProduct * ny;
 
-            let restitution = b.type === 'bounce' ? 1.4 : player.bounceBase;
-            player.vx *= restitution; player.vy *= restitution;
+                let restitution = b.type === 'bounce' ? 1.4 : p.bounceBase;
+                p.vx *= restitution; 
+                p.vy *= restitution;
+                collided = true;
 
-            spawnParticles(closestX, closestY, b.type === 'bounce' ? '#f59e0b' : '#00ffcc', b.type === 'bounce' ? 8 : 4, 3);
-            triggerShake(b.type === 'bounce' ? 8 : 2);
+                spawnParticles(closestX, closestY, b.type === 'bounce' ? '#f59e0b' : '#00ffcc', b.type === 'bounce' ? 8 : 4, 3);
+                triggerShake(b.type === 'bounce' ? 8 : 2);
+            }
         }
     }
+    return collided;
+}
 
-    if (player.teleportCooldown <= 0) {
+function checkOtherCollisions(p) {
+    if (p.teleportCooldown <= 0) {
         for (let i=0; i<teleporters.length; i++) {
             let t = teleporters[i];
-            let dx = player.x - t.x; let dy = player.y - t.y;
-            if (dx*dx + dy*dy < (player.radius + t.radius - 5)*(player.radius + t.radius - 5)) {
+            let dx = p.x - t.x; let dy = p.y - t.y;
+            if (dx*dx + dy*dy < (p.radius + t.radius - 5)*(p.radius + t.radius - 5)) {
                 let dest = teleporters[t.linkedId];
-                player.x = dest.x; player.y = dest.y + 10;
-                player.teleportCooldown = 60; 
-                spawnParticles(t.x, t.y, '#8b5cf6', 15, 8, 5);
-                spawnParticles(dest.x, dest.y, '#8b5cf6', 15, 8, 5);
+                p.x = dest.x; p.y = dest.y + 10; p.teleportCooldown = 60; 
+                spawnParticles(t.x, t.y, '#8b5cf6', 15, 8, 5); spawnParticles(dest.x, dest.y, '#8b5cf6', 15, 8, 5);
                 triggerShake(5); break;
             }
         }
@@ -468,56 +485,41 @@ function checkCollisions() {
 
     for (let c of collectables) {
         if (!c.collected) {
-            let dx = player.x - c.x; let dy = player.y - c.y;
-            if (dx*dx + dy*dy < (player.radius + c.radius)*(player.radius + c.radius)) {
+            let dx = p.x - c.x; let dy = p.y - c.y;
+            if (dx*dx + dy*dy < (p.radius + c.radius)*(p.radius + c.radius)) {
                 c.collected = true; coinsCollectedInLevel++; score += 150; updateHUD();
                 spawnParticles(c.x, c.y, '#fbbf24', 10, 6, 5);
-                if (coinsCollectedInLevel >= totalCoinsInLevel) {
-                    portal.isUnlocked = true; spawnParticles(portal.x, portal.y, '#10b981', 20, 8, 4);
-                }
+                if (coinsCollectedInLevel >= totalCoinsInLevel) { portal.isUnlocked = true; spawnParticles(portal.x, portal.y, '#10b981', 20, 8, 4); }
             }
         }
     }
 
-    let pdx = player.x - portal.x; let pdy = player.y - portal.y;
-    if (pdx*pdx + pdy*pdy < (player.radius + portal.radius - 10)*(player.radius + portal.radius - 10)) {
+    let pdx = p.x - portal.x; let pdy = p.y - portal.y;
+    if (pdx*pdx + pdy*pdy < (p.radius + portal.radius - 10)*(p.radius + portal.radius - 10)) {
         if (portal.isUnlocked) levelComplete();
         else {
-            player.vx *= -1.5; player.vy *= -1.5;
-            spawnParticles(player.x, player.y, '#ff3366', 10, 6, 4); triggerShake(6); showWarning();
+            p.vx *= -1.5; p.vy *= -1.5;
+            spawnParticles(p.x, p.y, '#ff3366', 10, 6, 4); triggerShake(6); showWarning();
         }
     }
 }
 
-function updateHUD() {
-    scoreDisplay.innerText = `Lvl ${currentLevel} | Score: ${score}`;
-    coinsDisplay.innerText = `Energy: ${coinsCollectedInLevel}/${totalCoinsInLevel}`;
-}
-
-function updateTimer() {
-    if (GAME_STATE === 'PLAYING') {
-        let elapsed = ((Date.now() - levelStartTime) / 1000).toFixed(1);
-        timeDisplay.innerText = `Time: ${elapsed}s`;
-    }
-}
+function updateHUD() { scoreDisplay.innerText = `Lvl ${currentLevel} | Score: ${score}`; coinsDisplay.innerText = `Energy: ${coinsCollectedInLevel}/${totalCoinsInLevel}`; }
+function updateTimer() { if (GAME_STATE === 'PLAYING') timeDisplay.innerText = `Time: ${((Date.now() - levelStartTime) / 1000).toFixed(1)}s`; }
 
 function gameOver() {
-    GAME_STATE = 'GAMEOVER';
-    spawnParticles(player.x, player.y, '#ff3366', 30, 15, 6); triggerShake(20);
+    GAME_STATE = 'GAMEOVER'; spawnParticles(player.x, player.y, '#ff3366', 30, 15, 6); triggerShake(20);
     setTimeout(() => { gameOverScreen.classList.remove('hidden'); }, 600);
 }
 
 function levelComplete() {
-    GAME_STATE = 'VICTORY';
-    spawnParticles(portal.x, portal.y, '#10b981', 40, 15, 8);
+    GAME_STATE = 'VICTORY'; spawnParticles(portal.x, portal.y, '#10b981', 40, 15, 8);
     let timeTaken = (Date.now() - levelStartTime) / 1000;
     let stars = "⭐"; let timeBonus = 100;
-    if (timeTaken <= 15) { stars = "⭐⭐⭐"; timeBonus = 1500; } 
-    else if (timeTaken <= 25) { stars = "⭐⭐"; timeBonus = 700; }
+    if (timeTaken <= 15) { stars = "⭐⭐⭐"; timeBonus = 1500; } else if (timeTaken <= 25) { stars = "⭐⭐"; timeBonus = 700; }
     score += timeBonus; starDisplay.innerText = stars;
     document.getElementById('victoryStats').innerHTML = `Time: <b>${timeTaken.toFixed(1)}s</b> <br> Time Bonus: <b>+${timeBonus}</b> <br> Total Score: <b>${score}</b>`;
-    currentLevel++; 
-    setTimeout(() => { victoryScreen.classList.remove('hidden'); }, 600);
+    currentLevel++; setTimeout(() => { victoryScreen.classList.remove('hidden'); }, 600);
 }
 
 function startGame(resetStats = false) {
@@ -527,14 +529,11 @@ function startGame(resetStats = false) {
 }
 
 document.getElementById('startBtn').addEventListener('click', () => startGame(true));
-// IMPORTANT: false is passed to retry the CURRENT level instead of resetting
 document.getElementById('restartBtn').addEventListener('click', () => startGame(false)); 
 document.getElementById('nextLevelBtn').addEventListener('click', () => startGame(false));
 
 function drawBackgroundGrid() {
-    ctx.strokeStyle = 'rgba(0, 255, 204, 0.05)'; ctx.lineWidth = 1;
-    const gridSize = 80; 
-    const offset = (time * 0.5) % gridSize;
+    ctx.strokeStyle = 'rgba(0, 255, 204, 0.05)'; ctx.lineWidth = 1; const gridSize = 80; const offset = (time * 0.5) % gridSize;
     ctx.beginPath();
     for (let x = 0; x < canvas.width; x += gridSize) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
     for (let y = offset; y < canvas.height; y += gridSize) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
@@ -546,57 +545,39 @@ function drawAimLine() {
         let dx = input.startX - input.currentX; let dy = input.startY - input.currentY;
         const maxPull = 150; const distance = Math.sqrt(dx*dx + dy*dy);
         if (distance > maxPull) { dx = (dx / distance) * maxPull; dy = (dy / distance) * maxPull; }
-        
-        ctx.strokeStyle = 'rgba(0, 255, 204, 0.8)';
-        ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(player.x + dx, player.y + dy);
+        ctx.strokeStyle = 'rgba(0, 255, 204, 0.8)'; ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(player.x + dx, player.y + dy);
         ctx.setLineDash([8, 8]); ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke();
-        ctx.setLineDash([]); ctx.fillStyle = 'rgba(255, 51, 102, 0.8)';
-        ctx.beginPath(); ctx.arc(player.x + dx, player.y + dy, 6, 0, Math.PI*2); ctx.fill();
+        ctx.setLineDash([]); ctx.fillStyle = 'rgba(255, 51, 102, 0.8)'; ctx.beginPath(); ctx.arc(player.x + dx, player.y + dy, 6, 0, Math.PI*2); ctx.fill();
     }
 }
 
 function loop() {
-    requestAnimationFrame(loop); time++;
-    ctx.save();
-    if (screenShake > 0.5) {
-        ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
-        screenShake *= 0.85; 
-    } else screenShake = 0;
-
-    ctx.fillStyle = '#050810'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    drawBackgroundGrid();
+    requestAnimationFrame(loop); time++; ctx.save();
+    if (screenShake > 0.5) { ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake); screenShake *= 0.85; } else screenShake = 0;
+    ctx.fillStyle = '#050810'; ctx.fillRect(0, 0, canvas.width, canvas.height); drawBackgroundGrid();
 
     if (GAME_STATE === 'PLAYING' || GAME_STATE === 'GAMEOVER') {
         portal.update(); portal.draw(ctx);
         teleporters.forEach(t => { t.update(); t.draw(ctx); });
-        
-        blocks.forEach(b => { 
-            if(b.update) b.update(); 
-            b.draw(ctx); 
-        });
+        blocks.forEach(b => { if(b.update) b.update(); b.draw(ctx); });
         collectables.forEach(c => { c.update(); c.draw(ctx); });
 
         if (GAME_STATE === 'PLAYING') {
             if (time % 5 === 0) updateTimer(); 
-            player.update(); checkCollisions(); drawAimLine(); player.draw(ctx);
+            
+            player.update(); // Ab collision check update function ke andar hi chupa hai (Tunneling fixed)
+            drawAimLine(); 
+            player.draw(ctx);
 
-            // AUTO RETRY LOGIC (Atak Jana)
             if (hasLaunched && Math.abs(player.vx) < 0.5 && Math.abs(player.vy) < 0.5 && !input.isDragging) {
                 idleFrames++;
-                if (idleFrames > 600) { // 10 seconds at 60fps
-                    idleFrames = 0;
-                    startGame(false); // Retries the current level
-                } else if (idleFrames > 300) { // Show countdown in last 5 seconds
+                if (idleFrames > 600) { idleFrames = 0; startGame(false); } 
+                else if (idleFrames > 300) { 
                     let secsLeft = Math.ceil((600 - idleFrames) / 60);
-                    ctx.fillStyle = '#ff3366';
-                    ctx.font = 'bold 20px Orbitron';
-                    ctx.textAlign = 'center';
+                    ctx.fillStyle = '#ff3366'; ctx.font = 'bold 20px Orbitron'; ctx.textAlign = 'center';
                     ctx.fillText(`Ball Stuck! Auto Retry in ${secsLeft}`, player.x, player.y - 30);
                 }
-            } else {
-                idleFrames = 0;
-            }
+            } else idleFrames = 0;
         }
 
         for (let i = particles.length - 1; i >= 0; i--) {
@@ -606,7 +587,6 @@ function loop() {
     }
     ctx.restore();
 }
-// Start Loop
 requestAnimationFrame(loop);
 </script>
 </body>
