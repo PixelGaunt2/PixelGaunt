@@ -43,11 +43,17 @@
         #stats-bar { position: absolute; top: 20px; left: 20px; font-size: 20px; font-weight: bold; color: #FFD700; z-index: 30; display: none;}
         #combat-flash { position: absolute; top:0; left:0; width:100%; height:100%; background: red; opacity: 0; transition: opacity 0.1s; z-index: 5; pointer-events: none;}
 
-        /* MOBILE CONTROLS (F & E Buttons ONLY) */
-        #mobile-action-buttons { position: absolute; bottom: 80px; right: 20px; display: flex; gap: 15px; z-index: 50; pointer-events: auto; }
-        .mobile-btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); border: 2px solid #FFD700; color: #fff; font-size: 24px; font-weight: bold; cursor: pointer; user-select: none; touch-action: manipulation; box-shadow: 0px 0px 10px rgba(0,0,0,0.5); }
+        /* MOBILE CONTROLS (Updated for all buttons) */
+        .mobile-controls-group { display: flex; z-index: 50; pointer-events: auto; }
+        #mobile-actions-left { position: absolute; bottom: 180px; left: 30px; gap: 10px; }
+        #mobile-actions-right { position: absolute; bottom: 40px; right: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        .mobile-btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); border: 2px solid #FFD700; color: #fff; font-size: 24px; font-weight: bold; cursor: pointer; user-select: none; touch-action: manipulation; box-shadow: 0px 0px 10px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; padding: 0;}
         .mobile-btn:active { background: #FFD700; color: #000; }
-        @media (min-width: 1024px) { #mobile-action-buttons { display: none; } }
+        
+        @media (min-width: 1024px) { 
+            .mobile-controls-group { display: none !important; } 
+        }
     
         /* --- NEW MOBILE TOUCH CONTROLS CSS --- */
         #mobile-joystick-zone {
@@ -174,12 +180,32 @@
             </div>
         </div>
         
-        <div id="mobile-action-buttons">
-            <button id="mobile-btn-f" class="mobile-btn">F</button>
-            <button id="mobile-btn-e" class="mobile-btn">E</button>
+        <div id="mobile-actions-left" class="mobile-controls-group">
+            <button id="mobile-btn-skate" class="mobile-btn" title="Skateboard (Q)">🛹</button>
+            <button id="mobile-btn-crouch" class="mobile-btn" title="Crouch (C)">🧎</button>
+            <button id="mobile-btn-sprint" class="mobile-btn" title="Sprint (Hold Shift)">🏃</button>
         </div>
 
-        <!-- Mobile Joystick & Camera Look Zones -->
+        <div id="mobile-actions-right" class="mobile-controls-group">
+            <button id="mobile-btn-scan" class="mobile-btn" title="Scan (Hold Right Click)">👁️</button>
+            <button id="mobile-btn-atk" class="mobile-btn" title="Attack (Left Click)">👊</button>
+            
+            <button id="mobile-btn-f" class="mobile-btn" title="Weapon (F)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M21 11H13V7C13 5.9 12.1 5 11 5H3C1.9 5 1 5.9 1 7V13C1 14.1 1.9 15 3 15H7V21C7 22.1 7.9 23 9 23H11C12.1 23 13 22.1 13 21V15H21C22.1 15 23 14.1 23 13V11C23 11 22.1 11 21 11M11 21H9V15H11V21M21 13H3V7H11V11H21V13Z" />
+                </svg>
+            </button>
+            <button id="mobile-btn-e" class="mobile-btn" title="Interact (E)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path>
+                    <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path>
+                    <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path>
+                    <path d="M18 8v8.5a6.5 6.5 0 0 1-6.5 6.5h-1a6.5 6.5 0 0 1-6.5-6.5V12"></path>
+                    <path d="M6 12v-1.5a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4.5"></path>
+                </svg>
+            </button>
+        </div>
+
         <div id="mobile-joystick-zone">
             <div id="mobile-joystick-knob"></div>
         </div>
@@ -522,28 +548,23 @@
             }
         }
 
-        // THE FIX: Properly removing everything before starting a new level
         function clearLevel() {
-            // Fix: Explicitly remove carried NPC from playerGroup
             if (player.carriedNPC) {
                 playerGroup.remove(player.carriedNPC.mesh);
                 player.carriedNPC = null;
             }
 
-            // Remove all other NPCs
             npcs.forEach(n => {
                 if(n.mesh.parent) n.mesh.parent.remove(n.mesh);
             });
             npcs = [];
             
-            // Remove Items
             items.forEach(i => scene.remove(i.mesh)); items = [];
             
             trolleyMesh.visible = false;
             playerGroup.position.set(0,0,0); 
             player.hp = 100;
             
-            // Fix: Reset Player arms just in case they were stuck in carry animation
             player.models.armR.rotation.x = 0;
             player.models.armL.rotation.x = 0;
         }
@@ -666,13 +687,11 @@
             });
         }
 
-        // THE FIX for Carry / Drop System
         function tryInteract() {
             if (player.carriedNPC) {
                 if (playerGroup.position.distanceTo(jailDropZonePos) < 6) {
                     const isTarget = player.carriedNPC.isTarget; const bounty = player.carriedNPC.bounty;
                     
-                    // Fixed: Remove the mesh directly from the player's group instead of scene
                     playerGroup.remove(player.carriedNPC.mesh); 
                     
                     if(saveData.upgrades.trolley) trolleyMesh.visible = false;
@@ -874,37 +893,70 @@
 
         loadGameData(); showMenu('main-menu'); animate();
 
-        // --- NEW: F AND E MOBILE BUTTONS LOGIC ---
-        document.getElementById('mobile-btn-f').addEventListener('touchstart', (e) => {
-            e.preventDefault(); e.stopPropagation();
-            if (gameState !== 'PLAYING') return;
-            if (!player.carriedNPC) {
-                player.holdingGun = !player.holdingGun; gunMesh.visible = player.holdingGun;
-                weaponMesh.visible = !player.holdingGun && player.weapon.name !== 'Fists'; updatePlayerUI();
+        // --- NEW & UPDATED MOBILE BUTTONS BINDING ---
+        const bindMobileButton = (id, onStart, onEnd) => {
+            const btn = document.getElementById(id);
+            if(!btn) return;
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); onStart(); });
+            btn.addEventListener('click', (e) => { e.preventDefault(); onStart(); });
+            if (onEnd) {
+                btn.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); onEnd(); });
+                btn.addEventListener('mouseup', (e) => { e.preventDefault(); onEnd(); });
+                btn.addEventListener('mouseleave', (e) => { e.preventDefault(); onEnd(); });
             }
+        };
+
+        // F (Gun/Intimidate - Toggle)
+        bindMobileButton('mobile-btn-f', () => {
+            if (gameState !== 'PLAYING' || player.carriedNPC) return;
+            player.holdingGun = !player.holdingGun; gunMesh.visible = player.holdingGun;
+            weaponMesh.visible = !player.holdingGun && player.weapon.name !== 'Fists'; updatePlayerUI();
         });
 
-        document.getElementById('mobile-btn-e').addEventListener('touchstart', (e) => {
-            e.preventDefault(); e.stopPropagation();
-            if (gameState !== 'PLAYING') return;
-            tryInteract();
-        });
-        
-        // Added click fallback just in case testing on a browser emulator
-        document.getElementById('mobile-btn-f').addEventListener('click', (e) => {
-            if (gameState !== 'PLAYING') return;
-            if (!player.carriedNPC) {
-                player.holdingGun = !player.holdingGun; gunMesh.visible = player.holdingGun;
-                weaponMesh.visible = !player.holdingGun && player.weapon.name !== 'Fists'; updatePlayerUI();
-            }
-        });
-
-        document.getElementById('mobile-btn-e').addEventListener('click', (e) => {
+        // E (Interact - Tap)
+        bindMobileButton('mobile-btn-e', () => {
             if (gameState !== 'PLAYING') return;
             tryInteract();
         });
 
-    
+        // Attack (Left Click - Tap)
+        bindMobileButton('mobile-btn-atk', () => {
+            if (gameState !== 'PLAYING' || player.holdingGun) return;
+            combatHit();
+        });
+
+        // Scan/Zoom (Right Click - Hold)
+        bindMobileButton('mobile-btn-scan', 
+            () => { // Start Hold
+                if (gameState !== 'PLAYING') return;
+                player.isZooming = true; camera.fov = 40; camera.updateProjectionMatrix(); document.getElementById('crosshair').style.color = "#00ffcc";
+            }, 
+            () => { // End Hold
+                if (gameState !== 'PLAYING') return;
+                player.isZooming = false; camera.fov = 70; camera.updateProjectionMatrix(); document.getElementById('crosshair').style.color = "rgba(255, 255, 255, 0.5)";
+            }
+        );
+
+        // Skateboard (Q - Toggle)
+        bindMobileButton('mobile-btn-skate', () => {
+            if (gameState !== 'PLAYING' || player.carriedNPC) return;
+            player.hasSkateboard = !player.hasSkateboard; skateMesh.visible = player.hasSkateboard;
+            player.models.group.position.y = player.hasSkateboard ? 0.3 : (player.isCrouching ? -0.5 : 0); updatePlayerUI();
+        });
+
+        // Crouch (C - Toggle)
+        bindMobileButton('mobile-btn-crouch', () => {
+            if (gameState !== 'PLAYING') return;
+            player.isCrouching = !player.isCrouching; document.getElementById('stance').innerText = player.isCrouching ? "Crouching" : "Standing";
+            if(!player.hasSkateboard) player.models.group.position.y = player.isCrouching ? -0.5 : 0;
+        });
+
+        // Sprint (Shift - Hold)
+        bindMobileButton('mobile-btn-sprint', 
+            () => { if (gameState === 'PLAYING') keys['shift'] = true; }, 
+            () => { keys['shift'] = false; }
+        );
+
         // --- MOBILE JOYSTICK & TOUCH CAMERA LOGIC ---
         const joystickZone = document.getElementById('mobile-joystick-zone');
         const joystickKnob = document.getElementById('mobile-joystick-knob');
