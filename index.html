@@ -394,16 +394,13 @@
 </head>
 <body>
 
-    <!-- HIDDEN AUDIO PLAYER FOR GAME BGM -->
     <audio id="portal-bgm" loop style="display:none;"></audio>
 
-    <!-- LOADING SCREEN -->
     <div id="loader">
         <div class="loader-spinner"></div>
         <p class="pixel-font" style="font-size: 0.65rem; color: var(--neon-cyan); letter-spacing: 2px;">LOADING PORTAL...</p>
     </div>
 
-    <!-- STICKY HEADER -->
     <header>
         <div class="logo pixel-font" onclick="goHome()">Pixel <span>Gaunt</span></div>
         <nav class="nav-links">
@@ -415,15 +412,12 @@
         </nav>
     </header>
 
-    <!-- SEARCH COMPONENT -->
     <div class="search-container" id="search-section">
         <input type="text" class="search-bar" id="search-input" placeholder="Search across retro database..." onkeyup="filterGames()">
     </div>
 
-    <!-- PAGE 1 — HOMEPAGE LAYOUT -->
     <main class="container" id="homepage">
         
-        <!-- LEFT SIDEBAR SECTION -->
         <aside class="sidebar">
             <div class="sidebar-box">
                 <h3 class="sidebar-title pixel-font">Navigation</h3>
@@ -443,7 +437,6 @@
                 </ul>
             </div>
             
-            <!-- Esports Section -->
             <div class="sidebar-box">
                 <h3 class="sidebar-title pixel-font">Esports</h3>
                 <ul class="sidebar-menu">
@@ -451,7 +444,6 @@
                 </ul>
             </div>
 
-            <!-- Store Section -->
             <div class="sidebar-box">
                 <h3 class="sidebar-title pixel-font">Store</h3>
                 <ul class="sidebar-menu">
@@ -459,7 +451,6 @@
                 </ul>
             </div>
             
-            <!-- Game Publisher / Developer Section -->
             <div class="sidebar-box">
                 <h3 class="sidebar-title pixel-font">Publisher</h3>
                 <ul class="sidebar-menu">
@@ -468,9 +459,7 @@
             </div>
         </aside>
 
-        <!-- GAME GRID FILTERS & ITEMS -->
         <section class="main-content">
-            <!-- Top Horizon Filters -->
             <div class="category-bar" id="top-cat-bar">
                 <button class="cat-btn active" onclick="filterCategory('All', this)">All Games</button>
                 <button class="cat-btn" onclick="filterCategory('Fighting', this)">Fighting</button>
@@ -486,14 +475,11 @@
                 <button class="cat-btn" onclick="filterCategory('RPG', this)">RPG</button>
             </div>
 
-            <!-- Responsive Cards Layout -->
             <div class="game-grid" id="game-grid">
-                <!-- Data populated dynamically via JavaScript mapping -->
-            </div>
+                </div>
         </section>
     </main>
 
-    <!-- PAGE 2 — GAMEPLAY VIEWPORT -->
     <main id="gameplay-page">
         <div class="game-header">
             <h2 class="game-title-large pixel-font" id="current-game-title">Game Viewport</h2>
@@ -506,13 +492,11 @@
         <div class="gameplay-layout">
             <div class="empty-zone-v"></div>
 
-            <!-- CORE CANVAS FRAME AND BUTTONS BELOW -->
             <div class="game-container-wrapper">
                 <div class="game-container" id="game-container-element">
                     <iframe src="" id="game-canvas" allowfullscreen allow="autoplay; fullscreen"></iframe>
                 </div>
                 
-                <!-- ACTION BUTTONS BELOW SCREEN -->
                 <div class="game-action-bar">
                     <button class="action-btn" onclick="actionLike()">❤️ Like</button>
                     <button class="action-btn" onclick="actionBug()">🐛 Report Bug</button>
@@ -525,7 +509,6 @@
             <div class="empty-zone-v"></div>
         </div>
 
-        <!-- META DESCRIPTIONS AREA -->
         <div class="game-details">
             <div class="details-grid">
                 <div class="detail-section">
@@ -547,13 +530,11 @@
                     <div id="ai-prompt-container" style="display: none;">
                         <h3 class="pixel-font">AI Prompt Architecture</h3>
                         
-                        <!-- HIDDEN LOCK MESSAGE FOR NON-LOGGED IN USERS -->
                         <div id="ai-prompt-hidden-msg" style="background: var(--bg-surface-light); padding: 20px; border-radius: 8px; text-align: center; border: 1px dashed var(--neon-cyan); margin-top: 8px;">
                             <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 12px; line-height: 1.5;">🔒 This prompt is locked. Login to view the complete AI generation prompt used by the developer to create this game.</p>
-                            <button class="action-btn" onclick="alert('Login - Coming Soon!')" style="margin: 0 auto; border-color: var(--neon-purple); background: rgba(188, 19, 254, 0.1); color: #fff;">Login to Unlock Prompt</button>
+                            <button class="action-btn" onclick="alert('Coming Soon!')" style="margin: 0 auto; border-color: var(--neon-purple); background: rgba(188, 19, 254, 0.1); color: #fff;">Login to Unlock Prompt</button>
                         </div>
 
-                        <!-- ACTUAL PROMPT BOX (SHOWN UPON LOGIN) -->
                         <div class="prompt-box" id="current-game-aiprompt" style="display: none;"></div>
                     </div>
                 </div>
@@ -563,7 +544,6 @@
         <div class="empty-zone-h"></div>
     </main>
 
-    <!-- SHARE MODAL (SOCIAL PLATFORMS) -->
     <div class="modal-overlay" id="share-modal">
         <div class="modal-content">
             <button class="close-modal" onclick="closeModals()">&times;</button>
@@ -578,7 +558,6 @@
         </div>
     </div>
 
-    <!-- MULTI-OPTION LOGIN MODAL WITH GMAIL & WHATSAPP -->
     <div class="modal-overlay" id="login-modal">
         <div class="modal-content">
             <button class="close-modal" onclick="closeModals()">&times;</button>
@@ -586,14 +565,12 @@
             <div class="modal-step active" id="login-step-choice">
                 <h3 class="modal-title pixel-font">Authentication</h3>
                 
-                <!-- GMAIL LOGIN -->
                 <div class="option-grid">
                     <button class="opt-btn" onclick="goToLoginStep('gmail')">
                         <span>📧</span> Login via Gmail Account
                     </button>
                 </div>
                 
-                <!-- WHATSAPP NOTIFICATION LINK -->
                 <div style="margin-top: 24px; text-align: center; border-top: 1px solid var(--bg-surface-light); padding-top: 20px;">
                     <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px;">Get Instant Updates & Notifications:</p>
                     <a href="https://whatsapp.com/channel/0029VbBo20lLo4hmsAJODc2u" target="_blank" class="opt-btn whatsapp" style="display: flex; justify-content: center; text-decoration: none; color: #fff; width: 100%;">
@@ -602,7 +579,6 @@
                 </div>
             </div>
 
-            <!-- GMAIL FAKE FLOW -->
             <div class="modal-step" id="login-step-gmail">
                 <h3 class="modal-title pixel-font">Gmail Login</h3>
                 <div class="form-group">
@@ -611,14 +587,12 @@
                 </div>
                 <div class="action-btns">
                     <button class="wizard-btn secondary" onclick="goToLoginStep('choice')">Back</button>
-                    <!-- Login Button triggers Auth Success -->
                     <button class="wizard-btn" onclick="simulateAuthSuccess('Login Successful! You can now use Action Buttons and view Full AI Prompts.')">Log In</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- STYLISH CLEAN RETRO FOOTER -->
     <footer>
         <div class="footer-content">
             <div class="social-icons">
@@ -640,10 +614,8 @@
         </div>
     </footer>
 
-    <!-- SCROLL TO TOP ARROW BUTTON -->
     <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
 
-    <!-- LOGIC SYSTEM MODULE -->
     <script>
         // Check Login Status globally
         let isLoggedIn = false;
@@ -1420,7 +1392,7 @@ The game should feel like a fresh combination of Tetris and balloon physics wher
                 rating: '⭐⭐⭐⭐⭐ (4.8/5)',
                 releaseDate: 'June 2, 2026',
                 platform: 'Web Browser (Desktop Responsive)',
-                technology: 'Three.js: The 3D rendering engine responsible for the scene, geometry, and lighting.HTML5 / CSS3: The structural and styling layers for the User Interface (HUD, Menus, Buttons).JavaScript (ES6): The core engine for logic, physics, collision detection (Box3), and event handling.Web Audio API: Used for procedural audio generation, allowing the game to produce sound effects without needing external .mp3 or .wav files.Browser APIs: Specifically the PointerLockAPI to hide the mouse cursor and lock it within the game window for camera control.',
+                technology: 'Three.js: The 3D rendering engine responsible for the scene, geometry, and lighting.HTML5 / CSS3: The structural layers and styling layers for the User Interface (HUD, Menus, Buttons).JavaScript (ES6): The core engine for logic, physics, collision detection (Box3), and event handling.Web Audio API: Used for procedural audio generation, allowing the game to produce sound effects without needing external .mp3 or .wav files.Browser APIs: Specifically the PointerLockAPI to hide the mouse cursor and lock it within the game window for camera control.',
                 aiPrompt: `Create a complete offline 3D browser game inspired by battle royale and tactical shooter gameplay. The game must be playable directly in a web browser and generated as a single project containing HTML, CSS, and JavaScript files.
 
 Game Title
@@ -1791,7 +1763,7 @@ CORE MECHANICS
 - Drag to aim
 - Release to launch
 - Physics-based movement
-- Dynamic wall bouncing
+- dynamic wall bouncing
 - Momentum preservation
 - Collision reactions
 - Chain bounces
@@ -2268,19 +2240,15 @@ Create a complete professional game that feels like a mix of Angry Birds, Bounce
         }
 
         function actionLike() {
-            if(!isLoggedIn) { openLoginWizard(); return; }
-            alert("❤️ Game Added to Liked Collection!"); 
+            alert('Coming Soon!');
         }
         
         function actionBug() {
-            if(!isLoggedIn) { openLoginWizard(); return; }
-            alert("🐛 Bug Report System Activated. Ready to record error."); 
+            alert('Coming Soon!');
         }
         
         function actionShare() {
-            const title = document.getElementById('current-game-title').innerText;
-            document.getElementById('share-game-title').innerText = title;
-            openModal('share-modal');
+            alert('Coming Soon!');
         }
 
         function shareToPlatform(platform) {
