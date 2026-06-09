@@ -55,6 +55,14 @@
             font-size: 18px; font-weight: bold; color: white; text-shadow: 2px 2px 0 #000;
         }
 
+        /* SOUND BUTTON STYLING */
+        #soundBtn {
+            position: absolute; top: 20px; left: calc(50% + 220px); /* 220px right of the center timer */
+            background: rgba(0,0,0,0.7); border: 2px solid #fff; color: #fff; 
+            padding: 8px 15px; cursor: pointer; z-index: 100; font-weight: bold; 
+            border-radius: 5px; font-family: 'Courier New', monospace; box-shadow: 0 0 10px #fff;
+        }
+
         .screen-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(10, 3, 18, 0.85); display: flex; flex-direction: column;
@@ -126,11 +134,19 @@
             #orbBoard { font-size: 11px !important; margin-top: 2px; }
             #levelTimerContainer { width: 220px; height: 22px; border: 2px solid #00ff88; top: 10px; }
             #levelTimerText { font-size: 11px; top: 1px; }
+            
+            /* Adjusting Sound Button for mobile so it stays right of the narrower mobile timer */
+            #soundBtn {
+                top: 10px; left: calc(50% + 120px); 
+                padding: 4px 8px; font-size: 10px;
+            }
         }
     </style>
 </head>
 <body>
 
+    <div id="soundBtn" onclick="toggleSound()">SOUND: ON</div>
+    
     <div id="ui">
         <div>
             <div style="font-weight:bold; font-size: 18px; text-shadow: 1px 1px #000;" id="playerStageText">PLAYER 1 (LVL 1)</div>
@@ -168,6 +184,7 @@
         <div class="neon-title">STICKMAN VELOCITY</div>
         <button class="arcade-btn continue-btn" id="btnContinue" onclick="continueGame()">CONTINUE GAME</button>
         <button class="arcade-btn" onclick="startNewGame()">NEW GAME</button>
+        <button class="arcade-btn" id="btnReadme" style="background: #ffcc00; color: #000; box-shadow: 0 0 15px #ffcc00; margin-top: 20px;" onclick="showReadme()">README</button>
     </div>
 
     <div id="pauseMenu" class="screen-overlay" style="display: none;">
@@ -186,7 +203,7 @@
         <div class="neon-title" style="text-shadow: 0 0 10px #00ff88, 0 0 40px #00ff88; color: #00ff88;">LEVEL COMPLETED!</div>
         <div style="font-size: 24px; margin-top: 10px; color: #fff; font-weight:bold;">YOU SURVIVED THE LEVEL!</div>
         <div id="rewardText">STATS UPGRADED!<br>GAME AUTO-SAVED!</div>
-        <button class="arcade-btn" onclick="nextLevel()">START NEXT LEVEL</button>
+        
     </div>
 
     <div id="mobileUI">
@@ -208,6 +225,11 @@
         const canvas = document.getElementById('gameCanvas');
         const c = canvas.getContext('2d');
         
+        // Professional Readme alert function
+        function showReadme() {
+            alert("Disclaimer: This game is an AI-generated project, which means you might encounter occasional bugs or glitches.\n\nFor example, if the game fails to continue automatically after completing a level, simply restarting or reloading the game should resolve the issue.\n\nThank you for playing and have fun!");
+        }
+
         // DISPLAY FIX
         function resizeCanvas() {
             const GAME_HEIGHT = 720;
@@ -252,6 +274,18 @@
             }
         }
 
+        
+        let soundMuted = false;
+        function toggleSound() {
+            soundMuted = !soundMuted;
+            document.getElementById('soundBtn').innerText = soundMuted ? "SOUND: OFF" : "SOUND: ON";
+            if (soundMuted) {
+                if(audioCtx.state === 'running') audioCtx.suspend();
+            } else {
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+            }
+        }
+
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
         let bgMusicOsc, bgMusicGain;
@@ -292,7 +326,6 @@
             }, 600);
         }
 
-        // --- PARTICLES SYSTEM (ADDED BACK) ---
         class Particle {
             constructor(x, y, color) {
                 this.x = x; this.y = y; this.color = color;
@@ -313,7 +346,6 @@
         function createParticles(x, y, color) {
             for (let i = 0; i < 15; i++) { particles.push(new Particle(x, y, color)); }
         }
-        // ------------------------------------
 
         class Projectile {
             constructor(x, y, velocity, color, team, sizeBoost=false) {
@@ -332,16 +364,55 @@
         class ShockLaser {
             constructor(startX, startY, target) {
                 this.startX = startX; this.startY = startY;
-                this.target = target; this.life = 10;
+                this.target = target; this.life = 15;
+                this.points = [];
+                let segments = 12;
+                let endX = target.position.x + target.width/2;
+                let endY = target.position.y + target.height/2;
+                for(let i=0; i<=segments; i++) {
+                    let t = i / segments;
+                    let curX = this.startX + (endX - this.startX) * t;
+                    let curY = this.startY + (endY - this.startY) * t;
+                    if(i > 0 && i < segments) {
+                        curX += (Math.random() - 0.5) * 50;
+                        curY += (Math.random() - 0.5) * 50;
+                    }
+                    this.points.push({x: curX, y: curY});
+                }
             }
             draw() {
                 c.save(); c.translate(-cameraX, 0);
-                c.beginPath(); c.moveTo(this.startX, this.startY);
-                c.lineTo(this.target.position.x + this.target.width/2, this.target.position.y + this.target.height/2);
-                c.strokeStyle = '#fff'; c.lineWidth = 4; c.shadowBlur = 15; c.shadowColor = '#00ffff';
+                
+                if (this.target && !this.target.dead) {
+                    let tX = this.target.position.x + this.target.width/2;
+                    let tY = this.target.position.y + this.target.height/2;
+                    c.strokeStyle = '#ff0055'; c.lineWidth = 2; c.shadowBlur = 10; c.shadowColor = '#ff0055';
+                    c.beginPath();
+                    c.arc(tX, tY, 25, 0, Math.PI * 2);
+                    c.moveTo(tX - 35, tY); c.lineTo(tX + 35, tY);
+                    c.moveTo(tX, tY - 35); c.lineTo(tX, tY + 35);
+                    c.stroke();
+                }
+
+                c.beginPath(); 
+                c.moveTo(this.points[0].x, this.points[0].y);
+                for(let i=1; i<this.points.length; i++) {
+                    c.lineTo(this.points[i].x, this.points[i].y);
+                }
+                c.strokeStyle = '#00ffff'; c.lineWidth = 5; c.shadowBlur = 20; c.shadowColor = '#fff';
                 c.stroke(); c.restore();
             }
-            update() { this.draw(); this.life--; }
+            update() { 
+                for(let i=1; i<this.points.length-1; i++) {
+                    this.points[i].x += (Math.random() - 0.5) * 15;
+                    this.points[i].y += (Math.random() - 0.5) * 15;
+                }
+                if(this.target && !this.target.dead) {
+                    this.points[this.points.length-1].x = this.target.position.x + this.target.width/2;
+                    this.points[this.points.length-1].y = this.target.position.y + this.target.height/2;
+                }
+                this.draw(); this.life--; 
+            }
         }
         const shockLasers = [];
 
@@ -605,8 +676,18 @@
                 }
             }
 
-            crouch() { if (!this.isCrouching && this.velocity.y === 0) { this.isCrouching = true; this.position.y += 40; this.height = this.baseHeight - 40; } }
+            crouch() { 
+                // Car Mode crouch bug fix:
+                if (this.team === 'player' && hasCarMode) return;
+                
+                if (!this.isCrouching && this.velocity.y === 0) { 
+                    this.isCrouching = true; 
+                    this.position.y += 40; 
+                    this.height = this.baseHeight - 40; 
+                } 
+            }
             stand() { if (this.isCrouching) { this.isCrouching = false; this.position.y -= 40; this.height = this.baseHeight; } }
+            
             jump() { 
                 if (this.isCrouching || this.isDiving || this.isKnockedDown) return; 
                 if (hasCarMode && this.jumps >= 1) return; 
@@ -658,8 +739,19 @@
                 this.fireballCooldown = (this.team === 'player' && hasFireballBoost) ? 25 : 45;
                 
                 this.isAttacking = true; this.attackType = 'punch';
+                
+                // Enemy fireball crouch fix
+                if (this.team === 'enemy') {
+                    this.crouch();
+                }
+
                 if(this.attackTimeout) clearTimeout(this.attackTimeout);
-                this.attackTimeout = setTimeout(() => { this.isAttacking = false; this.attackType = null; }, 150);
+                this.attackTimeout = setTimeout(() => { 
+                    this.isAttacking = false; 
+                    this.attackType = null; 
+                    // Enemy stands back up after throwing
+                    if (this.team === 'enemy') this.stand();
+                }, 150);
                 
                 let speed = this.facingRight ? 8 : -8;
                 if (hasCarMode) speed = this.facingRight ? 12 : -12;
@@ -936,6 +1028,9 @@
             player.maxDashCooldown = Math.max(20, player.maxDashCooldown - 5);
             player.maxDiveCooldown = Math.max(40, player.maxDiveCooldown - 10);
             saveGame();
+            setTimeout(() => {
+                nextLevel();
+            }, 3000);
         }
 
         function nextLevel() {
@@ -947,6 +1042,14 @@
             player.isKnockedDown = false;
             player.position.y = 0;
             
+            // Auto Next Level Bug Fix: Clean up power-ups perfectly
+            hasFireballBoost = false; fireballBoostTimer = 0;
+            hasSpeedBoost = false; speedBoostTimer = 0;
+            hasCarMode = false; carModeTimer = 0;
+            hasGunShock = false; gunShockTimer = 0;
+            document.getElementById('carTimerRow').style.display = 'none';
+            document.getElementById('shockTimerRow').style.display = 'none';
+            
             enemies = [];
             flyingBats = [];
             projectiles.length = 0;
@@ -956,6 +1059,7 @@
             keys.fire.pressed = false;
             keys.a.pressed = false;
             keys.d.pressed = false;
+            keys.s.pressed = false;
 
             document.getElementById('levelComplete').style.display = 'none';
             document.getElementById('ui').style.display = 'flex';
@@ -963,6 +1067,9 @@
             document.getElementById('playerStageText').innerText = `PLAYER 1 (LVL ${currentStage})`;
             
             gameState = 'PLAYING';
+            // Clean loop creation to fix any freeze
+            cancelAnimationFrame(animationId);
+            gameLoop();
         }
 
         function gameLoop() {
@@ -990,18 +1097,21 @@
 
             if (hasGunShock && !player.isKnockedDown) {
                 if (framesElapsed % 15 === 0) { 
-                    let target = null; let minDist = 600; 
-                    for(let e of enemies) {
-                        if(!e.dead) {
-                            let dist = Math.hypot((e.position.x + e.width/2) - (player.position.x + player.width/2), (e.position.y + e.height/2) - (player.position.y + player.height/2));
-                            if(dist < minDist) { minDist = dist; target = e; }
-                        }
-                    }
-                    if(target) {
+                    let validTargets = enemies.filter(e => !e.dead);
+                    validTargets.sort((a,b) => {
+                        let distA = Math.hypot((a.position.x + a.width/2) - (player.position.x + player.width/2), (a.position.y + a.height/2) - (player.position.y + player.height/2));
+                        let distB = Math.hypot((b.position.x + b.width/2) - (player.position.x + player.width/2), (b.position.y + b.height/2) - (player.position.y + player.height/2));
+                        return distA - distB;
+                    });
+                    
+                    let targets = validTargets.slice(0, 2);
+                    for (let target of targets) {
                         target.takeHit(40, player.position.x);
                         shockLasers.push(new ShockLaser(player.position.x + player.width/2, player.position.y + 40, target));
+                    }
+                    if(targets.length > 0) {
                         sfxShock();
-                        triggerShake(2);
+                        triggerShake(4);
                     }
                 }
             }
@@ -1060,6 +1170,7 @@
                     else if (pUp.type === 'car') { 
                         hasCarMode = true; carModeTimer = MAX_CAR_TIME; 
                         document.getElementById('carTimerRow').style.display = 'flex';
+                        player.stand(); // Auto-stand up jab bhi player car mode le
                     }
                     else if (pUp.type === 'blackorb') {
                         blackOrbs++;
@@ -1226,7 +1337,9 @@
             player.maxDashCooldown = 60; player.maxDiveCooldown = 90;
             document.getElementById('playerStageText').innerText = `PLAYER 1 (LVL 1)`;
             document.getElementById('orbBoard').innerText = `BLACK ORBS: 0/10`;
-            startMusic(); document.getElementById('mainMenu').style.display = 'none'; gameState = 'PLAYING'; gameLoop();
+            startMusic(); document.getElementById('mainMenu').style.display = 'none'; gameState = 'PLAYING'; 
+            cancelAnimationFrame(animationId);
+            gameLoop();
         }
 
         function continueGame() {
@@ -1243,7 +1356,9 @@
                 document.getElementById('playerStageText').innerText = `PLAYER 1 (LVL ${currentStage})`;
                 document.getElementById('orbBoard').innerText = `BLACK ORBS: ${blackOrbs}/${maxBlackOrbs}`;
             }
-            startMusic(); document.getElementById('mainMenu').style.display = 'none'; gameState = 'PLAYING'; gameLoop();
+            startMusic(); document.getElementById('mainMenu').style.display = 'none'; gameState = 'PLAYING'; 
+            cancelAnimationFrame(animationId);
+            gameLoop();
         }
 
         function togglePause() {
