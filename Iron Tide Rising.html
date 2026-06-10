@@ -42,6 +42,12 @@
         #btn-dash-l { bottom: 120px; right: 190px; width: 50px; height: 50px; border-color: #00ff00; color: #00ff00;}
         #btn-dash-r { bottom: 120px; right: 120px; width: 50px; height: 50px; border-color: #00ff00; color: #00ff00;}
         #btn-weap { top: 30px; right: 30px; width: 60px; height: 60px; border-radius: 10px; border-color: #00ccff; color: #00ccff; }
+        
+        /* Custom Readme Text Styles */
+        .readme-content { max-width: 600px; text-align: center; color: #dddddd; margin-bottom: 30px; font-size: 1.1rem; line-height: 1.6; background: rgba(0,0,0,0.7); padding: 25px; border: 1px solid #444; border-radius: 10px; }
+        .readme-content a { color: #00ccff; text-decoration: none; font-weight: bold; transition: color 0.2s; }
+        .readme-content a:hover { color: #00ff00; }
+        .readme-content strong { color: #ffffff; }
     </style>
 </head>
 <body>
@@ -61,6 +67,22 @@
         <div id="main-menu" class="screen">
             <h1>Iron Tide<br>Rising</h1>
             <button class="btn btn-green" id="btn-play-now">Play Now</button>
+            <button class="btn btn-blue" id="btn-readme">Readme</button>
+        </div>
+
+        <div id="readme-screen" class="screen hidden">
+            <h2>DISCLAIMER</h2>
+            <div class="readme-content">
+                <p>Welcome to <strong>Iron Tide Rising</strong>, brought to you by <strong>Pixel Gaunt</strong>.</p>
+                <p>Please be advised that this game is AI-created. As a result, you might encounter occasional bugs or unexpected behaviors during gameplay. We apologize for any inconvenience this may cause.</p>
+                <p>If you discover any issues or simply want to share your feedback, please feel free to reach out to us:</p>
+                <p>
+                    <strong>Email:</strong> <a href="mailto:pixelgaunt@gmail.com">pixelgaunt@gmail.com</a><br><br>
+                    <strong>WhatsApp Group:</strong> <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank">Join Here</a>
+                </p>
+                <p>Thank you for playing!</p>
+            </div>
+            <button class="btn btn-green" id="btn-close-readme">Close & Return</button>
         </div>
 
         <div id="pause-menu" class="screen hidden">
@@ -251,11 +273,18 @@
         let velocity=new THREE.Vector3(), direction=new THREE.Vector3(), score=0, hp=100, bobTime=0, currentWeapon=0, rifleCooldown=0, bazookaCooldown=0, dashCooldown=0, bombCooldown=0, recoilAmount=0;
         const playerHeight = 4, arrays = { rockets: [], bombs: [], enemyProjectiles: [], explosions: [], bots: [] };
         
-        const ui = { main: document.getElementById('main-menu'), pause: document.getElementById('pause-menu'), gameover: document.getElementById('game-over-screen'), hud: document.getElementById('game-hud'), hit: document.getElementById('hitMarker'), dmg: document.getElementById('damageOverlay'), hpTxt: document.getElementById('hp'), scoreTxt: document.getElementById('score'), finalScore: document.getElementById('final-score'), wepTxt: document.getElementById('weaponName'), dashTxt: document.getElementById('dashStatus'), bombTxt: document.getElementById('bombStatus'), btnSound: document.getElementById('btn-sound') };
+        // UI Object modified to include readme screen
+        const ui = { main: document.getElementById('main-menu'), pause: document.getElementById('pause-menu'), gameover: document.getElementById('game-over-screen'), hud: document.getElementById('game-hud'), readme: document.getElementById('readme-screen'), hit: document.getElementById('hitMarker'), dmg: document.getElementById('damageOverlay'), hpTxt: document.getElementById('hp'), scoreTxt: document.getElementById('score'), finalScore: document.getElementById('final-score'), wepTxt: document.getElementById('weaponName'), dashTxt: document.getElementById('dashStatus'), bombTxt: document.getElementById('bombStatus'), btnSound: document.getElementById('btn-sound') };
         
-        function setScreen(screenId) { ui.main.classList.add('hidden'); ui.pause.classList.add('hidden'); ui.gameover.classList.add('hidden'); ui.hud.classList.add('hidden'); if(screenId) document.getElementById(screenId).classList.remove('hidden'); }
+        function setScreen(screenId) { ui.main.classList.add('hidden'); ui.pause.classList.add('hidden'); ui.gameover.classList.add('hidden'); ui.hud.classList.add('hidden'); ui.readme.classList.add('hidden'); if(screenId) document.getElementById(screenId).classList.remove('hidden'); }
+        
         document.getElementById('btn-play-now').addEventListener('click', startGame); document.getElementById('btn-retry').addEventListener('click', startGame);
         document.getElementById('btn-resume').addEventListener('click', () => { gameState = 'playing'; setScreen('game-hud'); document.body.requestPointerLock(); });
+        
+        // Readme Events
+        document.getElementById('btn-readme').addEventListener('click', () => { setScreen('readme-screen'); });
+        document.getElementById('btn-close-readme').addEventListener('click', () => { setScreen('main-menu'); });
+
         function returnToMenu() { gameState = 'menu'; setScreen('main-menu'); document.exitPointerLock(); clearScene(); }
         document.getElementById('btn-menu-back').addEventListener('click', returnToMenu); document.getElementById('btn-gameover-menu').addEventListener('click', returnToMenu);
         ui.btnSound.addEventListener('click', () => { isMuted = !isMuted; ui.btnSound.innerText = isMuted ? "Sound: OFF" : "Sound: ON"; ui.btnSound.style.borderColor = isMuted ? "#888" : "#00ccff"; ui.btnSound.style.color = isMuted ? "#888" : "#00ccff"; });
@@ -544,6 +573,8 @@
             fixTouchBtn('btn-retry', startGame);
             fixTouchBtn('btn-menu-back', returnToMenu);
             fixTouchBtn('btn-gameover-menu', returnToMenu);
+            fixTouchBtn('btn-readme', () => setScreen('readme-screen'));
+            fixTouchBtn('btn-close-readme', () => setScreen('main-menu'));
         }
 
         const jZone = document.getElementById('joystick-zone');
