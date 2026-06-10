@@ -92,7 +92,7 @@
 <body>
 
     <div id="portrait-lock">
-        <h1 style="font-size: 50px;">導</h1>
+        <h1 style="font-size: 50px;">📱</h1>
         <h2>Please Rotate Your Phone<br>to Landscape Mode</h2>
     </div>
 
@@ -104,8 +104,8 @@
 
     
     <div id="top-controls" style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 50; display: none; gap: 10px;">
-        <button id="btn-pause" onclick="togglePause()" style="padding: 8px 12px; font-size: 10px; background: #e67e22;">竢ｸ PAUSE</button>
-        <button id="btn-sound" onclick="toggleSound()" style="padding: 8px 12px; font-size: 10px; background: #3498db;">矧 SOUND</button>
+        <button id="btn-pause" onclick="togglePause()" style="padding: 8px 12px; font-size: 10px; background: #e67e22;">⏸ PAUSE</button>
+        <button id="btn-sound" onclick="toggleSound()" style="padding: 8px 12px; font-size: 10px; background: #3498db;">🔊 SOUND</button>
     </div>
 
     <div id="hud">
@@ -131,13 +131,35 @@
             <button class="boy-btn" onclick="startGame('boy')">Play Boy Pizza</button>
             <button class="girl-btn" onclick="startGame('girl')">Play Girl Pizza</button>
         </div>
+        <button onclick="showReadme()" style="margin-top: 20px; background: #95a5a6; box-shadow: 0 4px 0 #7f8c8d;">Readme / Disclaimer</button>
+    </div>
+
+    <div id="readme-screen" class="screen" style="display: none; padding: 20px;">
+        <h1 style="color: #f1c40f; text-shadow: 3px 3px 0 #e67e22; font-size: 24px;">DISCLAIMER</h1>
+        <div style="background: rgba(44, 62, 80, 0.95); border: 3px solid #f1c40f; border-radius: 10px; padding: 20px; max-width: 600px; text-align: left; line-height: 1.6; box-shadow: 0 0 15px rgba(0,0,0,0.5);">
+            <p style="font-size: 10px; color: #ecf0f1; margin-bottom: 15px;">
+                Please note that this game was created with the assistance of Artificial Intelligence. As such, you may occasionally encounter bugs or unexpected behavior during gameplay.
+            </p>
+            <p style="font-size: 10px; color: #ecf0f1; margin-bottom: 15px;">
+                <strong>Pixel Gaunt</strong> sincerely apologizes for any inconvenience this may cause. We are continuously looking to improve!
+            </p>
+            <p style="font-size: 10px; color: #ecf0f1; margin-bottom: 20px;">
+                If you experience any bugs or have feedback, please submit them to us via:
+                <br><br>
+                <span style="color: #3498db;">📧 Email:</span> pixelgaunt@gmail.com<br><br>
+                <span style="color: #2ecc71;">📱 WhatsApp Group:</span> <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" style="color: #f1c40f; text-decoration: underline;">Join Here</a>
+            </p>
+            <div style="text-align: center;">
+                <button onclick="closeReadme()" style="background: #e74c3c; box-shadow: 0 4px 0 #c0392b;">Close</button>
+            </div>
+        </div>
     </div>
 
     <div id="pause-screen" class="screen">
         <h1 style="color: #f1c40f;">PAUSED</h1>
         <div class="btn-group">
-            <button onclick="togglePause()">笆ｶ Resume</button>
-            <button onclick="backToTitle()" style="background: #e74c3c; box-shadow: 0 4px 0 #c0392b;">匠 Back to Title</button>
+            <button onclick="togglePause()">▶ Resume</button>
+            <button onclick="backToTitle()" style="background: #e74c3c; box-shadow: 0 4px 0 #c0392b;">🏠 Back to Title</button>
         </div>
     </div>
 
@@ -224,7 +246,7 @@
         }
 
         window.addEventListener('touchstart', e => { 
-            if(e.target.tagName === 'BUTTON' || e.target.className.includes('mobile-btn')) return; 
+            if(e.target.tagName === 'BUTTON' || e.target.className.includes('mobile-btn') || e.target.tagName === 'A') return; 
             for(let t of e.changedTouches) { 
                 if(t.clientX < width/2 && gameState.isRunning && !gameState.isPaused) { 
                     joyActive = true; 
@@ -266,7 +288,7 @@
         function toggleSound() {
             isMuted = !isMuted;
             const btn = document.getElementById('btn-sound');
-            btn.innerText = isMuted ? '這 MUTED' : '矧 SOUND';
+            btn.innerText = isMuted ? '🔇 MUTED' : '🔊 SOUND';
             btn.style.background = isMuted ? '#95a5a6' : '#3498db';
             if (audioCtx) {
                 if (isMuted) audioCtx.suspend();
@@ -283,7 +305,15 @@
             if(typeof bgmInterval !== 'undefined') clearInterval(bgmInterval);
         }
 
+        function showReadme() {
+            document.getElementById('readme-screen').style.display = 'flex';
+            document.getElementById('main-menu').style.display = 'none';
+        }
 
+        function closeReadme() {
+            document.getElementById('readme-screen').style.display = 'none';
+            document.getElementById('main-menu').style.display = 'flex';
+        }
         
         function triggerElectricShock() {
             screenShake(10);
