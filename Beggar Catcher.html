@@ -143,6 +143,7 @@
             <p style="text-align: center; margin-top: 20px; font-weight: bold;">Thank you for playing!</p>
         </div>
         <button class="btn btn-back" onclick="showMenu('main-menu')">Back to Menu</button>
+        <button class="btn" onclick="showMenu('main-menu')" style="border-color:#ff3333;">Close</button>
     </div>
 
     <div id="level-menu" class="menu-screen" style="display:none;">
@@ -205,7 +206,7 @@
                 <div class="progress-bar"><div id="evidence-fill"></div></div>
             </div>
             <div class="progress-container" id="suspicion-container">
-                <div>Target Suspicion (Shak)</div>
+                <div>Target Suspicion</div>
                 <div class="progress-bar"><div id="suspicion-fill"></div></div>
             </div>
         </div>
@@ -314,7 +315,7 @@
 
         const LEVEL_DATA = [
             { id: 1, title: "Level 1: The Pickpocket", desc: "Target is extremely fast. Chase them down!", color: "Red", hex: 0xe74c3c, hp: 40, speed: 4.5, scale: 1, role: 'thief', susMul: 1, bounty: 100, spook: 100 },
-            { id: 2, title: "Level 2: Heavy Muscle", desc: "Built like a tank. Bring a Danda to fight him.", color: "Green", hex: 0x2ecc71, hp: 120, speed: 1.5, scale: 1.3, role: 'aggressive', susMul: 1, bounty: 150, spook: 100 },
+            { id: 2, title: "Level 2: Heavy Muscle", desc: "Built like a tank. Bring a Baton to fight him.", color: "Green", hex: 0x2ecc71, hp: 120, speed: 1.5, scale: 1.3, role: 'aggressive', susMul: 1, bounty: 150, spook: 100 },
             { id: 3, title: "Level 3: The Paranoid Scammer", desc: "Gets suspicious very easily. Keep distance.", color: "Yellow", hex: 0xf1c40f, hp: 40, speed: 2.0, scale: 1, role: 'thief', susMul: 3.5, bounty: 150, spook: 100 },
             { id: 4, title: "Level 4: Master of Disguise", desc: "Wears a BLACK shirt. Hard to gather evidence.", color: "Black", hex: 0x111111, hp: 50, speed: 2.0, scale: 1, role: 'thief', susMul: 1, bounty: 200, spook: 100 },
             { id: 5, title: "Level 5: The Rich Fraud", desc: "Pretending to be poor. High bounty!", color: "Gold", hex: 0xFFD700, hp: 60, speed: 2.5, scale: 1, role: 'thief', susMul: 1.5, bounty: 300, spook: 100 },
@@ -623,7 +624,7 @@
                 mesh.position.set(x, 1, z); mesh.castShadow = true; scene.add(mesh);
                 items.push({ mesh, type: t, color: c, startY: 1, timeOffset: Math.random()*100 });
             }
-            sI('Danda', 0x8B4513, 10, 15); sI('Bottle', 0x2ecc71, -10, 20);
+            sI('Baton', 0x8B4513, 10, 15); sI('Bottle', 0x2ecc71, -10, 20);
 
             showMenu('ui-layer'); gameState = 'PLAYING'; updatePlayerUI(); document.body.requestPointerLock();
         }
@@ -828,8 +829,8 @@
             for (let i = items.length - 1; i >= 0; i--) {
                 const item = items[i]; item.mesh.rotation.y += dt * 2; item.mesh.position.y = item.startY + Math.sin(time * 3 + item.timeOffset) * 0.2; 
                 if (playerGroup.position.distanceTo(item.mesh.position) < 2.5) {
-                    player.weapon = { name: item.type, damage: item.type==='Danda'? 25:15 };
-                    weaponMesh.geometry = item.type === 'Danda' ? new THREE.CylinderGeometry(0.05,0.05,1.2) : new THREE.CylinderGeometry(0.1,0.1,0.5);
+                    player.weapon = { name: item.type, damage: item.type==='Baton'? 25:15 };
+                    weaponMesh.geometry = item.type === 'Baton' ? new THREE.CylinderGeometry(0.05,0.05,1.2) : new THREE.CylinderGeometry(0.1,0.1,0.5);
                     weaponMesh.material = new THREE.MeshLambertMaterial({color: item.color});
                     weaponMesh.position.set(0, -0.6, 0.2); weaponMesh.rotation.x = Math.PI/2;
                     if(!player.holdingGun && !player.carriedNPC) weaponMesh.visible = true;
