@@ -713,11 +713,10 @@
                 if(this.slowTimer > 0 && !this.isBoss) { this.slowTimer -= dt; currentSpeed *= Math.max(0.2, 1 - (0.3 * player.waterLevel) - 0.5); this.dmg = Math.floor(this.baseDmg / 2); if(Math.random() > 0.9) spawnParticle(this.x, this.y, '#3498db', 2); } else { this.dmg = this.baseDmg; }
 
                 // FIXED STRONG WIND AURA: Any number of enemies entering are heavily slowed (90%) and constantly pushed back!
+                // WIND AURA: Enemies entering are slowed down but slowly keep moving towards the player!
                 if(player.windTimer > 0 && dist(this.x, this.y, player.x, player.y) < 160) {
-                    currentSpeed *= 0.1; // 90% SLOW DOWN!
-                    let pushA = Math.atan2(this.y - player.y, this.x - player.x);
-                    this.knockback.x += Math.cos(pushA) * 1.5; // Strong push back
-                    this.knockback.y += Math.sin(pushA) * 1.5;
+                    currentSpeed *= 0.25; // Enemies ki speed kam ho jayegi (wo slow chalenge)
+                    // Push back (knockback) lines ko hata diya gaya hai taake wo wind ke andar slowly aate rahein
                     if(Math.random() > 0.8) spawnParticle(this.x, this.y, '#ecf0f1', 3);
                 }
 
