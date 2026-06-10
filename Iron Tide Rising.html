@@ -118,10 +118,27 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
-        // --- DYNAMIC INPUT TRACKING (PC vs Mobile Fix) ---
-        let activeInputType = 'mouse';
-        window.addEventListener('touchstart', function() { activeInputType = 'touch'; }, {passive: true});
-        window.addEventListener('mousemove', function() { activeInputType = 'mouse'; }, {passive: true});
+        // --- DYNAMIC INPUT TRACKING (100% Solid PC vs Mobile Fix) ---
+        let isTouchActive = false;
+        let isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        window.addEventListener('touchstart', function() { 
+            isTouchActive = true; 
+        }, {passive: true});
+
+        // Universal UI click and touch binder
+        function bindUIBtn(id, action) {
+            const btn = document.getElementById(id);
+            if(!btn) return;
+            btn.addEventListener('click', (e) => { 
+                if(!e.defaultPrevented) action(); 
+            });
+            btn.addEventListener('touchstart', (e) => { 
+                isTouchActive = true; 
+                e.preventDefault(); // Prevents fake click conflict
+                action(); 
+            }, {passive: false});
+        }
 
         // --- AUDIO SYSTEM ---
         let gameState = 'menu', isMuted = false, audioCtx;
@@ -278,36 +295,34 @@
             ui.main.classList.add('hidden'); ui.pause.classList.add('hidden'); ui.gameover.classList.add('hidden'); ui.hud.classList.add('hidden'); ui.readme.classList.add('hidden'); 
             if(screenId) document.getElementById(screenId).classList.remove('hidden'); 
             
-            // Smart display logic for mobile controls
             const mobileControls = document.getElementById('mobile-controls');
-            if (screenId === 'game-hud' && activeInputType === 'touch') {
+            if (screenId === 'game-hud' && (isTouchActive || isMobileUA)) {
                 mobileControls.style.display = 'block';
             } else {
                 mobileControls.style.display = 'none';
             }
         }
         
-        // Universal Standard Clicks for UI
-        document.getElementById('btn-play-now').addEventListener('click', startGame); 
-        document.getElementById('btn-retry').addEventListener('click', startGame);
-        document.getElementById('btn-resume').addEventListener('click', () => { 
+        // Universal Smart UI Buttons
+        bindUIBtn('btn-play-now', startGame); 
+        bindUIBtn('btn-retry', startGame);
+        bindUIBtn('btn-resume', () => { 
             gameState = 'playing'; setScreen('game-hud'); 
-            if (activeInputType !== 'touch') document.body.requestPointerLock();
+            if (!isTouchActive && !isMobileUA && document.body.requestPointerLock) document.body.requestPointerLock();
         });
-        document.getElementById('btn-readme').addEventListener('click', () => { setScreen('readme-screen'); });
-        document.getElementById('btn-close-readme').addEventListener('click', () => { setScreen('main-menu'); });
-
-        function returnToMenu() { gameState = 'menu'; setScreen('main-menu'); document.exitPointerLock(); clearScene(); }
-        document.getElementById('btn-menu-back').addEventListener('click', returnToMenu); 
-        document.getElementById('btn-gameover-menu').addEventListener('click', returnToMenu);
+        bindUIBtn('btn-readme', () => { setScreen('readme-screen'); });
+        bindUIBtn('btn-close-readme', () => { setScreen('main-menu'); });
+        bindUIBtn('btn-menu-back', returnToMenu); 
+        bindUIBtn('btn-gameover-menu', returnToMenu);
         
-        ui.btnSound.addEventListener('click', () => { 
+        function toggleSound() {
             isMuted = !isMuted; ui.btnSound.innerText = isMuted ? "Sound: OFF" : "Sound: ON"; 
             ui.btnSound.style.borderColor = isMuted ? "#888" : "#00ccff"; ui.btnSound.style.color = isMuted ? "#888" : "#00ccff"; 
-        });
+        }
+        bindUIBtn('btn-sound', toggleSound);
         
         document.addEventListener('pointerlockchange', () => { 
-            if (document.pointerLockElement !== document.body && gameState === 'playing' && activeInputType !== 'touch') { 
+            if (document.pointerLockElement !== document.body && gameState === 'playing' && !isTouchActive && !isMobileUA) { 
                 gameState = 'paused'; setScreen('pause-menu'); 
             } 
         });
@@ -344,11 +359,14 @@
             arrays.enemyProjectiles.forEach(p => scene.remove(p.mesh)); arrays.enemyProjectiles = []; 
             for (let i = raycastTargets.length - 1; i >= 0; i--) { if (raycastTargets[i].userData && raycastTargets[i].userData.isBotPart) raycastTargets.splice(i, 1); }
         }
+
         function startGame() { 
             initAudio(); clearScene(); hp = 100; score = 0; ui.hpTxt.innerText = hp; ui.scoreTxt.innerText = score; camera.position.set(0, playerHeight, 10); camera.rotation.set(0,0,0); velocity.set(0,0,0); for(let i=0; i<15; i++) spawnBot(); 
             gameState = 'playing'; setScreen('game-hud'); 
-            if (activeInputType !== 'touch') document.body.requestPointerLock(); 
+            if (!isTouchActive && !isMobileUA && document.body.requestPointerLock) document.body.requestPointerLock(); 
         }
+
+        function returnToMenu() { gameState = 'menu'; setScreen('main-menu'); document.exitPointerLock(); clearScene(); }
 
         // --- COMBAT & MECHANICS ---
         function dash(dir) { if (dashCooldown > 0) return; velocity.addScaledVector(new THREE.Vector3().crossVectors(camera.getWorldDirection(new THREE.Vector3()), new THREE.Vector3(0,1,0)).normalize(), dir * 180); dashCooldown = 2.0; ui.dashTxt.innerText = "WAIT"; ui.dashTxt.style.color = "red"; }
@@ -615,7 +633,11 @@
         const bindBtn = (id, onStart, onEnd) => {
             const btn = document.getElementById(id);
             if(!btn) return;
-            btn.addEventListener('touchstart', (e) => { e.preventDefault(); if(onStart) onStart(); }, {passive: false});
+            btn.addEventListener('touchstart', (e) => { 
+                isTouchActive = true; 
+                e.preventDefault(); 
+                if(onStart) onStart(); 
+            }, {passive: false});
             if(onEnd) {
                 btn.addEventListener('touchend', (e) => { e.preventDefault(); onEnd(); }, {passive: false});
                 btn.addEventListener('touchcancel', (e) => { e.preventDefault(); onEnd(); }, {passive: false});
