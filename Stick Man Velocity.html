@@ -1381,18 +1381,21 @@
         drawBackground();
     </script>
 
-    <!-- NAYA README MODAL -->
-    <div id="readmeModal" class="screen-overlay" style="display: none; z-index: 200;">
-        <div class="neon-title" style="font-size: 40px; color: #ffcc00; text-shadow: 0 0 10px #ffcc00;">DISCLAIMER</div>
-        <div style="background: rgba(0,0,0,0.8); border: 2px solid #ffcc00; padding: 20px; max-width: 600px; color: white; font-family: 'Courier New', monospace; font-size: 16px; text-align: center; border-radius: 10px; line-height: 1.5; margin: 0 20px;">
+    <!-- README MODAL START -->
+    <div id="readmeModal" class="screen-overlay" style="display: none; z-index: 9999; background: rgba(0,0,0,0.95);">
+        <div class="neon-title" style="font-size: 40px; color: #ffcc00; text-shadow: 0 0 10px #ffcc00; margin-bottom: 20px;">DISCLAIMER</div>
+        <div style="background: rgba(0,0,0,0.8); border: 2px solid #ffcc00; padding: 20px; max-width: 600px; width: 90%; color: white; font-family: 'Courier New', monospace; font-size: 16px; text-align: center; border-radius: 10px; line-height: 1.6; margin-bottom: 30px; box-shadow: 0 0 20px rgba(255, 204, 0, 0.2);">
             <p>This game is an AI-created project. We apologize if you encounter any bugs or glitches during gameplay.</p><br>
             <p><strong>Known Bug:</strong> If a level fails to continue automatically after completion, simply close and reopen the game or refresh the page to resolve the issue.</p><br>
             <p>If you encounter any other bugs, please report them to us via:</p>
-            <p style="margin-top: 10px;"><strong>Email:</strong> <a href="mailto:pixelgaunt@gmail.com" style="color: #00ffff; text-decoration: none;">pixelgaunt@gmail.com</a></p>
-            <p><strong>WhatsApp Group:</strong> <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" style="color: #00ff88; text-decoration: none;" target="_blank">Click Here to Join</a></p>
+            <p style="margin-top: 15px;"><strong>Email:</strong> <a href="mailto:pixelgaunt@gmail.com" style="color: #00ffff; text-decoration: none; font-weight: bold;">pixelgaunt@gmail.com</a></p>
+            <p style="margin-top: 10px;"><strong>WhatsApp Group:</strong> <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" style="color: #00ff88; text-decoration: none; font-weight: bold;" target="_blank">Click Here to Join</a></p>
         </div>
-        <button class="arcade-btn" style="background: #ffcc00; color: #000; box-shadow: 0 0 15px #ffcc00; margin-top: 20px; width: 200px;" onclick="closeReadme()">CLOSE</button>
+        
+        <!-- CLOSE BUTTON -->
+        <button class="arcade-btn" style="background: #ffcc00; color: #000; box-shadow: 0 0 15px #ffcc00; border-color: #000; padding: 15px 40px; font-size: 24px;" onclick="closeReadme()">CLOSE & RETURN TO MENU</button>
     </div>
+    <!-- README MODAL END -->
 
 </body>
 </html>
