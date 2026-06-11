@@ -135,6 +135,12 @@
   @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-5px);} 75%{transform:translateX(5px);} }
   
   .ice { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(178,223,238,0.5); border:3px solid rgba(255,255,255,0.8); border-radius:50%; pointer-events:none; z-index:15; box-shadow:inset 0 0 10px #fff; }
+
+  /* READ ME MODAL TEXT STYLE */
+  .readme-content { background:linear-gradient(135deg, #2c003e, #005c97); padding:30px; border-radius:15px; border:3px solid #fff; box-shadow:0 0 20px rgba(0,0,0,0.8); max-width:350px; text-align:center; }
+  .readme-content h2 { margin-top:0; color:#2ed573; font-size:30px; }
+  .readme-content p { font-size:16px; line-height:1.6; text-align:justify; margin-bottom:15px; }
+  .readme-content a { color:#2ed573; text-decoration:none; font-weight:bold; word-break:break-all; }
 </style>
 </head>
 <body>
@@ -142,6 +148,24 @@
 <div id="start-screen" class="screen">
   <h1 class="animated-title">Face<br>Merge</h1>
   <button class="btn" onclick="showLevelSelector()">Play Now</button>
+  <button class="btn" style="margin-top: 15px; background: #1e90ff; box-shadow: 0 6px 0 #0984e3; font-size: 18px; padding: 10px 25px;" onclick="showReadme()">Readme</button>
+</div>
+
+<div id="readme-screen" class="screen hidden" style="background:rgba(0,0,0,0.95); z-index:200;">
+  <div class="readme-content">
+    <h2>Disclaimer</h2>
+    <p>
+      This game is strictly AI-created. While we have made every effort to ensure a smooth and enjoyable experience, please note that there might be occasional bugs or glitches present in the gameplay. We sincerely apologize for any inconvenience this may cause.
+    </p>
+    <p style="text-align: center;">
+      If you encounter any issues or bugs, please feel free to report them to us via:<br><br>
+      <strong>Email:</strong><br>
+      <a href="mailto:pixelgaunt@gmail.com" style="color:#1e90ff;">pixelgaunt@gmail.com</a><br><br>
+      <strong>WhatsApp Group:</strong><br>
+      <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank">https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc</a>
+    </p>
+    <button class="btn" style="margin-top:20px; font-size:18px; padding:10px 25px;" onclick="hideReadme()">Close</button>
+  </div>
 </div>
 
 <div id="levels-screen" class="screen hidden">
@@ -152,7 +176,11 @@
 
 <div id="game-screen" class="screen hidden">
   <div class="top-bar">
-      <button class="back-btn" onclick="showLevelSelector()">⬅ Levels</button>
+      <div style="display:flex; gap:5px;">
+          <button class="back-btn" onclick="showLevelSelector()" title="Back to Levels">⬅</button>
+          <button class="back-btn" onclick="pauseGame()" title="Pause Game">⏸</button>
+          <button class="back-btn" id="sound-btn" onclick="toggleSound()" title="Toggle Sound">🔊</button>
+      </div>
       <div class="coin-counter">🪙 <span id="ui-coins">50</span></div>
   </div>
 
@@ -195,6 +223,15 @@
   </div>
 </div>
 
+<div id="pause-modal" class="screen hidden" style="background:rgba(0,0,0,0.85); z-index:100;">
+  <div style="background:linear-gradient(135deg, #2c003e, #005c97); padding:35px; border-radius:20px; text-align:center; border:3px solid #fff; box-shadow:0 0 20px rgba(0,0,0,0.8); max-width:300px;">
+    <h2 style="margin-top:0; font-size:30px; color:#f1c40f;">Paused</h2>
+    <p style="font-size:18px;">Take a break!</p>
+    <button class="btn" style="margin-bottom:10px; font-size: 18px; padding: 10px 25px; background: #2ed573; box-shadow: 0 4px 0 #27ae60;" onclick="resumeGame()">▶ Resume</button><br>
+    <button class="btn" style="font-size: 18px; padding: 10px 25px; background: #e74c3c; box-shadow: 0 4px 0 #c0392b;" onclick="showLevelSelector()">Quit to Levels</button>
+  </div>
+</div>
+
 <div id="modal" class="screen hidden" style="background:rgba(0,0,0,0.85); z-index:100;">
   <div style="background:linear-gradient(135deg, #2c003e, #005c97); padding:35px; border-radius:20px; text-align:center; border:3px solid #fff; box-shadow:0 0 20px rgba(0,0,0,0.8); max-width:300px;">
     <h2 id="m-title" style="margin-top:0; font-size:30px;">Game Over</h2>
@@ -211,6 +248,7 @@
   let grid=[], iceGrid=[], score=0, moves=0, lvl=1, coins=250;
   let targetAmount=0, targetType='score', targetColor='';
   let isAnim=false, activePower=null;
+  let isPaused=false;
   
   // Power Inventory & Costs
   let powers = {hammer:1, bomb:1, rocket:1, magic:1};
@@ -221,9 +259,17 @@
   let fillPct = 0;
   let timeLimit = 60; 
 
-  // ================= AUDIO SYSTEM =================
+  // ================= AUDIO & UI TOGGLES =================
   let audioCtx=null;
+  let soundOn = true;
+
+  function toggleSound() {
+      soundOn = !soundOn;
+      document.getElementById('sound-btn').innerText = soundOn ? '🔊' : '🔇';
+  }
+
   function beep(f, type='sine', d=0.1) {
+    if(!soundOn) return;
     if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
     if(audioCtx.state==='suspended') audioCtx.resume();
     let o=audioCtx.createOscillator(), g=audioCtx.createGain();
@@ -231,6 +277,7 @@
     g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+d);
     o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+d);
   }
+  
   const sndSwap = ()=>beep(300, 'sine', 0.1);
   const sndCoin = ()=>{ beep(1200,'sine',0.1); setTimeout(()=>beep(1600,'sine',0.15), 80); };
   const sndBlast = ()=>{ beep(200,'sawtooth',0.2); setTimeout(()=>beep(150,'square',0.2), 100); };
@@ -239,6 +286,7 @@
   
   const sndDogHappy = () => { beep(700, 'sine', 0.1); setTimeout(()=>beep(850, 'sine', 0.1), 100); };
   const sndDogSad = () => { 
+      if(!soundOn) return;
       if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
       let o=audioCtx.createOscillator(), g=audioCtx.createGain();
       o.type='triangle'; o.frequency.setValueAtTime(400, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime+0.4);
@@ -250,10 +298,24 @@
 
   function hideAll() { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); }
   function goToStart() { hideAll(); document.getElementById('start-screen').classList.remove('hidden'); }
+  
+  function showReadme() { document.getElementById('readme-screen').classList.remove('hidden'); }
+  function hideReadme() { document.getElementById('readme-screen').classList.add('hidden'); }
+
+  function pauseGame() {
+      if(isAnim || !document.getElementById('modal').classList.contains('hidden')) return;
+      isPaused = true;
+      document.getElementById('pause-modal').classList.remove('hidden');
+  }
+
+  function resumeGame() {
+      isPaused = false;
+      document.getElementById('pause-modal').classList.add('hidden');
+  }
 
   function showLevelSelector() {
       if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-      hideAll(); clearInterval(dogTimer);
+      hideAll(); clearInterval(dogTimer); isPaused = false;
       document.getElementById('levels-screen').classList.remove('hidden');
       buildLevelGrid();
   }
@@ -276,7 +338,7 @@
   // ================= LEVEL TARGET LOGIC =================
   function loadLevel(l) {
     if(l>25){ alert("You completed all 25 levels!"); l=25; }
-    lvl=l; score=0; isAnim=false; activePower=null;
+    lvl=l; score=0; isAnim=false; activePower=null; isPaused=false;
     document.querySelectorAll('.power-btn').forEach(b=>b.classList.remove('active-power'));
     
     moves = 15 + Math.floor(l/2); timeLimit = 70 - Math.min(30, l);
@@ -305,7 +367,7 @@
 
     let step = 100 / timeLimit; 
     dogTimer = setInterval(() => {
-        if(!document.getElementById('modal').classList.contains('hidden')) return;
+        if(!document.getElementById('modal').classList.contains('hidden') || isPaused) return;
         fillPct += step; if(fillPct >= 100) fillPct = 100;
         waterFill.style.height = fillPct + '%'; dogChar.style.bottom = fillPct + '%'; 
         
@@ -380,7 +442,7 @@
   let dragId=null, startX, startY;
 
   function handleInputStart(e) {
-      if(isAnim || moves<=0) return;
+      if(isAnim || moves<=0 || isPaused) return;
       e.preventDefault(); // STOPS SCROLLING BUG!
       
       if(this.color === 'bird' && !activePower) return; // Cannot drag cages normally!
@@ -469,7 +531,7 @@
 
   // ================= INVENTORY & BUY SYSTEM =================
   function buyPower(p) {
-      if(isAnim) return;
+      if(isAnim || isPaused) return;
       if(coins >= powerCosts[p]) {
           coins -= powerCosts[p];
           powers[p]++;
@@ -481,7 +543,7 @@
   }
 
   function togglePower(p) {
-    if(isAnim) return;
+    if(isAnim || isPaused) return;
     if(powers[p] <= 0) {
         alert(`You don't have this power. Click '+' to buy for ${powerCosts[p]}🪙`);
         return;
