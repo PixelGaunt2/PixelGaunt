@@ -220,6 +220,10 @@
             .card-ready { transform: translateY(-40px) scale(1.1) !important; margin-left: 0 !important; margin-right: 10px !important;}
             #demon-cursor { font-size: 50px; }
         }
+
+        /* Modal specific styling for links */
+        .readme-links a { font-family: 'Righteous', cursive; transition: 0.2s; }
+        .readme-links a:hover { filter: brightness(1.2); }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -244,6 +248,24 @@
             <button class="btn-play" onclick="openSetup('1v1')">Single Player</button>
             <button class="btn-play highlight" onclick="openSetup('2v2')">2 Player Mode</button>
             <button class="btn-play disabled" onclick="alert('Online Multiplayer Servers are currently Offline. Coming Soon!')">Multiplayer / Online</button>
+            <button class="btn-play" style="border-color: #9b59b6; background: #1e2532;" onclick="showScreen('readme-screen')">📖 Read Me</button>
+        </div>
+    </div>
+
+    <!-- READ ME SCREEN -->
+    <div id="readme-screen" class="screen" style="background: radial-gradient(circle at center, #1a2235 0%, #0d1017 100%); align-items: center; justify-content: center; z-index: 150;">
+        <div class="setup-container" style="max-width: 550px; text-align: left;">
+            <h2 class="setup-header" style="text-align: center;">DISCLAIMER & BUG REPORTING</h2>
+            <div style="color: #bdc3c7; font-size: 16px; line-height: 1.6; margin-bottom: 10px; font-family: 'Nunito', sans-serif;">
+                <p><strong>Please Note:</strong> This game was created with the assistance of Artificial Intelligence (AI). While we strive for a seamless experience, you might encounter unexpected bugs, balancing issues, or glitches during gameplay.</p>
+                <p>We sincerely apologize for any inconvenience this may cause and appreciate your understanding as we continue to improve the game.</p>
+                <p>If you discover any bugs or have feedback, please reach out to us through the following channels:</p>
+                <ul class="readme-links" style="margin-top: 15px; list-style-type: none; padding-left: 0;">
+                    <li style="margin-bottom: 10px;">📧 <strong>Email:</strong> <a href="mailto:pixelgaunt@gmail.com" style="color: #3498db; text-decoration: none;">pixelgaunt@gmail.com</a></li>
+                    <li>💬 <strong>WhatsApp:</strong> <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" style="color: #2ecc71; text-decoration: none;">Join our Support Group</a></li>
+                </ul>
+            </div>
+            <button class="btn-play highlight" style="width:100%; margin-top: 10px;" onclick="showScreen('title-screen')">CLOSE</button>
         </div>
     </div>
 
@@ -301,7 +323,8 @@
     <div id="game-screen" class="screen">
         <div id="top-bar">
             <div class="top-btn-group">
-                <button class="btn-top" onclick="surrender()">🔙 Abandon</button>
+                <button class="btn-top" onclick="surrender()">⏸️ Pause / Back</button>
+                <button class="btn-top" id="btn-sound" onclick="toggleSound()">🔊 Sound: ON</button>
             </div>
             
             <div style="display:flex; gap: 15px;">
@@ -366,6 +389,7 @@
         const dCursor = document.getElementById('demon-cursor');
         let isDragging = false;
         let currentHoverTarget = null;
+        let soundEnabled = true;
 
         function updateCursorPosition(e) {
             dCursor.style.display = 'block';
@@ -377,7 +401,7 @@
 
         function checkCursorHover() {
             if(isDragging) return;
-            if(currentHoverTarget && currentHoverTarget.closest('button, .card, .map-node, .battle-entity, .diff-btn, .btn-play, .btn-top, .btn-green, .btn-grey, .char-btn')) {
+            if(currentHoverTarget && currentHoverTarget.closest('button, .card, .map-node, .battle-entity, .diff-btn, .btn-play, .btn-top, .btn-green, .btn-grey, .char-btn, a')) {
                 dCursor.innerText = '👆';
             } else {
                 dCursor.innerText = '🖐️';
@@ -398,10 +422,17 @@
             document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
             document.getElementById(screenId).style.display = 'flex';
         }
-        function surrender() { if(confirm("Abandon current battle and return to Map?")) { showScreen('map-screen'); } }
+
+        function surrender() { if(confirm("Pause game and return to Map?")) { showScreen('map-screen'); } }
+        
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('btn-sound').innerText = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+        }
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSound(type) {
+            if(!soundEnabled) return;
             if(audioCtx.state === 'suspended') audioCtx.resume();
             const os = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             os.connect(gain); gain.connect(audioCtx.destination);
