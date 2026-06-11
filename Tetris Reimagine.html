@@ -50,6 +50,27 @@
         .hud-label { font-size: 0.7rem; color: #a8b2d1; letter-spacing: 1px; text-shadow: 1px 1px 2px #000;}
         .hud-val { font-size: 1.5rem; color: var(--accent); text-shadow: 0 0 10px var(--accent), 1px 1px 2px #000; }
 
+        #top-controls {
+            display: flex; justify-content: space-between; margin-bottom: 10px;
+        }
+
+        .small-btn {
+            padding: 5px 15px !important;
+            font-size: 0.8rem !important;
+            width: auto !important;
+            margin: 0 !important;
+            border-radius: 8px !important;
+            letter-spacing: 1px !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            border: 1px solid rgba(255,255,255,0.3) !important;
+            color: #fff !important;
+            box-shadow: none !important;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+        }
+        .small-btn:active { transform: scale(0.95); }
+
         #canvas-container {
             position: relative; flex-grow: 1; width: 100%;
             background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
@@ -86,6 +107,14 @@
         
         button:active { transform: translateY(3px); box-shadow: 0 3px 5px rgba(233, 30, 99, 0.5); }
         #btnResume { background: linear-gradient(45deg, #11998e 0%, #38ef7d 100%); box-shadow: 0 8px 15px rgba(17, 153, 142, 0.5); }
+
+        .readme-content {
+            background: rgba(0,0,0,0.6); padding: 20px; border-radius: 10px; width: 85%; max-height: 50vh; overflow-y: auto; 
+            text-align: left; font-family: 'Poppins', sans-serif; font-size: 0.9rem; line-height: 1.6; 
+            margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .readme-content a { color: var(--accent); text-decoration: none; font-weight: bold; }
+        .readme-content a:hover { text-decoration: underline; }
 
         /* Mobile Controls */
         #mobile-controls {
@@ -129,6 +158,11 @@
             <span id="linesDisplay" class="hud-val" style="color: #38ef7d;">0/10</span>
         </div>
     </div>
+
+    <div id="top-controls" class="hidden">
+        <button id="pauseBtn" class="small-btn">⏸ PAUSE</button>
+        <button id="soundBtn" class="small-btn">🔊 SOUND: ON</button>
+    </div>
     
     <div id="canvas-container">
         <canvas id="gameCanvas" width="320" height="640"></canvas>
@@ -137,6 +171,24 @@
             <h1>Balloon<br>Stack</h1>
             <button id="playBtn">PLAY NOW</button>
             <button id="resumeBtn" class="hidden">RESUME</button>
+            <button id="openReadmeBtn" style="background: transparent; border: 2px solid rgba(255,255,255,0.4); box-shadow: none; font-size: 1rem;">README</button>
+        </div>
+
+        <div id="readmeMenu" class="overlay hidden">
+            <h1 style="font-size: 2rem;">DISCLAIMER</h1>
+            <div class="readme-content">
+                <p><strong>Note:</strong> This game was developed with the assistance of AI. While every effort has been made to ensure a seamless experience, there may be unexpected bugs or glitches.</p>
+                <p>If you encounter any issues or have feedback, please feel free to reach out to us!</p>
+                <p>📧 <strong>Email:</strong> <a href="mailto:pixelgaunt@gmail.com">pixelgaunt@gmail.com</a></p>
+                <p>💬 <strong>WhatsApp:</strong> <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" style="color: #38ef7d;">Join our Group</a></p>
+            </div>
+            <button id="closeReadmeBtn" style="background: linear-gradient(45deg, #11998e 0%, #38ef7d 100%);">CLOSE</button>
+        </div>
+
+        <div id="pauseMenu" class="overlay hidden">
+            <h1>PAUSED</h1>
+            <button id="resumePauseBtn" style="background: linear-gradient(45deg, #11998e 0%, #38ef7d 100%);">RESUME</button>
+            <button id="backToMenuBtn" style="background: transparent; border: 2px solid rgba(255,255,255,0.4); box-shadow: none;">MAIN MENU</button>
         </div>
 
         <div id="gameOverMenu" class="overlay hidden">
@@ -161,11 +213,13 @@
 </div>
 
 <script>
+    window.soundEnabled = true;
+
     const AudioSys = (function() {
         let ctx = null;
         function init() { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume(); }
         function playTone(freq, type, dur, vol, slideFreq = null) {
-            if (!ctx) return;
+            if (!ctx || !window.soundEnabled) return;
             const osc = ctx.createOscillator(); const gain = ctx.createGain();
             osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
             if (slideFreq) osc.frequency.exponentialRampToValueAtTime(slideFreq, ctx.currentTime + dur);
@@ -175,7 +229,7 @@
             osc.start(); osc.stop(ctx.currentTime + dur);
         }
         function createNoise(dur, vol) {
-            if (!ctx) return;
+            if (!ctx || !window.soundEnabled) return;
             const bufferSize = ctx.sampleRate * dur; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
             const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
             const noise = ctx.createBufferSource(); noise.buffer = buffer;
@@ -221,15 +275,15 @@
         grid = Array(ROWS).fill().map(() => Array(COLS).fill(null));
         score = 0; level = startLevel; linesThisLevel = 0; particles = []; floatingTexts = [];
         updateSpeed(); updateHUD(); spawnPiece();
+        document.getElementById('top-controls').classList.remove('hidden');
     }
 
     function updateSpeed() { 
-        // Scales perfectly till level 100 without getting too fast to handle
         dropInterval = Math.max(60, 1000 - (level - 1) * 9.5); 
     }
 
     function spawnPiece() {
-        const isBomb = Math.random() < 0.15; // 15% bomb spawn
+        const isBomb = Math.random() < 0.15; 
         if (isBomb) {
             activePiece = { mat: [[1]], color: { base: '#333', dark: '#000' }, isBomb: true, x: Math.floor(COLS / 2), y: ROWS - 1, wobble: 0 };
         } else {
@@ -242,6 +296,7 @@
             if (activePiece.isBomb) { lockPiece(); } 
             else {
                 state = 'GAMEOVER'; AudioSys.gameOver();
+                document.getElementById('top-controls').classList.add('hidden');
                 document.getElementById('crashLevel').innerText = level;
                 document.getElementById('finalScore').innerText = score;
                 document.getElementById('gameOverMenu').classList.remove('hidden');
@@ -339,7 +394,6 @@
         if (state === 'PLAY') spawnPiece();
     }
 
-    // YEH FUNCTION UPDATE KIYA GAYA HAI TA-KE KABHI HANG NA HO!
     function checkLines() {
         let rowsToClear = [];
         for (let r = 0; r < ROWS; r++) {
@@ -353,18 +407,16 @@
             let pts = [0, 100, 300, 500, 800][rowsToClear.length] || 1000;
             score += pts * level; linesThisLevel += rowsToClear.length;
             
-            // 1. Create particles safely
             rowsToClear.forEach(rowIdx => {
                 for(let c=0; c<COLS; c++) {
                     if(grid[rowIdx][c]) createExplosionByCell(rowIdx, c, grid[rowIdx][c].base);
                 }
             });
 
-            // 2. Safe Line Deletion and Shift mechanism (Fixes Null Error Bug)
             let newGrid = grid.filter((row, idx) => !rowsToClear.includes(idx));
             let emptyRowsNeeded = ROWS - newGrid.length;
             for(let i=0; i<emptyRowsNeeded; i++) {
-                newGrid.push(Array(COLS).fill(null)); // Reverse gravity means empty space is added at the bottom
+                newGrid.push(Array(COLS).fill(null)); 
             }
             grid = newGrid;
 
@@ -504,11 +556,49 @@
     }, {passive: false});
     document.getElementById('btnUp').addEventListener('touchend', e => { e.preventDefault(); clearInterval(upInterval); });
 
+    // Menu Buttons Additions
     document.getElementById('playBtn').addEventListener('click', () => { AudioSys.init(); document.getElementById('menu').classList.add('hidden'); initGame(1); state = 'PLAY'; });
     document.getElementById('resumeBtn').addEventListener('click', () => { AudioSys.init(); document.getElementById('menu').classList.add('hidden'); initGame(savedLevel); state = 'PLAY'; });
+    
+    // Readme Logic
+    document.getElementById('openReadmeBtn').addEventListener('click', () => { 
+        document.getElementById('menu').classList.add('hidden'); 
+        document.getElementById('readmeMenu').classList.remove('hidden'); 
+    });
+    document.getElementById('closeReadmeBtn').addEventListener('click', () => { 
+        document.getElementById('readmeMenu').classList.add('hidden'); 
+        document.getElementById('menu').classList.remove('hidden'); 
+    });
+
+    // Pause Menu Logic
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+        if (state === 'PLAY') {
+            state = 'PAUSED';
+            document.getElementById('pauseMenu').classList.remove('hidden');
+        }
+    });
+    document.getElementById('resumePauseBtn').addEventListener('click', () => {
+        state = 'PLAY';
+        document.getElementById('pauseMenu').classList.add('hidden');
+    });
+    document.getElementById('backToMenuBtn').addEventListener('click', () => {
+        state = 'MENU';
+        document.getElementById('pauseMenu').classList.add('hidden');
+        document.getElementById('top-controls').classList.add('hidden');
+        document.getElementById('menu').classList.remove('hidden');
+        if(savedLevel > 1) document.getElementById('resumeBtn').classList.remove('hidden');
+    });
+
+    // Sound Toggle Logic
+    document.getElementById('soundBtn').addEventListener('click', () => {
+        window.soundEnabled = !window.soundEnabled;
+        document.getElementById('soundBtn').innerText = window.soundEnabled ? '🔊 SOUND: ON' : '🔇 SOUND: OFF';
+    });
+
     document.getElementById('retryLevelBtn').addEventListener('click', () => { document.getElementById('gameOverMenu').classList.add('hidden'); initGame(level); state = 'PLAY'; });
     document.getElementById('quitBtn').addEventListener('click', () => {
         document.getElementById('gameOverMenu').classList.add('hidden'); document.getElementById('menu').classList.remove('hidden');
+        document.getElementById('top-controls').classList.add('hidden');
         if(savedLevel > 1) document.getElementById('resumeBtn').classList.remove('hidden'); state = 'MENU';
     });
 
