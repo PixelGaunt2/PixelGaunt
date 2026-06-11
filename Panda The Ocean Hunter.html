@@ -90,6 +90,39 @@
         width: 100%; height: 20px; background: rgba(0,0,0,0.8); border: 2px solid white; border-radius: 10px; margin-top: 5px; overflow: hidden;
     }
     #boss-bar-fill { width: 100%; height: 100%; background: #9b59b6; transition: width 0.1s; }
+
+    /* Naya CSS Readme Menu ke liye */
+    .btn.readme { background: linear-gradient(180deg, #9b59b6 0%, #8e44ad 100%); }
+    .readme-content {
+        background: rgba(0, 0, 0, 0.85); border: 2px solid #fff; border-radius: 15px;
+        padding: 30px; max-width: 650px; color: white; text-align: left;
+        font-family: sans-serif; font-size: 18px; margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+        line-height: 1.6;
+    }
+    .readme-content h2 { text-align: center; color: #f6d365; margin-top: 0; font-family: 'Fredoka One', cursive; font-size: 30px; letter-spacing: 1px;}
+    .readme-content a { color: #4facfe; text-decoration: none; word-break: break-all;}
+    .readme-content a:hover { text-decoration: underline; }
+
+
+    /* Pause and Sound Button Styling */
+    .hud-controls {
+        display: flex; gap: 15px; pointer-events: auto; justify-content: center; align-items: center;
+        position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+    }
+    .hud-btn {
+        background: linear-gradient(180deg, #ff823a 0%, #ff5e00 100%);
+        border: 3px solid white; border-radius: 15px; padding: 10px 20px;
+        font-size: 20px; color: white; cursor: pointer; font-family: 'Fredoka One', cursive;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.4); 
+        transition: transform 0.1s; display: flex; align-items: center; justify-content: center;
+        min-width: 50px;
+    }
+    .hud-btn:active { transform: scale(0.9); }
+    .hud-btn.sound-btn { background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%); padding: 10px; border-radius: 50%; width: 50px; height: 50px; }
+    
+    #menu-pause { z-index: 20; }
+
 </style>
 </head>
 <body>
@@ -98,6 +131,11 @@
 
 <div id="ui-layer">
     <div class="hud-top" id="hud" style="display: none;">
+        <div class="hud-controls">
+            <button class="hud-btn" id="btn-pause" onclick="togglePause()">|| Pause</button>
+            <button class="hud-btn sound-btn" id="btn-sound" onclick="toggleSound()">🔊</button>
+        </div>
+
         <div>
             <div style="font-size: 18px; margin-bottom: 5px;">PANDA HP</div>
             <div class="health-bar-container"><div id="health-bar"></div></div>
@@ -117,7 +155,19 @@
 <div id="menu-main" class="menu active">
     <h1>Panda the Ocean Hunter</h1>
     <button class="btn" onclick="startGame()">Play Now</button>
+    <button class="btn readme" onclick="openReadme()">Readme</button>
     <button class="btn shop" onclick="openShop()">Upgrades Shop</button>
+</div>
+
+<div id="menu-readme" class="menu" style="display:none;">
+    <div class="readme-content">
+        <h2>Disclaimer</h2>
+        <p>Please note that this game is AI-created. We sincerely apologize for any inconvenience, as there might be some bugs present in the gameplay.</p>
+        <p>If you encounter any bugs or issues while playing, please feel free to report them to us via email or join our WhatsApp group.</p>
+        <p style="margin-bottom: 10px;"><strong>Email:</strong> pixelgaunt@gmail.com</p>
+        <p style="margin-top: 0;"><strong>WhatsApp Group:</strong> <br> <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank">https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc</a></p>
+    </div>
+    <button class="btn danger" onclick="closeReadme()">Close</button>
 </div>
 
 <div id="menu-shop" class="menu" style="display:none;">
@@ -152,6 +202,19 @@
 </div>
 
 <script>
+
+function openReadme() { 
+    if(typeof actx !== 'undefined' && actx.state === 'suspended') actx.resume(); 
+    document.querySelectorAll('.menu').forEach(m => { m.classList.remove('active'); m.style.display = 'none'; });
+    let m = document.getElementById('menu-readme');
+    m.style.display = 'flex'; setTimeout(() => m.classList.add('active'), 10);
+}
+function closeReadme() { 
+    document.querySelectorAll('.menu').forEach(m => { m.classList.remove('active'); m.style.display = 'none'; });
+    let m = document.getElementById('menu-main');
+    m.style.display = 'flex'; setTimeout(() => m.classList.add('active'), 10);
+}
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 let W, H;
