@@ -90,8 +90,8 @@
     .hud-block { background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 8px; border: 1px solid rgba(0,243,255,0.2);  }
     .hud-text { font-size: 1.1rem; color: #fff; text-shadow: 0 0 8px var(--neon-primary); font-weight: bold; letter-spacing: 2px; }
     #controls-hud { pointer-events: auto; }
-    #btnPause, #btnRestart, #btnActionHUD { cursor: pointer; transition: 0.2s; padding: 5px; border-radius: 4px; }
-    #btnPause:hover, #btnRestart:hover, #btnActionHUD:hover { background: rgba(255,255,255,0.1); text-shadow: 0 0 15px #fff; }
+    #btnPause, #btnRestart, #btnActionHUD, #btnSoundToggle { cursor: pointer; transition: 0.2s; padding: 5px; border-radius: 4px; }
+    #btnPause:hover, #btnRestart:hover, #btnActionHUD:hover, #btnSoundToggle:hover { background: rgba(255,255,255,0.1); text-shadow: 0 0 15px #fff; }
     
     .level-grid {
         display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 15px;
@@ -154,6 +154,18 @@
         box-shadow: 0 0 20px rgba(0, 243, 255, 0.1); 
     }
     canvas#minimap { width: 100%; height: 100%; image-rendering: pixelated; }
+
+    /* Custom Readme Links */
+    .readme-link {
+        color: var(--neon-primary);
+        text-decoration: none;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    .readme-link:hover {
+        color: #fff;
+        text-shadow: 0 0 10px var(--neon-primary);
+    }
 </style>
 </head>
 <body>
@@ -166,9 +178,10 @@
         <div class="hud-block"><span class="hud-text" id="levelDisplay">SEQ 01</span></div>
         <div class="hud-block"><span class="hud-text" id="statsDisplay">STEPS: 0 | TOOLS: 0 | KEYS: 0</span></div>
         <div class="hud-block" id="controls-hud">
+            <span class="hud-text" id="btnSoundToggle" style="margin-right:15px; color: #00ff66;">SOUND: ON</span>
             <span class="hud-text" id="btnActionHUD" style="margin-right:15px; color: #ffea00;">[SPACE] PUSH: OFF</span>
             <span class="hud-text" id="btnRestart" style="margin-right:15px;">[R] RESTART</span>
-            <span class="hud-text" id="btnPause">[ESC] PAUSE</span>
+            <span class="hud-text" id="btnPause">[ESC] PAUSE / BACK</span>
         </div>
     </div>
 
@@ -176,7 +189,21 @@
         <h1>Serpent Relic</h1>
         <button class="btn btn-continue" id="btnContinue" style="display:none;">Resume</button>
         <button class="btn" id="btnPlay">Play Now</button>
+        <button class="btn" id="btnReadme">Readme</button>
         <button class="btn" id="btnLevelsStart" style="display:none;">Levels</button>
+    </div>
+
+    <div id="screenReadme" class="screen">
+        <h2>Disclaimer</h2>
+        <p style="margin-bottom: 1.5rem; max-width: 80%; font-size: 1.2rem; color: #e0eaff;">
+            This game is an AI-created project designed for maximum performance and an optimal experience. Please be advised that there might be occasional bugs or unexpected behaviors. We apologize for any inconvenience this may cause.
+        </p>
+        <p style="margin-bottom: 2.5rem; max-width: 80%; font-size: 1.2rem; color: #e0eaff;">
+            If you encounter any bugs, issues, or would like to provide feedback, please contact us at:<br><br>
+            <strong>Email:</strong> <a href="mailto:pixelgaunt@gmail.com" class="readme-link">pixelgaunt@gmail.com</a><br>
+            <strong>WhatsApp Group:</strong> <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" class="readme-link">Join Here</a>
+        </p>
+        <button class="btn btn-continue" id="btnCloseReadme">Close</button>
     </div>
 
     <div id="screenLevels" class="screen">
@@ -189,6 +216,7 @@
         <h2>System Paused</h2>
         <button class="btn" id="btnResume">Resume Sequence</button>
         <button class="btn" id="btnLevelSelect">Sequence Directory</button>
+        <button class="btn" id="btnMenuFromPause">Main Menu (Back)</button>
     </div>
 
     <div id="screenWin" class="screen">
@@ -225,7 +253,7 @@ window.onload = () => {
     let canvasW, canvasH;
     const TILE_SIZE = 40;
     
-    const STATE = { MENU: 0, PLAYING: 1, PAUSED: 2, TRANSITION: 3, LEVEL_SELECT: 4 };
+    const STATE = { MENU: 0, PLAYING: 1, PAUSED: 2, TRANSITION: 3, LEVEL_SELECT: 4, README: 5 };
     let currentState = STATE.MENU;
     let unlockedLevels = parseInt(localStorage.getItem('serpentUnlockedV3')) || 1;
     let savedLevelIdx = localStorage.getItem('serpentSavedLevelV3');
@@ -257,18 +285,24 @@ window.onload = () => {
     let deathTimer = null;
 
     const AudioEngine = (() => {
-        let actx = null, masterGain = null, initialized = false;
+        let actx = null, masterGain = null, initialized = false, soundEnabled = true;
         const init = () => {
             if (initialized) return;
             try {
                 window.AudioContext = window.AudioContext || window.webkitAudioContext;
                 actx = new AudioContext();
-                masterGain = actx.createGain(); masterGain.gain.value = 0.2;
+                masterGain = actx.createGain(); 
+                masterGain.gain.value = soundEnabled ? 0.2 : 0;
                 masterGain.connect(actx.destination); initialized = true;
             } catch(e) {}
         };
+        const toggleMute = () => {
+            soundEnabled = !soundEnabled;
+            if (masterGain) masterGain.gain.value = soundEnabled ? 0.2 : 0;
+            return soundEnabled;
+        };
         const playTone = (freq, type, duration, vol=1) => {
-            if(!initialized || !actx) return;
+            if(!initialized || !actx || !soundEnabled) return;
             try {
                 const osc = actx.createOscillator(); const gain = actx.createGain();
                 osc.type = type; osc.frequency.setValueAtTime(freq, actx.currentTime);
@@ -278,7 +312,7 @@ window.onload = () => {
             } catch(e) {}
         };
         const playNoise = (duration, vol=1) => {
-            if(!initialized || !actx) return;
+            if(!initialized || !actx || !soundEnabled) return;
             try {
                 const bufferSize = actx.sampleRate * duration;
                 const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
@@ -292,7 +326,8 @@ window.onload = () => {
             } catch(e) {}
         };
         return {
-            init, move: () => playTone(180, 'sine', 0.08, 0.4), hit: () => playTone(100, 'sawtooth', 0.2, 0.8),
+            init, toggleMute, 
+            move: () => playTone(180, 'sine', 0.08, 0.4), hit: () => playTone(100, 'sawtooth', 0.2, 0.8),
             pickup: () => { playTone(600, 'sine', 0.1, 0.5); setTimeout(()=>playTone(800, 'sine', 0.2, 0.5), 80); },
             breakRock: () => playNoise(0.3, 1), switch: () => playTone(400, 'square', 0.1, 0.4), door: () => playNoise(0.4, 0.5),
             win: () => { playTone(440, 'sine', 0.15); setTimeout(()=>playTone(554, 'sine', 0.15), 150); setTimeout(()=>playTone(659, 'sine', 0.3), 300); }
@@ -469,7 +504,7 @@ window.onload = () => {
         if(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
             e.preventDefault();
         }
-        if(currentState === STATE.MENU || currentState === STATE.LEVEL_SELECT) return;
+        if(currentState === STATE.MENU || currentState === STATE.LEVEL_SELECT || currentState === STATE.README) return;
         if(e.key === 'Escape') togglePause();
         if(e.key.toLowerCase() === 'r') resetLevel();
         if(e.code === 'Space') { e.preventDefault(); togglePushMode(); }
@@ -497,12 +532,25 @@ window.onload = () => {
     actionBtn.addEventListener('mousedown', (e) => { e.preventDefault(); togglePushMode(); });
     document.getElementById('btnActionHUD').addEventListener('click', togglePushMode);
 
+    // Add UI Listeners
+    document.getElementById('btnReadme').addEventListener('click', () => { currentState = STATE.README; showScreen('screenReadme'); });
+    document.getElementById('btnCloseReadme').addEventListener('click', () => { currentState = STATE.MENU; showScreen('screenStart'); });
+
     document.getElementById('btnPlay').addEventListener('click', () => { AudioEngine.init(); showScreen('screenLevels'); generateLevelGrid(); });
     document.getElementById('btnContinue').addEventListener('click', () => { AudioEngine.init(); loadLevel(parseInt(localStorage.getItem('serpentSavedLevelV3'))); });
     document.getElementById('btnBackToStart').addEventListener('click', () => showScreen('screenStart'));
+    
+    document.getElementById('btnSoundToggle').addEventListener('click', () => {
+        let isOn = AudioEngine.toggleMute();
+        let btn = document.getElementById('btnSoundToggle');
+        btn.innerText = `SOUND: ${isOn ? 'ON' : 'OFF'}`;
+        btn.style.color = isOn ? '#00ff66' : '#ff003c';
+    });
+
     document.getElementById('btnPause').addEventListener('click', togglePause);
     document.getElementById('btnResume').addEventListener('click', togglePause);
     document.getElementById('btnLevelSelect').addEventListener('click', () => { currentState = STATE.LEVEL_SELECT; showScreen('screenLevels'); generateLevelGrid(); });
+    document.getElementById('btnMenuFromPause').addEventListener('click', () => { currentState = STATE.MENU; showScreen('screenStart'); });
     document.getElementById('btnRestart').addEventListener('click', resetLevel);
     document.getElementById('btnNextLevel').addEventListener('click', () => {
         currentLevelIdx++;
@@ -518,7 +566,7 @@ window.onload = () => {
     function showScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         if(id) document.getElementById(id).classList.add('active');
-        if(['screenLevels', 'screenStart', 'screenWin', 'screenEnd'].includes(id)) { document.getElementById('minimapContainer').style.display = 'none'; }
+        if(['screenLevels', 'screenStart', 'screenWin', 'screenEnd', 'screenReadme'].includes(id)) { document.getElementById('minimapContainer').style.display = 'none'; }
     }
 
     function hideScreens() {
@@ -977,7 +1025,7 @@ window.onload = () => {
     function draw() {
         ctx.clearRect(0, 0, canvasW, canvasH);
         ctx.imageSmoothingEnabled = false;
-        if (currentState === STATE.MENU || currentState === STATE.LEVEL_SELECT) return;
+        if (currentState === STATE.MENU || currentState === STATE.LEVEL_SELECT || currentState === STATE.README) return;
 
         ctx.save(); ctx.translate(Math.floor(-camera.x), Math.floor(-camera.y));
         
