@@ -27,17 +27,17 @@
             pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
         }
         .hud {
-            padding: 20px 30px; display: flex; justify-content: space-between;
+            padding: 20px 30px; display: flex; justify-content: space-between; align-items: flex-start;
             font-size: 20px; font-weight: 700; color: var(--text-light);
             text-shadow: 0 0 10px var(--primary); letter-spacing: 1px;
         }
-        .timer-display { color: var(--warning); text-shadow: 0 0 15px var(--warning); font-size: 24px; }
+        .timer-display { color: var(--warning); text-shadow: 0 0 15px var(--warning); font-size: 24px; text-align: right; }
         
         .overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(5, 8, 16, 0.85); backdrop-filter: blur(5px);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            pointer-events: auto; transition: opacity 0.3s ease;
+            pointer-events: auto; transition: opacity 0.3s ease; z-index: 10;
         }
         .menu-box {
             background: rgba(255,255,255,0.05);
@@ -53,11 +53,11 @@
             margin-bottom: 20px; letter-spacing: 5px;
         }
         .btn {
-            background: rgba(0, 255, 204, 0.1);
+            background: rgba(0, 255, 204, 0.1); pointer-events: auto;
             border: 2px solid var(--primary); color: var(--primary);
             padding: 12px 40px; font-size: 18px; font-family: 'Orbitron', sans-serif;
             font-weight: 700; border-radius: 30px; cursor: pointer; text-transform: uppercase;
-            letter-spacing: 2px; transition: all 0.2s ease;
+            letter-spacing: 2px; transition: all 0.2s ease; display: inline-block;
         }
         .btn:hover { background: var(--primary); color: var(--bg-dark); transform: scale(1.05); }
         .hidden { display: none !important; opacity: 0; pointer-events: none; }
@@ -71,6 +71,23 @@
         .perf-badge {
             position: absolute; bottom: 10px; right: 10px; font-size: 12px; color: #64748b;
         }
+        
+        /* Gameplay Controls Panel */
+        #gameControls {
+            display: flex; flex-direction: column; align-items: flex-end; gap: 10px; margin-top: 15px;
+        }
+        .hud-btn {
+            padding: 8px 15px; font-size: 14px; letter-spacing: 1px; border-radius: 8px;
+        }
+
+        /* Readme Text Styles */
+        .readme-text {
+            color: #fff; font-size: 16px; text-align: left; line-height: 1.6; 
+            margin-bottom: 20px; font-family: sans-serif; text-shadow: none; font-weight: 400; letter-spacing: 0;
+        }
+        .readme-links a {
+            text-decoration: none; font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -83,7 +100,16 @@
                 <div id="scoreDisplay">Lvl 1 | Score: 0</div>
                 <div id="coinsDisplay" style="margin-top: 10px; font-size: 18px; color: #fbbf24;">Energy: 0/0</div>
             </div>
-            <div id="timeDisplay" class="timer-display">Time: 0.0s</div>
+            <div>
+                <div id="timeDisplay" class="timer-display">Time: 0.0s</div>
+                
+                <div id="gameControls" class="hidden">
+                    <button class="btn hud-btn" id="pauseBtn">⏸️ PAUSE</button>
+                    <button class="btn hud-btn" id="soundBtn">🔊 SOUND: ON</button>
+                    <button class="btn hud-btn" id="backBtn" style="border-color: var(--danger); color: var(--danger);">🔙 BACK</button>
+                </div>
+
+            </div>
         </div>
         <div id="warningMessage">GATHER ALL ENERGY FIRST!</div>
         <div class="perf-badge">Anti-Tunneling Physics: ON</div>
@@ -92,7 +118,25 @@
     <div id="menuScreen" class="overlay">
         <div class="menu-box">
             <h1>REBOUNCE</h1>
-            <button class="btn" id="startBtn">Start Game</button>
+            <button class="btn" id="startBtn" style="width: 100%; margin-bottom: 15px;">Start Game</button>
+            <button class="btn" id="readmeBtn" style="width: 100%; border-color: var(--warning); color: var(--warning);">README (Bug Report)</button>
+        </div>
+    </div>
+
+    <div id="readmeScreen" class="overlay hidden">
+        <div class="menu-box" style="border-color: rgba(245, 158, 11, 0.4); max-width: 550px;">
+            <h1 style="font-size: 35px; color: var(--warning); margin-bottom: 15px;">DISCLAIMER</h1>
+            <p class="readme-text">
+                This game was developed with the assistance of Artificial Intelligence. While every effort has been made to ensure a smooth and enjoyable gameplay experience, you may encounter occasional bugs or unexpected behaviors.
+                <br><br>
+                If you experience any issues, or just want to leave feedback, we highly encourage you to reach out so we can continue improving the game!
+            </p>
+            <div class="readme-text readme-links" style="margin-bottom: 30px;">
+                <strong>Contact Us:</strong><br><br>
+                📧 Email: <a href="mailto:pixelgaunt@gmail.com" style="color: #60a5fa;">pixelgaunt@gmail.com</a><br>
+                💬 WhatsApp Group: <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" style="color: #34d399;">Join Here</a>
+            </div>
+            <button class="btn" id="closeReadmeBtn" style="border-color: var(--warning); color: var(--warning);">Close & Return</button>
         </div>
     </div>
 
@@ -126,6 +170,13 @@ const victoryScreen = document.getElementById('victoryScreen');
 const warningMessage = document.getElementById('warningMessage');
 const starDisplay = document.getElementById('starDisplay');
 
+// UI Elements NEW
+const readmeScreen = document.getElementById('readmeScreen');
+const gameControls = document.getElementById('gameControls');
+const pauseBtn = document.getElementById('pauseBtn');
+const soundBtn = document.getElementById('soundBtn');
+const backBtn = document.getElementById('backBtn');
+
 let GAME_STATE = 'MENU'; 
 let score = 0;
 let totalCoinsInLevel = 0;
@@ -137,6 +188,7 @@ let levelStartTime = 0;
 
 let idleFrames = 0;
 let hasLaunched = false;
+let soundEnabled = true; // NEW: Global flag for Sound
 
 function resize() { 
     const targetHeight = 900; 
@@ -193,6 +245,39 @@ function handleDragEnd() {
 canvas.addEventListener('mousedown', handleDragStart); canvas.addEventListener('mousemove', handleDragMove); window.addEventListener('mouseup', handleDragEnd);
 canvas.addEventListener('touchstart', handleDragStart, {passive: false}); canvas.addEventListener('touchmove', handleDragMove, {passive: false}); window.addEventListener('touchend', handleDragEnd);
 
+// --- NEW UI EVENT LISTENERS ---
+document.getElementById('readmeBtn').addEventListener('click', () => {
+    readmeScreen.classList.remove('hidden');
+});
+document.getElementById('closeReadmeBtn').addEventListener('click', () => {
+    readmeScreen.classList.add('hidden');
+});
+pauseBtn.addEventListener('click', () => {
+    if (GAME_STATE === 'PLAYING') {
+        GAME_STATE = 'PAUSED';
+        pauseBtn.innerText = '▶️ RESUME';
+    } else if (GAME_STATE === 'PAUSED') {
+        GAME_STATE = 'PLAYING';
+        pauseBtn.innerText = '⏸️ PAUSE';
+    }
+});
+soundBtn.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    if (soundEnabled) {
+        soundBtn.innerText = '🔊 SOUND: ON';
+        soundBtn.style.color = "var(--primary)";
+    } else {
+        soundBtn.innerText = '🔇 SOUND: OFF';
+        soundBtn.style.color = "#64748b";
+    }
+});
+backBtn.addEventListener('click', () => {
+    GAME_STATE = 'MENU';
+    gameControls.classList.add('hidden');
+    menuScreen.classList.remove('hidden');
+});
+// ------------------------------
+
 // --- ENTITIES ---
 
 class Particle {
@@ -239,9 +324,7 @@ class Player {
             currentSpeed = maxSpeed;
         }
         
-        // TUNNELING FIX: Physics Sub-stepping
-        // Pura distance ek sath travel karne k bajaye ball ko chote steps me move karenge.
-        let steps = Math.max(1, Math.ceil(currentSpeed / 5)); // 5 pixels per step limit
+        let steps = Math.max(1, Math.ceil(currentSpeed / 5)); 
         let stepVx = this.vx / steps;
         let stepVy = this.vy / steps;
 
@@ -250,9 +333,8 @@ class Player {
             this.y += stepVy;
             
             let bounced = checkWallCollisions(this);
-            if (GAME_STATE === 'GAMEOVER') break; // Agar spike hit ho jaye tou rukk jao
+            if (GAME_STATE === 'GAMEOVER') break; 
             
-            // Agar diwar se takra jaye tou agli bachi hui steps nai speed k hisaab se hogi
             if (bounced) {
                 stepVx = this.vx / steps;
                 stepVy = this.vy / steps;
@@ -428,7 +510,6 @@ function loadLevel() {
 
 function showWarning() { warningMessage.style.opacity = 1; setTimeout(() => { warningMessage.style.opacity = 0; }, 1500); }
 
-// TUNNELING FIX: Yahan diwaron ki collision alag se sub-step mein test hoti hai
 function checkWallCollisions(p) {
     let collided = false;
     for (let b of blocks) {
@@ -451,7 +532,6 @@ function checkWallCollisions(p) {
 
             let dotProduct = (p.vx * nx) + (p.vy * ny);
             
-            // Sirf us waqt bounce karo jab ball diwar ki taraf ja rahi ho
             if (dotProduct < 0) {
                 p.vx -= 2 * dotProduct * nx; 
                 p.vy -= 2 * dotProduct * ny;
@@ -509,11 +589,13 @@ function updateTimer() { if (GAME_STATE === 'PLAYING') timeDisplay.innerText = `
 
 function gameOver() {
     GAME_STATE = 'GAMEOVER'; spawnParticles(player.x, player.y, '#ff3366', 30, 15, 6); triggerShake(20);
+    gameControls.classList.add('hidden'); // NEW: Hide buttons on death
     setTimeout(() => { gameOverScreen.classList.remove('hidden'); }, 600);
 }
 
 function levelComplete() {
     GAME_STATE = 'VICTORY'; spawnParticles(portal.x, portal.y, '#10b981', 40, 15, 8);
+    gameControls.classList.add('hidden'); // NEW: Hide buttons on win
     let timeTaken = (Date.now() - levelStartTime) / 1000;
     let stars = "⭐"; let timeBonus = 100;
     if (timeTaken <= 15) { stars = "⭐⭐⭐"; timeBonus = 1500; } else if (timeTaken <= 25) { stars = "⭐⭐"; timeBonus = 700; }
@@ -525,6 +607,8 @@ function levelComplete() {
 function startGame(resetStats = false) {
     if (resetStats) { currentLevel = 1; score = 0; }
     menuScreen.classList.add('hidden'); gameOverScreen.classList.add('hidden'); victoryScreen.classList.add('hidden');
+    gameControls.classList.remove('hidden'); // NEW: Show game controls
+    pauseBtn.innerText = '⏸️ PAUSE'; // Reset pause text
     loadLevel(); GAME_STATE = 'PLAYING';
 }
 
@@ -556,33 +640,57 @@ function loop() {
     if (screenShake > 0.5) { ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake); screenShake *= 0.85; } else screenShake = 0;
     ctx.fillStyle = '#050810'; ctx.fillRect(0, 0, canvas.width, canvas.height); drawBackgroundGrid();
 
-    if (GAME_STATE === 'PLAYING' || GAME_STATE === 'GAMEOVER') {
-        portal.update(); portal.draw(ctx);
-        teleporters.forEach(t => { t.update(); t.draw(ctx); });
-        blocks.forEach(b => { if(b.update) b.update(); b.draw(ctx); });
-        collectables.forEach(c => { c.update(); c.draw(ctx); });
-
-        if (GAME_STATE === 'PLAYING') {
-            if (time % 5 === 0) updateTimer(); 
-            
-            player.update(); // Ab collision check update function ke andar hi chupa hai (Tunneling fixed)
-            drawAimLine(); 
-            player.draw(ctx);
-
-            if (hasLaunched && Math.abs(player.vx) < 0.5 && Math.abs(player.vy) < 0.5 && !input.isDragging) {
-                idleFrames++;
-                if (idleFrames > 600) { idleFrames = 0; startGame(false); } 
-                else if (idleFrames > 300) { 
-                    let secsLeft = Math.ceil((600 - idleFrames) / 60);
-                    ctx.fillStyle = '#ff3366'; ctx.font = 'bold 20px Orbitron'; ctx.textAlign = 'center';
-                    ctx.fillText(`Ball Stuck! Auto Retry in ${secsLeft}`, player.x, player.y - 30);
-                }
-            } else idleFrames = 0;
+    // NEW: Includes 'PAUSED' state logic
+    if (GAME_STATE === 'PLAYING' || GAME_STATE === 'GAMEOVER' || GAME_STATE === 'PAUSED') {
+        
+        // Stop updates if paused
+        if (GAME_STATE !== 'PAUSED') {
+            portal.update(); 
+            teleporters.forEach(t => t.update());
+            blocks.forEach(b => { if(b.update) b.update(); });
+            collectables.forEach(c => c.update());
         }
 
+        portal.draw(ctx);
+        teleporters.forEach(t => t.draw(ctx));
+        blocks.forEach(b => b.draw(ctx));
+        collectables.forEach(c => c.draw(ctx));
+
+        if (GAME_STATE === 'PLAYING' || GAME_STATE === 'PAUSED') {
+            
+            if (GAME_STATE === 'PLAYING') {
+                if (time % 5 === 0) updateTimer(); 
+                player.update(); 
+                drawAimLine(); 
+            }
+            player.draw(ctx);
+
+            if (GAME_STATE === 'PLAYING') {
+                if (hasLaunched && Math.abs(player.vx) < 0.5 && Math.abs(player.vy) < 0.5 && !input.isDragging) {
+                    idleFrames++;
+                    if (idleFrames > 600) { idleFrames = 0; startGame(false); } 
+                    else if (idleFrames > 300) { 
+                        let secsLeft = Math.ceil((600 - idleFrames) / 60);
+                        ctx.fillStyle = '#ff3366'; ctx.font = 'bold 20px Orbitron'; ctx.textAlign = 'center';
+                        ctx.fillText(`Ball Stuck! Auto Retry in ${secsLeft}`, player.x, player.y - 30);
+                    }
+                } else idleFrames = 0;
+            }
+        }
+
+        // Draw Particles
         for (let i = particles.length - 1; i >= 0; i--) {
-            particles[i].update(); particles[i].draw(ctx);
+            if (GAME_STATE !== 'PAUSED') particles[i].update(); 
+            particles[i].draw(ctx);
             if (particles[i].life <= 0) particles.splice(i, 1);
+        }
+
+        // Display Pause Screen Overlay
+        if (GAME_STATE === 'PAUSED') {
+            ctx.fillStyle = 'rgba(5, 8, 16, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00ffcc'; ctx.font = 'bold 50px Orbitron'; ctx.textAlign = 'center';
+            ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
         }
     }
     ctx.restore();
