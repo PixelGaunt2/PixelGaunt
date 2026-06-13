@@ -357,6 +357,8 @@
         .social-icons a.dc:hover { background: #5865F2; border-color: #5865F2; box-shadow: 0 0 10px rgba(88,101,242,0.4); }
         .social-icons a.tk:hover { background: #000000; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.4); }
         .social-icons a.gm:hover { background: #EA4335; border-color: #EA4335; box-shadow: 0 0 10px rgba(234,67,53,0.4); }
+        .social-icons a.wa-channel:hover { color: #fff; background: #25D366; border-color: #25D366; box-shadow: 0 0 10px rgba(37,211,102,0.4); }
+        .social-icons a.wa-group:hover { color: #fff; background: #128C7E; border-color: #128C7E; box-shadow: 0 0 10px rgba(18,140,126,0.4); }
 
         /* FOOTER LINKS STYLES */
         .footer-links { display: flex; gap: 24px; color: #64748b; font-weight: 500; font-size: 0.85rem; }
@@ -391,6 +393,7 @@
             .footer-links { gap: 16px; }
         }
     </style>
+    
 </head>
 <body>
 
@@ -501,9 +504,9 @@
                     <button class="action-btn" onclick="actionLike()">❤️ Like</button>
                     <button class="action-btn" onclick="actionBug()">🐛 Report Bug</button>
                     <button class="action-btn" onclick="toggleMute()" id="mute-btn">🔊 Sound: ON</button>
-                    <button class="action-btn share" onclick="actionShare()">🔗 Share</button>
+                    <button class="action-btn invite" onclick="inviteFriends()">📩 Invite</button>
                     <button class="action-btn pixel-font" onclick="toggleFullscreen()" style="font-size: 0.75rem;">⛶ Fullscreen</button>
-                </div>
+                    </div>
             </div>
 
             <div class="empty-zone-v"></div>
@@ -602,6 +605,8 @@
                 <a href="https://discord.gg/DfHFVNMBQF" target="_blank" class="dc" title="Discord"><i class="fa-brands fa-discord"></i></a>
                 <a href="https://www.tiktok.com/@pixelgaunt" target="_blank" class="tk" title="TikTok"><i class="fa-brands fa-tiktok"></i></a>
                 <a href="mailto:pixelgaunt@gmail.com" class="gm" title="Gmail"><i class="fa-solid fa-envelope"></i></a>
+                <a href="https://whatsapp.com/channel/0029VbBo20lLo4hmsAJODc2u" target="_blank" class="wa-channel" title="WhatsApp Channel"><i class="fa-brands fa-whatsapp"></i></a>
+                <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" class="wa-group" title="WhatsApp Group"><i class="fa-solid fa-user-group"></i></a>
             </div>
             <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt. All Rights Reserved.</p>
             <div class="footer-links">
@@ -2084,107 +2089,6 @@ Create a complete professional game that feels like a mix of Angry Birds, Bounce
                 preview: 'ReBounce.gif',
                 url: 'ReBounce.html',
                 bgm: 'ReBounce.mp3'
-            },
-            { 
-                id: 12,
-                studio: 'Pixel Gaunt',
-                title: 'Rescue My Cutie', 
-                genre: 'Arcade', 
-                controls: 'Mouse / Touch).', 
-                howToPlay: 'Move Item to empty cell and match 3 items to rescue my cutie.',
-                rating: '⭐⭐⭐⭐⭐ (4.5/5)',
-                releaseDate: 'June 12, 2026',
-                platform: 'Web Browser (Desktop & Mobile Responsive)',
-                technology: 'HTML5 Web Technologies (HTML, CSS, and JavaScript).',
-                aiPrompt: `Create a complete browser-playable puzzle game using HTML, CSS, and JavaScript in a single file.
-
-Game Title: Rescue my Cutie
-
-Core Gameplay:
-- A cute anime-style girl is trapped inside a transparent glass box at the bottom center of the screen.
-- The girl is sitting on a small floating platform, rock, or wooden crate to stay above rising lava.
-- Red-orange animated lava continuously pours into the box from the top and slowly rises upward.
-- The girl should have cute idle animations, blinking eyes, and worried expressions.
-- If lava reaches the girl, the game is over.
-
-Puzzle Mechanic:
-- Colorful square items, gems, tools, blocks, and magical cubes continuously fall from the top of the screen.
-- Items should have different colors such as blue, green, yellow, purple, pink, orange, and cyan.
-- Player can move and swap neighboring blocks.
-- Match 3 or more blocks of the same color to clear them.
-- Create satisfying combo effects, particles, score popups, and chain reactions.
-
-Rescue Mechanic:
-- Every successful match generates water energy.
-- Water appears in a large pipe on the side of the screen.
-- Water automatically pours into the girl's box from another pipe.
-- The water cools and reduces the lava level.
-- Larger combos generate more water.
-- Special blocks generate extra water.
-
-Special Blocks:
-- Water Block: creates a large amount of water.
-- Ice Block: temporarily freezes lava.
-- Bomb Block: clears nearby blocks.
-- Rainbow Block: matches with any color.
-- Rescue Block: grants bonus rescue progress.
-
-Visual Style:
-- Bright, colorful, polished mobile game style.
-- Cute cartoon graphics.
-- Smooth animations.
-- Floating particles.
-- Water splash effects.
-- Lava bubbling effects.
-- Glowing blocks.
-- Dynamic lighting.
-- Juice effects and screen shake on big combos.
-
-Game Progression:
-- 100 unique levels.
-- Each level requires reducing lava to zero before time runs out.
-- Lava rises faster in higher levels.
-- New block types unlock gradually.
-- Difficulty increases smoothly.
-
-UI:
-- Score counter.
-- Level number.
-- Rescue progress bar.
-- Water meter.
-- Lava danger meter.
-- Pause button.
-- Restart button.
-
-Win Condition:
-- Completely cool down or remove all lava.
-- Girl becomes happy and celebrates.
-- Confetti and victory effects appear.
-
-Lose Condition:
-- Lava touches the girl.
-- Dramatic game-over animation.
-
-Audio:
-- Bubble sounds for lava.
-- Water pouring sounds.
-- Match sounds.
-- Combo sounds.
-- Victory and defeat sounds.
-
-Technical Requirements:
-- Use only HTML, CSS, and JavaScript.
-- Everything must be contained in one self-contained HTML file.
-- No external assets required.
-- Fully responsive for mobile and desktop.
-- Optimized performance.
-- Include polished animations, particles, visual effects, and sound effects.
-- The game should be immediately playable when the HTML file is opened in a browser..`,
-                image: 'Rescue My Cutie.png',
-                bg: 'Rescue My Cutie.jpg', 
-                preview: 'Rescue My Cutie.gif',
-                url: 'Rescue My Cutie.html',
-                bgm: 'Rescue My Cutie.mp3'
             }                
         ];
 
@@ -2348,9 +2252,7 @@ Technical Requirements:
             alert('Coming Soon!');
         }
         
-        function actionShare() {
-            alert('Coming Soon!');
-        }
+        // actionShare replaced by openShareModal
 
         function shareToPlatform(platform) {
             const title = document.getElementById('current-game-title').innerText;
@@ -2461,6 +2363,166 @@ Technical Requirements:
       lastUpdated: new Date()
     });
   }
+</script>
+
+<!-- SHARE MODAL -->
+<div class="modal-overlay" id="share-modal" onclick="if(event.target === this) closeShareModal()">
+    <div class="modal-content" style="max-width: 420px; text-align: center;">
+        <span class="close-modal" onclick="closeShareModal()" style="cursor: pointer; position: absolute; right: 20px; top: 15px; font-size: 24px; color: #64748b;">&times;</span>
+        <h3 class="pixel-font" style="color: #fff; margin-bottom: 20px; font-size: 1rem;">Share Game</h3>
+        
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button class="action-btn" style="justify-content: center; background: #2b2b36; width: 100%; border: none;" onclick="copyGameLink()"><i class="fas fa-link"></i> Copy Link</button>
+            <button class="action-btn" style="justify-content: center; background: #25d366; width: 100%; border: none;" onclick="shareTo('whatsapp')"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+            <button class="action-btn" style="justify-content: center; background: #1877F2; width: 100%; border: none;" onclick="shareTo('facebook')"><i class="fab fa-facebook-f"></i> Facebook</button>
+            <button class="action-btn" style="justify-content: center; background: #1DA1F2; width: 100%; border: none;" onclick="shareTo('twitter')"><i class="fab fa-twitter"></i> Twitter</button>
+            <button class="action-btn" style="justify-content: center; background: #0088cc; width: 100%; border: none;" onclick="shareTo('telegram')"><i class="fab fa-telegram-plane"></i> Telegram</button>
+            <button class="action-btn" style="justify-content: center; background: #FF4500; width: 100%; border: none;" onclick="shareTo('reddit')"><i class="fab fa-reddit-alien"></i> Reddit</button>
+            <button class="action-btn" style="justify-content: center; background: #5865F2; width: 100%; border: none;" onclick="shareTo('discord')"><i class="fab fa-discord"></i> Discord</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openShareModal() {
+        const modal = document.getElementById('share-modal');
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    }
+
+    function closeShareModal() {
+        const modal = document.getElementById('share-modal');
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 250);
+    }
+
+    
+    function inviteFriends() {
+        const shareData = {
+            title: 'Pixel Gaunt',
+            text: 'Check out this awesome game on Pixel Gaunt!',
+            url: window.location.href
+        };
+
+        if (navigator.share && window.isSecureContext) {
+            navigator.share(shareData)
+                .catch(err => {
+                    console.error("Share failed:", err);
+                    fallbackCopy(window.location.href);
+                });
+        } else {
+            fallbackCopy(window.location.href);
+        }
+    }
+
+    function copyGameLink() {
+        const url = window.location.href;
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert("Game link copied successfully!");
+            }).catch(err => {
+                fallbackCopy(url);
+            });
+        } else {
+            fallbackCopy(url);
+        }
+    }
+
+    function fallbackCopy(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                alert("Game link copied successfully!");
+            } else {
+                alert("Link copy fail ho gaya. Aap manually link copy karein.");
+            }
+        } catch (err) {
+            alert("Link copy fail ho gaya. Aap manually link copy karein.");
+        }
+        document.body.removeChild(textArea);
+    }
+
+    function shareTo(platform) {
+        const url = encodeURIComponent(window.location.href);
+        const text = encodeURIComponent("Check out this awesome game on Pixel Gaunt!");
+        let shareUrl = '';
+
+        switch(platform) {
+            case 'whatsapp': shareUrl = `https://api.whatsapp.com/send?text=${text} ${url}`; break;
+            case 'facebook': shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`; break;
+            case 'twitter': shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`; break;
+            case 'telegram': shareUrl = `https://t.me/share/url?url=${url}&text=${text}`; break;
+            case 'reddit': shareUrl = `https://reddit.com/submit?url=${url}&title=${text}`; break;
+            case 'discord': 
+                copyGameLink(); 
+                alert("Link copied! Aap isay Discord mein paste kar sakte hain."); 
+                return;
+        }
+        if(shareUrl) window.open(shareUrl, '_blank');
+    }
+
+    function takeGameplayScreenshot() {
+        const iframe = document.getElementById('game-canvas');
+        if(!iframe) return alert("Game iframe nahi mila!");
+
+        let targetElement = document.querySelector('.game-container');
+        
+        // Koshish karte hain ke iframe ke andar ka hissa capture ho
+        try {
+            if (iframe.contentWindow && iframe.contentWindow.document && iframe.contentWindow.document.body) {
+                targetElement = iframe.contentWindow.document.body;
+            }
+        } catch (e) {
+            console.warn("Cross-origin iframe. Container screenshot default.");
+        }
+
+        html2canvas(targetElement, { 
+            useCORS: true, 
+            allowTaint: false, // Taint allow karne se link save nahi hota
+            backgroundColor: "#000"
+        }).then(canvas => {
+            const ctx = canvas.getContext('2d');
+            const boxWidth = 260;
+            const boxHeight = 70;
+            
+            ctx.fillStyle = "rgba(15, 15, 22, 0.9)"; 
+            if (ctx.roundRect) {
+                ctx.beginPath();
+                ctx.roundRect(10, canvas.height - boxHeight - 10, boxWidth, boxHeight, 8);
+                ctx.fill();
+            } else {
+                ctx.fillRect(10, canvas.height - boxHeight - 10, boxWidth, boxHeight);
+            }
+
+            ctx.font = "bold 18px 'Press Start 2P', monospace, sans-serif";
+            ctx.fillStyle = "#bc13fe"; 
+            ctx.fillText("Pixel Gaunt", 20, canvas.height - 45);
+
+            ctx.font = "14px 'Inter', sans-serif";
+            ctx.fillStyle = "#00f3ff"; 
+            ctx.fillText("pixelgaunt.com", 20, canvas.height - 22);
+
+            try {
+                const link = document.createElement('a');
+                link.download = 'PixelGaunt_Gameplay.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch(e) {
+                alert("Security Error: Aap game offline (computer) mein chala rahe hain ya game kisi aur website se load ho rahi hai. Screenshot tabhi kaam karega jab file internet par host hogi.");
+            }
+        }).catch(err => {
+            console.error("Error: ", err);
+            alert("Screenshot fail ho gaya. Kripya game ko server pe upload karein.");
+        });
+    }
 </script>
 </body>
 </html>
