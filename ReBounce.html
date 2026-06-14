@@ -26,6 +26,34 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
         }
+        
+        /* Gameplay Controls Panel - Updated Position */
+        #gameControls {
+            position: absolute;
+            top: 15px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            display: flex; 
+            flex-direction: row;
+            gap: 10px; 
+            opacity: 0.5; /* 50% Transparency */
+            z-index: 100;
+            transition: opacity 0.3s ease;
+            pointer-events: auto; /* Required for clicking */
+        }
+        #gameControls:hover {
+            opacity: 1.0; /* Full visible on hover */
+        }
+        .hud-btn {
+            padding: 6px 12px; font-size: 12px; letter-spacing: 1px; border-radius: 8px;
+            background: rgba(5, 8, 16, 0.6);
+            pointer-events: auto;
+            border: 2px solid var(--primary); color: var(--primary);
+            font-family: 'Orbitron', sans-serif; font-weight: 700; cursor: pointer; text-transform: uppercase;
+            transition: all 0.2s ease; display: inline-block;
+        }
+        .hud-btn:hover { background: var(--primary); color: var(--bg-dark); transform: scale(1.05); }
+
         .hud {
             padding: 20px 30px; display: flex; justify-content: space-between; align-items: flex-start;
             font-size: 20px; font-weight: 700; color: var(--text-light);
@@ -47,6 +75,10 @@
         .overlay h1 {
             font-size: 55px; color: var(--primary); margin: 0 0 25px 0;
             text-transform: uppercase; letter-spacing: 6px; text-shadow: 0 0 20px var(--primary);
+        }
+        .game-logo {
+            max-width: 100%; max-height: 180px; margin-bottom: 20px; 
+            border-radius: 15px; box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
         }
         .stars {
             font-size: 40px; color: #fbbf24; text-shadow: 0 0 15px #fbbf24;
@@ -72,14 +104,6 @@
             position: absolute; bottom: 10px; right: 10px; font-size: 12px; color: #64748b;
         }
         
-        /* Gameplay Controls Panel */
-        #gameControls {
-            display: flex; flex-direction: column; align-items: flex-end; gap: 10px; margin-top: 15px;
-        }
-        .hud-btn {
-            padding: 8px 15px; font-size: 14px; letter-spacing: 1px; border-radius: 8px;
-        }
-
         /* Readme Text Styles */
         .readme-text {
             color: #fff; font-size: 16px; text-align: left; line-height: 1.6; 
@@ -95,6 +119,12 @@
     <canvas id="gameCanvas"></canvas>
 
     <div id="ui-layer">
+        <div id="gameControls" class="hidden">
+            <button class="hud-btn" id="pauseBtn">⏸️ PAUSE</button>
+            <button class="hud-btn" id="soundBtn">🔊 SOUND: ON</button>
+            <button class="hud-btn" id="backBtn" style="border-color: var(--danger); color: var(--danger);">🔙 BACK</button>
+        </div>
+
         <div class="hud">
             <div>
                 <div id="scoreDisplay">Lvl 1 | Score: 0</div>
@@ -102,13 +132,6 @@
             </div>
             <div>
                 <div id="timeDisplay" class="timer-display">Time: 0.0s</div>
-                
-                <div id="gameControls" class="hidden">
-                    <button class="btn hud-btn" id="pauseBtn">⏸️ PAUSE</button>
-                    <button class="btn hud-btn" id="soundBtn">🔊 SOUND: ON</button>
-                    <button class="btn hud-btn" id="backBtn" style="border-color: var(--danger); color: var(--danger);">🔙 BACK</button>
-                </div>
-
             </div>
         </div>
         <div id="warningMessage">GATHER ALL ENERGY FIRST!</div>
@@ -117,6 +140,7 @@
 
     <div id="menuScreen" class="overlay">
         <div class="menu-box">
+            <img src="ReBounce.png" alt="ReBounce Logo" class="game-logo" onerror="this.style.display='none'">
             <h1>REBOUNCE</h1>
             <button class="btn" id="startBtn" style="width: 100%; margin-bottom: 15px;">Start Game</button>
             <button class="btn" id="readmeBtn" style="width: 100%; border-color: var(--warning); color: var(--warning);">README (Bug Report)</button>
@@ -176,6 +200,11 @@ const gameControls = document.getElementById('gameControls');
 const pauseBtn = document.getElementById('pauseBtn');
 const soundBtn = document.getElementById('soundBtn');
 const backBtn = document.getElementById('backBtn');
+
+// --- BACKGROUND MUSIC SETUP ---
+const bgMusic = new Audio('ReBounce.mp3');
+bgMusic.loop = true;
+bgMusic.volume = 0.5;
 
 let GAME_STATE = 'MENU'; 
 let score = 0;
@@ -256,17 +285,21 @@ pauseBtn.addEventListener('click', () => {
     if (GAME_STATE === 'PLAYING') {
         GAME_STATE = 'PAUSED';
         pauseBtn.innerText = '▶️ RESUME';
+        bgMusic.pause(); // Pause music when game pauses
     } else if (GAME_STATE === 'PAUSED') {
         GAME_STATE = 'PLAYING';
         pauseBtn.innerText = '⏸️ PAUSE';
+        if (soundEnabled) bgMusic.play(); // Resume music if sound is enabled
     }
 });
 soundBtn.addEventListener('click', () => {
     soundEnabled = !soundEnabled;
     if (soundEnabled) {
+        if (GAME_STATE === 'PLAYING') bgMusic.play(); // Play music when unmuted
         soundBtn.innerText = '🔊 SOUND: ON';
         soundBtn.style.color = "var(--primary)";
     } else {
+        bgMusic.pause(); // Pause music when muted
         soundBtn.innerText = '🔇 SOUND: OFF';
         soundBtn.style.color = "#64748b";
     }
@@ -275,6 +308,8 @@ backBtn.addEventListener('click', () => {
     GAME_STATE = 'MENU';
     gameControls.classList.add('hidden');
     menuScreen.classList.remove('hidden');
+    bgMusic.pause(); // Pause music on back to menu
+    bgMusic.currentTime = 0; // Reset music to start
 });
 // ------------------------------
 
@@ -598,7 +633,7 @@ function levelComplete() {
     gameControls.classList.add('hidden'); // NEW: Hide buttons on win
     let timeTaken = (Date.now() - levelStartTime) / 1000;
     let stars = "⭐"; let timeBonus = 100;
-    if (timeTaken <= 15) { stars = "⭐⭐⭐"; timeBonus = 1500; } else if (timeTaken <= 25) { stars = "⭐⭐"; timeBonus = 700; }
+    if (timeTaken <= 25) { stars = "⭐⭐⭐"; timeBonus = 1500; } else if (timeTaken <= 35) { stars = "⭐⭐"; timeBonus = 700; }
     score += timeBonus; starDisplay.innerText = stars;
     document.getElementById('victoryStats').innerHTML = `Time: <b>${timeTaken.toFixed(1)}s</b> <br> Time Bonus: <b>+${timeBonus}</b> <br> Total Score: <b>${score}</b>`;
     currentLevel++; setTimeout(() => { victoryScreen.classList.remove('hidden'); }, 600);
@@ -606,6 +641,12 @@ function levelComplete() {
 
 function startGame(resetStats = false) {
     if (resetStats) { currentLevel = 1; score = 0; }
+    
+    // Play Background Music
+    if (soundEnabled) {
+        bgMusic.play().catch(error => console.log("Audio play prevented:", error));
+    }
+
     menuScreen.classList.add('hidden'); gameOverScreen.classList.add('hidden'); victoryScreen.classList.add('hidden');
     gameControls.classList.remove('hidden'); // NEW: Show game controls
     pauseBtn.innerText = '⏸️ PAUSE'; // Reset pause text
@@ -640,7 +681,6 @@ function loop() {
     if (screenShake > 0.5) { ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake); screenShake *= 0.85; } else screenShake = 0;
     ctx.fillStyle = '#050810'; ctx.fillRect(0, 0, canvas.width, canvas.height); drawBackgroundGrid();
 
-    // NEW: Includes 'PAUSED' state logic
     if (GAME_STATE === 'PLAYING' || GAME_STATE === 'GAMEOVER' || GAME_STATE === 'PAUSED') {
         
         // Stop updates if paused
@@ -678,14 +718,12 @@ function loop() {
             }
         }
 
-        // Draw Particles
         for (let i = particles.length - 1; i >= 0; i--) {
             if (GAME_STATE !== 'PAUSED') particles[i].update(); 
             particles[i].draw(ctx);
             if (particles[i].life <= 0) particles.splice(i, 1);
         }
 
-        // Display Pause Screen Overlay
         if (GAME_STATE === 'PAUSED') {
             ctx.fillStyle = 'rgba(5, 8, 16, 0.7)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
