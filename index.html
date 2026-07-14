@@ -760,109 +760,50 @@
     </script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, updateDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    // 1. IMPORTING FIREBASE V10.8.1 (Ye path sabse stable hai)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "YAHAN_APNI_REAL_API_KEY_LIKHEIN",
-            authDomain: "pixelgaunt-e5235.firebaseapp.com",
-            projectId: "pixelgaunt-e5235",
-            storageBucket: "pixelgaunt-e5235.firebasestorage.app",
-            messagingSenderId: "261213234973",
-            appId: "1:261213234973:web:e65879886c82be3aabe3f4"
-        };
+    // 2. CONFIGURATION (Tumhari API Key check karlo, ye wahi honi chahiye jo Firebase Console mein hai)
+    const firebaseConfig = {
+        apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
+        authDomain: "pixelgaunt-e5235.firebaseapp.com",
+        projectId: "pixelgaunt-e5235",
+        storageBucket: "pixelgaunt-e5235.firebasestorage.app",
+        messagingSenderId: "261213234973",
+        appId: "1:261213234973:web:e65879886c82be3aabe3f4"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const googleProvider = new GoogleAuthProvider();
+    // 3. INITIALIZATION
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const googleProvider = new GoogleAuthProvider();
 
-        const mainLoginBtn = document.getElementById("main-login-btn");
-        const googleLoginBtn = document.getElementById("google-login-btn");
-
-        // Auth Logic
-        if (googleLoginBtn) {
-            googleLoginBtn.addEventListener("click", async () => {
-                try {
-                    const result = await signInWithPopup(auth, googleProvider);
-                    const user = result.user;
-                    await setDoc(doc(db, "users", user.uid), {
-                        uid: user.uid,
-                        displayName: user.displayName,
-                        email: user.email,
-                        photoURL: user.photoURL,
-                        lastLogin: new Date()
-                    }, { merge: true });
-                    alert(`Welcome, ${user.displayName}! Login successful.`);
-                    closeModals(); 
-                } catch (error) {
-                    console.error("Login Error:", error);
-                    alert("Login failed: " + error.message);
-                }
-            });
+    // 4. LOGIN LOGIC (ID check karo: HTML mein tumhare button ki id="google-login-btn" honi chahiye)
+    document.getElementById("google-login-btn").addEventListener("click", async () => {
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            alert("Login Successful: " + result.user.displayName);
+            location.reload(); // Page refresh takay UI update ho jaye
+        } catch (error) {
+            console.error("Login Error:", error);
+            alert("Login Failed: " + error.code);
         }
+    });
 
-        window.logoutUser = async () => {
-            try {
-                await signOut(auth);
-                alert("Logged out successfully!");
-            } catch (error) {
-                console.error("Logout Error:", error);
-            }
-        };
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                isLoggedIn = true; 
-                updatePromptVisibility(); 
-                if (mainLoginBtn) {
-                    mainLoginBtn.innerHTML = `<img src="${user.photoURL || 'https://via.placeholder.com/30'}" style="width:20px; height:20px; border-radius:50%; margin-right:8px; vertical-align:middle;"> Logout`;
-                    mainLoginBtn.onclick = window.logoutUser;
-                }
-            } else {
-                isLoggedIn = false;
-                updatePromptVisibility(); 
-                if (mainLoginBtn) {
-                    mainLoginBtn.innerHTML = "Login";
-                    mainLoginBtn.onclick = () => openModal('login-modal');
-                }
-            }
-        });
-
-        // ❤️ LIKE BUTTON LOGIC (FIRESTORE)
-        document.getElementById('like-btn').addEventListener('click', async () => {
-            if (!isLoggedIn) return openModal('login-modal');
-            const gameTitle = document.getElementById('current-game-title').innerText;
-            try {
-                await setDoc(doc(db, "games", gameTitle), { likes: increment(1) }, { merge: true });
-                alert(`Thanks for liking ${gameTitle}! ❤️`);
-            } catch (error) {
-                console.error("Error adding like: ", error);
-                alert("Database connection error. Check your Firebase rules.");
-            }
-        });
-
-        // 🐛 BUG REPORT LOGIC (FIRESTORE)
-        document.getElementById('bug-btn').addEventListener('click', async () => {
-            if (!isLoggedIn) return openModal('login-modal');
-            const bugDetails = prompt("Describe the bug you found in this game:");
-            if (bugDetails && bugDetails.trim() !== "") {
-                const gameTitle = document.getElementById('current-game-title').innerText;
-                try {
-                    await addDoc(collection(db, "bug_reports"), {
-                        game: gameTitle,
-                        report: bugDetails,
-                        status: "open",
-                        date: new Date()
-                    });
-                    alert("Bug reported successfully! Our team will check it. 🐛");
-                } catch (error) {
-                    console.error("Error reporting bug: ", error);
-                    alert("Database connection error. Check your Firebase rules.");
-                }
-            }
-        });
-    </script>
+    // 5. SESSION CHECK
+    onAuthStateChanged(auth, (user) => {
+        const btn = document.getElementById("main-login-btn");
+        if (user) {
+            btn.innerText = "Logout";
+            btn.onclick = () => signOut(auth).then(() => location.reload());
+        } else {
+            btn.innerText = "Login";
+            btn.onclick = () => openModal('login-modal');
+        }
+    });
+</script>
 </body>
 </html>
