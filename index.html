@@ -2709,29 +2709,50 @@ Create a complete professional game that feels like a mix of Angry Birds, Bounce
         window.onkeydown = (e) => { if (e.key === 'Escape') closeModals(); }
     </script>
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    // 1. IMPORTING FIREBASE V10.8.1 (Ye path sabse stable hai)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-  //
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "pixelgaunt.firebaseapp.com",
-    projectId: "pixelgaunt",
-    storageBucket: "pixelgaunt.appspot.com",
-    messagingSenderId: "...",
-    appId: "..."
-  };
+    // 2. CONFIGURATION (Tumhari API Key check karlo, ye wahi honi chahiye jo Firebase Console mein hai)
+    const firebaseConfig = {
+        apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
+        authDomain: "pixelgaunt-e5235.firebaseapp.com",
+        projectId: "pixelgaunt-e5235",
+        storageBucket: "pixelgaunt-e5235.firebasestorage.app",
+        messagingSenderId: "261213234973",
+        appId: "1:261213234973:web:e65879886c82be3aabe3f4"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+    // 3. INITIALIZATION
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const googleProvider = new GoogleAuthProvider();
 
-  // Example: Game play hone par data save karna
-  async function updateGameStats(gameId, playCount) {
-    await setDoc(doc(db, "games", gameId), {
-      views: playCount,
-      lastUpdated: new Date()
+    // 4. LOGIN LOGIC (ID check karo: HTML mein tumhare button ki id="google-login-btn" honi chahiye)
+    document.getElementById("google-login-btn").addEventListener("click", async () => {
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            alert("Login Successful: " + result.user.displayName);
+            location.reload(); // Page refresh takay UI update ho jaye
+        } catch (error) {
+            console.error("Login Error:", error);
+            alert("Login Failed: " + error.code);
+        }
     });
-  }
+
+    // 5. SESSION CHECK
+    onAuthStateChanged(auth, (user) => {
+        const btn = document.getElementById("main-login-btn");
+        if (user) {
+            btn.innerText = "Logout";
+            btn.onclick = () => signOut(auth).then(() => location.reload());
+        } else {
+            btn.innerText = "Login";
+            btn.onclick = () => openModal('login-modal');
+        }
+    });
 </script>
 
 <!-- SHARE MODAL -->
@@ -2934,25 +2955,17 @@ Create a complete professional game that feels like a mix of Angry Birds, Bounce
         <p><br>The games are provided on an "as is" basis without warranties of any kind. Pixel Gaunt is not liable for any issues or data loss that may occur while using this website.</p>
     </div>
 
-    <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    <script>
+        function openPageModal(title, contentId) {
+            document.getElementById('pg-info-title').innerText = title;
+            document.getElementById('pg-info-body').innerHTML = document.getElementById(contentId).innerHTML;
+            document.getElementById('pg-info-modal').style.display = 'flex';
+        }
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
-        authDomain: "pixelgaunt-e5235.firebaseapp.com",
-        projectId: "pixelgaunt-e5235",
-        storageBucket: "pixelgaunt-e5235.firebasestorage.app",
-        messagingSenderId: "261213234973",
-        appId: "1:261213234973:web:e65879886c82be3aabe3f4"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    console.log("Firebase v10.8.1 load ho gaya!");
-</script>
-</body>
-</html>
+        function closePageModal() {
+            document.getElementById('pg-info-modal').style.display = 'none';
+        }
+    </script>
 
 </body>
 </html>
