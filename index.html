@@ -2966,6 +2966,22 @@ Create a complete professional game that feels like a mix of Angry Birds, Bounce
             document.getElementById('pg-info-modal').style.display = 'none';
         }
     </script>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+    const firebaseConfig = {
+        apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
+        authDomain: "pixelgaunt-e5235.firebaseapp.com",
+        projectId: "pixelgaunt-e5235",
+        storageBucket: "pixelgaunt-e5235.firebasestorage.app",
+        messagingSenderId: "261213234973",
+        appId: "1:261213234973:web:e65879886c82be3aabe3f4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    console.log("Firebase v10.8.1 load ho gaya!");
+</script>
 </body>
 </html>
