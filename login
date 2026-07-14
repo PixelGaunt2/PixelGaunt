@@ -418,7 +418,7 @@ gtag('config', 'G-LRDNJ69KD1');
             <button class="nav-btn" onclick="alert('Store - Coming Soon!')">Store</button>
             <button class="nav-btn" style="border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="alert('⚔️ Join Tournament - Coming Soon!')">Tournament</button>
             <button class="nav-btn" style="background: var(--neon-purple); color: #fff; border: none;" onclick="alert('⭐ Subscription Plans - Coming Soon!')">Subscribe</button>
-            <button class="nav-btn primary" onclick="alert('Login - Coming Soon!')">Login</button>
+            <button class="nav-btn primary" id="main-login-btn">Login</button>
         </nav>
     </header>
 
@@ -576,9 +576,9 @@ gtag('config', 'G-LRDNJ69KD1');
                 <h3 class="modal-title pixel-font">Authentication</h3>
                 
                 <div class="option-grid">
-                    <button class="opt-btn" onclick="goToLoginStep('gmail')">
-                        <span>📧</span> Login via Gmail Account
-                    </button>
+                    <button class="opt-btn" onclick="loginWithGoogle()">
+    <span><i class="fab fa-google"></i></span> Login with Google
+</button>
                 </div>
                 
                 <div style="margin-top: 24px; text-align: center; border-top: 1px solid var(--bg-surface-light); padding-top: 20px;">
@@ -2945,6 +2945,100 @@ Create a complete professional game that feels like a mix of Angry Birds, Bounce
             document.getElementById('pg-info-modal').style.display = 'none';
         }
     </script>
+<script type="module">
+        // Firebase SDK modules ko import karna
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
+        // 1. Firebase Configuration (Apne Firebase console se details yahan replace karein)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Firebase ko initialize karna
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        // 2. Real Google Login Function
+        async function loginWithGoogle() {
+            try {
+                const result = await signInWithPopup(auth, googleProvider);
+                const user = result.user;
+                
+                // Firestore database mein user ka data automatic save/update karna
+                await setDoc(doc(db, "users", user.uid), {
+                    uid: user.uid,
+                    displayName: user.displayName,
+                    email: user.email,
+                    photoURL: user.photoURL,
+                    lastLogin: new Date()
+                }, { merge: true });
+
+                alert(`Welcome, ${user.displayName}! Login successful.`);
+                
+                // Login hone par login wizard modal ko close karna
+                if (typeof closeLoginWizard === 'function') {
+                    closeLoginWizard();
+                } else if (document.getElementById('login-modal')) {
+                    document.getElementById('login-modal').style.display = 'none';
+                }
+            } catch (error) {
+                console.error("Login fail ho gaya:", error);
+                alert("Login Error: " + error.message);
+            }
+        }
+
+        // 3. Logout Function
+        async function logoutUser() {
+            try {
+                await signOut(auth);
+                alert("Logged out successfully!");
+            } catch (error) {
+                console.error("Logout error:", error);
+            }
+        }
+
+        // Global functions banana taake HTML ke buttons inko call kar sakein
+        window.loginWithGoogle = loginWithGoogle;
+        window.logoutUser = logoutUser;
+
+        // 4. Session State Management (User login hai ya logout, ye automatically detect hoga)
+        onAuthStateChanged(auth, (user) => {
+            const loginBtn = document.getElementById("main-login-btn");
+            if (user) {
+                // User login ho chuka hai
+                console.log("Logged in user:", user.displayName);
+                if (loginBtn) {
+                    // Button par user ki profile picture aur "Logout" likha aayega
+                    loginBtn.innerHTML = `<img src="${user.photoURL || 'https://via.placeholder.com/30'}" style="width:20px; height:20px; border-radius:50%; margin-right:8px; vertical-align:middle;"> Logout`;
+                    loginBtn.onclick = logoutUser;
+                }
+            } else {
+                // User logout hai
+                console.log("No user logged in");
+                if (loginBtn) {
+                    loginBtn.innerHTML = "Login";
+                    // Agar login modal open karne ka function hai to use call karein
+                    if (typeof openLoginWizard === 'function') {
+                        loginBtn.onclick = openLoginWizard;
+                    } else {
+                        loginBtn.onclick = () => {
+                            const modal = document.getElementById('login-modal');
+                            if (modal) modal.style.display = 'flex';
+                        };
+                    }
+                }
+            }
+        });
+    </script>
+</body>
 </body>
 </html>
