@@ -1,22 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3455772439100679" crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3455772439100679"
+     crossorigin="anonymous"></script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-LRDNJ69KD1"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-LRDNJ69KD1');
-    </script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+
+gtag('config', 'G-LRDNJ69KD1');
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pixel Gaunt | Modern Retro Games Portal</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        /* CSS VARIABLES & GLOBAL RESET */
+        /* ====================================
+           CSS VARIABLES & GLOBAL RESET
+           ==================================== */
         :root {
             --bg-base: #06060a;
             --bg-surface: #0f0f16;
@@ -34,12 +37,18 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #4c1d95, #2e1065); 
-            color: var(--text-main);
-            min-height: 100vh;
-            overflow-x: hidden;
-            scroll-behavior: smooth;
+    font-family: 'Inter', sans-serif;
+    /* Static background colors added, animation removed */
+    background: linear-gradient(135deg, #4c1d95, #2e1065); 
+    color: var(--text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+        
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
         
         body::before {
@@ -80,7 +89,9 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* HEADER & NAVIGATION */
+        /* ====================================
+           HEADER & NAVIGATION
+           ==================================== */
         header {
             position: sticky; top: 0; z-index: 100;
             background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
@@ -115,14 +126,18 @@
         }
         .search-bar:focus { border-color: var(--neon-cyan); box-shadow: var(--shadow-glow-cyan); outline: none; }
 
-        /* MAIN LAYOUT */
+        /* ====================================
+           MAIN LAYOUT (2 Columns)
+           ==================================== */
         .container { display: flex; gap: 30px; padding: 12px 5% 60px 5%; max-width: 1600px; margin: 0 auto; }
+        
         .sidebar { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; }
         .sidebar-box {
             background: var(--bg-surface); border-radius: 14px; padding: 22px;
             border: 1px solid rgba(255, 255, 255, 0.03);
         }
         .sidebar-title { font-size: 0.7rem; color: var(--neon-cyan); margin-bottom: 16px; letter-spacing: 1px; }
+        
         .sidebar-menu li { margin-bottom: 8px; }
         .sidebar-menu button {
             width: 100%; text-align: left; padding: 11px 14px; border-radius: 8px;
@@ -135,6 +150,7 @@
         .sidebar-menu button.active { border-left-color: var(--neon-purple); color: #fff; background: rgba(188, 19, 254, 0.05); }
 
         .main-content { flex-grow: 1; }
+
         .category-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 24px; }
         .category-bar::-webkit-scrollbar { height: 3px; }
         .cat-btn {
@@ -147,7 +163,9 @@
             box-shadow: 0 0 10px rgba(188, 19, 254, 0.2);
         }
 
-        /* GAME GRID & CARDS */
+        /* ====================================
+           GAME GRID & CARDS
+           ==================================== */
         .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
         .game-card {
             background: var(--bg-surface); border-radius: 14px; overflow: hidden;
@@ -155,79 +173,239 @@
             transition: var(--transition-smooth); cursor: pointer;
             display: flex; flex-direction: column;
         }
-        .game-card:hover { transform: translateY(-6px); border-color: var(--neon-cyan); box-shadow: 0 12px 24px rgba(0, 243, 255, 0.12); }
-        .card-thumb { width: 100%; aspect-ratio: 1 / 1; position: relative; background-size: cover; background-position: center; overflow: hidden; }
-        .gif-overlay { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: center; opacity: 0; transition: opacity 0.3s ease; }
+        .game-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 12px 24px rgba(0, 243, 255, 0.12);
+        }
+        .card-thumb {
+            width: 100%; aspect-ratio: 1 / 1; position: relative;
+            background-size: cover; background-position: center; overflow: hidden;
+        }
+        
+        /* Fixed GIF Hover Logic */
+        .gif-overlay {
+            position: absolute; inset: 0; z-index: 1;
+            background-size: cover; background-position: center;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
         .game-card:hover .gif-overlay { opacity: 1; }
-        .card-thumb::before { content: ''; position: absolute; inset: 0; z-index: 2; background: linear-gradient(to bottom, transparent, var(--bg-surface)); opacity: 0.85; }
-        .play-overlay { position: absolute; inset: 0; z-index: 3; background: rgba(0, 0, 0, 0.45); display: flex; justify-content: center; align-items: center; opacity: 0; transition: var(--transition-smooth); }
+        
+        .card-thumb::before {
+            content: ''; position: absolute; inset: 0; z-index: 2;
+            background: linear-gradient(to bottom, transparent, var(--bg-surface)); opacity: 0.85;
+        }
+        .play-overlay {
+            position: absolute; inset: 0; z-index: 3; background: rgba(0, 0, 0, 0.45);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; transition: var(--transition-smooth);
+        }
         .game-card:hover .play-overlay { opacity: 1; backdrop-filter: blur(3px); }
-        .play-btn-circle { width: 52px; height: 52px; background: var(--neon-cyan); border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 18px var(--neon-cyan); transform: scale(0.85); transition: var(--transition-smooth); }
+        .play-btn-circle {
+            width: 52px; height: 52px; background: var(--neon-cyan); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 18px var(--neon-cyan); transform: scale(0.85); transition: var(--transition-smooth);
+        }
         .game-card:hover .play-btn-circle { transform: scale(1); }
         .play-btn-circle::after { content: '▶'; color: #000; font-size: 1.15rem; margin-left: 3px; }
+
         .card-info { padding: 12px; display: flex; justify-content: space-between; align-items: flex-end; flex-grow: 1; }
         .card-title { font-size: 1.05rem; color: #fff; margin-bottom: 6px; font-weight: 800; }
         .card-genre { font-size: 0.72rem; color: var(--neon-purple); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
 
-        /* GAMEPLAY AREA */
+        /* ====================================
+           PAGE 2 — GAMEPLAY AREA UI
+           ==================================== */
         #gameplay-page { display: none; padding: 0 5% 60px 5%; max-width: 1600px; margin: 0 auto; animation: fadeIn 0.35s ease-out; }
+        
         .game-header { text-align: center; margin-bottom: 24px; }
         .game-title-large { font-size: 1.4rem; color: #fff; text-shadow: 0 0 12px rgba(0, 243, 255, 0.35); margin-top: 16px; }
-        .game-controls-top { display: flex; justify-content: space-between; align-items: center; max-width: 920px; margin: 0 auto 16px auto; }
+        
+        .game-controls-top {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 920px; margin: 0 auto 16px auto;
+        }
         .back-btn { color: #94a3b8; font-weight: 600; font-size: 0.9rem; transition: var(--transition-smooth); }
         .back-btn:hover { color: #fff; }
+
         .gameplay-layout { display: flex; justify-content: center; align-items: flex-start; gap: 24px; width: 100%; }
+        
+        .empty-zone-v {
+            width: 160px; height: 600px; flex-shrink: 0; border-radius: 8px;
+            background: rgba(255, 255, 255, 0.01); border: 1px dashed rgba(255, 255, 255, 0.04);
+        }
+        .empty-zone-h {
+            width: 100%; max-width: 920px; height: 95px; margin: 32px auto 0 auto; border-radius: 8px;
+            background: rgba(255, 255, 255, 0.01); border: 1px dashed rgba(255, 255, 255, 0.04);
+        }
+
         .game-container-wrapper { flex-grow: 1; max-width: 920px; width: 100%; }
-        .game-container { width: 100%; height: 600px; background: #000; border-radius: 12px; border: 2px solid var(--bg-surface-light); box-shadow: 0 24px 48px rgba(0,0,0,0.6); position: relative; overflow: hidden; }
-        @media (max-width: 768px) { .game-container { height: 400px; } }
+        
+        .game-container {
+            width: 100%; height: 600px; background: #000;
+            border-radius: 12px; border: 2px solid var(--bg-surface-light);
+            box-shadow: 0 24px 48px rgba(0,0,0,0.6); position: relative; overflow: hidden;
+        }
+        @media (max-width: 768px) {
+            .game-container { height: 400px; }
+        }
         .game-container iframe { width: 100%; height: 100%; border: none; display: block; }
 
-        .game-action-bar { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 18px; background: var(--bg-surface); padding: 14px; border-radius: 12px; border: 1px solid var(--bg-surface-light); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .action-btn { background: var(--bg-surface-light); border: 1px solid rgba(255, 255, 255, 0.05); color: #e2e8f0; padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; transition: var(--transition-smooth); display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .action-btn:hover { color: #fff; border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.08); box-shadow: 0 0 12px rgba(0, 243, 255, 0.2); transform: translateY(-2px); }
-
-        .game-details { max-width: 920px; margin: 32px auto 0 auto; background: var(--bg-surface); border-radius: 14px; padding: 28px; border: 1px solid var(--bg-surface-light); }
+        /* ACTION BAR */
+        .game-action-bar {
+            display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 18px;
+            background: var(--bg-surface); padding: 14px; border-radius: 12px;
+            border: 1px solid var(--bg-surface-light); box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .action-btn {
+            background: var(--bg-surface-light); border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #e2e8f0; padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+            transition: var(--transition-smooth); display: flex; align-items: center; gap: 8px; cursor: pointer;
+        }
+        .action-btn:hover {
+            color: #fff; border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.08);
+            box-shadow: 0 0 12px rgba(0, 243, 255, 0.2); transform: translateY(-2px);
+        }
+        .action-btn.share:hover { border-color: var(--neon-purple); box-shadow: 0 0 12px rgba(188, 19, 254, 0.2); background: rgba(188, 19, 254, 0.08); }
+        
+        /* META DESCRIPTIONS AREA */
+        .game-details {
+            max-width: 920px; margin: 32px auto 0 auto; background: var(--bg-surface);
+            border-radius: 14px; padding: 28px; border: 1px solid var(--bg-surface-light);
+        }
         .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
         .detail-section h3 { font-size: 0.85rem; color: var(--neon-cyan); margin-bottom: 14px; }
         .detail-section p { color: #94a3b8; font-size: 0.92rem; line-height: 1.6; margin-bottom: 10px; }
-        .prompt-box { background: var(--bg-base); padding: 16px; border-radius: 8px; border: 1px solid var(--bg-surface-light); font-size: 0.85rem; color: #94a3b8; white-space: pre-wrap; font-family: monospace; overflow-x: auto; line-height: 1.5; margin-top: 8px; }
+        .detail-section p strong { color: #e2e8f0; }
+        .prompt-box {
+            background: var(--bg-base); padding: 16px; border-radius: 8px; 
+            border: 1px solid var(--bg-surface-light); font-size: 0.85rem; color: #94a3b8; 
+            white-space: pre-wrap; font-family: monospace; overflow-x: auto; line-height: 1.5; margin-top: 8px;
+        }
 
-        /* MODALS */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(4, 4, 6, 0.85); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: center; z-index: 1000; opacity: 0; transition: opacity 0.25s ease; }
+        /* ====================================
+           MODALS SYSTEMS (MULTI-STEP & OPTIONS)
+           ==================================== */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(4, 4, 6, 0.85); backdrop-filter: blur(6px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+            opacity: 0; transition: opacity 0.25s ease;
+        }
         .modal-overlay.active { display: flex; opacity: 1; }
-        .modal-content { background: var(--bg-surface); padding: 36px; border-radius: 16px; width: 92%; max-width: 460px; border: 1px solid var(--bg-surface-light); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); transform: scale(0.92); transition: transform 0.25s ease; position: relative; }
+        
+        .modal-content {
+            background: var(--bg-surface); padding: 36px; border-radius: 16px;
+            width: 92%; max-width: 460px; border: 1px solid var(--bg-surface-light);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); transform: scale(0.92); transition: transform 0.25s ease;
+            position: relative;
+        }
         .modal-overlay.active .modal-content { transform: scale(1); border-color: var(--neon-purple); }
         .close-modal { position: absolute; top: 18px; right: 20px; color: #64748b; font-size: 1.4rem; font-weight: bold; }
         .close-modal:hover { color: #fff; }
+        
         .modal-title { font-size: 0.95rem; color: #fff; margin-bottom: 24px; text-align: center; }
         .modal-step { display: none; }
         .modal-step.active { display: block; }
-        .option-grid { display: flex; flex-direction: column; gap: 14px; margin-bottom: 10px; }
-        .opt-btn { background: var(--bg-surface-light); border: 1px solid rgba(255, 255, 255, 0.05); padding: 14px 20px; border-radius: 10px; text-align: left; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 14px; transition: var(--transition-smooth); cursor: pointer; color: #e2e8f0; }
-        .opt-btn:hover { border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.05); transform: translateX(4px); color: #fff; }
 
-        /* FOOTER */
-        footer { background: #09090e; padding: 40px 5%; border-top: 1px solid rgba(255,255,255,0.03); color: #475569; font-size: 0.85rem; text-align: center; margin-top: auto; }
+        .option-grid { display: flex; flex-direction: column; gap: 14px; margin-bottom: 10px; }
+        .opt-btn {
+            background: var(--bg-surface-light); border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 14px 20px; border-radius: 10px; text-align: left; font-size: 0.95rem;
+            font-weight: 600; display: flex; align-items: center; gap: 14px; transition: var(--transition-smooth); cursor: pointer; color: #e2e8f0;
+        }
+        .opt-btn:hover {
+            border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.05); transform: translateX(4px); color: #fff;
+        }
+        
+        .opt-btn.whatsapp:hover { border-color: #25d366; background: rgba(37, 211, 102, 0.05); }
+        .opt-btn.facebook:hover { border-color: #1877F2; background: rgba(24, 119, 242, 0.05); }
+        .opt-btn.twitter:hover { border-color: #1DA1F2; background: rgba(29, 161, 242, 0.05); }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; font-weight: 500; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; background: var(--bg-base); border: 1px solid var(--bg-surface-light);
+            color: #fff; padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; transition: var(--transition-smooth);
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--neon-purple); outline: none; }
+        
+        .action-btns { display: flex; gap: 12px; justify-content: flex-end; }
+        .wizard-btn {
+            background: var(--neon-purple); color: #fff; font-weight: 600; padding: 11px 22px;
+            border-radius: 8px; font-size: 0.88rem; transition: var(--transition-smooth);
+        }
+        .wizard-btn:hover:not(:disabled) { background: #cd28ff; box-shadow: 0 0 15px rgba(188, 19, 254, 0.4); }
+        .wizard-btn:disabled { background: #2e2e3a; color: #64748b; cursor: not-allowed; }
+        .wizard-btn.secondary { background: transparent; border: 1px solid var(--bg-surface-light); color: #94a3b8; }
+        .wizard-btn.secondary:hover { color: #fff; border-color: #64748b; }
+
+        /* ====================================
+           PREMIUM CLEAN FOOTER
+           ==================================== */
+        footer {
+            background: #09090e; padding: 40px 5%; border-top: 1px solid rgba(255,255,255,0.03);
+            color: #475569; font-size: 0.85rem; text-align: center; margin-top: auto;
+        }
         .footer-content { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; align-items: center; }
+        
+        
+        /* SOCIAL ICONS STYLES */
         .social-icons { display: flex; gap: 16px; justify-content: center; margin-bottom: 8px; }
-        .social-icons a { color: #64748b; font-size: 1.2rem; transition: var(--transition-smooth); display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: var(--bg-surface); border: 1px solid var(--bg-surface-light); }
+        .social-icons a { 
+            color: #64748b; font-size: 1.2rem; transition: var(--transition-smooth); 
+            display: flex; align-items: center; justify-content: center;
+            width: 40px; height: 40px; border-radius: 50%; background: var(--bg-surface);
+            border: 1px solid var(--bg-surface-light);
+        }
         .social-icons a:hover { color: #fff; transform: translateY(-3px); }
+        .social-icons a.yt:hover { background: #FF0000; border-color: #FF0000; box-shadow: 0 0 10px rgba(255,0,0,0.4); }
+        .social-icons a.fb:hover { background: #1877F2; border-color: #1877F2; box-shadow: 0 0 10px rgba(24,119,242,0.4); }
+        .social-icons a.rd:hover { background: #FF4500; border-color: #FF4500; box-shadow: 0 0 10px rgba(255,69,0,0.4); }
+        .social-icons a.dc:hover { background: #5865F2; border-color: #5865F2; box-shadow: 0 0 10px rgba(88,101,242,0.4); }
+        .social-icons a.tk:hover { background: #000000; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.4); }
+        .social-icons a.gm:hover { background: #EA4335; border-color: #EA4335; box-shadow: 0 0 10px rgba(234,67,53,0.4); }
+        .social-icons a.wa-channel:hover { color: #fff; background: #25D366; border-color: #25D366; box-shadow: 0 0 10px rgba(37,211,102,0.4); }
+        .social-icons a.wa-group:hover { color: #fff; background: #128C7E; border-color: #128C7E; box-shadow: 0 0 10px rgba(18,140,126,0.4); }
+
+        /* FOOTER LINKS STYLES */
         .footer-links { display: flex; gap: 24px; color: #64748b; font-weight: 500; font-size: 0.85rem; }
+        .footer-links a { transition: var(--transition-smooth); }
         .footer-links a:hover { color: var(--neon-cyan); text-shadow: 0 0 8px rgba(0, 243, 255, 0.3); }
 
-        #scrollToTopBtn { position: fixed; bottom: 30px; right: 30px; width: 45px; height: 45px; background: var(--neon-purple); color: #fff; border: none; border-radius: 50%; font-size: 1.5rem; cursor: pointer; display: none; z-index: 1000; box-shadow: 0 0 15px rgba(188, 19, 254, 0.4); transition: transform 0.2s; }
+        .footer-copyright { font-size: 0.7rem; color: #64748b; letter-spacing: 0.5px; }
+
+        /* SCROLL TO TOP ARROW */
+        #scrollToTopBtn {
+            position: fixed; bottom: 30px; right: 30px; width: 45px; height: 45px; 
+            background: var(--neon-purple); color: #fff; border: none; border-radius: 50%; 
+            font-size: 1.5rem; cursor: pointer; display: none; z-index: 1000; 
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.4); transition: transform 0.2s;
+        }
         #scrollToTopBtn:hover { transform: translateY(-3px); background: #cd28ff; }
 
+        /* ANIMATIONS */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* RESPONSIVENESS */
+        @media (max-width: 1024px) {
+            .empty-zone-v { display: none; }
+            .details-grid { grid-template-columns: 1fr; }
+        }
         @media (max-width: 768px) {
             header { flex-direction: column; gap: 16px; padding: 16px; }
             .container { flex-direction: column; }
             .sidebar { width: 100%; }
+            
+            .game-title-large { font-size: 1.15rem; }
+            .footer-links { gap: 16px; }
         }
     </style>
+    
 </head>
 <body>
+
     <audio id="portal-bgm" loop style="display:none;"></audio>
+
     <div id="loader">
         <div class="loader-spinner"></div>
         <p class="pixel-font" style="font-size: 0.65rem; color: var(--neon-cyan); letter-spacing: 2px;">LOADING PORTAL...</p>
@@ -237,10 +415,10 @@
         <div class="logo pixel-font" onclick="goHome()">Pixel <span>Gaunt</span></div>
         <nav class="nav-links">
             <button class="nav-btn" onclick="goHome()">Games</button>
-            <button class="nav-btn" onclick="openModal('store-modal')">Store</button>
-            <button class="nav-btn" style="border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="openModal('tournament-modal')">Tournament</button>
-            <button class="nav-btn" style="background: var(--neon-purple); color: #fff; border: none;" onclick="openModal('subscribe-modal')">Subscribe</button>
-            <button class="nav-btn primary" id="main-login-btn" onclick="openModal('login-modal')">Login</button>
+            <button class="nav-btn" onclick="alert('Store - Coming Soon!')">Store</button>
+            <button class="nav-btn" style="border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="alert('⚔️ Join Tournament - Coming Soon!')">Tournament</button>
+            <button class="nav-btn" style="background: var(--neon-purple); color: #fff; border: none;" onclick="alert('⭐ Subscription Plans - Coming Soon!')">Subscribe</button>
+            <button class="nav-btn primary" onclick="alert('Login - Coming Soon!')">Login</button>
         </nav>
     </header>
 
@@ -249,6 +427,7 @@
     </div>
 
     <main class="container" id="homepage">
+        
         <aside class="sidebar">
             <div class="sidebar-box">
                 <h3 class="sidebar-title pixel-font">Navigation</h3>
@@ -256,28 +435,36 @@
                     <li><button class="active" id="btn-cat-all" onclick="filterCategory('All', null)">🕹️ All Games</button></li>
                     <li><button id="btn-cat-fighting" onclick="filterCategory('Fighting', null)">🥊 Fighting</button></li>
                     <li><button id="btn-cat-action" onclick="filterCategory('Action', null)">🔥 Action</button></li>
-                    <li><button id="btn-cat-arcade" onclick="filterCategory('Arcade', null)">🕹️ Arcade</button></li>
+                    <li><button id="btn-cat-action" onclick="filterCategory('Arcade', null)">🕹️ Arcade</button></li>
                     <li><button id="btn-cat-3d-sim" onclick="filterCategory('3D Simulation', null)">🌐 3D Simulation</button></li>
-                    <li><button id="btn-cat-3d-shoot" onclick="filterCategory('3D Shooting', null)">🔥 3D Shooting</button></li>
+                    <li><button id="btn-cat-3d-sim" onclick="filterCategory('3D Shooting', null)">🔥 3D Shooting</button></li>
                     <li><button id="btn-cat-puzzle-adv" onclick="filterCategory('Puzzle Adventure', null)">🧩 Puzzle Adv.</button></li>
                     <li><button id="btn-cat-casual-adv" onclick="filterCategory('Casual Adventure', null)">🎣 Casual Adv.</button></li>
                     <li><button id="btn-cat-puzzle" onclick="filterCategory('Puzzle', null)">🎲 Puzzle</button></li>
                     <li><button id="btn-cat-racing" onclick="filterCategory('Racing', null)">🏎️ Racing</button></li>
                     <li><button id="btn-cat-roguelike" onclick="filterCategory('Rogue-like', null)">💀 Rogue-like</button></li>
-                    <li><button id="btn-cat-rpg" onclick="filterCategory('RPG', null)">💀 RPG</button></li>
+                    <li><button id="btn-cat-roguelike" onclick="filterCategory('RPG', null)">💀 RPG</button></li>
                 </ul>
             </div>
             
             <div class="sidebar-box">
                 <h3 class="sidebar-title pixel-font">Esports</h3>
                 <ul class="sidebar-menu">
-                    <li><button onclick="openModal('tournament-modal')">⚔️ Join Tournament</button></li>
+                    <li><button onclick="alert('⚔️ Live Tournaments - Coming Soon!')">⚔️ Join Tournament</button></li>
                 </ul>
             </div>
+
             <div class="sidebar-box">
                 <h3 class="sidebar-title pixel-font">Store</h3>
                 <ul class="sidebar-menu">
-                    <li><button onclick="openModal('store-modal')">🛒 Store</button></li>
+                    <li><button onclick="alert('Store - Coming Soon!')">🛒 Store</button></li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-box">
+                <h3 class="sidebar-title pixel-font">Publisher</h3>
+                <ul class="sidebar-menu">
+                    <li><button onclick="alert('Deploy Project - Coming Soon!')">⬆️ Deploy Project</button></li>
                 </ul>
             </div>
         </aside>
@@ -295,9 +482,11 @@
                 <button class="cat-btn" onclick="filterCategory('Puzzle', this)">Puzzle</button>
                 <button class="cat-btn" onclick="filterCategory('Racing', this)">Racing</button>
                 <button class="cat-btn" onclick="filterCategory('Rogue-like', this)">Rogue-like</button>
+                <button class="cat-btn" onclick="filterCategory('RPG', this)">RPG</button>
             </div>
 
-            <div class="game-grid" id="game-grid"></div>
+            <div class="game-grid" id="game-grid">
+                </div>
         </section>
     </main>
 
@@ -305,24 +494,29 @@
         <div class="game-header">
             <h2 class="game-title-large pixel-font" id="current-game-title">Game Viewport</h2>
         </div>
+
         <div class="game-controls-top">
             <button class="back-btn" onclick="goHome()">← Back to Main Menu</button>
         </div>
+
         <div class="gameplay-layout">
-            <div class="empty-zone-v" style="border:none;"></div>
+            <div class="empty-zone-v"></div>
+
             <div class="game-container-wrapper">
                 <div class="game-container" id="game-container-element">
                     <iframe src="" id="game-canvas" allowfullscreen allow="autoplay; fullscreen"></iframe>
                 </div>
+                
                 <div class="game-action-bar">
-                    <button class="action-btn" id="like-btn">❤️ Like</button>
-                    <button class="action-btn" id="bug-btn">🐛 Report Bug</button>
+                    <button class="action-btn" onclick="actionLike()">❤️ Like</button>
+                    <button class="action-btn" onclick="actionBug()">🐛 Report Bug</button>
                     <button class="action-btn" onclick="toggleMute()" id="mute-btn">🔊 Sound: ON</button>
                     <button class="action-btn invite" onclick="inviteFriends()">📩 Invite</button>
                     <button class="action-btn pixel-font" onclick="toggleFullscreen()" style="font-size: 0.75rem;">⛶ Fullscreen</button>
-                </div>
+                    </div>
             </div>
-            <div class="empty-zone-v" style="border:none;"></div>
+
+            <div class="empty-zone-v"></div>
         </div>
 
         <div class="game-details">
@@ -348,7 +542,7 @@
                         
                         <div id="ai-prompt-hidden-msg" style="background: var(--bg-surface-light); padding: 20px; border-radius: 8px; text-align: center; border: 1px dashed var(--neon-cyan); margin-top: 8px;">
                             <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 12px; line-height: 1.5;">🔒 This prompt is locked. Login to view the complete AI generation prompt used by the developer to create this game.</p>
-                            <button class="action-btn" onclick="openModal('login-modal')" style="margin: 0 auto; border-color: var(--neon-purple); background: rgba(188, 19, 254, 0.1); color: #fff;">Login to Unlock Prompt</button>
+                            <button class="action-btn" onclick="alert('Coming Soon!')" style="margin: 0 auto; border-color: var(--neon-purple); background: rgba(188, 19, 254, 0.1); color: #fff;">Login to Unlock Prompt</button>
                         </div>
 
                         <div class="prompt-box" id="current-game-aiprompt" style="display: none;"></div>
@@ -356,53 +550,88 @@
                 </div>
             </div>
         </div>
+
+        <div class="empty-zone-h"></div>
     </main>
+
+    <div class="modal-overlay" id="share-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModals()">&times;</button>
+            <h3 class="modal-title pixel-font">Share Game</h3>
+            <p style="text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px;">Share <span id="share-game-title" style="color:var(--neon-cyan); font-weight:bold;"></span> with your friends!</p>
+            <div class="option-grid">
+                <button class="opt-btn whatsapp" onclick="shareToPlatform('WhatsApp')">📱 Share via WhatsApp</button>
+                <button class="opt-btn facebook" onclick="shareToPlatform('Facebook')">📘 Share on Facebook</button>
+                <button class="opt-btn twitter" onclick="shareToPlatform('Twitter / X')">🐦 Share on Twitter / X</button>
+                <button class="opt-btn" onclick="shareToPlatform('Copy Link')">🔗 Copy Direct Link</button>
+            </div>
+        </div>
+    </div>
 
     <div class="modal-overlay" id="login-modal">
         <div class="modal-content">
             <button class="close-modal" onclick="closeModals()">&times;</button>
-            <div class="modal-step active">
+            
+            <div class="modal-step active" id="login-step-choice">
                 <h3 class="modal-title pixel-font">Authentication</h3>
+                
                 <div class="option-grid">
-                    <button class="opt-btn" id="google-login-btn">
-                        <span><i class="fab fa-google"></i></span> Login with Google
+                    <button class="opt-btn" onclick="goToLoginStep('gmail')">
+                        <span>📧</span> Login via Gmail Account
                     </button>
+                </div>
+                
+                <div style="margin-top: 24px; text-align: center; border-top: 1px solid var(--bg-surface-light); padding-top: 20px;">
+                    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px;">Get Instant Updates & Notifications:</p>
+                    <a href="https://whatsapp.com/channel/0029VbBo20lLo4hmsAJODc2u" target="_blank" class="opt-btn whatsapp" style="display: flex; justify-content: center; text-decoration: none; color: #fff; width: 100%;">
+                        <span>💬</span> Follow Official WhatsApp Channel
+                    </a>
+                </div>
+            </div>
+
+            <div class="modal-step" id="login-step-gmail">
+                <h3 class="modal-title pixel-font">Gmail Login</h3>
+                <div class="form-group">
+                    <label>Enter Registered Gmail Address</label>
+                    <input type="email" id="login-email-input" placeholder="developer@gmail.com">
+                </div>
+                <div class="action-btns">
+                    <button class="wizard-btn secondary" onclick="goToLoginStep('choice')">Back</button>
+                    <button class="wizard-btn" onclick="simulateAuthSuccess('Login Successful! You can now use Action Buttons and view Full AI Prompts.')">Log In</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="modal-overlay" id="store-modal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeModals()">&times;</button>
-            <h3 class="modal-title pixel-font" style="color: var(--neon-purple);">Marketplace</h3>
-            <p style="color: #94a3b8; text-align: center; font-size: 0.9rem; margin-bottom: 20px;">The PixelGaunt asset store is currently undergoing maintenance. Check back soon for game templates, AI prompts, and assets!</p>
-            <button class="action-btn" onclick="closeModals()" style="margin: 0 auto;">Close</button>
+    <footer>
+        <div class="footer-content">
+            <div class="social-icons">
+                <a href="https://www.youtube.com/channel/UCos8h2Sjl9YgoM8U7ueFSUw" target="_blank" class="yt" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                <a href="https://www.facebook.com/profile.php?id=61583034586770" target="_blank" class="fb" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                <a href="https://www.reddit.com/user/Real_Network860/" target="_blank" class="rd" title="Reddit"><i class="fa-brands fa-reddit-alien"></i></a>
+                <a href="https://discord.gg/DfHFVNMBQF" target="_blank" class="dc" title="Discord"><i class="fa-brands fa-discord"></i></a>
+                <a href="https://www.tiktok.com/@pixelgaunt" target="_blank" class="tk" title="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+                <a href="mailto:pixelgaunt@gmail.com" class="gm" title="Gmail"><i class="fa-solid fa-envelope"></i></a>
+                <a href="https://whatsapp.com/channel/0029VbBo20lLo4hmsAJODc2u" target="_blank" class="wa-channel" title="WhatsApp Channel"><i class="fa-brands fa-whatsapp"></i></a>
+                <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" class="wa-group" title="WhatsApp Group"><i class="fa-solid fa-user-group"></i></a>
+            </div>
+            <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt. All Rights Reserved.</p>
+            <div class="footer-links">
+                <a href="javascript:void(0)" onclick="openPageModal('FAQ', 'pg-faq')">FAQ</a>
+                <a href="javascript:void(0)" onclick="openPageModal('Contact', 'pg-contact')">Contact</a>
+                <a href="javascript:void(0)" onclick="openPageModal('About Us', 'pg-about')">About Us</a>
+                <a href="javascript:void(0)" onclick="openPageModal('Privacy Policy', 'pg-privacy')">Privacy Policy</a>
+                <a href="javascript:void(0)" onclick="openPageModal('Disclaimer', 'pg-disclaimer')">Disclaimer</a>
+            </div>
         </div>
-    </div>
+    </footer>
 
-    <div class="modal-overlay" id="tournament-modal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeModals()">&times;</button>
-            <h3 class="modal-title pixel-font" style="color: var(--neon-cyan);">Live Esports</h3>
-            <p style="color: #94a3b8; text-align: center; font-size: 0.9rem; margin-bottom: 20px;">The Tournament registration portal will open in Season 2. Practice your skills in the meantime!</p>
-            <button class="action-btn" onclick="closeModals()" style="margin: 0 auto; border-color: var(--neon-cyan);">Close</button>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="subscribe-modal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeModals()">&times;</button>
-            <h3 class="modal-title pixel-font" style="color: #fbbf24;">Premium Portal</h3>
-            <p style="color: #94a3b8; text-align: center; font-size: 0.9rem; margin-bottom: 20px;">Subscription plans (Ad-free, exclusive games, cloud save) are launching soon.</p>
-            <button class="action-btn" onclick="closeModals()" style="margin: 0 auto; border-color: #fbbf24; color: #fbbf24;">Close</button>
-        </div>
-    </div>
+    <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
 
     <script>
+        // Check Login Status globally
         let isLoggedIn = false;
-        
-        // TUMHARI SAARI 12 GAMES KI FULL ARRAY YAHAN HAI:
+
         const games = [
             { 
                 id: 1, 
@@ -415,7 +644,71 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'Single-file HTML5, CSS Flexbox, Vanilla ES6 JavaScript, Web Audio API, Canvas API',
-                aiPrompt: `To help you recreate your "Stickman Velocity" game or build a clone using Gemini, you should use a structured, modular approach. Rather than asking for everything at once, it is best to provide the AI with a logical roadmap.`,
+                aiPrompt: `To help you recreate your "Stickman Velocity" game or build a clone using Gemini, you should use a structured, modular approach. Rather than asking for everything at once, it is best to provide the AI with a logical roadmap.
+
+Here are the step-by-step prompts you can use to build the game from scratch:
+
+Step 1: The Core Foundation (Engine)
+"Create a 2D side-scrolling stickman fighting game using a single HTML file (HTML5 Canvas, CSS, and JavaScript).
+
+Implement a player character with smooth movement (A, D keys), jumping (W), and attacks (J for Punch, L for Kick).
+
+Implement a gravity-based physics engine for the player and platform.
+
+Add dynamic enemies (different colors/types) that move towards the player and can attack.
+
+Include a simple particle system for hit effects (sparks/blood) and screen shake."
+
+Step 2: Camera and Environment
+"Enhance the game with a side-scrolling camera system:
+
+The camera should follow the player. When the player reaches the middle of the screen, the environment should scroll smoothly.
+
+Add a 'Wireframe/Notebook Sketch' style background using simple lines for mountains and trees.
+
+Implement a Level/Stage system where every 10 kills, the background theme/color changes and the difficulty (speed/health) increases."
+
+Step 3: Advanced Combat and Abilities
+"Add advanced combat mechanics:
+
+Add a Dash (SHIFT key) that grants invincibility during the move.
+
+Add a Crouch/Slide/Dive (S to crouch, U to dive) attack.
+
+Ensure the player can throw Fireballs (K key) while standing or crouching.
+
+Add cooldown bars for Dash and Dive in the UI, which refill over time."
+
+Step 4: Ultimate Power & AI Clones
+"Implement an 'Ultimate Power' system:
+
+Add a tracker UI that counts small kills (15), spiders (5), and big enemies (5).
+
+Once the requirements are met, enable the Ultimate by pressing J+K+L.
+
+Upon activation, spawn 5 AI-controlled clones that last for 15 seconds.
+
+Use logic to distribute the clones across multiple enemies so they don't merge into one spot."
+
+Step 5: Audio, UI, and Polish
+"Finalize the game with polish:
+
+Add a Web Audio API system to generate sound effects for punches, kicks, fireballs, and coins (without needing external files).
+
+Add an 'On/Off' toggle for background music.
+
+Add a 'Play Now' menu screen and an ESC-based Pause/Resume system.
+
+Ensure the game is a single-file HTML solution that runs in any browser."
+
+Tips for success when using these prompts:
+Keep the context: If you have already built the base in an AI chat, continue in the same chat session. This allows the AI to "remember" the code it previously wrote.
+
+Request "Single-File" output: Always specify: "Provide the result as a complete, single-file HTML code including CSS and JS."
+
+Debug incrementally: If an error occurs (like the "clones merging" issue), simply paste the code back into the chat and say: "The clones are merging into one spot. Please update the AI logic to distribute them across different enemies on screen."
+
+By following these modular steps, any AI can reconstruct the complex functionality of your "Stickman Velocity" game.`,
                 image: 'Stick Man Velocity.png',
                 preview: 'Stick Man Velocity.gif', 
                 url: 'Stick Man Velocity.html',
@@ -432,7 +725,70 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5 Canvas, Vanilla JS',
-                aiPrompt: `To create a game like "Serpent Relic" using Gemini or any other AI, you can use the step-by-step prompts below. Copy and paste them into the AI one by one to build, refine, and polish your game.`,
+                aiPrompt: `To create a game like "Serpent Relic" using Gemini or any other AI, you can use the step-by-step prompts below. Copy and paste them into the AI one by one to build, refine, and polish your game.
+
+Step 1: The Foundation (Game Engine & Movement)
+Prompt:
+
+"Create a complete, fully playable 2D grid-based puzzle-adventure game in a single HTML file using only HTML, CSS, and JavaScript.
+
+Use the Canvas API for rendering and requestAnimationFrame for the game loop.
+
+Implement a snake-like character with a 'dual-head' mechanic (front and back mouths) that moves in 4 directions on a grid.
+
+Create a level system where levels are defined as 2D arrays in the code.
+
+Ensure the movement feels smooth and responsive.
+
+Add responsive mobile touch controls and keyboard (WASD/Arrows) support.
+
+Keep the code clean, well-commented, and ensure it runs immediately in a browser without any external frameworks or libraries."
+
+Step 2: Adding Puzzle Mechanics (Interactions)
+Prompt:
+
+"Now, enhance the game logic with the following puzzle mechanics:
+
+'Rock' tiles (4): Block movement and can only be destroyed if the player collects a 'Tool' item (5) first.
+
+'Switch' tiles (6): Permanently change the state of 'Door' tiles (7) from closed to open when stepped on.
+
+'Twin Snake' Mechanic: Introduce a 'Key' (K) and 'Cage' (L). If a snake is in a cage, it cannot move until the player collects the key. Both snakes must reach the exit together.
+
+Implement a level transition effect and a persistent save system using localStorage to track unlocked levels."
+
+Step 3: Performance, Visuals, and Balancing
+Prompt:
+
+"Let's polish the game for performance and playability:
+
+Performance: The game is currently lagging. Optimize the rendering by limiting particle counts and only rendering heavy visual effects (like shadows) when necessary. Maintain a stable 60 FPS.
+
+Obstacle Balancing: If any obstacles are moving, set their speed to 50% of the player's movement speed to ensure the player has enough space and time to dodge them.
+
+Visuals: Implement a neon-minimalist style with glowing nodes and smooth transitions.
+
+Bug Fixes: Ensure the game automatically progresses to the next level when the win condition is met and fix any issues where the player gets stuck on Level 1."
+
+Step 4: Adding Atmosphere & Polish (Final Step)
+Prompt:
+
+"Finalizing the game:
+
+Darkness Mechanic: Add a 'fog of war' effect where the map is hidden in darkness, and only a circular area around the player is visible using a radial gradient on the canvas.
+
+Procedural Audio: Add simple Web Audio API functions for movement, collecting items, breaking rocks, and winning a level.
+
+Audio Loop: Add a background music loop that starts only after the user clicks the 'Start' button (to comply with browser auto-play policies).
+
+Final Review: Provide the complete, single-file HTML code containing all these mechanics, optimized for speed and a professional experience."
+
+Tips for Success:
+Sequential Usage: Always wait for the AI to finish one step before sending the next.
+
+Fixing Bugs: If the game breaks, ask: "The game is not starting (or is blank). Please add a window.onload wrapper to ensure the script only executes after the DOM is fully loaded."
+
+Customization: If you want to change a level, simply tell the AI: "Update the LEVELS array to include a new level layout with the following grid pattern: [Insert your grid array here]."`,
                 image: 'Serpent Relic.png', 
                 preview: 'Serpent Relic.gif',
                 url: 'Serpent Relic.html',
@@ -449,7 +805,52 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5, CSS Flexbox, JavaScript',
-                aiPrompt: `Step 1: The "Master Architect" Prompt. Copy and paste this prompt into an AI to get the complete code logic.`,
+                aiPrompt: `Step 1: The "Master Architect" Prompt
+Copy and paste this prompt into an AI to get the complete code logic. This prompt explicitly instructs the AI to handle the missing mechanics you mentioned.
+
+Prompt: "Act as a Lead Game Developer. I need the complete source code for 'Pizza Chaos' in a single HTML5 file. The current structure is missing the core game logic. Please rewrite it including:
+
+Core Game Loop: Implement a requestAnimationFrame-based loop with deltaTime to ensure consistent speed across devices.
+
+Player Class: Define a Player object with properties: x, y, hp, maxHp, speed, dashCd, jumpCd, and methods: move(), dash(), jump(), shoot(). Add smooth keyboard and mobile-joystick input mapping.
+
+Enemy System: Define an Enemy base class and subclasses (e.g., 'Pizza Slice', 'Crust Monster', 'Boss'). Implement an auto-spawning system that reads from a levels configuration (spawning more enemies as the level number increases).
+
+Mechanics: >    - Implement collision detection (circle-circle).
+
+Add a 'Dash' mechanic with invincibility frames.
+
+Add a 'Projectile' class for player and enemy attacks.
+
+Progressive Difficulty: Integrate the 25-level data structure provided (killing enemies, collecting items, boss fights).
+
+Optimization: Clear off-screen projectiles and dead enemies to prevent memory leaks.
+
+Styling: Retain the 'Press Start 2P' theme, responsive HUD, and landscape-only mobile warning.
+
+Branding: Add 'Made with Gemini AI Pro' at the bottom of the HUD.
+
+Provide the full, functional code."
+
+Step 2: How to Identify and Fix Bugs
+Because you are building a browser-based game, here is how to troubleshoot the components if they don't work as expected:
+
+If the Player isn't moving: Check the joyCurrent logic in the mobile event listeners. Ensure the joystick's delta is being applied to the player's x and y coordinates in the main update() loop.
+
+If the game lags: Ensure that the enemies array is being "filtered" every frame.
+
+Prompt to add: "Fix memory leaks by adding: enemies = enemies.filter(e => e.hp > 0); inside the update loop."
+
+If the Level ends early: Check the targetAchieved logic.
+
+Prompt to add: "Review the level objective logic: Ensure the level only transitions to 'Level Cleared' when the enemy kill count or collection count meets the requirement set in levelObjectives."
+
+Step 3: Adding New Items (Example Prompt)
+If you want to add a specific item later, use this format:
+
+Prompt: "Add a new item class called 'FreezeBomb'. When the player touches it, it should: 1. Add it to the map. 2. When collected, spawn a visual explosion effect. 3. Set the speedMult of all enemies currently on screen to 0.2 for 3 seconds. Add this to the existing game loop."
+
+By using the Master Architect Prompt in Step 1, the AI will build the foundation (Player/Enemy/Loop) that was previously missing from your file, allowing you to then add specific features using the formatting in Step 3.`,
                 image: 'Pizza Chaos.png', 
                 preview: 'Pizza Chaos.gif',
                 url: 'Pizza Chaos.html', 
@@ -466,7 +867,81 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5, CSS Grid, Vanilla JS',
-                aiPrompt: `To create a game like "Face Merge" or your "Bean Crush Saga," you can use the following step-by-step prompts.`,
+                aiPrompt: `To create a game like "Face Merge" or your "Bean Crush Saga," you can use the following step-by-step prompts. By feeding these to Gemini AI in order, you can rebuild the game, customize it, and ensure it works perfectly in a browser.
+
+Step 1: Base Game (Core Engine)
+Start by asking the AI to build the foundation:
+
+Prompt: "Create a complete, fully playable Candy Crush-inspired Match-3 puzzle game using HTML, CSS, and JavaScript in a single file. The game must be mobile-friendly (9:16 portrait view).
+Requirements:
+
+An 8x8 grid with 6 unique, colorful game pieces.
+
+Smooth drag-and-drop mechanics (must work on both desktop mouse and mobile touchscreens).
+
+Match detection (3, 4, and 5 matches), gravity logic, cascading combos, and score calculation.
+
+A starting screen and the main game board.
+
+The code must be self-contained in one HTML file."
+
+Step 2: Customization (Faces & Visuals)
+Once the engine works, add your specific look:
+
+Prompt: "Replace the basic colorful circles (beans) with beautiful, pure CSS-based facial expressions (Angry, Sad, Happy, Cool, Sick). Use specific CSS classes for each face. The matching logic must look at the 'face' type rather than just the background color, ensuring different faces do not merge incorrectly."
+
+Step 3: Puzzle Mechanics (Bird Rescue)
+Add the puzzle element:
+
+Prompt: "Add a 'Bird Rescue' puzzle mechanic. Every few levels, replace some game pieces with 'Caged Birds' (blocked cells). Cages cannot be swapped. They should only be destroyed by matching adjacent pieces or using power-ups. Add a 'Help!' animation inside the cage."
+
+Step 4: Dog Room & Water Effect
+This creates your signature animation:
+
+Prompt: "Add a 'Dog Room' container on the left side of the board.
+
+Add a water-filling animation in the dog room with animated bubbles using CSS.
+
+Place the 'Help!' or 'Happy!' speech bubble animation directly inside the dog room area, positioned just above the dog character.
+
+Implement an inventory-based Power-up system:
+
+Add 4 buttons (Hammer, Bomb, Rocket, Magic) with an inventory count.
+
+Add a '+' button below each power-up to 'buy' them using coins.
+
+Coins are earned by making big matches (4 or 5 pieces).
+
+Make power-ups expensive (100-250 coins) to balance the game."
+
+Step 5: Mobile Optimization
+Ensure it fits mobile screens perfectly:
+
+Prompt: "Optimize this game for mobile (9:16 aspect ratio).
+
+Extend the dog room, water bar, menu, and board layout to fit the full mobile screen vertically without any black space.
+
+Use 'flex-grow: 1' and ensure all UI elements are responsive.
+
+Fix any touch/drag conflicts to ensure the drag-and-drop system is bulletproof on all mobile browsers."
+
+Step 6: Audio Integration
+Add sound effects to make it feel professional:
+
+Prompt: "Add audio feedback using the Web Audio API.
+
+Create unique tones for: Swapping pieces, Matching, Explosions, Winning, and Losing.
+
+Add custom sounds for the dog (Bark for 'Happy' and Whine for 'Help').
+
+Ensure the game loop triggers these sounds on the correct events."
+
+Tips for Success:
+The Single-File Rule: Always remind the AI: "Keep all HTML, CSS, and JavaScript in one single HTML file."
+
+If Code Cuts Off: If the AI stops writing mid-code, simply reply with: "Continue from where you left off; do not miss any part of the code."
+
+Testing: Save your work as a .html file and open it in Chrome or Safari on your phone or computer to test the mechanics.`,
                 image: 'Face Merge.png', 
                 preview: 'Face Merge.gif',
                 url: 'Face Merge.html',
@@ -483,7 +958,57 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5 Canvas, Vanilla JS',
-                aiPrompt: `To help others or yourself generate a similar high-quality game using any AI (like Gemini, GPT-4, or Claude), you can use the following Master Development Prompt.`,
+                aiPrompt: `To help others or yourself generate a similar high-quality game using any AI (like Gemini, GPT-4, or Claude), you can use the following Master Development Prompt. This prompt is structured to ensure the AI handles the game logic, animations, and bug fixes properly.
+
+The "Panda the Ocean Hunter" Master Prompt
+Copy and paste the text below into an AI:
+
+Role: You are an expert Game Developer specializing in 2D HTML5 Canvas and Vanilla JavaScript.
+
+Task: Create a complete, high-quality, 2D browser-based game titled "Panda the Ocean Hunter".
+
+Game Specifications:
+
+Tech Stack: Use only HTML5, CSS3, and pure Vanilla JavaScript. No external libraries or frameworks. Everything must be contained within a single index.html file so it can be run locally in any browser.
+
+Visuals & Atmosphere:
+
+Art Style: Colorful, 2D side-view cartoon/chibi style.
+
+Environment: Deep cyan/blue water gradient background with an illustrated ocean floor and animated bubbles rising to the surface.
+
+Animations: - Panda: Needs a subtle "breathing" animation (subtle scaling up/down).
+
+Sea Creatures: All sea animals (Normal Fish, Heavy Fish, Mutant Fish, Golden Fish, Boss Octopus, Crabs, Jellyfish, Sea Snakes, Baby Octopus) must have fluid animations (tail wagging, leg movement for crabs, stretch-squish for jellyfish).
+
+Core Mechanics:
+
+Fishing Logic: A fishing rod system where the player hooks a fish.
+
+Basket Logic (Critical): Create a "Woven Basket" graphic next to the Panda. When a fish is caught, it should not just disappear; trigger a "Toss to Basket" parabolic arc animation. Once it hits the basket, the fish object must be completely deleted/removed from memory to prevent "stuck" or "ghost" creatures.
+
+Combat: Include a "Gun Shooting" mechanic to battle Mutants and the Boss Octopus.
+
+Progression: A shop menu (Upgrades Shop) where players can spend earned coins on 'Pro Rod', 'Armor Vest', and 'Golden Lure'.
+
+Technical Requirements & Bug Prevention:
+
+Collision Physics: Use hard-clamping for boundaries so creatures never get stuck at screen edges. If a creature hits a boundary, force its velocity to flip and snap it back to the safe zone.
+
+UI: Include a health bar, coin display, and notification text for events.
+
+Audio: Use the Web Audio API for basic sounds (splash, cast, shoot, coin collection, hit).
+
+Responsiveness: The canvas must resize to fit the browser window perfectly.
+
+Instruction: Please write the complete, optimized, and bug-free code. Ensure the "Toss to Basket" logic is integrated into the fish update loop so that no fish ever remains stuck in the water after being caught.
+
+How to use this to maintain your game:
+For new features: If you want to add something new (like a new fish type or a weather effect), use the prompt above but add a sentence at the end: "Update the code to also include [New Feature]."
+
+For bug fixes: If you encounter a bug, provide the AI with the specific function that is acting up. For example: "The collision detection in the update() function for the Crabs is still causing them to stick. Review the if conditions for the X-axis and rewrite them to force the crab to turn around instantly."
+
+Save your work: Always save the result as an .html file. If the AI gets confused or starts "forgetting" parts of the code because the game has grown too large, copy your current working code into the chat and say: "Here is my current game code. I need you to add [X feature] while keeping all existing mechanics, especially the basket removal logic, perfectly intact'."`,
                 image: 'Panda The Ocean Hunter.png', 
                 preview: 'Panda The Ocean Hunter.gif',
                 url: 'Panda The Ocean Hunter.html',
@@ -500,7 +1025,63 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser Desktop',
                 technology: 'Three.js, WebGL, HTML5',
-                aiPrompt: `To build an exact, professional-grade clone of this project, you need a modular approach. Here are the step-by-step prompts you should use to rebuild and expand the system.`,
+                aiPrompt: `To build an exact, professional-grade clone of this project, you need a modular approach. Here are the step-by-step prompts you should use to rebuild and expand the system, optimized for your single-file HTML5/JS workflow.
+
+Step 1: Core Engine & World Setup
+This prompt establishes the 3D environment and the "PixelGaunt" architectural foundation.
+
+Prompt: "Create a base HTML5 file using Three.js (r128) for a 3D game named 'Beggar Catcher'. Setup a scene with:
+
+A ground plane (300x300, green) and a road (300x25, dark grey).
+
+A city generator function that places 30 buildings of varying heights (8-25 units) and random colors, and 40 trees.
+
+Add fog for depth, and a DirectionalLight with shadows enabled.
+
+Implement a first-person controller (PointerLockControls) for movement.
+
+Constraint: Keep all code in a single HTML file with CSS and JS tags."
+
+Step 2: Player & Character System
+This addresses the missing details regarding the player's physical model and stats.
+
+Prompt: "Develop a character creation function createCharacterMesh(isPlayer, bodyColor) that returns a Three.js Group containing:
+
+A head (box, skin-colored), a torso (box, 'bodyColor'), and arms/legs as pivots.
+
+Attach this to a player object with the following stats: HP: 100, Speed: 7, SprintMultiplier: 1.8, CrouchMultiplier: 0.4.
+
+Add a 'Cap' (invisible by default) and 'Trolley' mesh as child objects.
+
+Add a saveData object to track player upgrades for these items."
+
+Step 3: Enemy Mechanics & Levels
+This solves the missing enemy behavior and level-based logic.
+
+Prompt: "Implement a LEVEL_DATA array containing 10 levels. Each level object must include:
+ID, Title, Description, Color, HP, Speed, Scale, Role (e.g., 'thief', 'aggressive'), SuspicionMultiplier, Bounty, and SpookThreshold.
+
+Behavior: 'Thief' role NPCs should run away when the player is in a 20-unit radius. 'Aggressive' NPCs should move toward the player if in range.
+
+Detection: Use the SuspicionMultiplier to calculate how fast the 'Suspicion' bar fills when the player looks at an NPC."
+
+Step 4: Interaction, Bugs, & Items
+This is where you implement the "Search" mechanic and fix the "Gliding" bug.
+
+Prompt: "Add the following mechanics:
+
+Interaction: If Right Click is held, trigger the 'Investigation' logic. If the bar fills, trigger 'Arrest' and award coins.
+
+Shop System: Create an applyUpgrades() function that changes the player's model appearance or unlocks abilities like carrying an NPC.
+
+Bug Fix: Implement a logic to fix the 'gliding' bug when an NPC is carried; ensure their position is locked to the player's carriedNPC offset with consistent interpolation."
+
+Implementation Guidelines:
+Attribution: Always include // Made with AI at the top of your script.
+
+Mobile Readiness: Since your target audience is browser-based, after you get the PC version working, use this prompt: "Add a virtual joystick for mobile touch devices, ensuring that it remains on the left side of the screen while keeping the camera rotation on the right."
+
+Vibe Coding: When you execute these prompts, tell me specifically which step you want to implement first, and I will provide the raw code blocks you can copy directly into your HTML file."`,
                 image: 'Beggar Catcher.png', 
                 preview: 'Beggar Catcher.gif',
                 url: 'Beggar Catcher.html',
@@ -517,7 +1098,73 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5 Canvas, RequestAnimationFrame',
-                aiPrompt: `Step 1: The Core Engine (The Framework) Use this prompt to set up the foundation.`,
+                aiPrompt: `Step 1: The Core Engine (The Framework)
+Use this prompt to set up the foundation:
+
+"Act as a Lead Game Developer. Create the base HTML5 structure for a 3D-perspective 'endless runner' game.
+
+Set up a full-screen canvas using CSS that locks the viewport (no scrolling/zooming).
+
+Create the 3D-to-2D projection math for a 4-walled tunnel (using variables: R, FOV, MAX_Z).
+
+Implement a rendering loop that draws a continuous, moving grid representing the tunnel walls.
+
+Use a 'cameraAngle' variable to handle the rotation of the player/tunnel when moving between walls."
+
+Step 2: The Player Logic (The Horse)
+Use this prompt to define the character:
+
+"Now, add the player character to the engine.
+
+Create a horse object with x, y, and wall-index properties.
+
+Draw a modular, shadow-free 2D representation of a horse on the canvas using basic ctx.ellipse and ctx.rect shapes (torso, head, legs, tail).
+
+Implement an animation cycle for the legs and tail based on the distanceTraveled.
+
+Add jump physics: Apply gravity (0.35) and upward velocity (6.8) to the Y property when the Spacebar or Swipe-Up input is detected."
+
+Step 3: Game Mechanics & Collision
+Use this prompt for the "challenge":
+
+"Implement the game's core mechanics and collision.
+
+Create a procedural level generator that fills the tunnel with slices containing 'solid' walls or 'gaps'.
+
+Logic: Define a slices array. If a slice is generated with wall[index] = false, it is a gap.
+
+Collision: Detect if the player is at the exact depth of a slice (z = 220). If the current wall/lane has no wall (a gap) and the player Y is 0 (grounded), trigger an 'isFallingOut' game-over state.
+
+Add a Game-Over sequence that clears the loop and displays the score."
+
+Step 4: The Economy & Dash (Items)
+Use this prompt for the gameplay loop:
+
+"Expand the game with an economy and a dash mechanic.
+
+Coin System: Add a 30% chance for a slice to contain a 'coin' object. Define the coin as a spinning ellipse. If the player's coordinate matches the coin's, increment coinsCount and give +25 score.
+
+Fast-Forward (Dash): Add a gameSpeed variable. When a 'Dash' button (or Shift key) is active, multiply gameSpeed by 2.2x.
+
+Visuals: Add a cyan aura effect around the player when the Dash is active."
+
+Step 5: Advanced Features (Leveling & Audio)
+Use this prompt for polish:
+
+"Finalize the game mechanics.
+
+Level Scaling: Every 800 score points, increment level and increase baseGameSpeed by 1.2 to make it harder over time.
+
+Audio Engine: Use the Web Audio API (Oscillators) to generate a 'Jump', 'Fall', and 'Coin' sound effect programmatically. Add a simple background synth loop that speeds up when the player uses the Dash."
+
+How to use these properly:
+Never skip a step: If you try to do everything in one go, the AI will "forget" parts of the code.
+
+"Fixing" existing code: If you have a bug (e.g., the jump isn't working), use this specific template:
+
+"My jump mechanic currently glitches when I am on the left wall. The Y-coordinate calculation is not resetting correctly. Please review the horse.update() function and fix the gravity logic so it is wall-independent."
+
+Tracking Data: To keep track of enemies or levels in your clone, ask the AI to "Define a JSON object for Level Data" so you can easily change the difficulty, wall speed, or coin spawn rate in one central place."`,
                 image: 'Horse Turn.png', 
                 preview: 'Horse Turn.gif',
                 url: 'Horse Turn.html',
@@ -534,7 +1181,109 @@
                 releaseDate: 'May 2026',
                 platform: 'Web Browser, Mobile',
                 technology: 'HTML5, CSS Animations, JS',
-                aiPrompt: `Step 1: Core Engine, Setup Screen, Player & Difficulty Prompt. Why Use It: This builds the game’s baseline database structure.`,
+                aiPrompt: `Step 1: Core Engine, Setup Screen, Player & Difficulty Prompt
+Why Use It: This builds the game’s baseline database structure, state tracker, and screen controllers, enforcing strict initialization rules before matches load.
+
+Act as an expert Game Developer. Build Step 1 of a single-file HTML5 Roguelike Deckbuilder game. All HTML, CSS, and JS must be strictly in ONE single code block. 
+
+Implement a fully animated Title/Setup Screen with these exact specifications:
+1. Character Selection: Include 5 distinct playable classes with their specific native emojis: Wizard (🧙‍♂️), Elf (🧝‍♀️), Ninja (🥷), Vampire (🧛), and Cyborg (🤖).
+2. Name Input System: Add a text box for custom player name input, fallback to the class name if left blank.
+3. Difficulty Selector System: Add 3 distinct difficulty modes that MUST be selected and locked BEFORE the game starts:
+   - Easy: Player faces standard balance, CPU HP is low.
+   - Normal: Standard scaling.
+   - Hard/Pro: Enemy scaling multipliers active (CPU HP is higher, enemy attacks do 1.5x to 2x damage).
+4. Player Stats Initialization: Setup a global player object tracking maxHp (80), current hp (80), maxEnergy (3), current energy (3), block (0), strength (0), weak (0), and poison (0).
+5. State Management: The game must initialize these arrays: deck, hand, drawPile, and discardPile. Populate the base deck with exactly 4x 'Strike', 4x 'Defend', and 1x 'Bash'.
+
+Ensure the screen has a beautiful dark gradient background with floating magical particles via CSS animations, and a prominent "PLAY NOW" button that shifts the state from Title Screen to the Map screen. Give me the complete working code.
+Step 2: The Roguelike Branching Map & Node Logic Prompt
+Why Use It: Path progression vectors can suffer alignment bugs on multi-device viewports. This prompt structures static grid tiers and renders pixel-perfect dynamic SVG paths.
+
+We are expanding our HTML5 game. Keep all previous mechanics intact and implement Step 2: The Branching Roguelike Map.
+
+Requirements:
+1. Map Array Data Structure: Create a 5-tier vertical progression grid array where each tier contains nodes linked to the next tier via a 'next' ID reference array.
+2. Node Types: Define 4 node types with distinct icons and behavior:
+   - Battle (⚔️): Triggers standard enemy combat.
+   - Rest (⛺): Triggers a campfire scene to heal exactly 24 HP.
+   - Treasure (🎁): Triggers a card reward picker screen.
+   - Boss (👹): Placed strictly at Tier 5 (Top node).
+3. Dynamic Map Renderer: Generate the nodes using CSS Grid/Flexbox arranged from bottom to top.
+4. SVG Path Overlay: Create an overlaying HTML SVG canvas that draws actual connection lines between current nodes and their specified 'next' child nodes. Use getBoundingClientRect() inside a window resize listener to keep lines pixel-perfect.
+5. Interactive Node Verification: Nodes must dynamically check state. Completed nodes become translucent. Current node scales up. Connected nodes in the next tier get an '.available' class with neon blinking yellow pulse animations and click events. Non-connected nodes must block click events completely.
+
+Integrate this smoothly with the Setup screen so hitting "PLAY NOW" opens this map, and clicking the first node initializes the map route. Return the complete updated file.
+Step 3: Card Database & Card Interaction Engine Prompt
+Why Use It: This builds the interactive parser engine, managing hover scaling thresholds, micro-interaction click states, and dynamic status modifications.
+
+We are expanding our game. Keep everything intact and implement Step 3: Card Library & Rendering Engine.
+
+1. Card Database Object: Build a dictionary containing these exact cards with properties (id, name, type, cost, val, block, weak, poison, img, desc):
+   - strike: Attack, 1 Energy, 6 Damage.
+   - twin_strike: Attack, 1 Energy, 4 Damage x 2 hits.
+   - dash: Attack, 2 Energy, 10 Damage, 10 Block.
+   - bash: Attack, 2 Energy, 8 Damage, Apply 2 Weak.
+   - neutralize: Attack, 0 Energy, 3 Damage, Apply 1 Weak.
+   - bane: Attack, 1 Energy, 7 Damage (If enemy has Poison, deals damage twice).
+   - defend: Skill, 1 Energy, 5 Block.
+   - deadly_poison: Skill, 1 Energy, Apply 5 Poison.
+   - catalyst: Skill, 1 Energy, Doubles enemy current Poison stacks.
+   - piercing_wail: Skill, 1 Energy, 4 Block, Apply 2 Weak.
+   - flex/inflame: Power, 1 Energy, Gain 2 permanent Strength.
+
+2. Dynamic Text Parsing: Create a rendering function that replaces tokens like '{val}' or '{block}' with current calculated variables. If the player has active Strength buffs, display the boosted attack value in neon green, or if Weakened, display it in a strike-through text style.
+3. Card Container Interaction: On the battle screen, render cards inside a hand container. Use CSS transforms to create a smooth curved fan-out look. Child elements inside cards must have 'pointer-events: none' to stop hover flickering. Hovering a card must shift it up by 35px smoothly.
+Step 4: Enemy AI, Intents & Battle Loop Engine Prompt
+Why Use It: This structures the foundational logic for turn-based state switches, enemy combat behavior tables, stat counters, and math modifiers.
+
+We are expanding the game. Implement Step 4: Enemy AI and Turn-Based Combat Loop.
+
+1. Enemy Pool Array: Define 4 procedural standard enemies and 1 final boss:
+   - Acid Slime (🦠, 35 HP): Pattern alternating between [5 Damage Attack] -> [Apply 2 Poison Debuff] -> [8 Damage Heavy Attack].
+   - Cultist (🦅, 50 HP): Pattern [Gain 2 Strength Buff] -> [6 Damage Attack] -> [6 Damage Attack].
+   - Thief (🦹, 60 HP): Pattern [10 Damage Attack] -> [Gain 10 Block Defend] -> [6 Damage Attack & Apply 1 Weak].
+   - Fungi Beast (🍄, 75 HP): Pattern [8 Damage Attack & Apply 3 Poison] -> [12 Damage Attack] -> [Gain 12 Block].
+   - Hexaghost (👹, 120 HP, BOSS): Pattern [4 Damage x 3 Multi-Attack] -> [Apply 2 Weak & 3 Poison] -> [18 Mega Attack] -> [Gain 20 Block].
+
+2. The Intent System: At the start of the player's turn, calculate the enemy's next move based on their incremental turn counter. Render a floating intent box above the enemy display showing the exact icon (⚔️, 🛡️, 🔥, 📉) and calculated final numerical damage/block value, factoring in enemy Strength or Weakness states.
+3. Combat Turn Manager Flow:
+   - Draw Phase: Reset Player Energy to 3, clear block, draw 5 cards. Calculate active Player Poison ticks before unblocking cards.
+   - Action Phase: Player plays cards. Validate energy cost vs current pool.
+   - Discard Phase: Pressing "End Turn" triggers an immediate card block lockdown to prevent double-casting. Hand clears into discardPile.
+   - Enemy Phase: Read the active Intent, perform math calculations against player block, deduct HP, apply debuffs, advance enemy turn count, update intents, and call player draw phase again.
+Step 5: Visual Polish, Particle Throw, and Floating Damage Numbers Prompt
+Why Use It: Enhances the game feel with advanced styling hooks, motion feedback frames, dynamic scaling indicators, and hit responses.
+
+We are enhancing the visual polish of our game. Keep all engine logic intact and inject an advanced CSS/JS animation layer:
+
+1. Web Animations API Particle Throw: Create a dynamic floating emoji projectile launcher. When an attack card is played, grab the card's native emoji character image and trigger an automated linear canvas glide translation projecting multiple particle duplicates shooting directly from the center coordinates of the player avatar to the enemy avatar. On enemy attacks, throw weapon emojis (🗡️, 💥) back toward the player.
+2. Floating Damage Text: Generate text elements dynamically with unique fonts on entity hits. Critical hits or clean unblocked damage must spawn massive bold red numbers that scale up rapidly, float upwards, and fade out using a smooth ease-out curve. Blocked hits must display text like "+Block" in neon blue.
+3. Combat Impact Shakes: If an entity takes unblocked damage, trigger a heavy horizontal CSS 'shake' animation on their frame box while flashing the background container tint. Gaining block must trigger a scaling pulse and a temporary blue glowing flash border.
+Step 6: Native Web Audio Synthesizer Engine Prompt
+Why Use It: Implements a direct runtime chiptune synthesizer loop, preventing path-not-found sound errors on browser platforms like Itch.io.
+
+We are adding full audio functionality. Since external file assets are blocked, integrate a native JavaScript Web Audio API Chiptune Synthesizer Engine.
+
+1. Audio Context Guard: Initialize a window AudioContext master handler. Put it behind an internal click/touch user-interaction gate to safely bypass browser strict autoplay block policies.
+2. Custom Waveform SFX Library: Build sound triggers using oscillator nodes with custom waveform nodes (sine, square, sawtooth, triangle) and automated exponential value gains for linear ramps:
+   - Card Hover: Fast high-pitch soft sine wave chirp.
+   - Button Click: Linear down-slide triangle pitch drop.
+   - Attack Cast: Heavy jagged sawtooth wave crunch diving downwards.
+   - Block Cast: High-resonance crisp square wave rising upwards.
+   - Buff/Debuff: Multi-layered sine wave chime scaling frequencies.
+   - Victory State: Harmonious arpeggio major chord sweep sequence.
+   - Defeat State: Low-frequency descending sawtooth drone fadeout.
+3. Master Audio Control HUD: Render a circular floating button in the upper corner of the game frame displaying an interactive master Mute/Unmute state (🔊/🔇) toggling internal synthesizer volume gain routers instantly.
+Step 7: Automated Bug Fixes & New Item Expansion Framework Prompt
+Why Use It: Eliminates memory leaks, endless draw state freezes, and array sequence overlap exceptions during prolonged runs.
+
+Review the current full application code and strictly execute this optimization blueprint to patch hidden state-machine bugs, game locks, and prepare item frameworks:
+
+1. Card State Lockup Fix: Ensure that inside the playCard() method, the absolute first step sets 'gameState.turnInProgress = true' instantly, and resetting it back to 'false' must only happen after all asynchronous card resolution timers and projectile throw animations have completely finished executing.
+2. Draw Pile Recycle Loop Fix: If drawPile length hits 0 mid-draw, clone the discardPile array contents into drawPile, empty out discardPile completely, execute a complete array element randomized index array shuffle function, and then continue pulling the remaining card draws seamlessly without breaking the evaluation loops.
+3. Dead Target Auto-Erase Fix: Implement internal logic check verifying entity health state on every event trigger. If enemy HP reaches zero or less, break all pending turn execution lines, trigger the victory transition sequences, clear combat arrays, and open the Map screen safely. If player HP reaches zero, wipe states and trigger the Game Over interface screen immediately.
+4. Extensible Item Pool: Setup an empty array called 'player.relics'. Create an item eval.`,
                 image: 'Deck of Doom.png', 
                 preview: 'Deck of Doom.gif',
                 url: 'Deck of Doom.html',
@@ -551,7 +1300,95 @@
                 releaseDate: 'June 1, 2026',
                 platform: 'Web Browser (Desktop & Mobile Responsive)',
                 technology: 'HTML5, CSS3, JavaScript (Vanilla), Web Audio API',
-                aiPrompt: `Create a complete browser-based game called "Tetris Reimagine". Core Concept: This game is inspired by Tetris but with a completely unique gameplay mechanic.`,
+                aiPrompt: `Create a complete browser-based game called "Tetris Reimagine".
+
+Core Concept:
+This game is inspired by Tetris but with a completely unique gameplay mechanic.
+
+Instead of geometric Tetris blocks falling downward from the top of the screen, colorful balloons float upward from the bottom of the screen due to buoyancy.
+
+The player must guide and position each balloon into a grid-based puzzle area before it reaches the top boundary.
+
+Gameplay Rules:
+
+- Balloons continuously spawn from the bottom.
+- Every balloon occupies exactly one grid cell.
+- Balloons naturally rise upward.
+- Player can move the active balloon left or right while it is floating.
+- Player can slightly slow down or speed up the balloon.
+- Once a balloon touches another balloon or reaches its target position, it becomes fixed.
+- Filled horizontal rows disappear and award points.
+- New balloons keep spawning.
+- If balloons reach the danger line at the top of the screen, game over.
+
+Unique Mechanics:
+
+- Reverse Tetris gravity.
+- Upward balloon physics.
+- Floating movement.
+- Smooth buoyancy animation.
+- Balloon wobbling effect.
+- Balloon collision detection.
+- Dynamic difficulty scaling.
+
+Controls:
+
+Desktop:
+← Move Left
+→ Move Right
+↑ Boost Upward Speed
+↓ Slow Balloon
+Space = Instant Lock Position
+P = Pause
+
+Mobile:
+Touch buttons
+Left
+Right
+Boost
+Slow
+Lock
+
+Visual Style:
+
+- Bright colorful balloons.
+- Cartoon arcade style.
+- Smooth animations.
+- Soft shadows.
+- Modern UI.
+- Floating particle effects.
+- Score display.
+- Combo indicator.
+- Level indicator.
+
+Game Systems:
+
+- Main Menu
+- Start Game
+- Pause Menu
+- Restart
+- High Score System
+- Level Progression
+- Combo System
+- Sound Effects
+- Background Music
+- Mobile Responsive Layout
+
+Technical Requirements:
+
+- Single HTML file.
+- All CSS and JavaScript embedded.
+- No external libraries.
+- No frameworks.
+- Works offline.
+- 60 FPS gameplay.
+- Mobile and desktop support.
+- Touch controls included.
+- Save high score using localStorage.
+
+Winning Experience:
+
+The game should feel like a fresh combination of Tetris and balloon physics where players carefully organize rising balloons into complete rows before the screen fills up.`,
                 image: 'Tetris Reimagine.png', 
                 preview: 'Tetris Reimagine.gif',
                 url: 'Tetris Reimagine.html',
@@ -563,12 +1400,336 @@
                 title: 'Iron Tide Rising', 
                 genre: '3D Shooting', 
                 controls: 'Movement: W (Forward), S (Backward), A (Left), D (Right) Action: SPACE (Jump), SHIFT (Sprint/Fast run) Combat: Left Click (Smart Automatic/Single Fire), TAB (Weapon Switch: Rifle/Bazooka), G (Throw Bomb/Grenade) Dodging: Q (Left Dash), E (Right Dash) System: ESC (Pause Menu).', 
-                howToPlay: 'Objective: Survive against waves of enemies and maximize your score.',
+                howToPlay: 'Objective: Survive against waves of enemies and maximize your score.Tactics:Cover: Buildings and cars act as solid objects. Use them to block enemy movement and incoming projectiles.Smart Weaponry: The rifle automatically detects enemy speed; it fires slowly on normal targets but switches to rapid-fire (AK-47 style) against fast runners.Dodging: Use Q or E to dash when you see fireballs or when a Tank gets too close.AoE Damage: Use the Bazooka or Bombs to deal massive area-of-effect damage to Tank units or groups of enemies.Win/Loss: The game continues as long as your HP is above zero. If HP hits zero, you lose.',
                 rating: '⭐⭐⭐⭐⭐ (4.8/5)',
                 releaseDate: 'June 2, 2026',
                 platform: 'Web Browser (Desktop Responsive)',
-                technology: 'Three.js, WebGL, Web Audio API',
-                aiPrompt: `Create a complete offline 3D browser game inspired by battle royale and tactical shooter gameplay.`,
+                technology: 'Three.js: The 3D rendering engine responsible for the scene, geometry, and lighting.HTML5 / CSS3: The structural layers and styling layers for the User Interface (HUD, Menus, Buttons).JavaScript (ES6): The core engine for logic, physics, collision detection (Box3), and event handling.Web Audio API: Used for procedural audio generation, allowing the game to produce sound effects without needing external .mp3 or .wav files.Browser APIs: Specifically the PointerLockAPI to hide the mouse cursor and lock it within the game window for camera control.',
+                aiPrompt: `Create a complete offline 3D browser game inspired by battle royale and tactical shooter gameplay. The game must be playable directly in a web browser and generated as a single project containing HTML, CSS, and JavaScript files.
+
+Game Title
+Animal Battle Arena
+
+Core Concept
+Create a low-poly 3D third-person shooter where all characters are anthropomorphic animals.
+The player controls one animal soldier while AI-controlled animal soldiers fight across the map.
+The game is fully offline and does not require internet connectivity.
+
+Playable Characters
+Create low-poly animal soldiers:
+
+
+Bear Soldier
+
+Lion Soldier
+
+Wolf Soldier
+
+Rhino Soldier
+
+Pig Soldier
+Each animal should have:
+
+
+Unique appearance
+
+Same gameplay balance
+
+Walking animation
+
+Running animation
+
+Shooting animation
+
+Reload animation
+
+Death animation
+Camera
+Third-person camera.
+Features:
+
+
+Mouse look
+
+Camera zoom
+
+Smooth follow camera
+
+Aim mode
+Weapons
+Add:
+
+
+Assault Rifle
+
+SMG
+
+Shotgun
+
+Sniper Rifle
+
+Pistol
+Each weapon needs:
+
+
+Different damage
+
+Different fire rate
+
+Recoil
+
+Reload system
+
+Muzzle flash
+
+Bullet tracers
+
+Sound effects
+Map Design
+Create a medium-sized industrial combat zone.
+Map must contain:
+
+
+Warehouses
+
+Shipping containers
+
+Corridors
+
+Concrete walls
+
+Pipes
+
+Towers
+
+Buildings
+
+Crates
+
+Cover locations
+
+Rooftops
+
+Narrow passages
+Map should encourage tactical movement and hiding.
+
+AI Bots
+Create advanced offline bots inspired by Counter-Strike 1.6 expert bots.
+Bots must:
+
+
+Search for enemies
+
+Patrol map
+
+Use cover intelligently
+
+Hide behind walls
+
+Hide behind containers
+
+Peek from corners
+
+Reload when needed
+
+Flank enemies
+
+Chase weak enemies
+
+React to gunfire
+
+Detect enemies using vision cones
+
+Fight each other
+
+Fight player
+
+Avoid standing still
+Difficulty levels:
+
+
+Easy
+
+Normal
+
+Hard
+
+Expert
+Expert bots should feel highly competitive.
+
+Combat System
+Implement:
+
+
+Health system
+
+Armor system
+
+Headshots
+
+Body shots
+
+Kill counter
+
+Death counter
+
+Respawning
+
+Blood effects
+
+Hit markers
+Game Modes
+Deathmatch
+Free-for-all.
+Every character fights everyone.
+
+Team Battle
+Two teams:
+
+
+Red Team
+
+Blue Team
+First team reaching target score wins.
+
+Survival Mode
+Player fights endless AI waves.
+
+Character Movement
+Add:
+
+
+Walk
+
+Run
+
+Sprint
+
+Jump
+
+Crouch
+
+Aim
+
+Shoot
+
+Reload
+Movement should feel smooth and responsive.
+
+User Interface
+Display:
+
+
+Health
+
+Armor
+
+Ammo
+
+Weapon Icon
+
+Score
+
+Remaining Bots
+
+Mini Map
+
+Crosshair
+Audio
+Add:
+
+
+Gun sounds
+
+Footsteps
+
+Reload sounds
+
+Hit sounds
+
+Ambient industrial sounds
+
+Victory sound
+
+Defeat sound
+Graphics Style
+Use:
+
+
+Low-poly art style
+
+Optimized geometry
+
+Bright readable colors
+
+Real-time shadows
+
+Good performance
+Target:
+
+
+60 FPS on low-end PCs
+
+Fast loading
+Technical Requirements
+Use:
+
+
+HTML5
+
+CSS3
+
+JavaScript
+
+Three.js
+Requirements:
+
+
+No external game engine
+
+Offline playable
+
+No multiplayer
+
+No login system
+
+No internet dependency
+
+All assets generated procedurally when possible
+Win Conditions
+
+Highest score wins
+
+Survival wave completion
+
+Team score victory
+Additional Features
+
+Weapon pickups
+
+Health pickups
+
+Armor pickups
+
+Random bot spawning
+
+Random weapon spawning
+
+Save settings locally
+
+Adjustable graphics quality
+
+Adjustable bot count
+Deliverables
+Generate complete production-ready source code with:
+
+
+index.html
+
+style.css
+
+script.js
+Game should run immediately after opening index.html in a browser.`,
                 image: 'Iron Tide Rising.png', 
                 preview: 'Iron Tide Rising.gif',
                 url: 'Iron Tide Rising.html',
@@ -579,13 +1740,358 @@
                 studio: 'Pixel Gaunt',
                 title: 'ReBounce', 
                 genre: 'Arcade', 
-                controls: 'Mouse / Touch.', 
-                howToPlay: 'Launch: Drag and release the Skull Ball to launch Goal: Collect all Energy Orbs to unlock the Portal and reach it.',
+                controls: 'Mouse / Touch).', 
+                howToPlay: 'Launch: Drag and release the Skull Ball to launch Goal: Collect all Energy Orbs to unlock the Portal and reach it  Obstacles: Use Black Holes to teleport, dodge moving Drones, and bounce off walls Rating: Finish levels quickly to earn up to 3 Stars and bonus points Auto-Retry: If your ball gets stuck, the level resets automatically after 10 seconds.',
                 rating: '⭐⭐⭐⭐⭐ (4.8/5)',
                 releaseDate: 'June 5, 2026',
                 platform: 'Web Browser (Desktop & Mobile Responsive)',
                 technology: 'HTML5 Web Technologies.',
-                aiPrompt: `Create a highly polished commercial-quality physics action game called BOUNCE.`,
+                aiPrompt: `Create a highly polished commercial-quality physics action game called:
+
+BOUNCE
+
+Genre:
+Physics-Based Action Platformer + Skill Puzzle + Arcade
+
+Target Platforms:
+- Web Browser (HTML5)
+- Android
+- Windows PC
+
+Core Gameplay:
+
+The player launches a stickman from the bottom of the level using a slingshot-style aiming system.
+
+The stickman flies through the level while bouncing realistically from walls, platforms, bumpers, and obstacles.
+
+The goal is to reach the exit portal while collecting rewards, defeating enemies, avoiding traps, and maintaining momentum.
+
+The game should feel addictive, satisfying, and easy to learn but difficult to master.
+
+=================================================
+CORE MECHANICS
+=================================================
+
+- Drag to aim
+- Release to launch
+- Physics-based movement
+- dynamic wall bouncing
+- Momentum preservation
+- Collision reactions
+- Chain bounces
+- Combo multipliers
+
+The player must calculate bounce angles and use the environment strategically.
+
+=================================================
+GAME MODES
+=================================================
+
+1. Adventure Mode
+- 100 handcrafted levels
+- Increasing difficulty
+- Multiple world themes
+
+2. Challenge Mode
+- Time attack
+- Survival
+- One-shot levels
+
+3. Endless Mode
+- Infinite generated stages
+- High-score chasing
+
+4. Boss Mode
+- Giant enemy encounters
+- Unique mechanics
+
+=================================================
+LEVEL OBJECTS
+=================================================
+
+Walls
+Moving platforms
+Bounce pads
+Gravity fields
+Teleporters
+Breakable blocks
+Switches
+Locked gates
+Speed tunnels
+Portals
+
+=================================================
+TRAPS
+=================================================
+
+Spikes
+Saw blades
+Laser beams
+Flamethrowers
+Electric barriers
+Falling crushers
+Explosive mines
+Poison zones
+
+=================================================
+ENEMIES
+=================================================
+
+Walker Enemy
+Flying Drone
+Turret Enemy
+Shield Enemy
+Explosive Enemy
+Boss Enemies
+
+Enemies can be defeated by:
+- High-speed collision
+- Environmental hazards
+- Power-up attacks
+
+=================================================
+COLLECTABLES
+=================================================
+
+Coins
+Gems
+Stars
+Keys
+Energy Orbs
+
+Collectables should create satisfying visual and audio feedback.
+
+=================================================
+POWER UPS
+=================================================
+
+Shield
+Magnet
+Speed Boost
+Double Impact
+Slow Motion
+Freeze Time
+Bounce Boost
+Ghost Mode
+
+=================================================
+UPGRADE SYSTEM
+=================================================
+
+Players can spend collected coins to upgrade:
+
+Launch Power
+Bounce Strength
+Maximum Health
+Critical Damage
+Magnet Radius
+Coin Multiplier
+
+=================================================
+WORLD THEMES
+=================================================
+
+World 1:
+Training Facility
+
+World 2:
+Industrial Factory
+
+World 3:
+Ancient Jungle
+
+World 4:
+Frozen Kingdom
+
+World 5:
+Volcano Core
+
+World 6:
+Space Station
+
+World 7:
+Cyber City
+
+World 8:
+Dark Dimension
+
+=================================================
+BOSS FIGHTS
+=================================================
+
+Every world ends with a boss battle.
+
+Bosses should have:
+
+Multiple attack phases
+Weak points
+Special abilities
+Unique visual designs
+
+=================================================
+SCORING SYSTEM
+=================================================
+
+Score based on:
+
+Coins
+Gems
+Enemy kills
+Bounce combos
+Speed
+Level completion time
+
+Display:
+3-Star Rating System
+
+=================================================
+ACHIEVEMENTS
+=================================================
+
+First Bounce
+Combo Master
+Speed Demon
+Treasure Hunter
+Boss Slayer
+Perfect Run
+
+=================================================
+DAILY CONTENT
+=================================================
+
+Daily Challenges
+Weekly Missions
+Special Events
+
+=================================================
+LEADERBOARDS
+=================================================
+
+Global Scores
+Friends Scores
+Fastest Completion Times
+
+Design architecture to support future online leaderboards.
+
+=================================================
+VISUAL STYLE
+=================================================
+
+Modern 2.5D Look
+
+Character:
+Animated stickman hero
+
+Graphics:
+High-quality vector visuals
+Smooth effects
+Particle systems
+Glow effects
+Impact flashes
+Motion trails
+
+Animations:
+Idle
+Launch
+Bounce
+Hit
+Victory
+Defeat
+
+=================================================
+CAMERA
+=================================================
+
+Smooth camera follow
+Dynamic zoom
+Impact shake
+Boss zoom effects
+
+=================================================
+AUDIO
+=================================================
+
+Energetic arcade soundtrack
+
+Sound Effects:
+Launch
+Bounce
+Enemy hit
+Coin collect
+Power-up pickup
+Explosion
+Victory
+
+=================================================
+USER INTERFACE
+=================================================
+
+Main Menu
+World Map
+Level Select
+Pause Menu
+Settings
+Achievements
+Statistics
+Shop
+
+=================================================
+SAVE SYSTEM
+=================================================
+
+Save progress automatically
+
+Store:
+Unlocked levels
+Coins
+Upgrades
+Achievements
+
+Use Local Storage for browser version.
+
+=================================================
+MONETIZATION READY
+=================================================
+
+Design architecture for:
+
+Rewarded Ads
+Interstitial Ads
+Cosmetic Skins
+Premium Worlds
+
+Monetization should be optional and not required for gameplay.
+
+=================================================
+TECHNICAL REQUIREMENTS
+=================================================
+
+- HTML5
+- CSS3
+- JavaScript
+- Mobile responsive
+- Touch support
+- Keyboard support
+- Mouse support
+- 60 FPS target
+- Optimized performance
+- Clean modular code
+- Production-ready architecture
+
+=================================================
+EXTRA POLISH
+=================================================
+
+Screen shake
+Particle explosions
+Slow-motion impacts
+Combo notifications
+Floating score text
+Level intro animations
+Victory celebrations
+Smooth transitions
+
+Create a complete professional game that feels like a mix of Angry Birds, Bounce physics games, platform action games, and arcade skill challenges while maintaining its own original identity under the name STICKMAN BOUNCE..`,
                 image: 'ReBounce.png', 
                 preview: 'ReBounce.gif',
                 url: 'ReBounce.html',
@@ -596,13 +2102,358 @@
                 studio: 'Pixel Gaunt',
                 title: 'Girl: The Driller', 
                 genre: 'Adventure', 
-                controls: 'Keyboard / Mouse / Touch.', 
-                howToPlay: 'Collect all Energy Orbs to unlock the Portal and reach it.',
+                controls: 'Keyboard / Mouse / Touch).', 
+                howToPlay: 'Launch: Drag and release the Skull Ball to launch Goal: Collect all Energy Orbs to unlock the Portal and reach it  Obstacles: Use Black Holes to teleport, dodge moving Drones, and bounce off walls Rating: Finish levels quickly to earn up to 3 Stars and bonus points Auto-Retry: If your ball gets stuck, the level resets automatically after 10 seconds.',
                 rating: '⭐⭐⭐⭐⭐ (4.8/5)',
                 releaseDate: 'June 5, 2026',
                 platform: 'Web Browser (Desktop & Mobile Responsive)',
                 technology: 'HTML5 Web Technologies.',
-                aiPrompt: `Create a highly polished commercial-quality physics action game.`,
+                aiPrompt: `Create a highly polished commercial-quality physics action game called:
+
+BOUNCE
+
+Genre:
+Physics-Based Action Platformer + Skill Puzzle + Arcade
+
+Target Platforms:
+- Web Browser (HTML5)
+- Android
+- Windows PC
+
+Core Gameplay:
+
+The player launches a stickman from the bottom of the level using a slingshot-style aiming system.
+
+The stickman flies through the level while bouncing realistically from walls, platforms, bumpers, and obstacles.
+
+The goal is to reach the exit portal while collecting rewards, defeating enemies, avoiding traps, and maintaining momentum.
+
+The game should feel addictive, satisfying, and easy to learn but difficult to master.
+
+=================================================
+CORE MECHANICS
+=================================================
+
+- Drag to aim
+- Release to launch
+- Physics-based movement
+- dynamic wall bouncing
+- Momentum preservation
+- Collision reactions
+- Chain bounces
+- Combo multipliers
+
+The player must calculate bounce angles and use the environment strategically.
+
+=================================================
+GAME MODES
+=================================================
+
+1. Adventure Mode
+- 100 handcrafted levels
+- Increasing difficulty
+- Multiple world themes
+
+2. Challenge Mode
+- Time attack
+- Survival
+- One-shot levels
+
+3. Endless Mode
+- Infinite generated stages
+- High-score chasing
+
+4. Boss Mode
+- Giant enemy encounters
+- Unique mechanics
+
+=================================================
+LEVEL OBJECTS
+=================================================
+
+Walls
+Moving platforms
+Bounce pads
+Gravity fields
+Teleporters
+Breakable blocks
+Switches
+Locked gates
+Speed tunnels
+Portals
+
+=================================================
+TRAPS
+=================================================
+
+Spikes
+Saw blades
+Laser beams
+Flamethrowers
+Electric barriers
+Falling crushers
+Explosive mines
+Poison zones
+
+=================================================
+ENEMIES
+=================================================
+
+Walker Enemy
+Flying Drone
+Turret Enemy
+Shield Enemy
+Explosive Enemy
+Boss Enemies
+
+Enemies can be defeated by:
+- High-speed collision
+- Environmental hazards
+- Power-up attacks
+
+=================================================
+COLLECTABLES
+=================================================
+
+Coins
+Gems
+Stars
+Keys
+Energy Orbs
+
+Collectables should create satisfying visual and audio feedback.
+
+=================================================
+POWER UPS
+=================================================
+
+Shield
+Magnet
+Speed Boost
+Double Impact
+Slow Motion
+Freeze Time
+Bounce Boost
+Ghost Mode
+
+=================================================
+UPGRADE SYSTEM
+=================================================
+
+Players can spend collected coins to upgrade:
+
+Launch Power
+Bounce Strength
+Maximum Health
+Critical Damage
+Magnet Radius
+Coin Multiplier
+
+=================================================
+WORLD THEMES
+=================================================
+
+World 1:
+Training Facility
+
+World 2:
+Industrial Factory
+
+World 3:
+Ancient Jungle
+
+World 4:
+Frozen Kingdom
+
+World 5:
+Volcano Core
+
+World 6:
+Space Station
+
+World 7:
+Cyber City
+
+World 8:
+Dark Dimension
+
+=================================================
+BOSS FIGHTS
+=================================================
+
+Every world ends with a boss battle.
+
+Bosses should have:
+
+Multiple attack phases
+Weak points
+Special abilities
+Unique visual designs
+
+=================================================
+SCORING SYSTEM
+=================================================
+
+Score based on:
+
+Coins
+Gems
+Enemy kills
+Bounce combos
+Speed
+Level completion time
+
+Display:
+3-Star Rating System
+
+=================================================
+ACHIEVEMENTS
+=================================================
+
+First Bounce
+Combo Master
+Speed Demon
+Treasure Hunter
+Boss Slayer
+Perfect Run
+
+=================================================
+DAILY CONTENT
+=================================================
+
+Daily Challenges
+Weekly Missions
+Special Events
+
+=================================================
+LEADERBOARDS
+=================================================
+
+Global Scores
+Friends Scores
+Fastest Completion Times
+
+Design architecture to support future online leaderboards.
+
+=================================================
+VISUAL STYLE
+=================================================
+
+Modern 2.5D Look
+
+Character:
+Animated stickman hero
+
+Graphics:
+High-quality vector visuals
+Smooth effects
+Particle systems
+Glow effects
+Impact flashes
+Motion trails
+
+Animations:
+Idle
+Launch
+Bounce
+Hit
+Victory
+Defeat
+
+=================================================
+CAMERA
+=================================================
+
+Smooth camera follow
+Dynamic zoom
+Impact shake
+Boss zoom effects
+
+=================================================
+AUDIO
+=================================================
+
+Energetic arcade soundtrack
+
+Sound Effects:
+Launch
+Bounce
+Enemy hit
+Coin collect
+Power-up pickup
+Explosion
+Victory
+
+=================================================
+USER INTERFACE
+=================================================
+
+Main Menu
+World Map
+Level Select
+Pause Menu
+Settings
+Achievements
+Statistics
+Shop
+
+=================================================
+SAVE SYSTEM
+=================================================
+
+Save progress automatically
+
+Store:
+Unlocked levels
+Coins
+Upgrades
+Achievements
+
+Use Local Storage for browser version.
+
+=================================================
+MONETIZATION READY
+=================================================
+
+Design architecture for:
+
+Rewarded Ads
+Interstitial Ads
+Cosmetic Skins
+Premium Worlds
+
+Monetization should be optional and not required for gameplay.
+
+=================================================
+TECHNICAL REQUIREMENTS
+=================================================
+
+- HTML5
+- CSS3
+- JavaScript
+- Mobile responsive
+- Touch support
+- Keyboard support
+- Mouse support
+- 60 FPS target
+- Optimized performance
+- Clean modular code
+- Production-ready architecture
+
+=================================================
+EXTRA POLISH
+=================================================
+
+Screen shake
+Particle explosions
+Slow-motion impacts
+Combo notifications
+Floating score text
+Level intro animations
+Victory celebrations
+Smooth transitions
+
+Create a complete professional game that feels like a mix of Angry Birds, Bounce physics games, platform action games, and arcade skill challenges while maintaining its own original identity under the name STICKMAN BOUNCE..`,
                 image: 'Girl The Driller.png', 
                 preview: 'Girl: The Driller.gif',
                 url: 'Girl The Driller.html',
@@ -624,12 +2475,16 @@
                 gameGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px; font-size:0.9rem;">No entries found fitting active matrix fields.</p>';
                 return;
             }
+
             gameList.forEach(game => {
                 const card = document.createElement('div');
                 card.className = 'game-card';
                 card.onclick = () => launchViewport(game.id);
+                
                 const safeImg = encodeURI(game.image);
                 const safePreview = encodeURI(game.preview || game.image.replace('.png', '.gif')); 
+                
+                // Hover Fixed: Overlay method prevents original image from disappearing if GIF is missing
                 card.innerHTML = `
                     <div class="card-thumb" style="background-image: url('${safeImg}');">
                         <div class="gif-overlay" style="background-image: url('${safePreview}');"></div>
@@ -650,25 +2505,60 @@
             const query = document.getElementById('search-input').value.toLowerCase();
             const filtered = games.filter(g => g.title.toLowerCase().includes(query) || g.genre.toLowerCase().includes(query));
             renderGames(filtered);
-            document.querySelectorAll('.cat-btn, .sidebar-menu button').forEach(b => b.classList.remove('active'));
+            
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sidebar-menu button').forEach(b => b.classList.remove('active'));
         }
 
         function filterCategory(category, btnElement) {
             document.getElementById('search-input').value = ''; 
-            document.querySelectorAll('.cat-btn, .sidebar-menu button').forEach(b => b.classList.remove('active'));
-            if (btnElement) btnElement.classList.add('active');
-            if (category === 'All') renderGames(games);
-            else renderGames(games.filter(g => g.genre === category));
+            
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sidebar-menu button').forEach(b => b.classList.remove('active'));
+
+            if (btnElement) {
+                btnElement.classList.add('active');
+            } else {
+                const topButtons = document.querySelectorAll('.cat-btn');
+                topButtons.forEach(btn => {
+                    if (category === 'All' && btn.innerText.includes('All')) btn.classList.add('active');
+                    else if (btn.innerText.trim() === category) btn.classList.add('active');
+                });
+            }
+
+            const catIdMap = {
+                'All': 'btn-cat-all',
+                'Fighting': 'btn-cat-fighting',
+                'Action': 'btn-cat-action',
+                '3D Simulation': 'btn-cat-3d-sim',
+                'Puzzle Adventure': 'btn-cat-puzzle-adv',
+                'Casual Adventure': 'btn-cat-casual-adv',
+                'Puzzle': 'btn-cat-puzzle',
+                'Racing': 'btn-cat-racing',
+                'Rogue-like': 'btn-cat-roguelike'
+            };
+            
+            const sideBtn = document.getElementById(catIdMap[category]);
+            if (sideBtn) sideBtn.classList.add('active');
+
+            if (category === 'All') {
+                renderGames(games);
+            } else {
+                const filtered = games.filter(g => g.genre === category);
+                renderGames(filtered);
+            }
         }
 
         function goHome() {
             gameplayPage.style.display = 'none';
             homepage.style.display = 'flex';
             searchSection.style.display = 'block';
+            
             gameIframe.src = ''; 
             portalBgm.pause();
             portalBgm.currentTime = 0;
             portalBgm.src = '';
+
             window.scrollTo(0, 0);
         }
 
@@ -689,9 +2579,10 @@
             document.getElementById('current-game-rating').innerHTML = game.rating;
             document.getElementById('current-game-howtoplay').innerHTML = game.howToPlay;
             document.getElementById('current-game-controls').innerHTML = game.controls;
-
+            
             const aiBox = document.getElementById('current-game-aiprompt');
             const aiContainer = document.getElementById('ai-prompt-container');
+            
             aiBox.dataset.promptText = game.aiPrompt || ''; 
 
             if (game.aiPrompt && game.aiPrompt !== '') {
@@ -700,6 +2591,7 @@
             } else {
                 aiContainer.style.display = 'none';
             }
+
             gameIframe.src = encodeURI(game.url); 
             if(game.bgm) {
                 portalBgm.src = encodeURI(game.bgm);
@@ -710,6 +2602,7 @@
         function updatePromptVisibility() {
             const aiBox = document.getElementById('current-game-aiprompt');
             const hiddenMsg = document.getElementById('ai-prompt-hidden-msg');
+            
             if(isLoggedIn) {
                 aiBox.innerText = aiBox.dataset.promptText;
                 aiBox.style.display = 'block';
@@ -718,6 +2611,68 @@
                 aiBox.style.display = 'none';
                 hiddenMsg.style.display = 'block';
             }
+        }
+
+        function actionLike() {
+            alert('Coming Soon!');
+        }
+        
+        function actionBug() {
+            alert('Coming Soon!');
+        }
+        
+        // actionShare replaced by openShareModal
+
+        function shareToPlatform(platform) {
+            const title = document.getElementById('current-game-title').innerText;
+            if(platform === 'Copy Link') {
+                alert(`🔗 Direct Game Link copied to clipboard!`);
+            } else {
+                alert(`Redirecting to ${platform} to share [ ${title} ]...`);
+            }
+            closeModals();
+        }
+
+        function toggleMute() {
+            const bgm = document.getElementById('portal-bgm');
+            const muteBtn = document.getElementById('mute-btn');
+            bgm.muted = !bgm.muted;
+            muteBtn.innerHTML = bgm.muted ? '🔇 Sound: OFF' : '🔊 Sound: ON';
+            if(bgm.muted) {
+                muteBtn.style.color = '#ff4757';
+                muteBtn.style.borderColor = '#ff4757';
+            } else {
+                muteBtn.style.color = '#e2e8f0';
+                muteBtn.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+            }
+        }
+
+        function toggleFullscreen() {
+            const container = document.getElementById('game-container-element');
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (container.requestFullscreen) container.requestFullscreen();
+                else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+        }
+
+        function openLoginWizard() {
+            openModal('login-modal');
+            goToLoginStep('choice');
+        }
+
+        function goToLoginStep(step) {
+            document.querySelectorAll('#login-modal .modal-step').forEach(s => s.classList.remove('active'));
+            document.getElementById(`login-step-${step}`).classList.add('active');
+        }
+
+        function simulateAuthSuccess(msg) {
+            alert(msg);
+            isLoggedIn = true; 
+            updatePromptVisibility(); 
+            closeModals();
         }
 
         function openModal(modalId) { 
@@ -733,21 +2688,14 @@
             });
         }
 
-        function toggleMute() {
-            const bgm = document.getElementById('portal-bgm');
-            const muteBtn = document.getElementById('mute-btn');
-            bgm.muted = !bgm.muted;
-            muteBtn.innerHTML = bgm.muted ? '🔇 Sound: OFF' : '🔊 Sound: ON';
-        }
-
-        function toggleFullscreen() {
-            const container = document.getElementById('game-container-element');
-            if (!document.fullscreenElement) {
-                if (container.requestFullscreen) container.requestFullscreen();
+        window.addEventListener('scroll', () => {
+            const scrollBtn = document.getElementById('scrollToTopBtn');
+            if (window.scrollY > 300) {
+                scrollBtn.style.display = 'block';
             } else {
-                if (document.exitFullscreen) document.exitFullscreen();
+                scrollBtn.style.display = 'none';
             }
-        }
+        });
 
         window.onload = () => {
             renderGames(games);
@@ -756,16 +2704,241 @@
                 setTimeout(() => loader.style.display = 'none', 400);
             }, 600);
         };
+
         window.onclick = (e) => { if (e.target.classList.contains('modal-overlay')) closeModals(); }
+        window.onkeydown = (e) => { if (e.key === 'Escape') closeModals(); }
     </script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+  //
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "pixelgaunt.firebaseapp.com",
+    projectId: "pixelgaunt",
+    storageBucket: "pixelgaunt.appspot.com",
+    messagingSenderId: "...",
+    appId: "..."
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Example: Game play hone par data save karna
+  async function updateGameStats(gameId, playCount) {
+    await setDoc(doc(db, "games", gameId), {
+      views: playCount,
+      lastUpdated: new Date()
+    });
+  }
+</script>
+
+<!-- SHARE MODAL -->
+<div class="modal-overlay" id="share-modal" onclick="if(event.target === this) closeShareModal()">
+    <div class="modal-content" style="max-width: 420px; text-align: center;">
+        <span class="close-modal" onclick="closeShareModal()" style="cursor: pointer; position: absolute; right: 20px; top: 15px; font-size: 24px; color: #64748b;">&times;</span>
+        <h3 class="pixel-font" style="color: #fff; margin-bottom: 20px; font-size: 1rem;">Share Game</h3>
+        
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button class="action-btn" style="justify-content: center; background: #2b2b36; width: 100%; border: none;" onclick="copyGameLink()"><i class="fas fa-link"></i> Copy Link</button>
+            <button class="action-btn" style="justify-content: center; background: #25d366; width: 100%; border: none;" onclick="shareTo('whatsapp')"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+            <button class="action-btn" style="justify-content: center; background: #1877F2; width: 100%; border: none;" onclick="shareTo('facebook')"><i class="fab fa-facebook-f"></i> Facebook</button>
+            <button class="action-btn" style="justify-content: center; background: #1DA1F2; width: 100%; border: none;" onclick="shareTo('twitter')"><i class="fab fa-twitter"></i> Twitter</button>
+            <button class="action-btn" style="justify-content: center; background: #0088cc; width: 100%; border: none;" onclick="shareTo('telegram')"><i class="fab fa-telegram-plane"></i> Telegram</button>
+            <button class="action-btn" style="justify-content: center; background: #FF4500; width: 100%; border: none;" onclick="shareTo('reddit')"><i class="fab fa-reddit-alien"></i> Reddit</button>
+            <button class="action-btn" style="justify-content: center; background: #5865F2; width: 100%; border: none;" onclick="shareTo('discord')"><i class="fab fa-discord"></i> Discord</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openShareModal() {
+        const modal = document.getElementById('share-modal');
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    }
+
+    function closeShareModal() {
+        const modal = document.getElementById('share-modal');
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 250);
+    }
+
+    
+    function inviteFriends() {
+        const shareData = {
+            title: 'Pixel Gaunt',
+            text: 'Check out this awesome game on Pixel Gaunt!',
+            url: window.location.href
+        };
+
+        if (navigator.share && window.isSecureContext) {
+            navigator.share(shareData)
+                .catch(err => {
+                    console.error("Share failed:", err);
+                    fallbackCopy(window.location.href);
+                });
+        } else {
+            fallbackCopy(window.location.href);
+        }
+    }
+
+    function copyGameLink() {
+        const url = window.location.href;
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert("Game link copied successfully!");
+            }).catch(err => {
+                fallbackCopy(url);
+            });
+        } else {
+            fallbackCopy(url);
+        }
+    }
+
+    function fallbackCopy(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                alert("Game link copied successfully!");
+            } else {
+                alert("Link copy fail ho gaya. Aap manually link copy karein.");
+            }
+        } catch (err) {
+            alert("Link copy fail ho gaya. Aap manually link copy karein.");
+        }
+        document.body.removeChild(textArea);
+    }
+
+    function shareTo(platform) {
+        const url = encodeURIComponent(window.location.href);
+        const text = encodeURIComponent("Check out this awesome game on Pixel Gaunt!");
+        let shareUrl = '';
+
+        switch(platform) {
+            case 'whatsapp': shareUrl = `https://api.whatsapp.com/send?text=${text} ${url}`; break;
+            case 'facebook': shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`; break;
+            case 'twitter': shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`; break;
+            case 'telegram': shareUrl = `https://t.me/share/url?url=${url}&text=${text}`; break;
+            case 'reddit': shareUrl = `https://reddit.com/submit?url=${url}&title=${text}`; break;
+            case 'discord': 
+                copyGameLink(); 
+                alert("Link copied! Aap isay Discord mein paste kar sakte hain."); 
+                return;
+        }
+        if(shareUrl) window.open(shareUrl, '_blank');
+    }
+
+    function takeGameplayScreenshot() {
+        const iframe = document.getElementById('game-canvas');
+        if(!iframe) return alert("Game iframe nahi mila!");
+
+        let targetElement = document.querySelector('.game-container');
+        
+        // Koshish karte hain ke iframe ke andar ka hissa capture ho
+        try {
+            if (iframe.contentWindow && iframe.contentWindow.document && iframe.contentWindow.document.body) {
+                targetElement = iframe.contentWindow.document.body;
+            }
+        } catch (e) {
+            console.warn("Cross-origin iframe. Container screenshot default.");
+        }
+
+        html2canvas(targetElement, { 
+            useCORS: true, 
+            allowTaint: false, // Taint allow karne se link save nahi hota
+            backgroundColor: "#000"
+        }).then(canvas => {
+            const ctx = canvas.getContext('2d');
+            const boxWidth = 260;
+            const boxHeight = 70;
+            
+            ctx.fillStyle = "rgba(15, 15, 22, 0.9)"; 
+            if (ctx.roundRect) {
+                ctx.beginPath();
+                ctx.roundRect(10, canvas.height - boxHeight - 10, boxWidth, boxHeight, 8);
+                ctx.fill();
+            } else {
+                ctx.fillRect(10, canvas.height - boxHeight - 10, boxWidth, boxHeight);
+            }
+
+            ctx.font = "bold 18px 'Press Start 2P', monospace, sans-serif";
+            ctx.fillStyle = "#bc13fe"; 
+            ctx.fillText("Pixel Gaunt", 20, canvas.height - 45);
+
+            ctx.font = "14px 'Inter', sans-serif";
+            ctx.fillStyle = "#00f3ff"; 
+            ctx.fillText("pixelgaunt.com", 20, canvas.height - 22);
+
+            try {
+                const link = document.createElement('a');
+                link.download = 'PixelGaunt_Gameplay.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch(e) {
+                alert("Security Error: Aap game offline (computer) mein chala rahe hain ya game kisi aur website se load ho rahi hai. Screenshot tabhi kaam karega jab file internet par host hogi.");
+            }
+        }).catch(err => {
+            console.error("Error: ", err);
+            alert("Screenshot fail ho gaya. Kripya game ko server pe upload karein.");
+        });
+    }
+</script>
+
+    <!-- CUSTOM INFO MODAL -->
+    <div id="pg-info-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(4, 4, 6, 0.9); backdrop-filter: blur(8px); z-index: 9999999; justify-content: center; align-items: center; opacity: 1;">
+        <div style="background: #0f0f16; padding: 40px; border-radius: 16px; width: 90%; max-width: 650px; max-height: 85vh; overflow-y: auto; border: 2px solid #bc13fe; position: relative; box-shadow: 0 0 40px rgba(188, 19, 254, 0.4);">
+            <span onclick="closePageModal()" style="position: absolute; right: 20px; top: 20px; color: #64748b; font-size: 35px; cursor: pointer; font-weight: bold; line-height: 1; transition: 0.2s;">&times;</span>
+            <h2 id="pg-info-title" style="color: #00f3ff; text-transform: uppercase; font-family: 'Press Start 2P', cursive; font-size: 1.3rem; text-align: center; margin-bottom: 25px; text-shadow: 0 0 10px rgba(0, 243, 255, 0.4);">Title</h2>
+            <div id="pg-info-body" style="color: #e2e8f0; font-size: 1.05rem; line-height: 1.7; font-family: 'Inter', sans-serif;"></div>
+        </div>
+    </div>
+
+    <!-- HIDDEN PAGES DATA -->
+    <div id="pg-about" style="display:none;">
+        <p><strong>Pixel Gaunt</strong> (pixelgaunt.com) is a modern retro games portal and digital studio founded by Pixel Gaunt. We develop and publish high-quality HTML5, CSS3, and JavaScript browser-based games.</p>
+        <p><br>Our games are designed for seamless cross-platform play, supporting PC, Android, iOS, Mac, and Linux. We focus on delivering polished gaming experiences with beautiful graphics, neon effects, and smooth gameplay.</p>
+    </div>
+
+    <div id="pg-contact" style="display:none;">
+        <p>We'd love to hear from you! Whether it's feedback, bug reporting for our games (like Stickman Velocity or Panda the Ocean Hunter), or business inquiries.</p>
+        <p><br><strong>Email:</strong> pixelgaunt@gmail.com</p>
+        <p><br><strong>Community:</strong> Join our <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" style="color: #00f3ff; text-decoration: underline;">WhatsApp Group</a> for direct bug reporting and updates.</p>
+    </div>
+
+    <div id="pg-faq" style="display:none;">
+        <p><strong>Q: Are the games free to play?</strong><br>A: Yes, all games on Pixel Gaunt are 100% free to play directly in your browser.</p>
+        <p><br><strong>Q: Do I need to download anything?</strong><br>A: No downloads are required. Just click and play!</p>
+        <p><br><strong>Q: Can I play on my phone?</strong><br>A: Absolutely! Our games are fully optimized for mobile devices (Android & iOS) as well as PC, Mac, and Linux.</p>
+    </div>
+
+    <div id="pg-privacy" style="display:none;">
+        <p><strong>Privacy Policy</strong></p>
+        <p><br>At Pixel Gaunt, your privacy is important to us.</p>
+        <p><br>- <strong>Analytics & Ads:</strong> We use Google Analytics and Google AdSense to monitor website traffic and display relevant advertisements. These services may use cookies to collect anonymous usage data.</p>
+        <p><br>- <strong>Data Collection:</strong> We do not collect personally identifiable information unless you voluntarily submit it.</p>
+    </div>
+
+    <div id="pg-disclaimer" style="display:none;">
+        <p><strong>Disclaimer</strong></p>
+        <p><br>All games, logos (including the Pixel Gaunt branding), and assets on this website are the property of Pixel Gaunt Studios.</p>
+        <p><br>The games are provided on an "as is" basis without warranties of any kind. Pixel Gaunt is not liable for any issues or data loss that may occur while using this website.</p>
+    </div>
 
     <script type="module">
-    // 1. IMPORTING FIREBASE V10.8.1 (Ye path sabse stable hai)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    // 2. CONFIGURATION (Tumhari API Key check karlo, ye wahi honi chahiye jo Firebase Console mein hai)
     const firebaseConfig = {
         apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
         authDomain: "pixelgaunt-e5235.firebaseapp.com",
@@ -775,35 +2948,11 @@
         appId: "1:261213234973:web:e65879886c82be3aabe3f4"
     };
 
-    // 3. INITIALIZATION
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const googleProvider = new GoogleAuthProvider();
-
-    // 4. LOGIN LOGIC (ID check karo: HTML mein tumhare button ki id="google-login-btn" honi chahiye)
-    document.getElementById("google-login-btn").addEventListener("click", async () => {
-        try {
-            const result = await signInWithPopup(auth, googleProvider);
-            alert("Login Successful: " + result.user.displayName);
-            location.reload(); // Page refresh takay UI update ho jaye
-        } catch (error) {
-            console.error("Login Error:", error);
-            alert("Login Failed: " + error.code);
-        }
-    });
-
-    // 5. SESSION CHECK
-    onAuthStateChanged(auth, (user) => {
-        const btn = document.getElementById("main-login-btn");
-        if (user) {
-            btn.innerText = "Logout";
-            btn.onclick = () => signOut(auth).then(() => location.reload());
-        } else {
-            btn.innerText = "Login";
-            btn.onclick = () => openModal('login-modal');
-        }
-    });
+    console.log("Firebase v10.8.1 load ho gaya!");
 </script>
+</body>
+</html>
+
 </body>
 </html>
