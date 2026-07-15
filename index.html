@@ -115,27 +115,33 @@
         }
         .search-bar:focus { border-color: var(--neon-cyan); box-shadow: var(--shadow-glow-cyan); outline: none; }
 
-        /* MAIN LAYOUT */
-        .container { display: flex; gap: 30px; padding: 12px 5% 60px 5%; max-width: 1600px; margin: 0 auto; }
-        .sidebar { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; }
-        .sidebar-box {
-            background: var(--bg-surface); border-radius: 14px; padding: 22px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
+        /* MAIN LAYOUT (Updated for Centered Content) */
+        .container { 
+            display: flex; 
+            flex-direction: column; /* Center the layout vertically */
+            align-items: center;    /* Center content horizontally */
+            padding: 12px 5% 60px 5%; 
+            max-width: 1400px;      /* Ensure it doesn't stretch too wide */
+            margin: 0 auto; 
         }
-        .sidebar-title { font-size: 0.7rem; color: var(--neon-cyan); margin-bottom: 16px; letter-spacing: 1px; }
-        .sidebar-menu li { margin-bottom: 8px; }
-        .sidebar-menu button {
-            width: 100%; text-align: left; padding: 11px 14px; border-radius: 8px;
-            color: #94a3b8; font-weight: 500; font-size: 0.9rem; transition: var(--transition-smooth);
-            display: flex; align-items: center; gap: 10px;
-        }
-        .sidebar-menu button:hover, .sidebar-menu button.active {
-            color: #fff; background: rgba(255, 255, 255, 0.04); border-left: 3px solid var(--neon-cyan);
-        }
-        .sidebar-menu button.active { border-left-color: var(--neon-purple); color: #fff; background: rgba(188, 19, 254, 0.05); }
 
-        .main-content { flex-grow: 1; }
-        .category-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 24px; }
+        .main-content { 
+            width: 100%; 
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center category bar and grid */
+        }
+        
+        /* Category bar centered */
+        .category-bar { 
+            display: flex; 
+            gap: 10px; 
+            overflow-x: auto; 
+            padding-bottom: 12px; 
+            margin-bottom: 24px; 
+            justify-content: center; /* Center the category buttons */
+            width: 100%;
+        }
         .category-bar::-webkit-scrollbar { height: 3px; }
         .cat-btn {
             background: var(--bg-surface); border: 1px solid var(--bg-surface-light);
@@ -147,8 +153,14 @@
             box-shadow: 0 0 10px rgba(188, 19, 254, 0.2);
         }
 
-        /* GAME GRID & CARDS */
-        .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+        /* GAME GRID & CARDS (Centered structure) */
+        .game-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* Adjusted width */
+            gap: 20px; 
+            width: 100%;
+            justify-content: center;
+        }
         .game-card {
             background: var(--bg-surface); border-radius: 14px; overflow: hidden;
             border: 1px solid var(--bg-surface-light); position: relative;
@@ -222,7 +234,6 @@
         @media (max-width: 768px) {
             header { flex-direction: column; gap: 16px; padding: 16px; }
             .container { flex-direction: column; }
-            .sidebar { width: 100%; }
         }
     </style>
 </head>
@@ -249,39 +260,6 @@
     </div>
 
     <main class="container" id="homepage">
-        <aside class="sidebar">
-            <div class="sidebar-box">
-                <h3 class="sidebar-title pixel-font">Navigation</h3>
-                <ul class="sidebar-menu">
-                    <li><button class="active" id="btn-cat-all" onclick="filterCategory('All', null)">🕹️ All Games</button></li>
-                    <li><button id="btn-cat-fighting" onclick="filterCategory('Fighting', null)">🥊 Fighting</button></li>
-                    <li><button id="btn-cat-action" onclick="filterCategory('Action', null)">🔥 Action</button></li>
-                    <li><button id="btn-cat-arcade" onclick="filterCategory('Arcade', null)">🕹️ Arcade</button></li>
-                    <li><button id="btn-cat-3d-sim" onclick="filterCategory('3D Simulation', null)">🌐 3D Simulation</button></li>
-                    <li><button id="btn-cat-3d-shoot" onclick="filterCategory('3D Shooting', null)">🔥 3D Shooting</button></li>
-                    <li><button id="btn-cat-puzzle-adv" onclick="filterCategory('Puzzle Adventure', null)">🧩 Puzzle Adv.</button></li>
-                    <li><button id="btn-cat-casual-adv" onclick="filterCategory('Casual Adventure', null)">🎣 Casual Adv.</button></li>
-                    <li><button id="btn-cat-puzzle" onclick="filterCategory('Puzzle', null)">🎲 Puzzle</button></li>
-                    <li><button id="btn-cat-racing" onclick="filterCategory('Racing', null)">🏎️ Racing</button></li>
-                    <li><button id="btn-cat-roguelike" onclick="filterCategory('Rogue-like', null)">💀 Rogue-like</button></li>
-                    <li><button id="btn-cat-rpg" onclick="filterCategory('RPG', null)">💀 RPG</button></li>
-                </ul>
-            </div>
-            
-            <div class="sidebar-box">
-                <h3 class="sidebar-title pixel-font">Esports</h3>
-                <ul class="sidebar-menu">
-                    <li><button onclick="openModal('tournament-modal')">⚔️ Join Tournament</button></li>
-                </ul>
-            </div>
-            <div class="sidebar-box">
-                <h3 class="sidebar-title pixel-font">Store</h3>
-                <ul class="sidebar-menu">
-                    <li><button onclick="openModal('store-modal')">🛒 Store</button></li>
-                </ul>
-            </div>
-        </aside>
-
         <section class="main-content">
             <div class="category-bar" id="top-cat-bar">
                 <button class="cat-btn active" onclick="filterCategory('All', this)">All Games</button>
@@ -399,10 +377,72 @@
         </div>
     </div>
 
+    <div id="pg-info-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(4, 4, 6, 0.9); backdrop-filter: blur(8px); z-index: 9999999; justify-content: center; align-items: center; opacity: 1;">
+        <div style="background: #0f0f16; padding: 40px; border-radius: 16px; width: 90%; max-width: 650px; max-height: 85vh; overflow-y: auto; border: 2px solid #bc13fe; position: relative; box-shadow: 0 0 40px rgba(188, 19, 254, 0.4);">
+            <span onclick="closePageModal()" style="position: absolute; right: 20px; top: 20px; color: #64748b; font-size: 35px; cursor: pointer; font-weight: bold; line-height: 1; transition: 0.2s;">&times;</span>
+            <h2 id="pg-info-title" style="color: #00f3ff; text-transform: uppercase; font-family: 'Press Start 2P', cursive; font-size: 1.3rem; text-align: center; margin-bottom: 25px; text-shadow: 0 0 10px rgba(0, 243, 255, 0.4);">Title</h2>
+            <div id="pg-info-body" style="color: #e2e8f0; font-size: 1.05rem; line-height: 1.7; font-family: 'Inter', sans-serif;"></div>
+        </div>
+    </div>
+
+    <div id="pg-about" style="display:none;">
+        <p><strong>Pixel Gaunt</strong> (pixelgaunt.com) is a modern retro games portal and digital studio founded by Pixel Gaunt. We develop and publish high-quality HTML5, CSS3, and JavaScript browser-based games.</p>
+        <p><br>Our games are designed for seamless cross-platform play, supporting PC, Android, iOS, Mac, and Linux. We focus on delivering polished gaming experiences with beautiful graphics, neon effects, and smooth gameplay.</p>
+    </div>
+
+    <div id="pg-contact" style="display:none;">
+        <p>We'd love to hear from you! Whether it's feedback, bug reporting for our games (like Stickman Velocity or Panda the Ocean Hunter), or business inquiries.</p>
+        <p><br><strong>Email:</strong> pixelgaunt@gmail.com</p>
+        <p><br><strong>Community:</strong> Join our WhatsApp Group for direct bug reporting and updates.</p>
+    </div>
+
+    <div id="pg-faq" style="display:none;">
+        <p><strong>Q: Are the games free to play?</strong><br>A: Yes, all games on Pixel Gaunt are 100% free to play directly in your browser.</p>
+        <p><br><strong>Q: Do I need to download anything?</strong><br>A: No downloads are required. Just click and play!</p>
+        <p><br><strong>Q: Can I play on my phone?</strong><br>A: Absolutely! Our games are fully optimized for mobile devices (Android & iOS) as well as PC, Mac, and Linux.</p>
+    </div>
+
+    <div id="pg-privacy" style="display:none;">
+        <p><strong>Privacy Policy</strong></p>
+        <p><br>At Pixel Gaunt, your privacy is important to us.</p>
+        <p><br>- <strong>Analytics & Ads:</strong> We use Google Analytics and Google AdSense to monitor website traffic and display relevant advertisements. These services may use cookies to collect anonymous usage data.</p>
+        <p><br>- <strong>Data Collection:</strong> We do not collect personally identifiable information unless you voluntarily submit it.</p>
+    </div>
+
+    <div id="pg-disclaimer" style="display:none;">
+        <p><strong>Disclaimer</strong></p>
+        <p><br>All games, logos (including the Pixel Gaunt branding), and assets on this website are the property of Pixel Gaunt Studios.</p>
+        <p><br>The games are provided on an "as is" basis without warranties of any kind. Pixel Gaunt is not liable for any issues or data loss that may occur while using this website.</p>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="social-icons">
+                <a href="https://www.youtube.com/channel/UCos8h2Sjl9YgoM8U7ueFSUw" target="_blank" class="yt" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                <a href="https://www.facebook.com/profile.php?id=61583034586770" target="_blank" class="fb" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                <a href="https://www.reddit.com/user/Real_Network860/" target="_blank" class="rd" title="Reddit"><i class="fa-brands fa-reddit-alien"></i></a>
+                <a href="https://discord.gg/DfHFVNMBQF" target="_blank" class="dc" title="Discord"><i class="fa-brands fa-discord"></i></a>
+                <a href="https://www.tiktok.com/@pixelgaunt" target="_blank" class="tk" title="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+                <a href="mailto:pixelgaunt@gmail.com" class="gm" title="Gmail"><i class="fa-solid fa-envelope"></i></a>
+                <a href="https://whatsapp.com/channel/0029VbBo20lLo4hmsAJODc2u" target="_blank" class="wa-channel" title="WhatsApp Channel"><i class="fa-brands fa-whatsapp"></i></a>
+                <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" class="wa-group" title="WhatsApp Group"><i class="fa-solid fa-user-group"></i></a>
+            </div>
+            <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt. All Rights Reserved.</p>
+            <div class="footer-links">
+                <a href="javascript:void(0)" onclick="openPageModal('FAQ', 'pg-faq')">FAQ</a>
+                <a href="javascript:void(0)" onclick="openPageModal('Contact', 'pg-contact')">Contact</a>
+                <a href="javascript:void(0)" onclick="openPageModal('About Us', 'pg-about')">About Us</a>
+                <a href="javascript:void(0)" onclick="openPageModal('Privacy Policy', 'pg-privacy')">Privacy Policy</a>
+                <a href="javascript:void(0)" onclick="openPageModal('Disclaimer', 'pg-disclaimer')">Disclaimer</a>
+            </div>
+        </div>
+    </footer>
+
+    <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
+
     <script>
         let isLoggedIn = false;
         
-        // TUMHARI SAARI 12 GAMES KI FULL ARRAY YAHAN HAI:
         const games = [
             { 
                 id: 1, 
@@ -661,20 +701,12 @@
             else renderGames(games.filter(g => g.genre === category));
         }
 
-        function goHome() {
-            gameplayPage.style.display = 'none';
-            homepage.style.display = 'flex';
-            searchSection.style.display = 'block';
-            gameIframe.src = ''; 
-            portalBgm.pause();
-            portalBgm.currentTime = 0;
-            portalBgm.src = '';
-            window.scrollTo(0, 0);
-        }
-
         function launchViewport(gameId) {
             const game = games.find(g => g.id === gameId);
             if (!game) return;
+
+            // DYNAMIC URL UPDATE - "Us ka apna page hona chahiye" feeling
+            history.pushState({ page: 'game', id: gameId }, game.title, `?play=${encodeURIComponent(game.title.toLowerCase().replace(/ /g, '-'))}`);
 
             homepage.style.display = 'none';
             searchSection.style.display = 'none';
@@ -706,6 +738,27 @@
                 portalBgm.play().catch(e => console.log('Autoplay handled.', e));
             }
         }
+
+        function goHome() {
+            gameplayPage.style.display = 'none';
+            homepage.style.display = 'flex';
+            searchSection.style.display = 'block';
+            gameIframe.src = ''; 
+            portalBgm.pause();
+            
+            // RESET URL BACK TO MAIN
+            history.pushState({ page: 'home' }, "Home", window.location.pathname);
+            window.scrollTo(0, 0);
+        }
+
+        // BROWSER BACK BUTTON SUPPORT
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.page === 'game') {
+                launchViewport(event.state.id);
+            } else {
+                goHome();
+            }
+        });
 
         function updatePromptVisibility() {
             const aiBox = document.getElementById('current-game-aiprompt');
@@ -749,61 +802,166 @@
             }
         }
 
+        function inviteFriends() {
+            const shareData = {
+                title: 'Pixel Gaunt',
+                text: 'Check out this awesome game on Pixel Gaunt!',
+                url: window.location.href
+            };
+            if (navigator.share && window.isSecureContext) {
+                navigator.share(shareData).catch(err => console.error("Share failed:", err));
+            } else {
+                alert("Share link copied: " + window.location.href);
+            }
+        }
+
+        function openPageModal(title, contentId) {
+            document.getElementById('pg-info-title').innerText = title;
+            document.getElementById('pg-info-body').innerHTML = document.getElementById(contentId).innerHTML;
+            document.getElementById('pg-info-modal').style.display = 'flex';
+        }
+
+        function closePageModal() {
+            document.getElementById('pg-info-modal').style.display = 'none';
+        }
+
         window.onload = () => {
-            renderGames(games);
+            // CHECKS URL ON LOAD IF SOMEONE SHARED A DIRECT LINK
+            const urlParams = new URLSearchParams(window.location.search);
+            const playQuery = urlParams.get('play');
+            
+            if (playQuery) {
+                const game = games.find(g => g.title.toLowerCase().replace(/ /g, '-') === playQuery);
+                if (game) {
+                    setTimeout(() => launchViewport(game.id), 100);
+                } else {
+                     renderGames(games);
+                }
+            } else {
+                renderGames(games);
+            }
+
             setTimeout(() => {
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 400);
             }, 600);
         };
+        
         window.onclick = (e) => { if (e.target.classList.contains('modal-overlay')) closeModals(); }
+        window.onscroll = () => { document.getElementById('scrollToTopBtn').style.display = window.scrollY > 300 ? 'block' : 'none'; };
     </script>
 
     <script type="module">
-    // 1. IMPORTING FIREBASE V10.8.1 (Ye path sabse stable hai)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    // 2. CONFIGURATION (Tumhari API Key check karlo, ye wahi honi chahiye jo Firebase Console mein hai)
-    const firebaseConfig = {
-        apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
-        authDomain: "pixelgaunt-e5235.firebaseapp.com",
-        projectId: "pixelgaunt-e5235",
-        storageBucket: "pixelgaunt-e5235.firebasestorage.app",
-        messagingSenderId: "261213234973",
-        appId: "1:261213234973:web:e65879886c82be3aabe3f4"
-    };
+        // Yahan maine wahi API key dali hai jo tumhare error screenshot aur purane setup me thi
+        const firebaseConfig = {
+            apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
+            authDomain: "pixelgaunt-e5235.firebaseapp.com",
+            projectId: "pixelgaunt-e5235",
+            storageBucket: "pixelgaunt-e5235.firebasestorage.app",
+            messagingSenderId: "261213234973",
+            appId: "1:261213234973:web:e65879886c82be3aabe3f4"
+        };
 
-    // 3. INITIALIZATION
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const googleProvider = new GoogleAuthProvider();
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
 
-    // 4. LOGIN LOGIC (ID check karo: HTML mein tumhare button ki id="google-login-btn" honi chahiye)
-    document.getElementById("google-login-btn").addEventListener("click", async () => {
-        try {
-            const result = await signInWithPopup(auth, googleProvider);
-            alert("Login Successful: " + result.user.displayName);
-            location.reload(); // Page refresh takay UI update ho jaye
-        } catch (error) {
-            console.error("Login Error:", error);
-            alert("Login Failed: " + error.code);
+        const mainLoginBtn = document.getElementById("main-login-btn");
+        const googleLoginBtn = document.getElementById("google-login-btn"); 
+
+        // Auth Logic - Ab Event Listener ID par attached hai
+        if (googleLoginBtn) {
+            googleLoginBtn.addEventListener("click", async () => {
+                try {
+                    const result = await signInWithPopup(auth, googleProvider);
+                    const user = result.user;
+                    await setDoc(doc(db, "users", user.uid), {
+                        uid: user.uid,
+                        displayName: user.displayName,
+                        email: user.email,
+                        photoURL: user.photoURL,
+                        lastLogin: new Date()
+                    }, { merge: true });
+                    alert(`Welcome, ${user.displayName}! Login successful.`);
+                    closeModals(); 
+                } catch (error) {
+                    console.error("Login Error:", error);
+                    alert("Login failed: " + error.message);
+                }
+            });
         }
-    });
 
-    // 5. SESSION CHECK
-    onAuthStateChanged(auth, (user) => {
-        const btn = document.getElementById("main-login-btn");
-        if (user) {
-            btn.innerText = "Logout";
-            btn.onclick = () => signOut(auth).then(() => location.reload());
-        } else {
-            btn.innerText = "Login";
-            btn.onclick = () => openModal('login-modal');
+        window.logoutUser = async () => {
+            try {
+                await signOut(auth);
+                alert("Logged out successfully!");
+            } catch (error) {
+                console.error("Logout Error:", error);
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                isLoggedIn = true; 
+                updatePromptVisibility(); 
+                if (mainLoginBtn) {
+                    mainLoginBtn.innerHTML = `<img src="${user.photoURL || 'https://via.placeholder.com/30'}" style="width:20px; height:20px; border-radius:50%; margin-right:8px; vertical-align:middle;"> Logout`;
+                    mainLoginBtn.onclick = window.logoutUser;
+                }
+            } else {
+                isLoggedIn = false;
+                updatePromptVisibility(); 
+                if (mainLoginBtn) {
+                    mainLoginBtn.innerHTML = "Login";
+                    mainLoginBtn.onclick = () => openModal('login-modal');
+                }
+            }
+        });
+
+        // ❤️ LIKE BUTTON LOGIC (FIRESTORE)
+        const likeBtn = document.getElementById('like-btn');
+        if(likeBtn) {
+            likeBtn.addEventListener('click', async () => {
+                if (!isLoggedIn) return openModal('login-modal');
+                const gameTitle = document.getElementById('current-game-title').innerText;
+                try {
+                    await setDoc(doc(db, "games", gameTitle), { likes: increment(1) }, { merge: true });
+                    alert(`Thanks for liking ${gameTitle}! ❤️`);
+                } catch (error) {
+                    console.error("Error adding like: ", error);
+                    alert("Database connection error. Check your Firebase rules.");
+                }
+            });
         }
-    });
-</script>
+
+        // 🐛 BUG REPORT LOGIC (FIRESTORE)
+        const bugBtn = document.getElementById('bug-btn');
+        if(bugBtn) {
+            bugBtn.addEventListener('click', async () => {
+                if (!isLoggedIn) return openModal('login-modal');
+                const bugDetails = prompt("Describe the bug you found in this game:");
+                if (bugDetails && bugDetails.trim() !== "") {
+                    const gameTitle = document.getElementById('current-game-title').innerText;
+                    try {
+                        await addDoc(collection(db, "bug_reports"), {
+                            game: gameTitle,
+                            report: bugDetails,
+                            status: "open",
+                            date: new Date()
+                        });
+                        alert("Bug reported successfully! Our team will check it. 🐛");
+                    } catch (error) {
+                        console.error("Error reporting bug: ", error);
+                        alert("Database connection error. Check your Firebase rules.");
+                    }
+                }
+            });
+        }
+    </script>
 </body>
 </html>
