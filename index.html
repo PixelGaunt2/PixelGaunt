@@ -118,10 +118,10 @@
         /* MAIN LAYOUT (Updated for Centered Content) */
         .container { 
             display: flex; 
-            flex-direction: column; /* Center the layout vertically */
-            align-items: center;    /* Center content horizontally */
+            flex-direction: column;
+            align-items: center;
             padding: 12px 5% 60px 5%; 
-            max-width: 1400px;      /* Ensure it doesn't stretch too wide */
+            max-width: 1400px;
             margin: 0 auto; 
         }
 
@@ -129,20 +129,52 @@
             width: 100%; 
             display: flex;
             flex-direction: column;
-            align-items: center; /* Center category bar and grid */
+            align-items: center;
         }
         
-        /* Category bar centered */
+        /* CATEGORY SCROLL WRAPPER (Newly Added) */
+        .category-wrapper {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 24px;
+            position: relative;
+            gap: 10px;
+        }
+        .scroll-btn {
+            background: var(--bg-surface-light);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            flex-shrink: 0;
+            z-index: 10;
+            font-weight: bold;
+        }
+        .scroll-btn:hover {
+            background: var(--neon-purple);
+            box-shadow: 0 0 10px rgba(188, 19, 254, 0.4);
+        }
+        
         .category-bar { 
             display: flex; 
             gap: 10px; 
             overflow-x: auto; 
-            padding-bottom: 12px; 
-            margin-bottom: 24px; 
-            justify-content: center; /* Center the category buttons */
-            width: 100%;
+            scroll-behavior: smooth;
+            padding-bottom: 8px; 
+            scrollbar-width: none; /* Hide for Firefox */
+            flex-grow: 1;
+            justify-content: flex-start;
         }
-        .category-bar::-webkit-scrollbar { height: 3px; }
+        .category-bar::-webkit-scrollbar { display: none; } /* Hide for Chrome/Safari */
+        
         .cat-btn {
             background: var(--bg-surface); border: 1px solid var(--bg-surface-light);
             color: #94a3b8; padding: 8px 18px; border-radius: 20px;
@@ -156,7 +188,7 @@
         /* GAME GRID & CARDS (Centered structure) */
         .game-grid { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* Adjusted width */
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
             gap: 20px; 
             width: 100%;
             justify-content: center;
@@ -249,7 +281,7 @@
         <nav class="nav-links">
             <button class="nav-btn" onclick="goHome()">Games</button>
             <button class="nav-btn" onclick="openModal('store-modal')">Store</button>
-            <button class="nav-btn" style="border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="openModal('tournament-modal')">Tournament</button>
+            <button class="nav-btn" style="border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="openModal('tournament-modal')">Tournaments</button>
             <button class="nav-btn" style="background: var(--neon-purple); color: #fff; border: none;" onclick="openModal('subscribe-modal')">Subscribe</button>
             <button class="nav-btn primary" id="main-login-btn" onclick="openModal('login-modal')">Login</button>
         </nav>
@@ -261,18 +293,23 @@
 
     <main class="container" id="homepage">
         <section class="main-content">
-            <div class="category-bar" id="top-cat-bar">
-                <button class="cat-btn active" onclick="filterCategory('All', this)">All Games</button>
-                <button class="cat-btn" onclick="filterCategory('Fighting', this)">Fighting</button>
-                <button class="cat-btn" onclick="filterCategory('Action', this)">Action</button>
-                <button class="cat-btn" onclick="filterCategory('Arcade', this)">Arcade</button>
-                <button class="cat-btn" onclick="filterCategory('3D Simulation', this)">3D Simulation</button>
-                <button class="cat-btn" onclick="filterCategory('3D Shooting', this)">3D Shooting</button>
-                <button class="cat-btn" onclick="filterCategory('Puzzle Adventure', this)">Puzzle Adventure</button>
-                <button class="cat-btn" onclick="filterCategory('Casual Adventure', this)">Casual Adventure</button>
-                <button class="cat-btn" onclick="filterCategory('Puzzle', this)">Puzzle</button>
-                <button class="cat-btn" onclick="filterCategory('Racing', this)">Racing</button>
-                <button class="cat-btn" onclick="filterCategory('Rogue-like', this)">Rogue-like</button>
+            
+            <div class="category-wrapper">
+                <button class="scroll-btn" onclick="scrollCat(-200)">&#10094;</button>
+                <div class="category-bar" id="top-cat-bar">
+                    <button class="cat-btn active" onclick="filterCategory('All', this)">All Games</button>
+                    <button class="cat-btn" onclick="filterCategory('Fighting', this)">Fighting</button>
+                    <button class="cat-btn" onclick="filterCategory('Action', this)">Action</button>
+                    <button class="cat-btn" onclick="filterCategory('Arcade', this)">Arcade</button>
+                    <button class="cat-btn" onclick="filterCategory('3D Simulation', this)">3D Simulation</button>
+                    <button class="cat-btn" onclick="filterCategory('3D Shooting', this)">3D Shooting</button>
+                    <button class="cat-btn" onclick="filterCategory('Puzzle Adventure', this)">Puzzle Adventure</button>
+                    <button class="cat-btn" onclick="filterCategory('Casual Adventure', this)">Casual Adventure</button>
+                    <button class="cat-btn" onclick="filterCategory('Puzzle', this)">Puzzle</button>
+                    <button class="cat-btn" onclick="filterCategory('Racing', this)">Racing</button>
+                    <button class="cat-btn" onclick="filterCategory('Rogue-like', this)">Rogue-like</button>
+                </div>
+                <button class="scroll-btn" onclick="scrollCat(200)">&#10095;</button>
             </div>
 
             <div class="game-grid" id="game-grid"></div>
@@ -362,18 +399,53 @@
     <div class="modal-overlay" id="tournament-modal">
         <div class="modal-content">
             <button class="close-modal" onclick="closeModals()">&times;</button>
-            <h3 class="modal-title pixel-font" style="color: var(--neon-cyan);">Live Esports</h3>
+            <h3 class="modal-title pixel-font" style="color: var(--neon-cyan);">Live Tournaments</h3>
             <p style="color: #94a3b8; text-align: center; font-size: 0.9rem; margin-bottom: 20px;">The Tournament registration portal will open in Season 2. Practice your skills in the meantime!</p>
             <button class="action-btn" onclick="closeModals()" style="margin: 0 auto; border-color: var(--neon-cyan);">Close</button>
         </div>
     </div>
 
     <div class="modal-overlay" id="subscribe-modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 650px;">
             <button class="close-modal" onclick="closeModals()">&times;</button>
-            <h3 class="modal-title pixel-font" style="color: #fbbf24;">Premium Portal</h3>
-            <p style="color: #94a3b8; text-align: center; font-size: 0.9rem; margin-bottom: 20px;">Subscription plans (Ad-free, exclusive games, cloud save) are launching soon.</p>
-            <button class="action-btn" onclick="closeModals()" style="margin: 0 auto; border-color: #fbbf24; color: #fbbf24;">Close</button>
+            <h3 class="modal-title pixel-font" style="color: #fbbf24; margin-bottom: 30px;">Subscription Plans</h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                <div style="background: var(--bg-base); padding: 20px; border-radius: 8px; border: 1px solid var(--bg-surface-light); text-align: center; display: flex; flex-direction: column;">
+                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 1.1rem;">Free</h4>
+                    <p style="color: #fbbf24; font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">$0<span style="font-size: 0.8rem; color:#64748b;">/mo</span></p>
+                    <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 15px; line-height: 1.6; flex-grow: 1;">
+                        50MB Space Limit<br>
+                        Play Free Games<br>
+                        Standard Access
+                    </p>
+                    <button class="action-btn" style="width: 100%; justify-content: center;" onclick="alert('You are already on the Free plan!')">Current Plan</button>
+                </div>
+
+                <div style="background: var(--bg-base); padding: 20px; border-radius: 8px; border: 1px solid var(--neon-cyan); text-align: center; display: flex; flex-direction: column; position: relative;">
+                    <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--neon-cyan); color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: bold;">POPULAR</div>
+                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 1.1rem;">Basic</h4>
+                    <p style="color: #fbbf24; font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">$2.99<span style="font-size: 0.8rem; color:#64748b;">/mo</span></p>
+                    <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 15px; line-height: 1.6; flex-grow: 1;">
+                        Increased Storage<br>
+                        Monetize Your Games<br>
+                        Tournaments Access
+                    </p>
+                    <button class="action-btn" style="width: 100%; justify-content: center; border-color: var(--neon-cyan);" onclick="alert('Payment gateway connecting soon!')">Subscribe</button>
+                </div>
+
+                <div style="background: var(--bg-base); padding: 20px; border-radius: 8px; border: 1px solid var(--neon-purple); text-align: center; display: flex; flex-direction: column;">
+                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 1.1rem;">Pro</h4>
+                    <p style="color: #fbbf24; font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">$9.99<span style="font-size: 0.8rem; color:#64748b;">/mo</span></p>
+                    <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 15px; line-height: 1.6; flex-grow: 1;">
+                        Unlimited Storage<br>
+                        Sell on Asset Store<br>
+                        AI Creation Tutorials<br>
+                        Ad-Free Experience
+                    </p>
+                    <button class="action-btn" style="width: 100%; justify-content: center; background: var(--neon-purple); border: none;" onclick="alert('Payment gateway connecting soon!')">Subscribe</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -658,6 +730,11 @@
         const loader = document.getElementById('loader');
         const portalBgm = document.getElementById('portal-bgm');
 
+        // CATEGORY SCROLL FUNCTION
+        function scrollCat(val) {
+            document.getElementById('top-cat-bar').scrollLeft += val;
+        }
+
         function renderGames(gameList) {
             gameGrid.innerHTML = '';
             if (gameList.length === 0) {
@@ -705,7 +782,6 @@
             const game = games.find(g => g.id === gameId);
             if (!game) return;
 
-            // DYNAMIC URL UPDATE - "Us ka apna page hona chahiye" feeling
             history.pushState({ page: 'game', id: gameId }, game.title, `?play=${encodeURIComponent(game.title.toLowerCase().replace(/ /g, '-'))}`);
 
             homepage.style.display = 'none';
@@ -746,12 +822,10 @@
             gameIframe.src = ''; 
             portalBgm.pause();
             
-            // RESET URL BACK TO MAIN
             history.pushState({ page: 'home' }, "Home", window.location.pathname);
             window.scrollTo(0, 0);
         }
 
-        // BROWSER BACK BUTTON SUPPORT
         window.addEventListener('popstate', function(event) {
             if (event.state && event.state.page === 'game') {
                 launchViewport(event.state.id);
@@ -826,7 +900,6 @@
         }
 
         window.onload = () => {
-            // CHECKS URL ON LOAD IF SOMEONE SHARED A DIRECT LINK
             const urlParams = new URLSearchParams(window.location.search);
             const playQuery = urlParams.get('play');
             
@@ -856,7 +929,7 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // Yahan maine wahi API key dali hai jo tumhare error screenshot aur purane setup me thi
+        // Tumhari API Key yahan di gayi hai
         const firebaseConfig = {
             apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
             authDomain: "pixelgaunt-e5235.firebaseapp.com",
@@ -874,7 +947,6 @@
         const mainLoginBtn = document.getElementById("main-login-btn");
         const googleLoginBtn = document.getElementById("google-login-btn"); 
 
-        // Auth Logic - Ab Event Listener ID par attached hai
         if (googleLoginBtn) {
             googleLoginBtn.addEventListener("click", async () => {
                 try {
@@ -923,7 +995,7 @@
             }
         });
 
-        // ❤️ LIKE BUTTON LOGIC (FIRESTORE)
+        // ❤️ LIKE BUTTON LOGIC
         const likeBtn = document.getElementById('like-btn');
         if(likeBtn) {
             likeBtn.addEventListener('click', async () => {
@@ -939,7 +1011,7 @@
             });
         }
 
-        // 🐛 BUG REPORT LOGIC (FIRESTORE)
+        // 🐛 BUG REPORT LOGIC
         const bugBtn = document.getElementById('bug-btn');
         if(bugBtn) {
             bugBtn.addEventListener('click', async () => {
