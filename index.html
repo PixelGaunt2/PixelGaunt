@@ -115,7 +115,7 @@
         }
         .search-bar:focus { border-color: var(--neon-cyan); box-shadow: var(--shadow-glow-cyan); outline: none; }
 
-        /* MAIN LAYOUT (Updated for Centered Content) */
+        /* MAIN LAYOUT (Centered Content) */
         .container { 
             display: flex; 
             flex-direction: column;
@@ -132,7 +132,7 @@
             align-items: center;
         }
         
-        /* CATEGORY SCROLL WRAPPER (Newly Added) */
+        /* CATEGORY SCROLL WRAPPER */
         .category-wrapper {
             display: flex;
             align-items: center;
@@ -169,11 +169,11 @@
             overflow-x: auto; 
             scroll-behavior: smooth;
             padding-bottom: 8px; 
-            scrollbar-width: none; /* Hide for Firefox */
+            scrollbar-width: none; 
             flex-grow: 1;
             justify-content: flex-start;
         }
-        .category-bar::-webkit-scrollbar { display: none; } /* Hide for Chrome/Safari */
+        .category-bar::-webkit-scrollbar { display: none; }
         
         .cat-btn {
             background: var(--bg-surface); border: 1px solid var(--bg-surface-light);
@@ -185,7 +185,7 @@
             box-shadow: 0 0 10px rgba(188, 19, 254, 0.2);
         }
 
-        /* GAME GRID & CARDS (Centered structure) */
+        /* GAME GRID & CARDS */
         .game-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
@@ -213,30 +213,39 @@
         .card-title { font-size: 1.05rem; color: #fff; margin-bottom: 6px; font-weight: 800; }
         .card-genre { font-size: 0.72rem; color: var(--neon-purple); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
 
-        /* GAMEPLAY AREA */
-        #gameplay-page { display: none; padding: 0 5% 60px 5%; max-width: 1600px; margin: 0 auto; animation: fadeIn 0.35s ease-out; }
-        .game-header { text-align: center; margin-bottom: 24px; }
-        .game-title-large { font-size: 1.4rem; color: #fff; text-shadow: 0 0 12px rgba(0, 243, 255, 0.35); margin-top: 16px; }
-        .game-controls-top { display: flex; justify-content: space-between; align-items: center; max-width: 920px; margin: 0 auto 16px auto; }
+        /* VIEWPORT CONTAINERS (Game, Store, Tournaments, Subscribe) */
+        .viewport-page { display: none; padding: 0 5% 60px 5%; max-width: 1600px; margin: 0 auto; animation: fadeIn 0.35s ease-out; }
+        .page-header { text-align: center; margin-bottom: 24px; }
+        .page-title-large { font-size: 1.4rem; color: #fff; text-shadow: 0 0 12px rgba(0, 243, 255, 0.35); margin-top: 16px; }
+        .page-controls-top { display: flex; justify-content: flex-start; align-items: center; max-width: 920px; margin: 0 auto 16px auto; width: 100%;}
         .back-btn { color: #94a3b8; font-weight: 600; font-size: 0.9rem; transition: var(--transition-smooth); }
         .back-btn:hover { color: #fff; }
+        
+        /* Game Specific Layout */
         .gameplay-layout { display: flex; justify-content: center; align-items: flex-start; gap: 24px; width: 100%; }
         .game-container-wrapper { flex-grow: 1; max-width: 920px; width: 100%; }
         .game-container { width: 100%; height: 600px; background: #000; border-radius: 12px; border: 2px solid var(--bg-surface-light); box-shadow: 0 24px 48px rgba(0,0,0,0.6); position: relative; overflow: hidden; }
         @media (max-width: 768px) { .game-container { height: 400px; } }
         .game-container iframe { width: 100%; height: 100%; border: none; display: block; }
-
         .game-action-bar { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 18px; background: var(--bg-surface); padding: 14px; border-radius: 12px; border: 1px solid var(--bg-surface-light); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .action-btn { background: var(--bg-surface-light); border: 1px solid rgba(255, 255, 255, 0.05); color: #e2e8f0; padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; transition: var(--transition-smooth); display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .action-btn:hover { color: #fff; border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.08); box-shadow: 0 0 12px rgba(0, 243, 255, 0.2); transform: translateY(-2px); }
-
         .game-details { max-width: 920px; margin: 32px auto 0 auto; background: var(--bg-surface); border-radius: 14px; padding: 28px; border: 1px solid var(--bg-surface-light); }
         .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
         .detail-section h3 { font-size: 0.85rem; color: var(--neon-cyan); margin-bottom: 14px; }
         .detail-section p { color: #94a3b8; font-size: 0.92rem; line-height: 1.6; margin-bottom: 10px; }
         .prompt-box { background: var(--bg-base); padding: 16px; border-radius: 8px; border: 1px solid var(--bg-surface-light); font-size: 0.85rem; color: #94a3b8; white-space: pre-wrap; font-family: monospace; overflow-x: auto; line-height: 1.5; margin-top: 8px; }
 
-        /* MODALS */
+        /* Other Viewports Content Styling */
+        .content-box { max-width: 920px; margin: 0 auto; background: var(--bg-surface); border-radius: 14px; padding: 30px; border: 1px solid var(--bg-surface-light); }
+        .store-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;}
+        .store-category { background: var(--bg-base); padding: 20px; border-radius: 8px; border: 1px solid var(--bg-surface-light); }
+        .product-item { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--bg-surface-light); }
+        .product-icon { width: 60px; height: 60px; background: #222; border-radius: 8px; display: flex; justify-content: center; align-items: center; }
+        .subscription-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;}
+        .plan-card { background: var(--bg-base); padding: 25px; border-radius: 12px; border: 1px solid var(--bg-surface-light); text-align: center; display: flex; flex-direction: column; position: relative;}
+        
+        /* MODALS (Login Only now) */
         .modal-overlay { position: fixed; inset: 0; background: rgba(4, 4, 6, 0.85); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: center; z-index: 1000; opacity: 0; transition: opacity 0.25s ease; }
         .modal-overlay.active { display: flex; opacity: 1; }
         .modal-content { background: var(--bg-surface); padding: 36px; border-radius: 16px; width: 92%; max-width: 460px; border: 1px solid var(--bg-surface-light); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); transform: scale(0.92); transition: transform 0.25s ease; position: relative; }
@@ -244,8 +253,6 @@
         .close-modal { position: absolute; top: 18px; right: 20px; color: #64748b; font-size: 1.4rem; font-weight: bold; }
         .close-modal:hover { color: #fff; }
         .modal-title { font-size: 0.95rem; color: #fff; margin-bottom: 24px; text-align: center; }
-        .modal-step { display: none; }
-        .modal-step.active { display: block; }
         .option-grid { display: flex; flex-direction: column; gap: 14px; margin-bottom: 10px; }
         .opt-btn { background: var(--bg-surface-light); border: 1px solid rgba(255, 255, 255, 0.05); padding: 14px 20px; border-radius: 10px; text-align: left; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 14px; transition: var(--transition-smooth); cursor: pointer; color: #e2e8f0; }
         .opt-btn:hover { border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.05); transform: translateX(4px); color: #fff; }
@@ -280,9 +287,9 @@
         <div class="logo pixel-font" onclick="goHome()">Pixel <span>Gaunt</span></div>
         <nav class="nav-links">
             <button class="nav-btn" onclick="goHome()">Games</button>
-            <button class="nav-btn" onclick="openModal('store-modal')">Store</button>
-            <button class="nav-btn" style="border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="openModal('tournament-modal')">Tournaments</button>
-            <button class="nav-btn" style="background: var(--neon-purple); color: #fff; border: none;" onclick="openModal('subscribe-modal')">Subscribe</button>
+            <button class="nav-btn" onclick="openPage('store-page')">Store</button>
+            <button class="nav-btn" style="border-color: var(--neon-cyan); color: var(--neon-cyan);" onclick="openPage('tournament-page')">Tournaments</button>
+            <button class="nav-btn" style="background: var(--neon-purple); color: #fff; border: none;" onclick="openPage('subscribe-page')">Subscribe</button>
             <button class="nav-btn primary" id="main-login-btn" onclick="openModal('login-modal')">Login</button>
         </nav>
     </header>
@@ -291,9 +298,8 @@
         <input type="text" class="search-bar" id="search-input" placeholder="Search across retro database..." onkeyup="filterGames()">
     </div>
 
-    <main class="container" id="homepage">
+    <main class="container" id="homepage-page">
         <section class="main-content">
-            
             <div class="category-wrapper">
                 <button class="scroll-btn" onclick="scrollCat(-200)">&#10094;</button>
                 <div class="category-bar" id="top-cat-bar">
@@ -311,20 +317,18 @@
                 </div>
                 <button class="scroll-btn" onclick="scrollCat(200)">&#10095;</button>
             </div>
-
             <div class="game-grid" id="game-grid"></div>
         </section>
     </main>
 
-    <main id="gameplay-page">
-        <div class="game-header">
-            <h2 class="game-title-large pixel-font" id="current-game-title">Game Viewport</h2>
+    <main class="viewport-page" id="gameplay-page">
+        <div class="page-header">
+            <h2 class="page-title-large pixel-font" id="current-game-title">Game Viewport</h2>
         </div>
-        <div class="game-controls-top">
+        <div class="page-controls-top">
             <button class="back-btn" onclick="goHome()">← Back to Main Menu</button>
         </div>
         <div class="gameplay-layout">
-            <div class="empty-zone-v" style="border:none;"></div>
             <div class="game-container-wrapper">
                 <div class="game-container" id="game-container-element">
                     <iframe src="" id="game-canvas" allowfullscreen allow="autoplay; fullscreen"></iframe>
@@ -337,9 +341,7 @@
                     <button class="action-btn pixel-font" onclick="toggleFullscreen()" style="font-size: 0.75rem;">⛶ Fullscreen</button>
                 </div>
             </div>
-            <div class="empty-zone-v" style="border:none;"></div>
         </div>
-
         <div class="game-details">
             <div class="details-grid">
                 <div class="detail-section">
@@ -353,21 +355,144 @@
                     <h3 class="pixel-font">How to Play</h3>
                     <p id="current-game-howtoplay"></p>
                 </div>
-                
                 <div class="detail-section">
                     <h3 class="pixel-font">Input / Controls</h3>
                     <p id="current-game-controls" style="margin-bottom: 24px; line-height: 1.6;"></p>
-                    
                     <div id="ai-prompt-container" style="display: none;">
                         <h3 class="pixel-font">AI Prompt Architecture</h3>
-                        
                         <div id="ai-prompt-hidden-msg" style="background: var(--bg-surface-light); padding: 20px; border-radius: 8px; text-align: center; border: 1px dashed var(--neon-cyan); margin-top: 8px;">
                             <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 12px; line-height: 1.5;">🔒 This prompt is locked. Login to view the complete AI generation prompt used by the developer to create this game.</p>
                             <button class="action-btn" onclick="openModal('login-modal')" style="margin: 0 auto; border-color: var(--neon-purple); background: rgba(188, 19, 254, 0.1); color: #fff;">Login to Unlock Prompt</button>
                         </div>
-
                         <div class="prompt-box" id="current-game-aiprompt" style="display: none;"></div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <main class="viewport-page" id="store-page">
+        <div class="page-header">
+            <h2 class="page-title-large pixel-font" style="color: var(--neon-purple);">Marketplace</h2>
+        </div>
+        <div class="page-controls-top">
+            <button class="back-btn" onclick="goHome()">← Back to Main Menu</button>
+        </div>
+        <div class="content-box">
+            <p style="color: #94a3b8; text-align: center; font-size: 1rem; margin-bottom: 30px;">
+                <i class="fas fa-lock"></i> Only <b>Pro Subscribers</b> can sell their own merchandise and game assets here!
+            </p>
+            <div class="store-grid">
+                <div class="store-category" style="border-color: var(--neon-purple);">
+                    <h4 style="color: #fff; margin-bottom: 20px; font-size: 1.2rem; text-align: center;"><i class="fas fa-tshirt"></i> Official Merch</h4>
+                    <div class="product-item">
+                        <div class="product-icon" style="color: var(--neon-cyan);"><i class="fas fa-tshirt fa-2x"></i></div>
+                        <div style="flex-grow: 1;">
+                            <p style="color: #fff; font-size: 1rem; font-weight: 600;">"Syntax Terror" Tee</p>
+                            <p style="color: #fbbf24; font-size: 0.9rem; font-weight: bold;">$24.99</p>
+                        </div>
+                        <button class="action-btn" onclick="alert('Added to cart!')">Buy</button>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-icon" style="color: var(--neon-cyan);"><i class="fas fa-tshirt fa-2x"></i></div>
+                        <div style="flex-grow: 1;">
+                            <p style="color: #fff; font-size: 1rem; font-weight: 600;">Neon Retro Hoodie</p>
+                            <p style="color: #fbbf24; font-size: 0.9rem; font-weight: bold;">$45.00</p>
+                        </div>
+                        <button class="action-btn" onclick="alert('Added to cart!')">Buy</button>
+                    </div>
+                </div>
+
+                <div class="store-category" style="border-color: var(--neon-cyan);">
+                    <h4 style="color: #fff; margin-bottom: 20px; font-size: 1.2rem; text-align: center;"><i class="fas fa-cubes"></i> Game Assets</h4>
+                    <div class="product-item">
+                        <div class="product-icon" style="color: var(--neon-purple);"><i class="fas fa-cube fa-2x"></i></div>
+                        <div style="flex-grow: 1;">
+                            <p style="color: #fff; font-size: 1rem; font-weight: 600;">2D Cyberpunk Tileset</p>
+                            <p style="color: #fbbf24; font-size: 0.9rem; font-weight: bold;">$14.99</p>
+                        </div>
+                        <button class="action-btn" onclick="alert('Added to cart!')">Buy</button>
+                    </div>
+                    <div class="product-item">
+                        <div class="product-icon" style="color: var(--neon-purple);"><i class="fas fa-music fa-2x"></i></div>
+                        <div style="flex-grow: 1;">
+                            <p style="color: #fff; font-size: 1rem; font-weight: 600;">Synthwave SFX Pack</p>
+                            <p style="color: #fbbf24; font-size: 0.9rem; font-weight: bold;">$9.99</p>
+                        </div>
+                        <button class="action-btn" onclick="alert('Added to cart!')">Buy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <main class="viewport-page" id="tournament-page">
+        <div class="page-header">
+            <h2 class="page-title-large pixel-font" style="color: var(--neon-cyan);">Live Tournaments</h2>
+        </div>
+        <div class="page-controls-top">
+            <button class="back-btn" onclick="goHome()">← Back to Main Menu</button>
+        </div>
+        <div class="content-box">
+             <div style="background: var(--bg-base); padding: 25px; border-radius: 8px; border: 1px solid var(--bg-surface-light); margin-bottom: 30px;">
+                 <h4 style="color: #fff; margin-bottom: 15px; font-size: 1.2rem;"><i class="fas fa-trophy" style="color: #fbbf24;"></i> How to Join</h4>
+                 <ul style="color: #94a3b8; font-size: 1rem; line-height: 1.8; padding-left: 20px; list-style-type: disc;">
+                     <li>You must be a <b>Basic</b> or <b>Pro Subscriber</b> to enter official tournaments.</li>
+                     <li>Tournaments are hosted exclusively for <b>Online Multiplayer Games</b>.</li>
+                     <li>Single-player games are always free for everyone to play casually.</li>
+                     <li>Keep an eye on the schedule below for upcoming brackets!</li>
+                 </ul>
+            </div>
+            <div style="text-align: center;">
+                <p style="color: #94a3b8; font-size: 1.1rem; margin-bottom: 15px;">Next Tournament: <span style="color: var(--neon-cyan); font-weight: bold; font-size: 1.3rem;">Pixel Clash 2026</span></p>
+                <p style="color: #e2e8f0; font-size: 0.95rem; margin-bottom: 25px;">Registration opens soon. Practice your multiplayer skills!</p>
+                <button class="action-btn" onclick="alert('Registration opening in Season 2!')" style="margin: 0 auto; padding: 12px 24px; font-size: 1rem; border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.1);">Register for Tournament</button>
+            </div>
+        </div>
+    </main>
+
+    <main class="viewport-page" id="subscribe-page">
+        <div class="page-header">
+            <h2 class="page-title-large pixel-font" style="color: #fbbf24;">Premium Portal</h2>
+        </div>
+        <div class="page-controls-top">
+            <button class="back-btn" onclick="goHome()">← Back to Main Menu</button>
+        </div>
+        <div class="content-box" style="background: transparent; border: none; padding: 0;">
+            <div class="subscription-grid">
+                <div class="plan-card">
+                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 1.3rem;">Free</h4>
+                    <p style="color: #fbbf24; font-size: 2rem; font-weight: bold; margin-bottom: 15px;">$0<span style="font-size: 1rem; color:#64748b;">/mo</span></p>
+                    <p style="color: #94a3b8; font-size: 1rem; margin-bottom: 25px; line-height: 1.8; flex-grow: 1;">
+                        50MB Space Limit<br>
+                        Play Free Games<br>
+                        Standard Access
+                    </p>
+                    <button class="action-btn" style="width: 100%; justify-content: center;" onclick="alert('You are already on the Free plan!')">Current Plan</button>
+                </div>
+
+                <div class="plan-card" style="border-color: var(--neon-cyan);">
+                    <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--neon-cyan); color: #000; padding: 6px 15px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">POPULAR</div>
+                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 1.3rem;">Basic</h4>
+                    <p style="color: #fbbf24; font-size: 2rem; font-weight: bold; margin-bottom: 15px;">$2.99<span style="font-size: 1rem; color:#64748b;">/mo</span></p>
+                    <p style="color: #94a3b8; font-size: 1rem; margin-bottom: 25px; line-height: 1.8; flex-grow: 1;">
+                        Increased Storage<br>
+                        Monetize Your Games<br>
+                        Tournaments Access
+                    </p>
+                    <button class="action-btn" style="width: 100%; justify-content: center; border-color: var(--neon-cyan);" onclick="alert('Payment gateway connecting soon!')">Subscribe</button>
+                </div>
+
+                <div class="plan-card" style="border-color: var(--neon-purple);">
+                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 1.3rem;">Pro</h4>
+                    <p style="color: #fbbf24; font-size: 2rem; font-weight: bold; margin-bottom: 15px;">$9.99<span style="font-size: 1rem; color:#64748b;">/mo</span></p>
+                    <p style="color: #94a3b8; font-size: 1rem; margin-bottom: 25px; line-height: 1.8; flex-grow: 1;">
+                        Unlimited Storage<br>
+                        Sell on Asset Store<br>
+                        AI Creation Tutorials<br>
+                        Ad-Free Experience
+                    </p>
+                    <button class="action-btn" style="width: 100%; justify-content: center; background: var(--neon-purple); border: none;" onclick="alert('Payment gateway connecting soon!')">Subscribe</button>
                 </div>
             </div>
         </div>
@@ -382,68 +507,6 @@
                     <button class="opt-btn" id="google-login-btn">
                         <span><i class="fab fa-google"></i></span> Login with Google
                     </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="store-modal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeModals()">&times;</button>
-            <h3 class="modal-title pixel-font" style="color: var(--neon-purple);">Marketplace</h3>
-            <p style="color: #94a3b8; text-align: center; font-size: 0.9rem; margin-bottom: 20px;">The PixelGaunt asset store is currently undergoing maintenance. Check back soon for game templates, AI prompts, and assets!</p>
-            <button class="action-btn" onclick="closeModals()" style="margin: 0 auto;">Close</button>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="tournament-modal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeModals()">&times;</button>
-            <h3 class="modal-title pixel-font" style="color: var(--neon-cyan);">Live Tournaments</h3>
-            <p style="color: #94a3b8; text-align: center; font-size: 0.9rem; margin-bottom: 20px;">The Tournament registration portal will open in Season 2. Practice your skills in the meantime!</p>
-            <button class="action-btn" onclick="closeModals()" style="margin: 0 auto; border-color: var(--neon-cyan);">Close</button>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="subscribe-modal">
-        <div class="modal-content" style="max-width: 650px;">
-            <button class="close-modal" onclick="closeModals()">&times;</button>
-            <h3 class="modal-title pixel-font" style="color: #fbbf24; margin-bottom: 30px;">Subscription Plans</h3>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                <div style="background: var(--bg-base); padding: 20px; border-radius: 8px; border: 1px solid var(--bg-surface-light); text-align: center; display: flex; flex-direction: column;">
-                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 1.1rem;">Free</h4>
-                    <p style="color: #fbbf24; font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">$0<span style="font-size: 0.8rem; color:#64748b;">/mo</span></p>
-                    <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 15px; line-height: 1.6; flex-grow: 1;">
-                        50MB Space Limit<br>
-                        Play Free Games<br>
-                        Standard Access
-                    </p>
-                    <button class="action-btn" style="width: 100%; justify-content: center;" onclick="alert('You are already on the Free plan!')">Current Plan</button>
-                </div>
-
-                <div style="background: var(--bg-base); padding: 20px; border-radius: 8px; border: 1px solid var(--neon-cyan); text-align: center; display: flex; flex-direction: column; position: relative;">
-                    <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--neon-cyan); color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: bold;">POPULAR</div>
-                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 1.1rem;">Basic</h4>
-                    <p style="color: #fbbf24; font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">$2.99<span style="font-size: 0.8rem; color:#64748b;">/mo</span></p>
-                    <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 15px; line-height: 1.6; flex-grow: 1;">
-                        Increased Storage<br>
-                        Monetize Your Games<br>
-                        Tournaments Access
-                    </p>
-                    <button class="action-btn" style="width: 100%; justify-content: center; border-color: var(--neon-cyan);" onclick="alert('Payment gateway connecting soon!')">Subscribe</button>
-                </div>
-
-                <div style="background: var(--bg-base); padding: 20px; border-radius: 8px; border: 1px solid var(--neon-purple); text-align: center; display: flex; flex-direction: column;">
-                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 1.1rem;">Pro</h4>
-                    <p style="color: #fbbf24; font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">$9.99<span style="font-size: 0.8rem; color:#64748b;">/mo</span></p>
-                    <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 15px; line-height: 1.6; flex-grow: 1;">
-                        Unlimited Storage<br>
-                        Sell on Asset Store<br>
-                        AI Creation Tutorials<br>
-                        Ad-Free Experience
-                    </p>
-                    <button class="action-btn" style="width: 100%; justify-content: center; background: var(--neon-purple); border: none;" onclick="alert('Payment gateway connecting soon!')">Subscribe</button>
                 </div>
             </div>
         </div>
@@ -722,20 +785,41 @@
             }                              
         ];
 
-        const homepage = document.getElementById('homepage');
-        const gameplayPage = document.getElementById('gameplay-page');
-        const searchSection = document.getElementById('search-section');
-        const gameGrid = document.getElementById('game-grid');
-        const gameIframe = document.getElementById('game-canvas');
-        const loader = document.getElementById('loader');
-        const portalBgm = document.getElementById('portal-bgm');
+        function hideAllPages() {
+            document.querySelectorAll('main').forEach(m => {
+                if(m.id !== 'gameplay-page' && m.id !== 'store-page' && m.id !== 'tournament-page' && m.id !== 'subscribe-page' && m.id !== 'homepage-page') return;
+                m.style.display = 'none';
+            });
+            document.getElementById('search-section').style.display = 'none';
+            
+            const gameIframe = document.getElementById('game-canvas');
+            const portalBgm = document.getElementById('portal-bgm');
+            gameIframe.src = ''; 
+            portalBgm.pause();
+        }
 
-        // CATEGORY SCROLL FUNCTION
+        function openPage(pageId) {
+            hideAllPages();
+            
+            if(pageId === 'homepage-page') {
+                document.getElementById('search-section').style.display = 'block';
+                history.pushState({ page: 'home' }, "Home", window.location.pathname);
+            } else {
+                let urlParam = pageId.replace('-page', '');
+                history.pushState({ page: pageId }, pageId, `?page=${urlParam}`);
+            }
+            
+            const page = document.getElementById(pageId);
+            if(page) page.style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+
         function scrollCat(val) {
             document.getElementById('top-cat-bar').scrollLeft += val;
         }
 
         function renderGames(gameList) {
+            const gameGrid = document.getElementById('game-grid');
             gameGrid.innerHTML = '';
             if (gameList.length === 0) {
                 gameGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px; font-size:0.9rem;">No entries found fitting active matrix fields.</p>';
@@ -782,11 +866,11 @@
             const game = games.find(g => g.id === gameId);
             if (!game) return;
 
+            hideAllPages();
+            
             history.pushState({ page: 'game', id: gameId }, game.title, `?play=${encodeURIComponent(game.title.toLowerCase().replace(/ /g, '-'))}`);
 
-            homepage.style.display = 'none';
-            searchSection.style.display = 'none';
-            gameplayPage.style.display = 'block';
+            document.getElementById('gameplay-page').style.display = 'block';
             window.scrollTo(0, 0);
 
             document.getElementById('current-game-title').innerText = game.title;
@@ -808,7 +892,11 @@
             } else {
                 aiContainer.style.display = 'none';
             }
+            
+            const gameIframe = document.getElementById('game-canvas');
             gameIframe.src = encodeURI(game.url); 
+            
+            const portalBgm = document.getElementById('portal-bgm');
             if(game.bgm) {
                 portalBgm.src = encodeURI(game.bgm);
                 portalBgm.play().catch(e => console.log('Autoplay handled.', e));
@@ -816,19 +904,14 @@
         }
 
         function goHome() {
-            gameplayPage.style.display = 'none';
-            homepage.style.display = 'flex';
-            searchSection.style.display = 'block';
-            gameIframe.src = ''; 
-            portalBgm.pause();
-            
-            history.pushState({ page: 'home' }, "Home", window.location.pathname);
-            window.scrollTo(0, 0);
+            openPage('homepage-page');
         }
 
         window.addEventListener('popstate', function(event) {
             if (event.state && event.state.page === 'game') {
                 launchViewport(event.state.id);
+            } else if (event.state && event.state.page) {
+                 openPage(event.state.page);
             } else {
                 goHome();
             }
@@ -849,8 +932,10 @@
 
         function openModal(modalId) { 
             const m = document.getElementById(modalId);
-            m.style.display = 'flex';
-            setTimeout(() => m.classList.add('active'), 10);
+            if(m) {
+                m.style.display = 'flex';
+                setTimeout(() => m.classList.add('active'), 10);
+            }
         }
         
         function closeModals() { 
@@ -900,28 +985,42 @@
         }
 
         window.onload = () => {
+            renderGames(games);
+            
             const urlParams = new URLSearchParams(window.location.search);
             const playQuery = urlParams.get('play');
+            const pageQuery = urlParams.get('page');
             
             if (playQuery) {
                 const game = games.find(g => g.title.toLowerCase().replace(/ /g, '-') === playQuery);
                 if (game) {
                     setTimeout(() => launchViewport(game.id), 100);
-                } else {
-                     renderGames(games);
                 }
+            } else if (pageQuery) {
+                 const targetPage = pageQuery + '-page';
+                 if(document.getElementById(targetPage)) {
+                     openPage(targetPage);
+                 } else {
+                     goHome();
+                 }
             } else {
-                renderGames(games);
+                goHome();
             }
 
             setTimeout(() => {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 400);
+                const loader = document.getElementById('loader');
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.style.display = 'none', 400);
+                }
             }, 600);
         };
         
         window.onclick = (e) => { if (e.target.classList.contains('modal-overlay')) closeModals(); }
-        window.onscroll = () => { document.getElementById('scrollToTopBtn').style.display = window.scrollY > 300 ? 'block' : 'none'; };
+        window.onscroll = () => { 
+            const btn = document.getElementById('scrollToTopBtn');
+            if(btn) btn.style.display = window.scrollY > 300 ? 'block' : 'none'; 
+        };
     </script>
 
     <script type="module">
@@ -929,7 +1028,6 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // Tumhari API Key yahan di gayi hai
         const firebaseConfig = {
             apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
             authDomain: "pixelgaunt-e5235.firebaseapp.com",
@@ -980,14 +1078,16 @@
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 isLoggedIn = true; 
-                updatePromptVisibility(); 
+                // Because updatePromptVisibility might be called before it's defined in the window scope above
+                if(typeof updatePromptVisibility === 'function') updatePromptVisibility(); 
+                
                 if (mainLoginBtn) {
                     mainLoginBtn.innerHTML = `<img src="${user.photoURL || 'https://via.placeholder.com/30'}" style="width:20px; height:20px; border-radius:50%; margin-right:8px; vertical-align:middle;"> Logout`;
                     mainLoginBtn.onclick = window.logoutUser;
                 }
             } else {
                 isLoggedIn = false;
-                updatePromptVisibility(); 
+                if(typeof updatePromptVisibility === 'function') updatePromptVisibility(); 
                 if (mainLoginBtn) {
                     mainLoginBtn.innerHTML = "Login";
                     mainLoginBtn.onclick = () => openModal('login-modal');
@@ -995,7 +1095,7 @@
             }
         });
 
-        // ❤️ LIKE BUTTON LOGIC
+        // ❤️ LIKE BUTTON
         const likeBtn = document.getElementById('like-btn');
         if(likeBtn) {
             likeBtn.addEventListener('click', async () => {
@@ -1011,7 +1111,7 @@
             });
         }
 
-        // 🐛 BUG REPORT LOGIC
+        // 🐛 BUG REPORT
         const bugBtn = document.getElementById('bug-btn');
         if(bugBtn) {
             bugBtn.addEventListener('click', async () => {
