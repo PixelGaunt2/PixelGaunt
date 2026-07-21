@@ -1003,13 +1003,17 @@
         import { getFirestore, doc, setDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
-            authDomain: "pixelgaunt-e5235.firebaseapp.com",
-            projectId: "pixelgaunt-e5235",
-            storageBucket: "pixelgaunt-e5235.firebasestorage.app",
-            messagingSenderId: "261213234973",
-            appId: "1:261213234973:web:e65879886c82be3aabe3f4"
-        };
+            const firebaseConfig = {
+	const app = firebase.initializeApp(firebaseConfig); 
+	const analytics = firebase.analytics();
+    apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
+    authDomain: "pixelgaunt-e5235.firebaseapp.com",
+    projectId: "pixelgaunt-e5235",
+    storageBucket: "pixelgaunt-e5235.firebasestorage.app",
+    messagingSenderId: "261213234973",
+    appId: "1:261213234973:web:e65879886c82be3aabe3f4",
+    measurementId: "G-CV52RVWHGY"  // <-- Ye line add karein (appId ke baad comma lagana mat bhoolna)
+};
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
