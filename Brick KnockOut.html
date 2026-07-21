@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bricks KnockOut - RPG Edition</title>
+    <!-- SDK Integration Added -->
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+    <style>
+        /* ================= CSS STYLES ================= */
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            user-select: none; -webkit-user-select: none; touch-action: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #05050a; display: flex; justify-content: center;
+            align-items: center; height: 100vh; width: 100vw; overflow: hidden; color: white;
+        }
+
+        #game-container {
+            position: relative; width: 100vw; height: 100vh;
+            max-width: 56.25vh; max-height: 100vh;
+            background-color: #0a0a12; overflow: hidden;
+            border-left: 4px solid #00e5ff; border-right: 4px solid #00e5ff; border-bottom: 4px solid #00e5ff;
+            box-shadow: 0 0 25px rgba(0, 229, 255, 0.35);
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+            transition: background-image 0.6s ease-in-out;
+        }
+
+        canvas { display: block; width: 100%; height: 100%; background-color: transparent; }
+
+        @keyframes shake {
+            0% { transform: translate(2px, 2px) rotate(0deg); }
+            10% { transform: translate(-2px, -3px) rotate(-1deg); }
+            20% { transform: translate(-4px, 0px) rotate(1deg); }
+            30% { transform: translate(4px, 3px) rotate(0deg); }
+            40% { transform: translate(2px, -2px) rotate(1deg); }
+            50% { transform: translate(-2px, 3px) rotate(-1deg); }
+            60% { transform: translate(-4px, 2px) rotate(0deg); }
+            70% { transform: translate(4px, 2px) rotate(-1deg); }
+            80% { transform: translate(-2px, -2px) rotate(1deg); }
+            90% { transform: translate(2px, 3px) rotate(0deg); }
+            100% { transform: translate(2px, -3px) rotate(-1deg); }
+        }
+        .shake-active { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        
+        .shake-mild { animation: shake 0.15s cubic-bezier(.36,.07,.19,.97) both; }
+
+        /* ================= UI Overlays ================= */
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; z-index: 20; transition: opacity 0.3s;
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+        }
+
+        #screen-main { background-image: linear-gradient(rgba(5, 5, 15, 0.6), rgba(5, 5, 15, 0.9)), url('Gemini_Generated_Image_69fbdb69fbdb69fb.png'); }
+        .screen-content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .hidden { display: none !important; }
+
+        h1 {
+            color: #00e5ff; font-size: 36px; text-align: center;
+            text-shadow: 0 0 20px rgba(0, 229, 255, 0.8), 0 2px 4px #000; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px;
+        }
+        h2 { color: #ff007f; margin-bottom: 20px; font-size: 26px; text-shadow: 0 0 10px rgba(255, 0, 127, 0.5); }
+        .subtitle { color: #ffd700; margin-bottom: 40px; font-size: 16px; text-align: center; font-weight: bold; letter-spacing: 1px; text-shadow: 0 2px 4px #000;}
+
+        .btn {
+            width: 80%; max-width: 300px; padding: 14px; margin: 8px 0; font-size: 18px; font-weight: bold; color: white; background: linear-gradient(45deg, #2a2a4a, #3a3a5a);
+            border: 2px solid #5a5a8a; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 0 #1a1a2a, 0 0 15px rgba(0,0,0,0.5); text-transform: uppercase; letter-spacing: 1px; transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: none; }
+        .btn-primary { background: linear-gradient(45deg, #007bb5, #00aaff); border-color: #00e5ff; box-shadow: 0 4px 0 #005f8a; }
+        .btn-success { background: linear-gradient(45deg, #28a745, #34ce57); border-color: #5efc82; box-shadow: 0 4px 0 #1e7e34; }
+        .btn-danger { background: linear-gradient(45deg, #dc3545, #e4606d); border-color: #ff8b94; box-shadow: 0 4px 0 #bd2130; }
+
+        #level-grid { 
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; width: 100%; max-width: 400px; margin-bottom: 20px; max-height: 50vh; overflow-y: auto; padding: 10px;
+        }
+        #level-grid::-webkit-scrollbar { width: 6px; }
+        #level-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.5); border-radius: 4px; }
+        #level-grid::-webkit-scrollbar-thumb { background: #00e5ff; border-radius: 4px; }
+
+        .lvl-btn { 
+            width: 60px; height: 60px; flex-shrink: 0; font-size: 18px; font-weight: bold; border-radius: 10px; border: 2px solid #334; background: #111; color: #445; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; line-height: 1;
+        }
+        .lvl-btn.unlocked { background: linear-gradient(135deg, #ff007f, #7f00ff); border-color: #ff80df; color: white; cursor: pointer; box-shadow: 0 4px 0 #4a004a; }
+        .lvl-btn.unlocked:active { transform: translateY(4px); box-shadow: none; }
+
+        #game-hud {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 10px 15px; background: rgba(15, 15, 25, 0.92); display: flex; flex-direction: column; z-index: 10; border-bottom: 2px solid #334;
+        }
+        
+        .hud-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px;}
+        .hud-btn { background: #2a2a3a; border: 1px solid #557; color: white; padding: 6px 10px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 13px; }
+        .hud-btn:active { background: #445; }
+        
+        .hud-stats-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .hud-stats-rpg { font-size: 11px; color: #aaa; margin-bottom: 4px; text-shadow: 1px 1px 2px black; font-weight: bold; display: flex; align-items: center; gap: 8px;}
+        .hud-stats-rpg span.lvl { color: #00e5ff; }
+        .hud-stats-rpg span.exp { color: #aaff00; }
+        .hud-stats { text-align: center; font-size: 13px; font-weight: bold; text-shadow: 1px 1px 2px black; display: flex; align-items: center; gap: 6px;}
+        .hud-stats span { color: #ffd700; }
+        
+        #btn-sound-toggle { background: #1e1e2f; border: 1px solid #00e5ff; color: #00e5ff; padding: 2px 6px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-left: 5px; }
+
+        .card-container { display: flex; gap: 8px; width: 100%; max-width: 450px; justify-content: center; align-items: stretch; margin-top: 20px;}
+        .ability-card {
+            flex: 1; min-width: 0; background: linear-gradient(180deg, #1a1a2e, #16213e); border: 2px solid #0f3460;
+            border-radius: 8px; padding: 15px 5px; text-align: center; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: transform 0.1s, border-color 0.2s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .ability-card:active { transform: scale(0.95); }
+        .ability-card h3 { font-size: 13px; margin: 10px 0 5px; color: #fff; line-height: 1.1; }
+        .ability-card p { font-size: 10px; color: #aaa; line-height: 1.2; }
+        .ability-icon { font-size: 32px; }
+
+        #cancel-text { position: absolute; top: 30%; width: 100%; text-align: center; color: #ff4444; font-weight: bold; font-size: 20px; pointer-events: none; text-shadow: 0 2px 4px #000; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="game-hud" class="hidden">
+        <div class="hud-top-row">
+            <button class="hud-btn" id="btn-hud-back">◀ Menu</button>
+            <div class="hud-stats-container">
+                <div class="hud-stats-rpg">
+                    Hero LVL <span class="lvl" id="ui-hero-lvl">1</span> | EXP: <span class="exp" id="ui-exp">0/100</span>
+                    <span id="ui-constraint" style="font-size:14px; text-transform:uppercase;"></span>
+                </div>
+                <div class="hud-stats">
+                    Stage <span id="ui-stage" style="color:white;">1</span> | 💰 <span id="ui-gold">0</span> | ⚔️ <span id="ui-atk">1</span>
+                    <button id="btn-sound-toggle">🔊 ON</button>
+                </div>
+            </div>
+            <div style="display:flex; gap:5px;">
+                <button class="hud-btn" id="btn-hud-pause">⏸️</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="cancel-text" class="hidden">Release to Cancel</div>
+
+    <div id="screen-main" class="screen">
+        <div class="screen-content">
+            <h1>Bricks KnockOut</h1>
+            <div class="subtitle">RPG Fantasy Edition</div>
+            <button class="btn btn-primary" id="btn-play-now">Play Now</button>
+            <button class="btn" id="btn-levels">Select Level</button>
+        </div>
+    </div>
+
+    <div id="screen-levels" class="screen hidden" style="background: rgba(10,10,18,0.95);">
+        <div class="screen-content">
+            <h2>Select Level</h2>
+            <div id="level-grid"></div>
+            <button class="btn btn-danger" id="btn-levels-back" style="margin-top:15px;">Back to Menu</button>
+        </div>
+    </div>
+
+    <div id="screen-pause" class="screen hidden" style="background: rgba(0,0,0,0.85);">
+        <div class="screen-content">
+            <h2>PAUSED</h2>
+            <button class="btn btn-success" id="btn-resume">Resume</button>
+            <button class="btn btn-danger" id="btn-quit">Quit Run</button>
+        </div>
+    </div>
+
+    <div id="screen-cards" class="screen hidden" style="background: rgba(0,0,0,0.92); z-index: 30;">
+        <div class="screen-content">
+            <h2 style="color: #fff; text-shadow: 0 0 10px #00e5ff; margin-bottom: 5px;">AERIAL DROP</h2>
+            <div class="subtitle" style="margin-bottom: 10px;">Select a tactical advantage!</div>
+            <div id="card-container" class="card-container"></div>
+        </div>
+    </div>
+
+    <div id="screen-clear" class="screen hidden" style="background: rgba(0,0,0,0.9);">
+        <div class="screen-content">
+            <h1 style="color: #00e5ff;">STAGE CLEAR!</h1>
+            <p style="margin-bottom: 30px; font-size: 18px;">Enemy formation destroyed!</p>
+            <button class="btn btn-success" id="btn-next-level">Next Level</button>
+            <button class="btn" id="btn-clear-menu">Main Menu</button>
+        </div>
+    </div>
+
+    <div id="screen-gameover" class="screen hidden" style="background: rgba(0,0,0,0.92); z-index: 25;">
+        <div class="screen-content">
+            <h1 style="color: #ff0055; text-shadow: 0 0 20px rgba(255, 0, 85, 0.8);">DEFEAT</h1>
+            <p id="gameover-reason" style="color: #ffd700; font-size: 18px; font-weight: bold; margin-top: 10px; margin-bottom: 5px;">Overwhelmed!</p>
+            <p id="gameover-stage" style="color: #aaa; font-size: 15px; margin-bottom: 30px;">Reached Stage 1</p>
+            <button class="btn btn-primary" id="btn-gameover-retry">Try Again</button>
+            <button class="btn btn-danger" id="btn-gameover-menu">Main Menu</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ================= SDK INIT ================= */
+window.addEventListener('load', async () => {
+    try {
+        if (window.CrazyGames && window.CrazyGames.SDK) {
+            await window.CrazyGames.SDK.game.sdkGameLoadingStart();
+            await window.CrazyGames.SDK.game.sdkGameLoadingStop();
+        }
+    } catch(e) { console.log("SDK Init Warning:", e); }
+});
+
+/* ================= AUDIO SYSTEM (ROBUST BGM FIX) ================= */
+let audioCtx = null; 
+let isMuted = false;
+let audioUnlocked = false;
+
+// ⚠️ YAHAN APNI AUDIO FILE KA NAAM LIKHEN
+const bgMusic = new Audio('Titan_Ore_Runner.mp3'); 
+bgMusic.loop = true;
+bgMusic.volume = 0.4;
+
+function unlockAudio() {
+    if (audioUnlocked) return;
+    if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    if (!isMuted) { 
+        let playPromise = bgMusic.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                audioUnlocked = true;
+            }).catch(e => {
+                console.log("Browser needs interaction first...", e);
+            });
+        }
+    } else {
+        audioUnlocked = true;
+    }
+}
+
+// BGM tab play hoga jab user pehli baar kahin bhi click karega
+document.body.addEventListener('click', unlockAudio, { once: true });
+document.body.addEventListener('touchstart', unlockAudio, { once: true });
+
+function initAudio() { unlockAudio(); }
+
+function toggleSound() {
+    isMuted = !isMuted; const btn = document.getElementById('btn-sound-toggle');
+    if (isMuted) { 
+        bgMusic.pause(); 
+        btn.innerText = "🔇 OFF"; btn.style.borderColor = "#ff4444"; btn.style.color = "#ff4444"; 
+    } else { 
+        unlockAudio(); 
+        bgMusic.play().catch(()=>{}); 
+        btn.innerText = "🔊 ON"; btn.style.borderColor = "#00e5ff"; btn.style.color = "#00e5ff"; 
+    }
+}
+
+function playTone(freq, type, duration, vol, sweepDown = false, sweepUp = false) {
+    if (!audioCtx || isMuted) return;
+    try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        if (sweepDown) osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        if (sweepUp) osc.frequency.exponentialRampToValueAtTime(freq * 2, audioCtx.currentTime + duration);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
+    } catch(e) {}
+}
+
+// Juicy SFX
+const SFX = {
+    hit: () => playTone(350, 'square', 0.08, 0.06), 
+    shoot: () => playTone(600, 'sine', 0.15, 0.05, true),
+    zap: () => { playTone(800, 'sawtooth', 0.1, 0.05); setTimeout(()=>playTone(600, 'sawtooth', 0.1, 0.05), 50); },
+    explosion: () => playTone(100, 'square', 0.4, 0.15, true), 
+    melt: () => playTone(250, 'sine', 0.3, 0.08, false, true),
+    quake: () => playTone(50, 'sawtooth', 0.6, 0.25, true),
+    freeze: () => playTone(1200, 'sine', 0.3, 0.05), 
+    click: () => playTone(450, 'sine', 0.05, 0.05),
+    bounce: () => playTone(700, 'triangle', 0.05, 0.03),
+    win: () => { playTone(400, 'sine', 0.2, 0.1); setTimeout(()=>playTone(500, 'sine', 0.2, 0.1), 150); setTimeout(()=>playTone(600, 'sine', 0.4, 0.1), 300); },
+    coin: () => { playTone(1000, 'sine', 0.05, 0.05); setTimeout(()=>playTone(1500, 'sine', 0.1, 0.05), 50); }
+};
+
+const LEVEL_BACKGROUNDS = [
+    'Gemini_Generated_Image_5lka1w5lka1w5lka.png', 
+    'Gemini_Generated_Image_v7r94fv7r94fv7r9.png',
+    'Gemini_Generated_Image_ol9mljol9mljol9m.png', 
+    'Gemini_Generated_Image_ev0b51ev0b51ev0b.png',
+    'Gemini_Generated_Image_6m92mf6m92mf6m92.png',
+    'Gemini_Generated_Image_hdrkc6hdrkc6hdrk.png',
+    'Gemini_Generated_Image_mtxy05mtxy05mtxy.png',
+    'Gemini_Generated_Image_qx4yqdqx4yqdqx4y.png',
+    'Gemini_Generated_Image_j7xxnmj7xxnmj7xx.png',
+    'Gemini_Generated_Image_n2fbk5n2fbk5n2fb.png',
+    'Gemini_Generated_Image_jiv991jiv991jiv9.png',
+    'Gemini_Generated_Image_9zqs1s9zqs1s9zqs.png',
+    'Gemini_Generated_Image_72zvh072zvh072zv.png',
+    'Gemini_Generated_Image_9qe49z9qe49z9qe4.png'
+];
+
+function setMainMenuBackground() { document.getElementById('screen-main').style.backgroundImage = `linear-gradient(rgba(5, 5, 15, 0.6), rgba(5, 5, 15, 0.9)), url('Gemini_Generated_Image_69fbdb69fbdb69fb.png')`; }
+function updateLevelBackground(lvl) {
+    let bgIndex = Math.floor(Math.random() * LEVEL_BACKGROUNDS.length);
+    document.getElementById('game-container').style.backgroundImage = `linear-gradient(rgba(10, 10, 20, 0.4), rgba(10, 10, 20, 0.85)), url('${LEVEL_BACKGROUNDS[bgIndex]}')`;
+}
+
+/* ================= JAVASCRIPT GAME LOGIC ================= */
+const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
+let gameWidth = canvas.width = 500; let gameHeight = canvas.height = 900;
+
+const ASSETS = {
+    squares: [
+        'Gemini_Generated_Image_ss84rqss84rqss84-removebg-preview.png',
+        'Gemini_Generated_Image_e7rp4me7rp4me7rp-removebg-preview.png',
+        'Gemini_Generated_Image_u20hdqu20hdqu20h-removebg-preview.png',
+        'Gemini_Generated_Image_1rlmac1rlmac1rlm-removebg-preview.png',
+        'Gemini_Generated_Image_gkdgprgkdgprgkdg-removebg-preview.png'
+    ].map(src => { let img = new Image(); img.src = src; return img; }),
+    triangles: [
+        'Gemini_Generated_Image_a6nwmea6nwmea6nw-removebg-preview.png',
+        'Gemini_Generated_Image_62qevp62qevp62qe-removebg-preview.png',
+        'Gemini_Generated_Image_94ds7c94ds7c94ds-removebg-preview.png',
+        'Gemini_Generated_Image_g48rseg48rseg48r-removebg-preview.png',
+        'Gemini_Generated_Image_8ntlqw8ntlqw8ntl-removebg-preview.png'
+    ].map(src => { let img = new Image(); img.src = src; return img; })
+};
+
+const STATE = { MENU: 0, LEVEL_SELECT: 1, IDLE: 2, AIMING: 3, SHOOTING: 4, PAUSED: 5, CLEAR: 7, POWERUP_ANIM: 8, ABILITY_SELECT: 9, GAMEOVER: 10 };
+let gameState = STATE.MENU; let previousState = STATE.IDLE; 
+
+let player = {
+    gold: 0, maxLevelUnlocked: 1, heroLevel: 1, xp: 0, xpNeeded: 100, 
+    critChance: 0.15, critMultiplier: 2.0
+};
+
+function getHeroDmg() { return player.heroLevel; }
+
+let levelConstraint = { type: 'none', value: 0 }; 
+let timerInterval = null;
+
+const ABILITIES_INFO = {
+    fire: { icon: '🔥', name: 'Turret', desc: 'Shoot straight up.', color: '#ff4500' },
+    shock: { icon: '⚡', name: 'Shock', desc: 'Zap 3 enemies.', color: '#ffd700' },
+    bomb: { icon: '💣', name: 'Bomb', desc: 'Area explosion.', color: '#ff0000' },
+    acid: { icon: '🧪', name: 'Acid', desc: 'Melt bottom row.', color: '#aaff00' },
+    extraballs: { icon: '🎱', name: '+5 Balls', desc: 'Adds 5 extra balls!', color: '#00ffcc' },
+    quake: { icon: '🌍', name: 'Quake', desc: 'Damage all enemies.', color: '#8d6e63' },
+    frost: { icon: '❄️', name: 'Frost', desc: 'Stop movement.', color: '#00e5ff' }
+};
+
+let activeFrames = 0;
+const FRAMES_FOR_DRAFT = 15 * 60; 
+
+let currentLevel = 1;
+let blocks = [], balls = [], particles = [], lasers = [], lightning = [], drops = [];
+let bottomY = gameHeight - 20; let topBound = 80; 
+
+function triggerShake(type = 'mild') {
+    const container = document.getElementById('game-container');
+    container.classList.remove('shake-active', 'shake-mild');
+    void container.offsetWidth; // trigger reflow
+    container.classList.add(type === 'strong' ? 'shake-active' : 'shake-mild');
+    setTimeout(() => { container.classList.remove('shake-active', 'shake-mild'); }, type === 'strong' ? 400 : 150);
+}
+
+function updateTopBound() {
+    const hud = document.getElementById('game-hud');
+    if (hud && !hud.classList.contains('hidden')) {
+        const rect = canvas.getBoundingClientRect();
+        if (rect.height > 0) topBound = hud.offsetHeight * (gameHeight / rect.height);
+    }
+}
+
+let baseX = gameWidth / 2; let nextBaseX = baseX;
+let currentDrag = {x: 0, y: 0}; let aimAngle = 0; let isValidAim = false;
+let ballsFiredCount = 0; let frameCounter = 0; let framesBetweenShots = 6; 
+let ballSpeed = 16; let firstBallLanded = false; let blocksFrozen = false;
+
+function generateDistinctLevelLayout(lvl) {
+    let layout = []; let cols = 9; 
+    let phase = (lvl - 1) % 6; let difficulty = "easy";
+    if (phase === 2) difficulty = "hard"; else if (phase === 4 || phase === 5) difficulty = "pro";
+    let actualRows = (difficulty === "easy") ? 4 : (difficulty === "hard" ? 6 : 9);
+
+    for (let r = 0; r < actualRows; r++) {
+        let row = new Array(cols).fill(0);
+        for (let c = 0; c < cols; c++) {
+            let blockType = Math.floor(Math.random() * 6) + 1;
+            if (difficulty === "easy") {
+                if (r % 2 === 0 && c % 2 !== 0) row[c] = blockType;
+                else if (r % 2 !== 0 && c % 2 === 0 && c > 1 && c < cols-2) row[c] = blockType;
+            } else if (difficulty === "hard") {
+                if (r === 0 || r === 1) row[c] = blockType; 
+                else if (c === 0 || c === cols - 1) row[c] = blockType; 
+                else if (r === 3 && c === 4) row[c] = blockType; 
+            } else if (difficulty === "pro") {
+                if (phase === 4) { if (r <= Math.abs(c - 4) + 2) row[c] = blockType; if (r === actualRows - 1) row[c] = blockType; } 
+                else { if ((r + c) % 2 === 0 || r === 0 || c === 0 || c === cols - 1) row[c] = blockType; }
+            }
+        }
+        if (row.some(val => val > 0)) layout.push(row);
+    }
+    if (layout.length === 0) layout.push([0, 1, 1, 1, 1, 1, 1, 1, 0]);
+    return layout;
+}
+
+function calculateBlockHP(lvl, isCenter) {
+    let phase = (lvl - 1) % 6; let isHard = (phase === 2); let isPro = (phase >= 4);
+    let hpMultiplier = isCenter ? 2.5 : 1.0; let diff = isPro ? 3.0 : (isHard ? 2.0 : 1.0); 
+    let baseHP = Math.floor((lvl * 1.5) + Math.pow(lvl, 1.05)) * diff; 
+    return Math.max(1, Math.floor(baseHP * hpMultiplier));
+}
+
+function loadLevel(lvl) {
+    try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStart(); } catch(e){}
+
+    document.getElementById('game-hud').classList.remove('hidden'); updateTopBound();
+    currentLevel = lvl; blocks = []; particles = []; lasers = []; lightning = []; drops = [];
+    blocksFrozen = false; baseX = gameWidth / 2; nextBaseX = baseX;
+    
+    if(timerInterval) clearInterval(timerInterval);
+    levelConstraint = { type: 'none', value: 0 };
+
+    if (lvl > 2) {
+        let constraintRoll = Math.random();
+        if (constraintRoll < 0.35) { levelConstraint = { type: 'time', value: Math.max(25, 90 - Math.floor(lvl / 2)) }; } 
+        else if (constraintRoll < 0.70) { levelConstraint = { type: 'shots', value: Math.max(10, 30 - Math.floor(lvl / 4)) }; }
+    }
+
+    if (levelConstraint.type === 'time') {
+        timerInterval = setInterval(() => {
+            if([STATE.IDLE, STATE.AIMING, STATE.SHOOTING].includes(gameState)) {
+                levelConstraint.value--; updateUI();
+                if (levelConstraint.value <= 0) { triggerGameOver("Time's Up!"); }
+            }
+        }, 1000);
+    }
+
+    updateLevelBackground(lvl);
+    balls = Array.from({length: 5}, () => ({ x: baseX, y: bottomY - 8, vx: 0, vy: 0, r: 4.5, active: false, returning: false, isClone: false }));
+
+    let cols = 9; let layout = generateDistinctLevelLayout(lvl); 
+    let colGap = 2; let rowGap = 2; let brickWidth = 46; let brickHeight = 46;
+    let totalGridWidth = (cols * brickWidth) + ((cols - 1) * colGap);
+    let startX = (gameWidth - totalGridWidth) / 2; 
+
+    for (let r = 0; r < layout.length; r++) {
+        let currentX = startX; 
+        for (let c = 0; c < cols; c++) {
+            let blockType = layout[r][c];
+            if (blockType !== 0) {
+                let isSquare = (blockType <= 2); let imgList = isSquare ? ASSETS.squares : ASSETS.triangles;
+                let triangleOrientation = ((c + r) % 2 === 0) ? 'up' : 'down';
+                let isCenter = (c === Math.floor(cols / 2));
+                
+                blocks.push({
+                    x: currentX, y: topBound + 15 + (r * (brickHeight + rowGap)), 
+                    w: brickWidth, h: brickHeight, hp: calculateBlockHP(lvl, isCenter), 
+                    active: true, shape: isSquare ? 'square' : 'triangle', 
+                    orientation: isSquare ? 'none' : triangleOrientation,
+                    img: imgList[Math.floor(Math.random() * imgList.length)]
+                });
+            }
+            currentX += brickWidth + colGap;
+        }
+    }
+    updateUI(); gameState = STATE.IDLE; showScreen(null);
+}
+
+function triggerGameOver(reasonText) {
+    if(timerInterval) clearInterval(timerInterval);
+    try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStop(); } catch(e){}
+
+    SFX.explosion(); triggerShake('strong');
+    gameState = STATE.GAMEOVER;
+    document.getElementById('gameover-reason').innerText = reasonText;
+    document.getElementById('gameover-stage').innerText = `Reached Stage ${currentLevel}`;
+    showScreen('screen-gameover'); saveGame();
+}
+
+function setupMenuEvents() {
+    document.getElementById('btn-sound-toggle').onclick = () => { SFX.click(); toggleSound(); };
+    document.getElementById('btn-play-now').onclick = () => { SFX.click(); initAudio(); loadLevel(player.maxLevelUnlocked); };
+    document.getElementById('btn-levels').onclick = () => { SFX.click(); initAudio(); gameState = STATE.LEVEL_SELECT; buildLevelGrid(); showScreen('screen-levels'); };
+    document.getElementById('btn-levels-back').onclick = () => { SFX.click(); gameState = STATE.MENU; setMainMenuBackground(); showScreen('screen-main'); };
+    
+    document.getElementById('btn-hud-back').onclick = () => { 
+        SFX.click(); if(timerInterval) clearInterval(timerInterval); 
+        try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStop(); } catch(e){}
+        gameState = STATE.MENU; setMainMenuBackground(); showScreen('screen-main'); saveGame(); 
+        document.getElementById('cancel-text').classList.add('hidden'); 
+    };
+    
+    document.getElementById('btn-hud-pause').onclick = () => { 
+        SFX.click(); 
+        if ([STATE.IDLE, STATE.AIMING, STATE.SHOOTING].includes(gameState)) { 
+            previousState = (gameState === STATE.AIMING) ? STATE.IDLE : gameState; 
+            gameState = STATE.PAUSED; 
+            document.getElementById('cancel-text').classList.add('hidden'); 
+            showScreen('screen-pause'); 
+        } 
+    };
+    document.getElementById('btn-resume').onclick = () => { SFX.click(); gameState = previousState; showScreen(null); };
+    document.getElementById('btn-quit').onclick = () => { 
+        SFX.click(); if(timerInterval) clearInterval(timerInterval); 
+        try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStop(); } catch(e){}
+        gameState = STATE.MENU; setMainMenuBackground(); showScreen('screen-main'); saveGame(); 
+    };
+    document.getElementById('btn-next-level').onclick = () => { SFX.click(); loadLevel(currentLevel + 1); };
+    document.getElementById('btn-clear-menu').onclick = () => { 
+        SFX.click(); 
+        try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStop(); } catch(e){}
+        gameState = STATE.MENU; setMainMenuBackground(); showScreen('screen-main'); 
+    };
+    
+    document.getElementById('btn-gameover-retry').onclick = () => { SFX.click(); initAudio(); loadLevel(currentLevel); };
+    document.getElementById('btn-gameover-menu').onclick = () => { SFX.click(); gameState = STATE.MENU; setMainMenuBackground(); showScreen('screen-main'); };
+}
+
+function buildLevelGrid() {
+    const grid = document.getElementById('level-grid'); grid.innerHTML = '';
+    let maxToShow = Math.max(20, player.maxLevelUnlocked + 9);
+    for (let i = 1; i <= maxToShow; i++) {
+        let btn = document.createElement('div'); btn.className = 'lvl-btn'; let prestige = Math.floor((i - 1) / 100);
+        if (i <= player.maxLevelUnlocked) { 
+            btn.classList.add('unlocked'); 
+            if (prestige === 1) btn.style.background = "linear-gradient(135deg, #ff8c00, #ff0000)"; 
+            if (prestige >= 2) btn.style.background = "linear-gradient(135deg, #00e5ff, #0055ff)"; 
+            btn.innerHTML = `${i}`; btn.onclick = () => { SFX.click(); initAudio(); loadLevel(i); }; 
+        } else { btn.innerHTML = `🔒<br><span style="font-size:12px;">${i}</span>`; }
+        grid.appendChild(btn);
+    }
+    setTimeout(() => { grid.scrollTop = grid.scrollHeight; }, 10);
+}
+
+function setupGameEvents() {
+    window.addEventListener('resize', updateTopBound); 
+    const getTouchPos = (e) => {
+        let rect = canvas.getBoundingClientRect();
+        return { x: ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) * (canvas.width / rect.width), y: ((e.touches ? e.touches[0].clientY : e.clientY) - rect.top) * (canvas.height / rect.height) };
+    };
+
+    const handleStart = (e) => {
+        let pos = getTouchPos(e); if (pos.y < topBound || gameState !== STATE.IDLE) return; 
+        currentDrag = pos; gameState = STATE.AIMING; isValidAim = false;
+    };
+
+    const handleMove = (e) => {
+        if (gameState !== STATE.AIMING) return; currentDrag = getTouchPos(e);
+        let dx = currentDrag.x - baseX; let dy = currentDrag.y - (bottomY - 8);
+        if (Math.hypot(dx, dy) > 10) {
+            aimAngle = Math.atan2(dy, dx);
+            if (aimAngle < -0.15 && aimAngle > -Math.PI + 0.15) { isValidAim = true; document.getElementById('cancel-text').classList.add('hidden'); } 
+            else { isValidAim = false; document.getElementById('cancel-text').classList.remove('hidden'); }
+        } else { isValidAim = false; }
+    };
+
+    const handleEnd = () => {
+        if (gameState !== STATE.AIMING) return;
+        document.getElementById('cancel-text').classList.add('hidden'); 
+        if (isValidAim) {
+            if (levelConstraint.type === 'shots') { levelConstraint.value--; updateUI(); }
+            gameState = STATE.SHOOTING; firstBallLanded = false; ballsFiredCount = 0; frameCounter = framesBetweenShots; 
+            balls.filter(b => !b.isClone).forEach(b => { b.x = baseX; b.y = bottomY - b.r; b.active = false; b.returning = false; });
+        } else { gameState = STATE.IDLE; }
+    };
+
+    canvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd);
+    canvas.addEventListener('touchstart', handleStart, {passive: false}); window.addEventListener('touchmove', handleMove, {passive: false}); window.addEventListener('touchend', handleEnd);
+}
+
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(el => el.classList.add('hidden'));
+    document.getElementById('game-hud').classList.add('hidden');
+    if (id) document.getElementById(id).classList.remove('hidden');
+    if ([STATE.IDLE, STATE.AIMING, STATE.SHOOTING, STATE.PAUSED, STATE.POWERUP_ANIM, STATE.ABILITY_SELECT].includes(gameState)) {
+        document.getElementById('game-hud').classList.remove('hidden'); updateTopBound();
+    }
+}
+
+function triggerPowerupDraft() {
+    if (gameState === STATE.AIMING) { gameState = STATE.IDLE; document.getElementById('cancel-text').classList.add('hidden'); }
+    previousState = gameState; gameState = STATE.ABILITY_SELECT;
+    
+    let keys = Object.keys(ABILITIES_INFO).sort(() => 0.5 - Math.random()).slice(0, 3);
+    const container = document.getElementById('card-container'); container.innerHTML = '';
+    
+    keys.forEach(key => {
+        let info = ABILITIES_INFO[key]; let card = document.createElement('div');
+        card.className = 'ability-card'; card.style.borderColor = info.color;
+        card.innerHTML = `<div class="ability-icon">${info.icon}</div><h3>${info.name}</h3><p>${info.desc}</p>`;
+        card.onclick = () => {
+            if (gameState !== STATE.ABILITY_SELECT) return; 
+            SFX.click(); gameState = previousState; showScreen(null); executePowerupInstantly(key); 
+        };
+        container.appendChild(card);
+    });
+    showScreen('screen-cards');
+}
+
+function executePowerupInstantly(type) {
+    let activeBlocks = blocks.filter(b => b.active);
+    if (activeBlocks.length === 0 && type !== 'extraballs' && type !== 'fire') return;
+    let dmg = getHeroDmg();
+
+    if (type === 'fire') {
+        SFX.shoot(); for (let i = 0; i < 5; i++) { lasers.push({ x: (gameWidth / 6) * (i + 1), y: bottomY - 25, w: 8, h: 30, active: true }); }
+    } else if (type === 'extraballs') {
+        let soundPlayed = false;
+        for (let i = 0; i < 5; i++) {
+            if(!soundPlayed){ playTone(500, 'triangle', 0.25, 0.08, false, true); soundPlayed=true;}
+            let angle = -Math.PI / 6 - (i * (Math.PI / 6)); 
+            balls.push({ x: baseX, y: bottomY - 15, vx: Math.cos(angle) * ballSpeed, vy: Math.sin(angle) * ballSpeed, r: 4.5, active: true, returning: false, isClone: true });
+        }
+        createParticle(baseX, bottomY - 30, '+5 BALLS!', '#00ffcc');
+    } else {
+        let cacheState = gameState; gameState = STATE.POWERUP_ANIM;
+        if (type === 'shock') {
+            SFX.zap(); activeBlocks.sort(() => 0.5 - Math.random()).slice(0, 3).forEach(b => { lightning.push({ x1: baseX, y1: bottomY, x2: b.x + b.w/2, y2: b.y + b.h/2, life: 1 }); damageBlock(b, dmg * 5); });
+            setTimeout(() => { gameState = cacheState; }, 600);
+        } else if (type === 'bomb') {
+            SFX.explosion(); triggerShake('strong'); let target = activeBlocks[Math.floor(Math.random() * activeBlocks.length)]; let tx = target.x + target.w/2; let ty = target.y + target.h/2;
+            createParticle(tx, ty, '💥 BOOM!', '#ff0000');
+            activeBlocks.forEach(b => { if (Math.hypot((b.x + b.w/2) - tx, (b.y + b.h/2) - ty) < 120) { damageBlock(b, dmg * 4); } });
+            setTimeout(() => { gameState = cacheState; }, 600);
+        } else if (type === 'acid') {
+            SFX.melt(); triggerShake('mild'); let maxR = -1; activeBlocks.forEach(b => { if(b.y > maxR) maxR = b.y; });
+            activeBlocks.filter(b => b.y === maxR).forEach(b => { createParticle(b.x + b.w/2, b.y + b.h/2, 'ACID!', '#aaff00'); damageBlock(b, b.hp); });
+            setTimeout(() => { gameState = cacheState; }, 600);
+        } else if (type === 'quake') {
+            SFX.quake(); triggerShake('strong'); activeBlocks.forEach(b => { damageBlock(b, Math.ceil(dmg * 1.5)); });
+            setTimeout(() => { gameState = cacheState; }, 600);
+        } else if (type === 'frost') {
+            SFX.freeze(); blocksFrozen = true; createParticle(gameWidth/2, gameHeight/2, '❄️ FROST NOVA!', '#00ffff');
+            activeBlocks.forEach(b => { damageBlock(b, dmg); }); setTimeout(() => { gameState = cacheState; }, 600);
+        }
+    }
+}
+
+function updateUI() {
+    document.getElementById('ui-stage').innerText = currentLevel; 
+    document.getElementById('ui-gold').innerText = player.gold; 
+    document.getElementById('ui-atk').innerText = getHeroDmg();
+    if (document.getElementById('ui-hero-lvl')) document.getElementById('ui-hero-lvl').innerText = player.heroLevel;
+    if (document.getElementById('ui-exp')) document.getElementById('ui-exp').innerText = `${player.xp}/${player.xpNeeded}`;
+
+    let constraintEl = document.getElementById('ui-constraint');
+    if (levelConstraint.type === 'time') { constraintEl.innerText = `[ ⏱️ ${levelConstraint.value}s ]`; constraintEl.style.color = levelConstraint.value <= 10 ? '#ff4444' : '#ffaa00'; } 
+    else if (levelConstraint.type === 'shots') { constraintEl.innerText = `[ 🔴 SHOTS: ${levelConstraint.value} ]`; constraintEl.style.color = levelConstraint.value <= 1 ? '#ff4444' : '#00e5ff'; } 
+    else { constraintEl.innerText = ''; }
+}
+
+function createParticle(x, y, text, color = '#ffd700', isGold = false) { particles.push({ x: x, y: y, text: text, color: color, life: 1, isGold: isGold }); }
+function createDotParticle(x, y, color) { for(let i=0; i<3; i++) particles.push({ x: x, y: y, text: '•', color: color, life: 1, vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5 }); }
+
+function damageBlock(b, baseDmg) {
+    let isCrit = Math.random() < player.critChance; let finalDmg = isCrit ? Math.ceil(baseDmg * player.critMultiplier) : baseDmg;
+    b.hp -= finalDmg; SFX.hit(); b.flashTimer = 8; 
+    createParticle(b.x + b.w / 2, b.y + b.h / 2, isCrit ? `CRIT! -${finalDmg}` : `-${finalDmg}`, isCrit ? '#ffaa00' : '#ff0055');
+    if(isCrit) triggerShake('mild'); 
+    
+    if (b.hp <= 0) {
+        b.active = false; let prestigeBuff = Math.floor((currentLevel - 1) / 100);
+        let earned = Math.floor(Math.random() * 3) + 2 + prestigeBuff;
+        for (let c = 0; c < earned; c++) { drops.push({ x: b.x + b.w / 2, y: b.y + b.h / 2, vx: (Math.random() - 0.5) * 6, vy: (Math.random() * -3) - 2, value: 1 }); }
+        
+        player.xp += Math.floor(Math.random() * 8) + 8 + prestigeBuff; 
+        if (player.xp >= player.xpNeeded) {
+            player.heroLevel++; player.xp -= player.xpNeeded; player.xpNeeded = Math.floor(player.xpNeeded * 1.6);
+            createParticle(gameWidth/2, gameHeight/2, 'LEVEL UP!', '#00e5ff'); SFX.win(); triggerShake('mild');
+        }
+        updateUI(); triggerShake('mild'); 
+        for(let p = 0; p < 8; p++) { particles.push({ x: b.x + b.w / 2, y: b.y + b.h / 2, text: '✦', color: '#fff', life: 1, vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8 }); }
+        return true;
+    }
+    return false;
+}
+
+function update() {
+    if ([STATE.SHOOTING, STATE.AIMING].includes(gameState)) {
+        activeFrames++;
+        if (activeFrames >= FRAMES_FOR_DRAFT) { activeFrames = 0; triggerPowerupDraft(); return; }
+    }
+    if (gameState === STATE.POWERUP_ANIM || (![STATE.IDLE, STATE.SHOOTING, STATE.AIMING].includes(gameState))) return;
+    let regBalls = balls.filter(b => !b.isClone);
+
+    if (gameState === STATE.SHOOTING) {
+        frameCounter++; 
+        if (ballsFiredCount < regBalls.length && frameCounter >= framesBetweenShots) {
+            let b = regBalls[ballsFiredCount]; b.vx = Math.cos(aimAngle) * ballSpeed; b.vy = Math.sin(aimAngle) * ballSpeed;
+            b.active = true; b.returning = false; SFX.shoot(); ballsFiredCount++; frameCounter = 0;
+        }
+    }
+
+    let allInactive = true;
+    for (let i = balls.length - 1; i >= 0; i--) {
+        let b = balls[i]; if (!b.active && !b.returning) continue;
+        allInactive = false;
+
+        if (b.returning) {
+            let dx = nextBaseX - b.x; let dy = (bottomY - b.r) - b.y; let dist = Math.hypot(dx, dy);
+            if (dist < ballSpeed) {
+                b.x = nextBaseX; b.y = bottomY - b.r; b.vx = 0; b.vy = 0; b.returning = false; b.active = false;
+                if (b.isClone) balls.splice(i, 1);
+            } else { b.x += (dx / dist) * ballSpeed * 1.3; b.y += (dy / dist) * ballSpeed * 1.3; }
+            continue;
+        }
+
+        if (!b.active) continue;
+        let steps = 4; let subVx = b.vx / steps; let subVy = b.vy / steps;
+        
+        for (let s = 0; s < steps; s++) {
+            let prevX = b.x; let prevY = b.y; b.x += subVx; b.y += subVy;
+
+            if (b.x - b.r <= 0) { b.x = b.r; b.vx *= -1; subVx = b.vx / steps; SFX.bounce(); createDotParticle(b.x, b.y, '#00e5ff'); }
+            else if (b.x + b.r >= gameWidth) { b.x = gameWidth - b.r; b.vx *= -1; subVx = b.vx / steps; SFX.bounce(); createDotParticle(b.x, b.y, '#00e5ff'); }
+            if (b.y - b.r <= topBound) { b.y = topBound + b.r; b.vy *= -1; subVy = b.vy / steps; SFX.bounce(); createDotParticle(b.x, b.y, '#00e5ff'); }
+
+            if (b.y + b.r >= bottomY) {
+                b.y = bottomY - b.r; b.vx = 0; b.vy = 0; b.active = false; b.returning = true;
+                createDotParticle(b.x, b.y, '#ffaa00');
+                if (!firstBallLanded && !b.isClone) { firstBallLanded = true; nextBaseX = Math.max(15, Math.min(gameWidth - 15, b.x)); }
+                break;
+            }
+
+            for (let j = 0; j < blocks.length; j++) {
+                let blk = blocks[j]; if (!blk.active) continue;
+                let rx = blk.x; let ry = blk.y; let rw = blk.w; let rh = blk.h;
+                let closestX = Math.max(rx, Math.min(b.x, rx + rw)); let closestY = Math.max(ry, Math.min(b.y, ry + rh));
+
+                let distX = b.x - closestX; let distY = b.y - closestY;
+                let distSq = (distX * distX) + (distY * distY);
+
+                if (distSq < (b.r * b.r)) {
+                    let hitTopBottom = (prevX >= rx && prevX <= rx + rw); let hitLeftRight = (prevY >= ry && prevY <= ry + rh);
+                    if (hitTopBottom) { b.vy *= -1; b.y = prevY; } else if (hitLeftRight) { b.vx *= -1; b.x = prevX; } else { b.vx *= -1; b.vy *= -1; b.x = prevX; b.y = prevY; }
+                    
+                    subVx = b.vx / steps; subVy = b.vy / steps;
+                    createDotParticle(b.x, b.y, '#ff007f'); damageBlock(blk, getHeroDmg()); 
+                    break; 
+                }
+            }
+        }
+    }
+
+    if (gameState === STATE.SHOOTING && allInactive && ballsFiredCount >= regBalls.length) {
+        baseX = nextBaseX; balls.filter(b => !b.isClone).forEach(b => { b.x = baseX; b.y = bottomY - b.r; b.active = false; b.returning = false; }); endTurn();
+    }
+
+    for (let i = lasers.length - 1; i >= 0; i--) {
+        let l = lasers[i]; l.y -= 25; if (l.y < topBound) { lasers.splice(i, 1); continue; }
+        blocks.forEach(blk => { if (blk.active && l.x > blk.x && l.x < blk.x + blk.w && l.y > blk.y && l.y < blk.y + blk.h) { damageBlock(blk, getHeroDmg() * 3); lasers.splice(i, 1); } });
+    }
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i]; if (p.vx !== undefined) { p.x += p.vx; p.y += p.vy; p.vx *= 0.9; p.vy *= 0.9; } else { p.y -= 1; }
+        p.life -= 0.02; if (p.isGold && player.gold > 0) { let targetX = gameWidth / 2; let targetY = 15; p.x += (targetX - p.x) * 0.1; p.y += (targetY - p.y) * 0.1; }
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+    
+    for (let i = drops.length - 1; i >= 0; i--) {
+        let d = drops[i]; d.vy += 0.25; d.x += d.vx; d.y += d.vy;
+        if (d.x <= 0 || d.x >= gameWidth) { d.vx *= -0.5; d.x = d.x <= 0 ? 0 : gameWidth; }
+        if (d.y >= bottomY) {
+            let prestigeBuff = Math.floor((currentLevel - 1) / 100); let earnedGold = d.value + prestigeBuff;
+            player.gold += earnedGold; SFX.coin(); 
+            createParticle(d.x, bottomY - 10, `+${earnedGold}`, '#ffd700', true); 
+            createParticle(baseX + (Math.random() - 0.5) * 20, bottomY - 15, '$', '#5efc82'); 
+            updateUI(); drops.splice(i, 1);
+        }
+    }
+}
+
+function endTurn() {
+    let allCleared = true; let gameOver = false; let stepDown = 46;
+    blocks.forEach(b => { if (b.active) { allCleared = false; if (!blocksFrozen) { b.y += stepDown; if (b.y + b.h >= bottomY - 10) gameOver = true; } } });
+
+    if (blocksFrozen) { blocksFrozen = false; createParticle(gameWidth/2, gameHeight/2, 'THAWED', '#aaa'); }
+
+    if (allCleared) {
+        if(timerInterval) clearInterval(timerInterval);
+        SFX.win(); if (currentLevel === player.maxLevelUnlocked) { player.maxLevelUnlocked++; saveGame(); }
+        gameState = STATE.CLEAR; showScreen('screen-clear');
+    } else if (gameOver) {
+        triggerGameOver("Enemies reached the wall!");
+    } else if (levelConstraint.type === 'shots' && levelConstraint.value <= 0) {
+        triggerGameOver("Out of Shots!");
+    } else { gameState = STATE.IDLE; saveGame(); }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, gameWidth, gameHeight);
+
+    if (gameState !== STATE.MENU && gameState !== STATE.LEVEL_SELECT) {
+        ctx.fillStyle = '#1e1e2f'; ctx.fillRect(0, 0, gameWidth, topBound);
+        ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, topBound); ctx.lineTo(gameWidth, topBound); ctx.stroke();
+
+        ctx.fillStyle = '#223'; ctx.beginPath(); ctx.arc(baseX, bottomY, 20, Math.PI, 0); ctx.fill();
+        ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2; ctx.stroke();
+
+        blocks.forEach(b => {
+            if (!b.active) return; ctx.save();
+            if (b.shape === 'triangle') {
+                ctx.translate(b.x + b.w / 2, b.y + b.h / 2);
+                if (b.orientation === 'down') ctx.rotate(Math.PI); else if (b.orientation === 'left') ctx.rotate(-Math.PI / 2); else if (b.orientation === 'right') ctx.rotate(Math.PI / 2);
+                ctx.translate(-(b.x + b.w / 2), -(b.y + b.h / 2));
+            }
+
+            if (b.flashTimer && b.flashTimer > 0) { ctx.filter = 'brightness(500%)'; b.flashTimer--; } else { ctx.filter = 'none'; }
+            if (b.img && b.img.complete && b.img.width > 0) { ctx.drawImage(b.img, b.x, b.y, b.w, b.h); } 
+            else { ctx.fillStyle = b.shape === 'square' ? '#2575fc' : '#ff007f'; ctx.fillRect(b.x, b.y, b.w, b.h); }
+            
+            if (blocksFrozen) { ctx.fillStyle = 'rgba(0, 229, 255, 0.3)'; ctx.fillRect(b.x, b.y, b.w, b.h); ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2; ctx.strokeRect(b.x, b.y, b.w, b.h); }
+            
+            ctx.filter = 'none'; ctx.restore();
+            ctx.fillStyle = 'white'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'black'; ctx.shadowBlur = 4; ctx.fillText(b.hp, b.x + b.w / 2, b.y + b.h / 2); ctx.shadowBlur = 0;
+        });
+        
+        drops.forEach(d => {
+            ctx.beginPath(); ctx.arc(d.x, d.y, 6, 0, Math.PI * 2); ctx.fillStyle = '#ffd700'; ctx.shadowColor = '#daa520'; ctx.shadowBlur = 5; ctx.fill();
+            ctx.lineWidth = 1; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.shadowBlur = 0;
+        });
+
+        ctx.fillStyle = '#ff0055'; ctx.shadowColor = '#ff0055'; ctx.shadowBlur = 10; lasers.forEach(l => { ctx.fillRect(l.x - l.w/2, l.y, l.w, l.h); }); ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 3; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 15;
+        for (let i = lightning.length - 1; i >= 0; i--) {
+            let l = lightning[i]; ctx.beginPath(); ctx.moveTo(l.x1, l.y1);
+            let midX = (l.x1 + l.x2)/2 + (Math.random() - 0.5) * 40; let midY = (l.y1 + l.y2)/2 + (Math.random() - 0.5) * 40;
+            ctx.lineTo(midX, midY); ctx.lineTo(l.x2, l.y2); ctx.stroke();
+            l.life -= 0.1; if (l.life <= 0) lightning.splice(i, 1);
+        }
+        ctx.shadowBlur = 0;
+
+        if (gameState === STATE.AIMING) {
+            ctx.beginPath(); ctx.moveTo(baseX, bottomY - 8); let aimDist = 300;
+            ctx.lineTo(baseX + Math.cos(aimAngle) * aimDist, (bottomY - 8) + Math.sin(aimAngle) * aimDist);
+            ctx.strokeStyle = isValidAim ? 'rgba(0, 229, 255, 0.7)' : 'rgba(255, 0, 0, 0.4)'; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.stroke(); ctx.setLineDash([]);
+        }
+
+        balls.forEach((b, idx) => {
+            if (!b.active && !b.returning && (b.isClone || idx > 0)) return;
+            ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fillStyle = b.isClone ? '#aaff00' : '#00e5ff'; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 8;
+            ctx.fill(); ctx.shadowBlur = 0;
+        });
+
+        particles.forEach(p => {
+            ctx.fillStyle = p.color; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center'; ctx.globalAlpha = Math.max(0, p.life);
+            ctx.shadowColor = 'black'; ctx.shadowBlur = 4; ctx.fillText(p.text, p.x, p.y); ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+        });
+    }
+    requestAnimationFrame(() => { update(); draw(); });
+}
+
+/* ================= STORAGE ================= */
+function saveGame() { 
+    let saveObj = { gold: player.gold, maxLevelUnlocked: player.maxLevelUnlocked, heroLevel: player.heroLevel, xp: player.xp, xpNeeded: player.xpNeeded };
+    localStorage.setItem('bricks_rpg_save_hardcore', JSON.stringify(saveObj)); 
+}
+function loadGame() {
+    let saved = localStorage.getItem('bricks_rpg_save_hardcore');
+    if (saved) {
+        let parsed = JSON.parse(saved); player.gold = parsed.gold || 0; player.maxLevelUnlocked = parsed.maxLevelUnlocked || 1;
+        if (parsed.heroLevel) { player.heroLevel = parsed.heroLevel; player.xp = parsed.xp; player.xpNeeded = parsed.xpNeeded; }
+    }
+}
+
+loadGame(); setMainMenuBackground(); setupMenuEvents(); setupGameEvents(); draw();
+</script>
+</body>
+</html>
