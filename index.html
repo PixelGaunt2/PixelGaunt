@@ -1001,19 +1001,24 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        // 1. ANALYTICS MODULE IMPORT KIYA GAYA HAI
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
 
         const firebaseConfig = {
-            const firebaseConfig = {
-    apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
-    authDomain: "pixelgaunt-e5235.firebaseapp.com",
-    projectId: "pixelgaunt-e5235",
-    storageBucket: "pixelgaunt-e5235.firebasestorage.app",
-    messagingSenderId: "261213234973",
-    appId: "1:261213234973:web:e65879886c82be3aabe3f4",
-    measurementId: "G-CV52RVWHGY"  // <-- Ye line add karein (appId ke baad comma lagana mat bhoolna)
-};
+            apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
+            authDomain: "pixelgaunt-e5235.firebaseapp.com",
+            projectId: "pixelgaunt-e5235",
+            storageBucket: "pixelgaunt-e5235.firebasestorage.app",
+            messagingSenderId: "261213234973",
+            appId: "1:261213234973:web:e65879886c82be3aabe3f4",
+            // 2. MEASUREMENT ID ADD KI GAYI HAI
+            measurementId: "G-CV52RVWHGY"
+        };
 
         const app = initializeApp(firebaseConfig);
+        // 3. ANALYTICS INITIALIZE KIYA GAYA HAI
+        const analytics = getAnalytics(app);
+        
         const auth = getAuth(app);
         const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
