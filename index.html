@@ -9,8 +9,6 @@
         gtag('js', new Date());
         gtag('config', 'G-LRDNJ69KD1');
     </script>
-    <!-- GOOGLE IDENTITY SERVICES FOR REAL AUTHENTICATION -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pixel Gaunt | Modern Retro Games Portal</title>
@@ -79,17 +77,24 @@
         ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 20px; border: 2px solid #06060c; }
         ::-webkit-scrollbar-thumb:hover { background: var(--neon-accent); }
 
-        /* PIXEL ENGINE LOADER */
         #loader {
             position: fixed; inset: 0; background: #050508; z-index: 99999;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        #pixel-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
+        .loader-spinner-wrapper { position: relative; width: 80px; height: 80px; margin-bottom: 24px; }
+        .loader-spinner {
+            width: 100%; height: 100%; border: 3px solid rgba(255, 255, 255, 0.03);
+            border-top: 3px solid var(--neon-cyan); border-bottom: 3px solid var(--neon-purple);
+            border-radius: 50%; animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
         }
+        .loader-pulse-logo {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #fff; font-size: 1.4rem; text-shadow: 0 0 10px var(--neon-cyan);
+            animation: pulseText 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulseText { 0% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.95); } 100% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); } }
 
         header {
             position: sticky; top: 0; z-index: 1000;
@@ -122,53 +127,36 @@
         .nav-btn.primary { background: linear-gradient(135deg, var(--neon-purple), #9333ea); color: #fff; font-weight: 600; box-shadow: 0 4px 15px rgba(188, 19, 254, 0.25); border: 1px solid rgba(255,255,255,0.1); }
         .nav-btn.primary:hover { box-shadow: 0 6px 25px rgba(188, 19, 254, 0.45); transform: translateY(-2px); }
 
-        .nav-btn.logout { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 600; }
-        .nav-btn.logout:hover { background: #ef4444; color: #fff; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); border-color: #ef4444; transform: translateY(-2px); }
-
-        /* FIXED HERO LAYOUT & HOVER EFFECTS */
         .premium-hero {
             width: 100%; max-width: 1300px; margin: 30px auto 10px auto; padding: 0 5%;
-            display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px; align-items: stretch;
+            display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px; align-items: center;
         }
         .hero-info-panel {
             background: rgba(13, 13, 23, 0.45); border: 1px solid var(--glass-border);
-            padding: 35px; border-radius: 20px; backdrop-filter: blur(15px);
+            padding: 40px; border-radius: 20px; backdrop-filter: blur(15px);
             position: relative; overflow: hidden; box-shadow: 0 20px 45px rgba(0,0,0,0.3);
-            transition: var(--transition-smooth);
-            height: 340px; display: flex; flex-direction: column; justify-content: space-between;
-        }
-        .hero-info-panel:hover {
-            transform: translateY(-8px);
-            border-color: var(--neon-cyan);
-            box-shadow: 0 15px 35px rgba(0, 243, 255, 0.25);
         }
         .hero-info-panel::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, var(--neon-cyan), var(--neon-purple)); }
-        .hero-tag { font-size: 0.75rem; color: var(--neon-cyan); letter-spacing: 2px; margin-bottom: 8px; font-weight: 700; display: inline-block; }
-        .hero-title { font-size: 1.6rem; line-height: 1.3; color: #fff; margin-bottom: 12px; text-shadow: 0 0 20px rgba(255,255,255,0.05); transition: opacity 0.3s ease; }
-        .hero-desc { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 15px; transition: opacity 0.3s ease; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .hero-tag { font-size: 0.75rem; color: var(--neon-cyan); letter-spacing: 2px; margin-bottom: 12px; font-weight: 700; display: inline-block; }
+        .hero-title { font-size: 1.8rem; line-height: 1.4; color: #fff; margin-bottom: 16px; text-shadow: 0 0 20px rgba(255,255,255,0.05); }
+        .hero-desc { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px; }
         
-        .hero-stats-row { display: flex; gap: 20px; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 16px; align-items: center; }
-        .stat-item { display: flex; flex-direction: column; gap: 2px; }
-        .stat-num { font-size: 1.1rem; font-weight: 800; color: #fff; }
-        .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .hero-stats-row { display: flex; gap: 30px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px; }
+        .stat-item { display: flex; flex-direction: column; gap: 4px; }
+        .stat-num { font-size: 1.3rem; font-weight: 800; color: #fff; }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
         
         .spotlight-banner-wrapper {
             background: linear-gradient(135deg, rgba(8, 8, 15, 0.85), rgba(0, 243, 255, 0.35)), url('Bricks%20KnockOut.png') center/cover no-repeat;
-            border: 1px solid var(--glass-border); border-radius: 20px; padding: 35px;
-            display: flex; flex-direction: column; justify-content: space-between; height: 340px;
+            border: 1px solid rgba(0, 243, 255, 0.2); border-radius: 20px; padding: 24px;
+            display: flex; flex-direction: column; justify-content: space-between; height: 100%;
             position: relative; overflow: hidden; backdrop-filter: blur(15px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-            transition: var(--transition-smooth);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5); min-height: 280px;
         }
-        .spotlight-banner-wrapper:hover {
-            transform: translateY(-8px);
-            border-color: var(--neon-cyan);
-            box-shadow: 0 15px 35px rgba(0, 243, 255, 0.25);
-        }
-        .spotlight-badge { position: absolute; top: 16px; right: 16px; background: var(--neon-cyan); color: #000; font-size: 0.65rem; font-weight: 800; letter-spacing: 1px; padding: 4px 10px; border-radius: 4px; }
-        .spotlight-title-box h3 { font-size: 1.2rem; color: #fff; margin-bottom: 8px; margin-top: 10px; text-shadow: 0 0 10px rgba(0, 243, 255, 0.3); transition: opacity 0.3s ease; }
+        .spotlight-badge { position: absolute; top: 16px; right: 16px; background: var(--neon-cyan); color: #000; font-size: 0.65rem; font-weight: 800; letter-spacing: 1px; }
+        .spotlight-title-box h3 { font-size: 1.1rem; color: #fff; margin-bottom: 8px; margin-top: 20px; text-shadow: 0 0 10px rgba(0, 243, 255, 0.3); }
         .spotlight-play-btn {
-            align-self: flex-start; margin-top: 10px; background: #fff; color: #000;
+            align-self: flex-start; margin-top: 16px; background: #fff; color: #000;
             font-size: 0.75rem; font-weight: 800; padding: 12px 20px; border-radius: 8px;
             box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2); transition: var(--transition-smooth);
         }
@@ -195,7 +183,6 @@
         .cat-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.04); }
         .cat-btn.active { border-color: rgba(255,255,255,0.1); color: #fff; background: linear-gradient(135deg, rgba(var(--neon-accent-rgb), 0.25), rgba(var(--neon-accent-rgb), 0.05)); box-shadow: inset 0 0 12px rgba(var(--neon-accent-rgb), 0.2), 0 4px 15px rgba(0,0,0,0.2); }
 
-        /* --- 100% FIXED GAME CARDS (IMAGES & TEXT) --- */
         .game-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
@@ -217,7 +204,7 @@
             aspect-ratio: 4 / 3; 
             position: relative; 
             background-size: cover; 
-            background-position: top center;
+            background-position: top center; 
             overflow: hidden; 
         }
         .gif-overlay { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: top center; opacity: 0; transition: opacity 0.4s ease; }
@@ -312,6 +299,9 @@
         .close-modal { position: absolute; top: 20px; right: 22px; color: var(--text-muted); font-size: 1.5rem; font-weight: bold; transition: var(--transition-smooth); cursor: pointer; }
         .close-modal:hover { color: #fff; transform: rotate(90deg); }
         .modal-title { font-size: 0.95rem; color: #fff; margin-bottom: 26px; text-align: center; }
+        .option-grid { display: flex; flex-direction: column; gap: 14px; }
+        .opt-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255, 255, 255, 0.06); padding: 15px 20px; border-radius: 12px; text-align: left; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 14px; transition: var(--transition-smooth); color: #e2e8f0; cursor: pointer; }
+        .opt-btn:hover { border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.05); transform: translateX(6px); color: #fff; box-shadow: 0 0 15px rgba(0, 243, 255, 0.1); }
 
         #pg-info-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(3, 3, 5, 0.92); backdrop-filter: blur(10px); z-index: 999999; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
         #pg-info-modal.active-modal { display: flex; opacity: 1; }
@@ -334,7 +324,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 900px) {
             .premium-hero { grid-template-columns: 1fr; gap: 20px; margin-top: 15px; }
-            .hero-info-panel, .spotlight-banner-wrapper { height: auto; min-height: 320px; }
             header { flex-direction: column; gap: 16px; padding: 20px; }
             .nav-links { flex-wrap: wrap; justify-content: center; }
         }
@@ -349,10 +338,12 @@
     </div>
 
     <audio id="portal-bgm" loop style="display:none;"></audio>
-    
-    <!-- ANIMATED PIXEL LOADER -->
     <div id="loader">
-        <canvas id="pixel-canvas"></canvas>
+        <div class="loader-spinner-wrapper">
+            <div class="loader-spinner"></div>
+            <div class="loader-pulse-logo pixel-font">PG</div>
+        </div>
+        <p class="pixel-font" style="font-size: 0.68rem; color: var(--neon-cyan); letter-spacing: 3px;">INITIALIZING ENGINE...</p>
     </div>
 
     <header id="main-header">
@@ -368,39 +359,34 @@
             <button class="nav-btn" onclick="openPage('store-page')">Store</button>
             <button class="nav-btn" style="color: var(--neon-cyan);" onclick="openPage('tournament-page')">Tournaments</button>
             <button class="nav-btn" style="color: #fbbf24;" onclick="openPage('subscribe-page')">Subscribe</button>
-            
-            <!-- Login & Logout Buttons Area -->
             <button class="nav-btn primary" id="main-login-btn" onclick="openModal('login-modal')">Login</button>
-            <button class="nav-btn logout" id="main-logout-btn" style="display: none;" onclick="processLogout()">Logout</button>
         </nav>
     </header>
 
     <section class="premium-hero" id="hero-presentation-section">
-        <div class="hero-info-panel" id="hero-panel-bg" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(188, 19, 254, 0.45)), url('Girl%20The%20Driller.png') center/cover no-repeat;">
-            <div>
-                <span class="hero-tag" style="color: var(--neon-cyan); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);">FEATURED ADVENTURE</span>
-                <h1 class="hero-title pixel-font" id="hero-title" style="text-shadow: 0 4px 15px rgba(0,0,0,0.9);">GIRL: THE DRILLER</h1>
-                <p class="hero-desc" id="hero-desc" style="color: #e2e8f0; font-weight: 500; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Collect all Energy Orbs to unlock the Portal and reach it. Experience highly polished commercial-quality physics action gameplay.</p>
-            </div>
+        <div class="hero-info-panel" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(188, 19, 254, 0.45)), url('Girl%20The%20Driller.png') center/cover no-repeat;">
+            <span class="hero-tag" style="color: var(--neon-cyan); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);">FEATURED ADVENTURE</span>
+            <h1 class="hero-title pixel-font" style="text-shadow: 0 4px 15px rgba(0,0,0,0.9);">GIRL: THE DRILLER</h1>
+            <p class="hero-desc" style="color: #e2e8f0; font-weight: 500; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Collect all Energy Orbs to unlock the Portal and reach it. Experience highly polished commercial-quality physics action gameplay.</p>
             
             <div class="hero-stats-row" style="border-top: 1px solid rgba(255, 255, 255, 0.15);">
-                <button class="nav-btn primary pixel-font" id="hero-play-btn" onclick="launchViewport(12)" style="font-size: 0.8rem; padding: 12px 24px; box-shadow: 0 5px 20px rgba(188, 19, 254, 0.5);">
+                <button class="nav-btn primary pixel-font" onclick="launchViewport(12)" style="font-size: 0.8rem; padding: 14px 28px; box-shadow: 0 5px 20px rgba(188, 19, 254, 0.5);">
                     ▶ PLAY NOW
                 </button>
-                <div class="stat-item" style="margin-left: 15px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">
-                    <span class="stat-num" id="hero-rating-stars" style="color: #fbbf24; font-size: 1.1rem;">★★★★★</span>
-                    <span class="stat-label" id="hero-rating-text" style="color: #fff;">4.8/5 Rating</span>
+                <div class="stat-item" style="margin-left: 20px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">
+                    <span class="stat-num" style="color: #fbbf24; font-size: 1.1rem;">★★★★★</span>
+                    <span class="stat-label" style="color: #fff;">4.8/5 Rating</span>
                 </div>
             </div>
         </div>
-        <div class="spotlight-banner-wrapper" id="spotlight-wrapper-bg">
+        <div class="spotlight-banner-wrapper">
             <span class="spotlight-badge">FEATURED SPOTLIGHT</span>
             <div class="spotlight-title-box">
-                <p class="card-genre" id="spotlight-genre" style="color:var(--neon-cyan)">Arcade</p>
-                <h3 class="pixel-font" id="spotlight-title">Bricks KnockOut</h3>
-                <p id="spotlight-desc" style="color:var(--text-muted); font-size:0.82rem; line-height:1.4; margin-top:8px;">Highly polished commercial-quality physics action game. Destroy all the bricks to achieve victory.</p>
+                <p class="card-genre" style="color:var(--neon-cyan)">Arcade</p>
+                <h3 class="pixel-font">Bricks KnockOut</h3>
+                <p style="color:var(--text-muted); font-size:0.82rem; line-height:1.4; margin-top:8px;">Highly polished commercial-quality physics action game. Destroy all the bricks to achieve victory.</p>
             </div>
-            <button class="spotlight-play-btn pixel-font" id="spotlight-play-btn" onclick="launchViewport(13)">PLAY NOW</button>
+            <button class="spotlight-play-btn pixel-font" onclick="launchViewport(13)">PLAY IMMERSIVE NOW</button>
         </div>
     </section>
 
@@ -480,37 +466,6 @@
                         <div class="prompt-box" id="current-game-aiprompt" style="display: none;"></div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- NEW USER DASHBOARD PAGE -->
-    <main class="viewport-page" id="dashboard-page">
-        <div class="page-header">
-            <h2 class="page-title-large pixel-font" style="color: var(--neon-cyan);">Player Dashboard</h2>
-        </div>
-        <div class="page-controls-top">
-            <button class="back-btn" onclick="goHome()">← Back to Main Menu</button>
-        </div>
-        <div class="content-box">
-            <div class="details-grid">
-                <div class="detail-section" style="background: rgba(8,8,15,0.7); padding: 25px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                    <h3 class="pixel-font" style="font-size: 0.9rem; margin-bottom: 20px;"><i class="fas fa-user-circle"></i> Session Log</h3>
-                    <p style="margin-bottom: 12px;"><strong>Account:</strong> <span id="dash-user-email" style="color:#00f3ff;"></span></p>
-                    <p style="margin-bottom: 12px;"><strong>Login Time (Aya):</strong> <span id="dash-login-time" style="color:#e2e8f0;"></span></p>
-                    <p><strong>Status:</strong> <span style="color:#10b981; font-weight: bold;">Online & Active</span></p>
-                </div>
-                <div class="detail-section" style="background: rgba(8,8,15,0.7); padding: 25px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                    <h3 class="pixel-font" style="font-size: 0.9rem; margin-bottom: 20px;"><i class="fas fa-gamepad"></i> Gaming Stats</h3>
-                    <p style="margin-bottom: 12px;"><strong>Unique Games Played:</strong> <span id="dash-unique-games" style="color:#fbbf24; font-size: 1.1rem; font-weight: bold;">0</span></p>
-                    <p><strong>Total Play Sessions:</strong> <span id="dash-total-sessions" style="color:#bc13fe; font-size: 1.1rem; font-weight: bold;">0</span></p>
-                </div>
-            </div>
-            
-            <div class="store-header-banner" style="margin-top: 30px; border-color: var(--neon-purple); background: linear-gradient(135deg, rgba(188, 19, 254, 0.15), rgba(0, 0, 0, 0.4));">
-                <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 10px;"><i class="fas fa-crown" style="color:var(--neon-purple);"></i> Pro Subscription Details</h3>
-                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px;">Your current plan is <strong>Basic</strong>. Upgrade to Pro to view and manage your Store Merchandise inventory, exclusive gear, and track active Tournament brackets!</p>
-                <button class="action-btn" style="margin: 0 auto; background: var(--neon-purple); color: #fff; border: none; padding: 12px 30px; font-weight: bold;" onclick="openPage('subscribe-page')">Upgrade to Pro</button>
             </div>
         </div>
     </main>
@@ -701,21 +656,16 @@
         </div>
     </main>
 
-    <!-- REAL GOOGLE AUTHENTICATION MODAL -->
     <div class="modal-overlay" id="login-modal">
-        <div class="modal-content" style="overflow: hidden;">
+        <div class="modal-content">
             <span class="close-modal" onclick="closeModals()">&times;</span>
-            
-            <div class="modal-step active" id="login-step-1">
+            <div class="modal-step active">
                 <h3 class="modal-title pixel-font">Authentication</h3>
-                <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Securely login using your actual Google Account to sync data.</p>
-                
-                <!-- Google Authentication Button Container -->
-                <div style="display: flex; justify-content: center; width: 100%; margin-bottom: 15px; min-height: 44px;">
-                    <div id="google-button-div"></div>
+                <div class="option-grid">
+                    <button class="opt-btn" id="google-login-btn">
+                        <span><i class="fab fa-google"></i></span> Login with Google
+                    </button>
                 </div>
-                
-                <p style="text-align: center; color: #475569; font-size: 0.75rem; margin-top: 20px;">Select your Gmail ID in the popup to authenticate.</p>
             </div>
         </div>
     </div>
@@ -784,11 +734,8 @@
     <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
 
     <script>
-        // Data and Tracking State Variables
-        let isLoggedIn = false;
-        let loginTime = null;
-        let totalGameSessions = 0;
-        let uniqueGamesPlayed = new Set();
+        // GLOBALLY DEFINED STATE (Crucial Fix for Module scripts to access)
+        window.isLoggedIn = false;
         
         const games = [
             { id: 1, studio: 'Pixel Gaunt', title: 'Stick Man Velocity', genre: 'Fighting', controls: '<strong>Movement:</strong> Joystick (Mobile) / A, D Keys (Desktop).<br><strong>Actions:</strong> W (Jump), S (Crouch/Slide), J (Punch), L (Kick), K (Fireball), SHIFT (Dash), U (Dive).<br><strong>Ultimate:</strong> J+K+L (When charged).', howToPlay: 'Navigate through the levels, defeat enemy waves (Small, Spider, Goliath), and conquer the Titan Boss. Track HP and collect coins to boost your score.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'Single-file HTML5, CSS Flexbox, Vanilla ES6 JavaScript, Web Audio API, Canvas API', aiPrompt: `To help you recreate your "Stickman Velocity" game or build a clone using Gemini, you should use a structured, modular approach. Rather than asking for everything at once, it is best to provide the AI with a logical roadmap.`, image: 'Stick Man Velocity.png', preview: 'Stick Man Velocity.gif', url: 'Stick Man Velocity.html', bgm: 'Stick Man Velocity.mp3' },
@@ -798,54 +745,13 @@
             { id: 5, studio: 'Pixel Gaunt', title: 'Panda The Ocean Hunter', genre: 'Casual Adventure', controls: '<strong>Fishing:</strong> Tap/Click to cast the line.<br><strong>Combat:</strong> Hold screen/mouse to pull fish, Tap to shoot weapon.', howToPlay: 'Play as a panda fishing in the ocean. Cast your line, hook the fish, and pull them out in an intensive battle mode mini-game. Gather resources to upgrade.', rating: '⭐⭐⭐⭐ (4.7/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5 Canvas, Vanilla JS', aiPrompt: `To help others or yourself generate a similar high-quality game using any AI (like Gemini, GPT-4, or Claude), you can use the following Master Development Prompt.`, image: 'Panda The Ocean Hunter.png', preview: 'Panda The Ocean Hunter.gif', url: 'Panda The Ocean Hunter.html', bgm: 'Panda The Ocean Hunter.mp3' },
             { id: 6, studio: 'Pixel Gaunt', title: 'Beggar Catcher', genre: '3D Simulation', controls: '<strong>Movement:</strong> WASD keys.<br><strong>Camera:</strong> Mouse movement.<br><strong>Interaction:</strong> Hold Right Click to Scan/Investigate, Left Click to interact/catch.', howToPlay: 'Explore the 3D environment, search for targets using the crosshair, and manage your caught entities. Use the shop to buy upgrades and progress through levels.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'May 2026', platform: 'Web Browser Desktop', technology: 'Three.js, WebGL, HTML5', aiPrompt: `To build an exact, professional-grade clone of this project, you need a modular approach. Here are the step-by-step prompts you should use to rebuild and expand the system.`, image: 'Beggar Catcher.png', preview: 'Beggar Catcher.gif', url: 'Beggar Catcher.html', bgm: 'Beggar Catcher.mp3' },
             { id: 7, studio: 'Pixel Gaunt', title: 'Horse Turn', genre: 'Racing', controls: '<strong>Movement:</strong> Left/Right Arrow Keys or Screen Swipe.<br><strong>Actions:</strong> Spacebar or Swipe Up to Jump. Shift or Dash Button to Fast-Forward.', howToPlay: 'Race through an endless cosmic tunnel. Avoid drifting out into the deep cosmic abyss, collect coins, and use your dash speed to blast through levels.', rating: '⭐⭐⭐⭐ (4.4/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5 Canvas, RequestAnimationFrame', aiPrompt: `Step 1: The Core Engine (The Framework) Use this prompt to set up the foundation.`, image: 'Horse Turn.png', preview: 'Horse Turn.gif', url: 'Horse Turn.html', bgm: 'Horse Turn.mp3' },
-            { id: 8, studio: 'Pixel Gaunt', title: 'Deck of Doom', genre: 'Rogue-like', controls: '<strong>Combat:</strong> Mouse Click/Drag or Touch to select and play cards from your hand. Click "End Turn" when out of energy.', howToPlay: 'Engage in a turn-based card battle against a demon. Manage your energy, play attack and defense cards, and reduce the enemy HP to zero to survive.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5, CSS Animations, JS', aiPrompt: `Step 1: Core Engine, Setup Screen, Player & Difficulty Prompt. Why Use It: This builds the game’s baseline structure.`, image: 'Deck of Doom.png', preview: 'Deck of Doom.gif', url: 'Deck of Doom.html', bgm: 'Deck of Doom.mp3' },
+            { id: 8, studio: 'Pixel Gaunt', title: 'Deck of Doom', genre: 'Rogue-like', controls: '<strong>Combat:</strong> Mouse Click/Drag or Touch to select and play cards from your hand. Click "End Turn" when out of energy.', howToPlay: 'Engage in a turn-based card battle against a demon. Manage your energy, play attack and defense cards, and reduce the enemy HP to zero to survive.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5, CSS Animations, JS', aiPrompt: `Step 1: Core Engine, Setup Screen, Player & Difficulty Prompt. Why Use It: This builds the game’s baseline database structure.`, image: 'Deck of Doom.png', preview: 'Deck of Doom.gif', url: 'Deck of Doom.html', bgm: 'Deck of Doom.mp3' },
             { id: 9, studio: 'Pixel Gaunt', title: 'Tetris Reimagine', genre: 'Puzzle', controls: 'Use the on screen buttons provided on the interface Left, Right Turn Float or Use Keyboard Arrow Keys Up , Down ,  Left ,  Right.', howToPlay: 'Organize the rising balloons into complete rows to clear them. Survive up to 100 levels and aim for the high score.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'June 1, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5, CSS3, JavaScript (Vanilla), Web Audio API', aiPrompt: `Create a complete browser-based game called "Tetris Reimagine". Core Concept: This game is inspired by Tetris but with a completely unique gameplay mechanic.`, image: 'Tetris Reimagine.png', preview: 'Tetris Reimagine.gif', url: 'Tetris Reimagine.html', bgm: 'Tetris Reimagine.mp3' },
             { id: 10, studio: 'Pixel Gaunt', title: 'Iron Tide Rising', genre: '3D Shooting', controls: 'Movement: W (Forward), S (Backward), A (Left), D (Right) Action: SPACE (Jump), SHIFT (Sprint/Fast run) Combat: Left Click (Smart Automatic/Single Fire), TAB (Weapon Switch: Rifle/Bazooka), G (Throw Bomb/Grenade) Dodging: Q (Left Dash), E (Right Dash) System: ESC (Pause Menu).', howToPlay: 'Objective: Survive against waves of enemies and maximize your score.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'June 2, 2026', platform: 'Web Browser (Desktop Responsive)', technology: 'Three.js, WebGL, Web Audio API', aiPrompt: `Create a complete offline 3D browser game inspired by battle royale and tactical shooter gameplay.`, image: 'Iron Tide Rising.png', preview: 'Iron Tide Rising.gif', url: 'Iron Tide Rising.html', bgm: 'Iron Tide Rising.mp3' },
             { id: 11, studio: 'Pixel Gaunt', title: 'ReBounce', genre: 'Arcade', controls: 'Mouse / Touch.', howToPlay: 'Launch: Drag and release the Skull Ball to launch Goal: Collect all Energy Orbs to unlock the Portal and reach it.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'June 5, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game called BOUNCE.`, image: 'ReBounce.png', preview: 'ReBounce.gif', url: 'ReBounce.html', bgm: 'ReBounce.mp3' },
             { id: 12, studio: 'Pixel Gaunt', title: 'Girl: The Driller', genre: 'Adventure', controls: 'Keyboard / Mouse / Touch.', howToPlay: 'Collect all Energy Orbs to unlock the Portal and reach it.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'June 5, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Girl The Driller.png', preview: 'Girl: The Driller.gif', url: 'Girl The Driller.html', bgm: 'Titan_Ore_Runner.mp3' },
             { id: 13, studio: 'Pixel Gaunt', title: 'Bricks KnockOut', genre: 'Arcade', controls: 'Mouse / Touch.', howToPlay: 'Destroy All Bricks.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'July 21, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Bricks KnockOut.png', preview: 'Bricks KnockOut.gif', url: 'Bricks KnockOut.html', bgm: 'Titan_Ore_Runner.mp3' }                                                           
         ];
-
-        // --- FEATURED AUTO-ROTATION LOGIC ---
-        let currentHeroIndex = 11;
-        let currentSpotlightIndex = 12;
-
-        function updateFeaturedGames() {
-            if (!games || games.length === 0) return;
-
-            currentHeroIndex = (currentHeroIndex + 1) % games.length;
-            currentSpotlightIndex = (currentSpotlightIndex + 1) % games.length;
-
-            if (currentHeroIndex === currentSpotlightIndex) {
-                 currentSpotlightIndex = (currentSpotlightIndex + 1) % games.length;
-            }
-
-            const heroGame = games[currentHeroIndex];
-            const spotlightGame = games[currentSpotlightIndex];
-
-            document.getElementById('hero-panel-bg').style.background = `linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(188, 19, 254, 0.45)), url('${encodeURI(heroGame.image)}') center/cover no-repeat`;
-            document.getElementById('hero-title').innerText = heroGame.title;
-            document.getElementById('hero-desc').innerText = heroGame.howToPlay.length > 150 ? heroGame.howToPlay.substring(0, 150) + "..." : heroGame.howToPlay; 
-            document.getElementById('hero-play-btn').setAttribute('onclick', `launchViewport(${heroGame.id})`);
-            
-            let stars = "★★★★★";
-            let ratingNum = "4.8/5";
-            if (heroGame.rating && heroGame.rating.includes('(')) {
-                let parts = heroGame.rating.split(' (');
-                stars = parts[0].replace(/⭐/g, '★');
-                ratingNum = parts[1].replace(')', '');
-            }
-            document.getElementById('hero-rating-stars').innerText = stars;
-            document.getElementById('hero-rating-text').innerText = ratingNum + " Rating";
-
-            document.getElementById('spotlight-wrapper-bg').style.background = `linear-gradient(135deg, rgba(8, 8, 15, 0.85), rgba(0, 243, 255, 0.35)), url('${encodeURI(spotlightGame.image)}') center/cover no-repeat`;
-            document.getElementById('spotlight-genre').innerText = spotlightGame.genre;
-            document.getElementById('spotlight-title').innerText = spotlightGame.title;
-            document.getElementById('spotlight-desc').innerText = spotlightGame.howToPlay.length > 100 ? spotlightGame.howToPlay.substring(0, 100) + "..." : spotlightGame.howToPlay;
-            document.getElementById('spotlight-play-btn').setAttribute('onclick', `launchViewport(${spotlightGame.id})`);
-        }
-
-        setInterval(updateFeaturedGames, 5000);
 
         window.setGlobalTheme = function(themeName, element) {
             document.body.className = '';
@@ -856,7 +762,7 @@
 
         window.hideAllPages = function() {
             document.querySelectorAll('main').forEach(m => {
-                if(m.id !== 'gameplay-page' && m.id !== 'store-page' && m.id !== 'tournament-page' && m.id !== 'subscribe-page' && m.id !== 'homepage-page' && m.id !== 'dashboard-page') return;
+                if(m.id !== 'gameplay-page' && m.id !== 'store-page' && m.id !== 'tournament-page' && m.id !== 'subscribe-page' && m.id !== 'homepage-page') return;
                 m.style.display = 'none';
             });
             document.getElementById('search-section').style.display = 'none';
@@ -911,7 +817,7 @@
                         <div class="card-genre">${game.genre}</div>
                         <div class="card-title">${game.title}</div>
                         <div class="card-premium-meta">
-                            <span class="card-stars-layer">${game.rating ? game.rating.split(' ')[0] : '⭐⭐⭐⭐⭐'}</span>
+                            <div class="card-stars-layer">★★★★★</div>
                         </div>
                     </div>
                 `;
@@ -919,142 +825,116 @@
             });
         }
 
-        window.filterCategory = function(category, btnElement) {
-            document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
-            if(btnElement) btnElement.classList.add('active');
-            if (category === 'All') {
-                window.renderGames(games);
-            } else {
-                const filtered = games.filter(g => g.genre === category);
-                window.renderGames(filtered);
-            }
-        }
-
         window.filterGames = function() {
             const query = document.getElementById('search-input').value.toLowerCase();
             const filtered = games.filter(g => g.title.toLowerCase().includes(query) || g.genre.toLowerCase().includes(query));
             window.renderGames(filtered);
-            document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.cat-btn, .sidebar-menu button').forEach(b => b.classList.remove('active'));
         }
 
-        // --- DASHBOARD TRACKING UPDATER ---
-        window.updateDashboardStats = function() {
-            document.getElementById('dash-unique-games').innerText = uniqueGamesPlayed.size;
-            document.getElementById('dash-total-sessions').innerText = totalGameSessions;
+        window.filterCategory = function(category, btnElement) {
+            document.getElementById('search-input').value = ''; 
+            document.querySelectorAll('.cat-btn, .sidebar-menu button').forEach(b => b.classList.remove('active'));
+            if (btnElement) btnElement.classList.add('active');
+            if (category === 'All') window.renderGames(games);
+            else window.renderGames(games.filter(g => g.genre === category));
         }
 
         window.launchViewport = function(gameId) {
             const game = games.find(g => g.id === gameId);
-            if(!game) return;
-            
-            // Apply Tracking metrics if user is logged in
-            if(isLoggedIn) {
-                uniqueGamesPlayed.add(gameId);
-                totalGameSessions++;
-                updateDashboardStats();
-            }
-            
+            if (!game) return;
+
             window.hideAllPages();
+            history.pushState({ page: 'game', id: gameId }, game.title, `?play=${encodeURIComponent(game.title.toLowerCase().replace(/ /g, '-'))}`);
             document.getElementById('gameplay-page').style.display = 'block';
             window.scrollTo(0, 0);
-            
+
             document.getElementById('current-game-title').innerText = game.title;
-            document.getElementById('current-game-studio').innerText = game.studio;
-            document.getElementById('current-game-releasedate').innerText = game.releaseDate;
-            document.getElementById('current-game-platform').innerText = game.platform;
-            document.getElementById('current-game-technology').innerText = game.technology;
-            document.getElementById('current-game-rating').innerText = game.rating;
+            document.getElementById('current-game-studio').innerHTML = game.studio;
+            document.getElementById('current-game-releasedate').innerHTML = game.releaseDate;
+            document.getElementById('current-game-platform').innerHTML = game.platform;
+            document.getElementById('current-game-technology').innerHTML = game.technology;
+            document.getElementById('current-game-rating').innerHTML = game.rating;
             document.getElementById('current-game-howtoplay').innerHTML = game.howToPlay;
             document.getElementById('current-game-controls').innerHTML = game.controls;
-            
-            if (game.aiPrompt) {
-                document.getElementById('ai-prompt-container').style.display = 'block';
-                if (isLoggedIn) {
-                    document.getElementById('ai-prompt-hidden-msg').style.display = 'none';
-                    document.getElementById('current-game-aiprompt').style.display = 'block';
-                    document.getElementById('current-game-aiprompt').innerText = game.aiPrompt;
-                } else {
-                    document.getElementById('ai-prompt-hidden-msg').style.display = 'block';
-                    document.getElementById('current-game-aiprompt').style.display = 'none';
-                }
+
+            const aiBox = document.getElementById('current-game-aiprompt');
+            const aiContainer = document.getElementById('ai-prompt-container');
+            aiBox.dataset.promptText = game.aiPrompt || ''; 
+
+            if (game.aiPrompt && game.aiPrompt !== '') {
+                aiContainer.style.display = 'block';
+                window.updatePromptVisibility();
             } else {
-                document.getElementById('ai-prompt-container').style.display = 'none';
+                aiContainer.style.display = 'none';
             }
             
             const gameIframe = document.getElementById('game-canvas');
-            gameIframe.src = game.url;
+            gameIframe.src = encodeURI(game.url); 
             
             const portalBgm = document.getElementById('portal-bgm');
-            portalBgm.src = game.bgm;
-            portalBgm.volume = 0.4;
-            portalBgm.play().catch(() => console.log("Audio play prevented by browser policy"));
+            if(game.bgm) {
+                portalBgm.src = encodeURI(game.bgm);
+                portalBgm.play().catch(e => console.log('Autoplay handled.', e));
+            }
         }
 
         window.goHome = function() {
             window.openPage('homepage-page');
-            window.filterCategory('All', document.querySelector('.cat-btn'));
-            document.getElementById('search-input').value = '';
+        }
+
+        window.updatePromptVisibility = function() {
+            const aiBox = document.getElementById('current-game-aiprompt');
+            const hiddenMsg = document.getElementById('ai-prompt-hidden-msg');
+            // FIX APPLIED HERE: referencing global window.isLoggedIn
+            if(window.isLoggedIn) {
+                aiBox.innerText = aiBox.dataset.promptText;
+                aiBox.style.display = 'block';
+                hiddenMsg.style.display = 'none';
+            } else {
+                aiBox.style.display = 'none';
+                hiddenMsg.style.display = 'block';
+            }
+        }
+
+        window.openModal = function(modalId) { 
+            const m = document.getElementById(modalId);
+            if(m) {
+                m.style.display = 'flex';
+                setTimeout(() => m.classList.add('active'), 10);
+            }
+        }
+        
+        window.closeModals = function() { 
+            document.querySelectorAll('.modal-overlay').forEach(m => {
+                m.classList.remove('active');
+                setTimeout(() => m.style.display = 'none', 300);
+            });
+        }
+
+        window.toggleMute = function() {
+            const bgm = document.getElementById('portal-bgm');
+            const muteBtn = document.getElementById('mute-btn');
+            bgm.muted = !bgm.muted;
+            muteBtn.innerHTML = bgm.muted ? '🔇 Sound: OFF' : '🔊 Sound: ON';
         }
 
         window.toggleFullscreen = function() {
             const container = document.getElementById('game-container-element');
             if (!document.fullscreenElement) {
-                if (container.requestFullscreen) {
-                    container.requestFullscreen();
-                } else if (container.mozRequestFullScreen) {
-                    container.mozRequestFullScreen();
-                } else if (container.webkitRequestFullscreen) {
-                    container.webkitRequestFullscreen();
-                } else if (container.msRequestFullscreen) {
-                    container.msRequestFullscreen();
-                }
+                if (container.requestFullscreen) container.requestFullscreen();
             } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
+                if (document.exitFullscreen) document.exitFullscreen();
             }
         }
 
-        window.toggleMute = function() {
-            const audio = document.getElementById('portal-bgm');
-            const btn = document.getElementById('mute-btn');
-            if (audio.muted) {
-                audio.muted = false;
-                btn.innerText = '🔊 Sound: ON';
-                btn.style.color = '#e2e8f0';
+        window.inviteFriends = function() {
+            const shareData = { title: 'Pixel Gaunt', text: 'Check out this awesome game on Pixel Gaunt!', url: window.location.href };
+            if (navigator.share && window.isSecureContext) {
+                navigator.share(shareData).catch(err => console.error("Share failed:", err));
             } else {
-                audio.muted = true;
-                btn.innerText = '🔇 Sound: OFF';
-                btn.style.color = '#ef4444';
+                alert("Share link copied: " + window.location.href);
             }
-        }
-
-        window.inviteFriends = async function() {
-            const currentUrl = window.location.href;
-            const title = document.getElementById('current-game-title').innerText;
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: `Play ${title} on Pixel Gaunt`,
-                        text: `Check out this awesome retro game: ${title}`,
-                        url: currentUrl
-                    });
-                } catch (err) {
-                    console.log('Error sharing:', err);
-                }
-            } else {
-                navigator.clipboard.writeText(currentUrl).then(() => {
-                    alert('Game link copied to clipboard!');
-                });
-            }
-        }
-
-        window.openModal = function(id) {
-            document.getElementById(id).classList.add('active');
-        }
-
-        window.closeModals = function() {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
         }
 
         window.openPageModal = function(title, contentId) {
@@ -1067,229 +947,164 @@
             document.getElementById('pg-info-modal').classList.remove('active-modal');
         }
 
-        window.addEventListener('popstate', (event) => {
-            if(event.state && event.state.page) {
-                if(event.state.page === 'home') goHome();
-                else openPage(event.state.page + '-page');
-            } else {
-                goHome();
-            }
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.page === 'game') { window.launchViewport(event.state.id); } 
+            else if (event.state && event.state.page) { window.openPage(event.state.page); } 
+            else { window.goHome(); }
         });
 
-        // --- GOOGLE IDENTITY API DECODER ---
-        function parseJwt(token) {
-            var base64Url = token.split('.')[1];
-            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        }
-
-        // --- REAL GOOGLE AUTHENTICATION PROCESSOR ---
-        window.handleCredentialResponse = function(response) {
-            const responsePayload = parseJwt(response.credential);
+        window.onload = () => {
+            window.renderGames(games);
             
-            // Extract the user data
-            const userEmail = responsePayload.email;
-            const userName = responsePayload.name;
-            const firstName = userName.split(' ')[0];
-
-            isLoggedIn = true;
-            loginTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const urlParams = new URLSearchParams(window.location.search);
+            const playQuery = urlParams.get('play');
+            const pageQuery = urlParams.get('page');
             
-            // Update Dashboard Button
-            const mainBtn = document.getElementById('main-login-btn');
-            mainBtn.innerText = `Dashboard (${firstName})`;
-            mainBtn.onclick = () => openPage('dashboard-page');
-            
-            // Populate Dashboard Page Data
-            document.getElementById('dash-user-email').innerText = userEmail;
-            document.getElementById('dash-login-time').innerText = loginTime;
-            updateDashboardStats();
-            
-            // Show Logout Button
-            document.getElementById('main-logout-btn').style.display = 'block';
-            
-            closeModals();
-            
-            // Unlock AI Prompts instantly if currently on Game Page
-            if (document.getElementById('gameplay-page').style.display === 'block') {
-                if (document.getElementById('ai-prompt-container').style.display === 'block') {
-                    document.getElementById('ai-prompt-hidden-msg').style.display = 'none';
-                    document.getElementById('current-game-aiprompt').style.display = 'block';
-                }
+            if (playQuery) {
+                const game = games.find(g => g.title.toLowerCase().replace(/ /g, '-') === playQuery);
+                if (game) setTimeout(() => window.launchViewport(game.id), 100);
+            } else if (pageQuery) {
+                 const targetPage = pageQuery + '-page';
+                 if(document.getElementById(targetPage)) window.openPage(targetPage);
+                 else window.goHome();
+            } else {
+                window.goHome();
             }
-            
-            alert(`Authentication Successful! Logged in as ${userEmail}`);
-        }
 
-        // --- LOGOUT LOGIC & DASHBOARD RESET ---
-        window.processLogout = function() {
-            // Disable auto-select for Google Sign-in API if supported
-            if(typeof google !== 'undefined') {
-                google.accounts.id.disableAutoSelect();
-            }
-            
-            isLoggedIn = false;
-            
-            // Reset Dashboard stats for security
-            loginTime = null;
-            totalGameSessions = 0;
-            uniqueGamesPlayed.clear();
-            document.getElementById('dash-user-email').innerText = "";
-            document.getElementById('dash-login-time').innerText = "";
-            updateDashboardStats();
-            
-            // Reset Navbar Buttons
-            const mainBtn = document.getElementById('main-login-btn');
-            mainBtn.innerText = 'Login';
-            mainBtn.onclick = () => openModal('login-modal');
-            document.getElementById('main-logout-btn').style.display = 'none';
-            
-            // Re-lock AI Prompts if currently viewing a game
-            if (document.getElementById('gameplay-page').style.display === 'block') {
-                if (document.getElementById('ai-prompt-container').style.display === 'block') {
-                    document.getElementById('ai-prompt-hidden-msg').style.display = 'block';
-                    document.getElementById('current-game-aiprompt').style.display = 'none';
-                }
-            }
-            
-            alert('You have successfully and securely logged out.');
-            goHome(); // Redirect to homepage
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                if(loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 500); }
+            }, 800);
+        };
+        
+        window.onclick = (e) => { 
+            if (e.target.classList.contains('modal-overlay')) window.closeModals(); 
+            if (e.target.id === 'pg-info-modal') window.closePageModal();
         }
+        
+        window.onscroll = () => { 
+            const btn = document.getElementById('scrollToTopBtn');
+            if(btn) btn.style.display = window.scrollY > 300 ? 'block' : 'none'; 
 
-        window.onscroll = function() {
+            const header = document.getElementById('main-header');
+            if(window.scrollY > 50) { header.classList.add('scrolled'); } else { header.classList.remove('scrolled'); }
+
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
             const scrolled = (winScroll / height) * 100;
             document.getElementById("scroll-progress").style.width = scrolled + "%";
+        };
+    </script>
 
-            const header = document.getElementById('main-header');
-            if (winScroll > 50) header.classList.add('scrolled');
-            else header.classList.remove('scrolled');
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
 
-            const topBtn = document.getElementById('scrollToTopBtn');
-            if (winScroll > 300) topBtn.style.display = 'block';
-            else topBtn.style.display = 'none';
-        }
+        const firebaseConfig = {
+            apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
+            authDomain: "pixelgaunt-e5235.firebaseapp.com",
+            projectId: "pixelgaunt-e5235",
+            storageBucket: "pixelgaunt-e5235.firebasestorage.app",
+            messagingSenderId: "261213234973",
+            appId: "1:261213234973:web:e65879886c82be3aabe3f4",
+            measurementId: "G-CV52RVWHGY"
+        };
 
-        // --- PIXEL GAUNT INTRO ANIMATION ENGINE ---
-        function initPixelIntroAnimation() {
-            const canvas = document.getElementById('pixel-canvas');
-            const ctx = canvas.getContext('2d');
-            
-            let width = canvas.width = window.innerWidth;
-            let height = canvas.height = window.innerHeight;
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
 
-            window.addEventListener('resize', () => {
-                width = canvas.width = window.innerWidth;
-                height = canvas.height = window.innerHeight;
+        const mainLoginBtn = document.getElementById("main-login-btn");
+        const googleLoginBtn = document.getElementById("google-login-btn"); 
+
+        if (googleLoginBtn) {
+            googleLoginBtn.addEventListener("click", async () => {
+                try {
+                    const result = await signInWithPopup(auth, googleProvider);
+                    const user = result.user;
+                    await setDoc(doc(db, "users", user.uid), {
+                        uid: user.uid,
+                        displayName: user.displayName,
+                        email: user.email,
+                        photoURL: user.photoURL,
+                        lastLogin: new Date()
+                    }, { merge: true });
+                } catch (error) {
+                    console.error("Login Error:", error);
+                    alert("Login failed: " + error.message);
+                }
             });
-
-            const offscreen = document.createElement('canvas');
-            const offCtx = offscreen.getContext('2d');
-            offscreen.width = width;
-            offscreen.height = height;
-
-            let fontSize = Math.min(width / 5, 120);
-            offCtx.font = `900 ${fontSize}px 'Press Start 2P', cursive`;
-            offCtx.fillStyle = '#ffffff';
-            offCtx.textAlign = 'center';
-            offCtx.textBaseline = 'middle';
-            offCtx.fillText('PG', width / 2, height / 2);
-
-            const imageData = offCtx.getImageData(0, 0, width, height);
-            const data = imageData.data;
-            const targets = [];
-            const step = Math.max(2, Math.floor(fontSize / 15));
-
-            for (let y = 0; y < height; y += step) {
-                for (let x = 0; x < width; x += step) {
-                    let index = (y * width + x) * 4;
-                    if (data[index + 3] > 128) {
-                        targets.push({ x: x, y: y });
-                    }
-                }
-            }
-
-            const particles = [];
-            for (let i = 0; i < targets.length; i++) {
-                let target = targets[i];
-                let angle = Math.random() * Math.PI * 2;
-                let dist = Math.random() * Math.max(width, height) + 200;
-                particles.push({
-                    x: width / 2 + Math.cos(angle) * dist,
-                    y: height / 2 + Math.sin(angle) * dist,
-                    tx: target.x,
-                    ty: target.y,
-                    size: Math.random() * 2 + 2,
-                    speed: 0.1 + Math.random() * 0.1,
-                    color: Math.random() > 0.4 ? '#00f3ff' : '#bc13fe'
-                });
-            }
-
-            let animId;
-            let completedTime = null;
-
-            function animate() {
-                ctx.fillStyle = 'rgba(5, 5, 8, 0.25)';
-                ctx.fillRect(0, 0, width, height);
-
-                let allArrived = true;
-
-                for (let i = 0; i < particles.length; i++) {
-                    let p = particles[i];
-                    p.x += (p.tx - p.x) * p.speed;
-                    p.y += (p.ty - p.y) * p.speed;
-
-                    ctx.fillStyle = p.color;
-                    ctx.shadowColor = p.color;
-                    ctx.shadowBlur = 20;
-                    ctx.fillRect(p.x, p.y, p.size, p.size);
-
-                    let dx = p.tx - p.x;
-                    let dy = p.ty - p.y;
-                    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-                        allArrived = false;
-                    }
-                }
-
-                if (allArrived && !completedTime) {
-                    completedTime = Date.now();
-                }
-
-                if (completedTime && Date.now() - completedTime > 200) {
-                    cancelAnimationFrame(animId);
-                    document.getElementById('loader').style.opacity = '0';
-                    setTimeout(() => {
-                        document.getElementById('loader').style.display = 'none';
-                        window.renderGames(games);
-                    }, 300);
-                } else {
-                    animId = requestAnimationFrame(animate);
-                }
-            }
-
-            animate();
         }
 
-        window.onload = function() {
-            initPixelIntroAnimation();
-            
-            // Initialize Google Identity Services
-            if (typeof google !== 'undefined') {
-                google.accounts.id.initialize({
-                    // IMPORTANT: Replace this placeholder with your real Client ID from Google Cloud Console
-                    client_id: "YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com",
-                    callback: handleCredentialResponse
-                });
-                // Render the official Google Sign-In button inside the modal
-                google.accounts.id.renderButton(
-                    document.getElementById("google-button-div"),
-                    { theme: "outline", size: "large", width: 300, shape: "rectangular" }
-                );
+        window.logoutUser = async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Logout Error:", error);
             }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.isLoggedIn = true; 
+                if(typeof window.updatePromptVisibility === 'function') window.updatePromptVisibility(); 
+                if(typeof window.closeModals === 'function') window.closeModals(); 
+                
+                if (mainLoginBtn) {
+                    mainLoginBtn.innerHTML = `<img src="${user.photoURL || 'https://via.placeholder.com/30'}" style="width:20px; height:20px; border-radius:50%; margin-right:8px; vertical-align:middle;"> Logout`;
+                    mainLoginBtn.onclick = window.logoutUser;
+                }
+            } else {
+                window.isLoggedIn = false;
+                if(typeof window.updatePromptVisibility === 'function') window.updatePromptVisibility(); 
+                if (mainLoginBtn) {
+                    mainLoginBtn.innerHTML = "Login";
+                    mainLoginBtn.onclick = () => window.openModal('login-modal');
+                }
+            }
+        });
+
+        const likeBtn = document.getElementById('like-btn');
+        if(likeBtn) {
+            likeBtn.addEventListener('click', async () => {
+                if (!window.isLoggedIn) return window.openModal('login-modal');
+                const gameTitle = document.getElementById('current-game-title').innerText;
+                try {
+                    await setDoc(doc(db, "games", gameTitle), { likes: increment(1) }, { merge: true });
+                    alert(`Thanks for liking ${gameTitle}! ❤️`);
+                } catch (error) {
+                    console.error("Error adding like: ", error);
+                    alert("Database connection error. Check your Firebase rules.");
+                }
+            });
+        }
+
+        const bugBtn = document.getElementById('bug-btn');
+        if(bugBtn) {
+            bugBtn.addEventListener('click', async () => {
+                if (!window.isLoggedIn) return window.openModal('login-modal');
+                const bugDetails = prompt("Describe the bug you found in this game:");
+                if (bugDetails && bugDetails.trim() !== "") {
+                    const gameTitle = document.getElementById('current-game-title').innerText;
+                    try {
+                        await addDoc(collection(db, "bug_reports"), {
+                            game: gameTitle,
+                            report: bugDetails,
+                            status: "open",
+                            date: new Date()
+                        });
+                        alert("Bug reported successfully! Our team will check it. 🐛");
+                    } catch (error) {
+                        console.error("Error reporting bug: ", error);
+                        alert("Database connection error. Check your Firebase rules.");
+                    }
+                }
+            });
         }
     </script>
 </body>
