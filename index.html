@@ -80,21 +80,63 @@
         #loader {
             position: fixed; inset: 0; background: #050508; z-index: 99999;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .loader-spinner-wrapper { position: relative; width: 80px; height: 80px; margin-bottom: 24px; }
-        .loader-spinner {
-            width: 100%; height: 100%; border: 3px solid rgba(255, 255, 255, 0.03);
-            border-top: 3px solid var(--neon-cyan); border-bottom: 3px solid var(--neon-purple);
-            border-radius: 50%; animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+
+        /* NEW CUSTOM PIXEL CONSTRUCTION ANIMATION FOR "P G" */
+        .pixel-pg-container {
+            position: relative;
+            width: 104px;
+            height: 56px;
+            transform: scale(1.6);
+            margin-bottom: 20px;
         }
-        .loader-pulse-logo {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #fff; font-size: 1.4rem; text-shadow: 0 0 10px var(--neon-cyan);
-            animation: pulseText 1.5s ease-in-out infinite alternate;
+        .pxl {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 8px var(--neon-cyan);
+            animation: pxlFly 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            opacity: 0;
+            border-radius: 1px;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes pulseText { 0% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.95); } 100% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); } }
+        .pxl.prp {
+            background: var(--neon-purple);
+            box-shadow: 0 0 8px var(--neon-purple);
+        }
+        @keyframes pxlFly {
+            0% { transform: translate(var(--sx), var(--sy)) scale(0.2); opacity: 0; }
+            70% { opacity: 1; transform: translate(calc(var(--sx)*0.1), calc(var(--sy)*0.1)) scale(1.2); }
+            100% { transform: translate(0, 0) scale(1); opacity: 1; }
+        }
+        
+        /* coordinates for P (step 12px) */
+        .p-0-0 { left: 0px; top: 0px; --sx: -200px; --sy: -300px; }
+        .p-1-0 { left: 12px; top: 0px; --sx: -100px; --sy: -400px; }
+        .p-2-0 { left: 24px; top: 0px; --sx: 50px; --sy: -350px; }
+        .p-0-1 { left: 0px; top: 12px; --sx: -300px; --sy: 100px; }
+        .p-2-1 { left: 24px; top: 12px; --sx: 200px; --sy: 50px; }
+        .p-0-2 { left: 0px; top: 24px; --sx: -150px; --sy: 200px; }
+        .p-1-2 { left: 12px; top: 24px; --sx: -50px; --sy: 300px; }
+        .p-2-2 { left: 24px; top: 24px; --sx: 150px; --sy: 250px; }
+        .p-0-3 { left: 0px; top: 36px; --sx: -250px; --sy: 400px; }
+        .p-0-4 { left: 0px; top: 48px; --sx: -100px; --sy: 450px; }
+
+        /* coordinates for G (offset left 60px) */
+        .g-0-0 { left: 60px; top: 0px; --sx: 200px; --sy: -300px; }
+        .g-1-0 { left: 72px; top: 0px; --sx: 300px; --sy: -400px; }
+        .g-2-0 { left: 84px; top: 0px; --sx: 400px; --sy: -250px; }
+        .g-0-1 { left: 60px; top: 12px; --sx: 150px; --sy: -100px; }
+        .g-0-2 { left: 60px; top: 24px; --sx: 250px; --sy: 100px; }
+        .g-2-2 { left: 84px; top: 24px; --sx: 450px; --sy: 50px; }
+        .g-3-2 { left: 96px; top: 24px; --sx: 350px; --sy: 150px; }
+        .g-0-3 { left: 60px; top: 36px; --sx: 100px; --sy: 300px; }
+        .g-3-3 { left: 96px; top: 36px; --sx: 400px; --sy: 350px; }
+        .g-0-4 { left: 60px; top: 48px; --sx: 50px; --sy: 400px; }
+        .g-1-4 { left: 72px; top: 48px; --sx: 200px; --sy: 450px; }
+        .g-2-4 { left: 84px; top: 48px; --sx: 300px; --sy: 400px; }
+        .g-3-4 { left: 96px; top: 48px; --sx: 450px; --sy: 250px; }
 
         header {
             position: sticky; top: 0; z-index: 1000;
@@ -131,30 +173,40 @@
             width: 100%; max-width: 1300px; margin: 30px auto 10px auto; padding: 0 5%;
             display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px; align-items: center;
         }
+        
+        /* HOVER EFFECTS & FIXED BOX SIZES FOR FEATURED CARDS */
         .hero-info-panel {
             background: rgba(13, 13, 23, 0.45); border: 1px solid var(--glass-border);
             padding: 40px; border-radius: 20px; backdrop-filter: blur(15px);
             position: relative; overflow: hidden; box-shadow: 0 20px 45px rgba(0,0,0,0.3);
+            transition: var(--transition-smooth); cursor: pointer;
+            height: 100%; display: flex; flex-direction: column; justify-content: center;
+            min-height: 320px;
         }
+        .hero-info-panel:hover { transform: translateY(-8px); border-color: var(--neon-cyan); box-shadow: 0 15px 35px rgba(0, 243, 255, 0.25); }
         .hero-info-panel::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, var(--neon-cyan), var(--neon-purple)); }
+        
         .hero-tag { font-size: 0.75rem; color: var(--neon-cyan); letter-spacing: 2px; margin-bottom: 12px; font-weight: 700; display: inline-block; }
         .hero-title { font-size: 1.8rem; line-height: 1.4; color: #fff; margin-bottom: 16px; text-shadow: 0 0 20px rgba(255,255,255,0.05); }
-        .hero-desc { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px; }
+        .hero-desc { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
         
-        .hero-stats-row { display: flex; gap: 30px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px; }
+        .hero-stats-row { display: flex; gap: 30px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px; margin-top: auto; }
         .stat-item { display: flex; flex-direction: column; gap: 4px; }
         .stat-num { font-size: 1.3rem; font-weight: 800; color: #fff; }
         .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
         
         .spotlight-banner-wrapper {
-            background: linear-gradient(135deg, rgba(8, 8, 15, 0.85), rgba(0, 243, 255, 0.35)), url('Bricks%20KnockOut.png') center/cover no-repeat;
+            background: linear-gradient(135deg, rgba(8, 8, 15, 0.85), rgba(0, 243, 255, 0.35));
             border: 1px solid rgba(0, 243, 255, 0.2); border-radius: 20px; padding: 24px;
             display: flex; flex-direction: column; justify-content: space-between; height: 100%;
             position: relative; overflow: hidden; backdrop-filter: blur(15px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5); min-height: 280px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5); min-height: 320px;
+            transition: var(--transition-smooth); cursor: pointer;
         }
+        .spotlight-banner-wrapper:hover { transform: translateY(-8px); border-color: var(--neon-cyan); box-shadow: 0 15px 35px rgba(0, 243, 255, 0.25); }
         .spotlight-badge { position: absolute; top: 16px; right: 16px; background: var(--neon-cyan); color: #000; font-size: 0.65rem; font-weight: 800; letter-spacing: 1px; }
         .spotlight-title-box h3 { font-size: 1.1rem; color: #fff; margin-bottom: 8px; margin-top: 20px; text-shadow: 0 0 10px rgba(0, 243, 255, 0.3); }
+        
         .spotlight-play-btn {
             align-self: flex-start; margin-top: 16px; background: #fff; color: #000;
             font-size: 0.75rem; font-weight: 800; padding: 12px 20px; border-radius: 8px;
@@ -183,7 +235,6 @@
         .cat-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.04); }
         .cat-btn.active { border-color: rgba(255,255,255,0.1); color: #fff; background: linear-gradient(135deg, rgba(var(--neon-accent-rgb), 0.25), rgba(var(--neon-accent-rgb), 0.05)); box-shadow: inset 0 0 12px rgba(var(--neon-accent-rgb), 0.2), 0 4px 15px rgba(0,0,0,0.2); }
 
-        /* --- 100% FIXED GAME CARDS (IMAGES & TEXT) --- */
         .game-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
@@ -200,13 +251,12 @@
         }
         .game-card:hover { transform: translateY(-8px); border-color: var(--neon-cyan); box-shadow: 0 15px 35px rgba(0, 243, 255, 0.25); }
         
-        /* IMAGE ADJUSTMENT FIX: top center prevents game names from getting cut off */
         .card-thumb { 
             width: 100%; 
             aspect-ratio: 4 / 3; 
             position: relative; 
             background-size: cover; 
-            background-position: top center; /* <--- MAIN FIX FOR IMAGES */
+            background-position: top center; 
             overflow: hidden; 
         }
         .gif-overlay { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: top center; opacity: 0; transition: opacity 0.4s ease; }
@@ -219,7 +269,6 @@
         .game-card:hover .play-btn-circle { transform: scale(1); }
         .play-btn-circle::after { content: '▶'; color: #fff; font-size: 1.1rem; margin-left: 3px; }
         
-        /* REVERTED TEXT LAYOUT FIX: Clean background, proper spacing for names and stars */
         .card-info { 
             padding: 16px; 
             display: flex; flex-direction: column; justify-content: flex-end; 
@@ -342,11 +391,21 @@
 
     <audio id="portal-bgm" loop style="display:none;"></audio>
     <div id="loader">
-        <div class="loader-spinner-wrapper">
-            <div class="loader-spinner"></div>
-            <div class="loader-pulse-logo pixel-font">PG</div>
+        <div class="pixel-pg-container">
+            <!-- Constructing 'P' -->
+            <div class="pxl p-0-0"></div><div class="pxl p-1-0"></div><div class="pxl prp p-2-0"></div>
+            <div class="pxl p-0-1"></div><div class="pxl p-2-1"></div>
+            <div class="pxl p-0-2"></div><div class="pxl prp p-1-2"></div><div class="pxl p-2-2"></div>
+            <div class="pxl p-0-3"></div>
+            <div class="pxl p-0-4"></div>
+            <!-- Constructing 'G' -->
+            <div class="pxl prp g-0-0"></div><div class="pxl g-1-0"></div><div class="pxl g-2-0"></div>
+            <div class="pxl g-0-1"></div>
+            <div class="pxl g-0-2"></div><div class="pxl g-2-2"></div><div class="pxl prp g-3-2"></div>
+            <div class="pxl g-0-3"></div><div class="pxl g-3-3"></div>
+            <div class="pxl g-0-4"></div><div class="pxl prp g-1-4"></div><div class="pxl g-2-4"></div><div class="pxl g-3-4"></div>
         </div>
-        <p class="pixel-font" style="font-size: 0.68rem; color: var(--neon-cyan); letter-spacing: 3px;">INITIALIZING ENGINE...</p>
+        <p class="pixel-font" style="font-size: 0.68rem; color: var(--neon-cyan); letter-spacing: 3px; margin-top:15px; animation: pxlFly 0.5s forwards;">INITIALIZING ENGINE...</p>
     </div>
 
     <header id="main-header">
@@ -367,29 +426,29 @@
     </header>
 
     <section class="premium-hero" id="hero-presentation-section">
-        <div class="hero-info-panel" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(188, 19, 254, 0.45)), url('Girl%20The%20Driller.png') center/cover no-repeat;">
+        <div class="hero-info-panel" id="hero-panel-bg" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(188, 19, 254, 0.45)), url('Girl%20The%20Driller.png') center/cover no-repeat;">
             <span class="hero-tag" style="color: var(--neon-cyan); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);">FEATURED ADVENTURE</span>
-            <h1 class="hero-title pixel-font" style="text-shadow: 0 4px 15px rgba(0,0,0,0.9);">GIRL: THE DRILLER</h1>
-            <p class="hero-desc" style="color: #e2e8f0; font-weight: 500; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Collect all Energy Orbs to unlock the Portal and reach it. Experience highly polished commercial-quality physics action gameplay.</p>
+            <h1 class="hero-title pixel-font" id="hero-title-text" style="text-shadow: 0 4px 15px rgba(0,0,0,0.9);">GIRL: THE DRILLER</h1>
+            <p class="hero-desc" id="hero-desc-text" style="color: #e2e8f0; font-weight: 500; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Collect all Energy Orbs to unlock the Portal and reach it. Experience highly polished commercial-quality physics action gameplay.</p>
             
-            <div class="hero-stats-row" style="border-top: 1px solid rgba(255, 255, 255, 0.15);">
-                <button class="nav-btn primary pixel-font" onclick="launchViewport(12)" style="font-size: 0.8rem; padding: 14px 28px; box-shadow: 0 5px 20px rgba(188, 19, 254, 0.5);">
+            <div class="hero-stats-row">
+                <button class="nav-btn primary pixel-font" id="hero-play-btn" onclick="launchViewport(12)" style="font-size: 0.8rem; padding: 14px 28px; box-shadow: 0 5px 20px rgba(188, 19, 254, 0.5);">
                     ▶ PLAY NOW
                 </button>
                 <div class="stat-item" style="margin-left: 20px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">
-                    <span class="stat-num" style="color: #fbbf24; font-size: 1.1rem;">★★★★★</span>
+                    <span class="stat-num" id="hero-rating-text" style="color: #fbbf24; font-size: 1.1rem;">★★★★★</span>
                     <span class="stat-label" style="color: #fff;">4.8/5 Rating</span>
                 </div>
             </div>
         </div>
-        <div class="spotlight-banner-wrapper">
+        <div class="spotlight-banner-wrapper" id="spotlight-panel-bg" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.85), rgba(0, 243, 255, 0.35)), url('Bricks%20KnockOut.png') center/cover no-repeat;">
             <span class="spotlight-badge">FEATURED SPOTLIGHT</span>
             <div class="spotlight-title-box">
-                <p class="card-genre" style="color:var(--neon-cyan)">Arcade</p>
-                <h3 class="pixel-font">Bricks KnockOut</h3>
-                <p style="color:var(--text-muted); font-size:0.82rem; line-height:1.4; margin-top:8px;">Highly polished commercial-quality physics action game. Destroy all the bricks to achieve victory.</p>
+                <p class="card-genre" id="spotlight-genre-text" style="color:var(--neon-cyan)">Arcade</p>
+                <h3 class="pixel-font" id="spotlight-title-text">Bricks KnockOut</h3>
+                <p id="spotlight-desc-text" style="color:var(--text-muted); font-size:0.82rem; line-height:1.4; margin-top:8px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">Highly polished commercial-quality physics action game. Destroy all the bricks to achieve victory.</p>
             </div>
-            <button class="spotlight-play-btn pixel-font" onclick="launchViewport(13)">PLAY IMMERSIVE NOW</button>
+            <button class="spotlight-play-btn pixel-font" id="spotlight-play-btn" onclick="launchViewport(13)">PLAY NOW</button>
         </div>
     </section>
 
@@ -755,6 +814,48 @@
             { id: 13, studio: 'Pixel Gaunt', title: 'Bricks KnockOut', genre: 'Arcade', controls: 'Mouse / Touch.', howToPlay: 'Destroy All Bricks.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'July 21, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Bricks KnockOut.png', preview: 'Bricks KnockOut.gif', url: 'Bricks KnockOut.html', bgm: 'Titan_Ore_Runner.mp3' }                                                           
         ];
 
+        let heroGameIndex = 11; 
+        let spotlightGameIndex = 12; 
+
+        // AUTO CHANGE FEATURED GAMES FUNCTION
+        window.updateFeaturedPanels = function() {
+            if (!games || games.length === 0) return;
+
+            heroGameIndex = (heroGameIndex + 1) % games.length;
+            spotlightGameIndex = (spotlightGameIndex + 1) % games.length;
+            
+            if (spotlightGameIndex === heroGameIndex) {
+                spotlightGameIndex = (spotlightGameIndex + 1) % games.length;
+            }
+
+            const heroGame = games[heroGameIndex];
+            const spotlightGame = games[spotlightGameIndex];
+
+            // Update Hero Banner
+            const heroBg = document.getElementById('hero-panel-bg');
+            if(heroBg) {
+                heroBg.style.backgroundImage = `linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(188, 19, 254, 0.45)), url('${encodeURI(heroGame.image)}')`;
+                document.getElementById('hero-title-text').innerText = heroGame.title.toUpperCase();
+                document.getElementById('hero-desc-text').innerText = heroGame.howToPlay;
+                
+                let ratingMatch = heroGame.rating.match(/\((.*?)\)/);
+                document.getElementById('hero-rating-text').innerText = ratingMatch ? ratingMatch[1] + " Rating" : "4.8/5 Rating";
+                document.getElementById('hero-play-btn').setAttribute('onclick', `launchViewport(${heroGame.id})`);
+            }
+
+            // Update Spotlight Banner
+            const spotBg = document.getElementById('spotlight-panel-bg');
+            if(spotBg) {
+                spotBg.style.backgroundImage = `linear-gradient(135deg, rgba(8, 8, 15, 0.85), rgba(0, 243, 255, 0.35)), url('${encodeURI(spotlightGame.image)}')`;
+                document.getElementById('spotlight-genre-text').innerText = spotlightGame.genre;
+                document.getElementById('spotlight-title-text').innerText = spotlightGame.title;
+                document.getElementById('spotlight-desc-text').innerText = spotlightGame.howToPlay;
+                document.getElementById('spotlight-play-btn').setAttribute('onclick', `launchViewport(${spotlightGame.id})`);
+            }
+        }
+
+        setInterval(window.updateFeaturedPanels, 3000);
+
         window.setGlobalTheme = function(themeName, element) {
             document.body.className = '';
             document.body.classList.add('theme-' + themeName);
@@ -972,10 +1073,11 @@
                 window.goHome();
             }
 
+            // Syncing loader disappearance perfectly with the fast 0.5s animation
             setTimeout(() => {
                 const loader = document.getElementById('loader');
-                if(loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 500); }
-            }, 800);
+                if(loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 300); }
+            }, 800); 
         };
         
         window.onclick = (e) => { 
