@@ -74,6 +74,7 @@
         .btn-primary { background: linear-gradient(45deg, #007bb5, #00aaff); border-color: #00e5ff; box-shadow: 0 4px 0 #005f8a; }
         .btn-success { background: linear-gradient(45deg, #28a745, #34ce57); border-color: #5efc82; box-shadow: 0 4px 0 #1e7e34; }
         .btn-danger { background: linear-gradient(45deg, #dc3545, #e4606d); border-color: #ff8b94; box-shadow: 0 4px 0 #bd2130; }
+        .btn-info { background: linear-gradient(45deg, #17a2b8, #1fc8db); border-color: #00e5ff; box-shadow: 0 4px 0 #117a8b; }
 
         #level-grid { 
             display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; width: 100%; max-width: 400px; margin-bottom: 20px; max-height: 50vh; overflow-y: auto; padding: 10px;
@@ -153,6 +154,26 @@
             <div class="subtitle">RPG Fantasy Edition</div>
             <button class="btn btn-primary" id="btn-play-now">Play Now</button>
             <button class="btn" id="btn-levels">Select Level</button>
+            
+            <!-- Readme Button Added Here -->
+            <button class="btn btn-info" id="btn-readme" style="margin-top: 15px;">Readme</button>
+        </div>
+    </div>
+    
+    <!-- Readme Window / Screen Added Here -->
+    <div id="screen-readme" class="screen hidden" style="background: rgba(10, 10, 20, 0.95); z-index: 60;">
+        <div class="screen-content">
+            <h2 style="color: #00e5ff; text-shadow: 0 0 15px rgba(0, 229, 255, 0.8); margin-bottom: 25px;">README</h2>
+            <div style="background: rgba(15, 15, 25, 0.9); padding: 30px 20px; border: 2px solid #00e5ff; border-radius: 12px; text-align: center; max-width: 90%; width: 400px; box-shadow: 0 0 25px rgba(0, 229, 255, 0.2);">
+                <p style="color: #e0e0e0; font-size: 16px; margin-bottom: 20px; line-height: 1.6;">
+                    This game was created using AI, so it may contain bugs
+                </p>
+                <p style="color: #e0e0e0; font-size: 16px; margin-bottom: 25px; line-height: 1.6;">
+                    If you notice any bugs, please contact or message us at this Gmail address.:<br>
+                    <a href="mailto:pixelgaunt@gmail.com" style="color: #ff007f; text-decoration: none; font-weight: bold; font-size: 19px; display: block; margin-top: 12px; text-shadow: 0 0 10px rgba(255,0,127,0.5);">pixelgaunt@gmail.com</a>
+                </p>
+                <button class="btn btn-danger" id="btn-readme-back" style="width: 100%; margin-top: 10px;">Close / Back</button>
+            </div>
         </div>
     </div>
 
@@ -211,7 +232,7 @@ window.addEventListener('load', async () => {
     } catch(e) { console.log("SDK Init Warning:", e); }
 });
 
-/* ================= AUDIO SYSTEM (ROBUST BGM FIX) ================= */
+/* ================= AUDIO SYSTEM ================= */
 let audioCtx = null; 
 let isMuted = false;
 let audioUnlocked = false;
@@ -240,7 +261,6 @@ function unlockAudio() {
     }
 }
 
-// BGM tab play hoga jab user pehli baar kahin bhi click karega
 document.body.addEventListener('click', unlockAudio, { once: true });
 document.body.addEventListener('touchstart', unlockAudio, { once: true });
 
@@ -273,7 +293,6 @@ function playTone(freq, type, duration, vol, sweepDown = false, sweepUp = false)
     } catch(e) {}
 }
 
-// Juicy SFX
 const SFX = {
     hit: () => playTone(350, 'square', 0.08, 0.06), 
     shoot: () => playTone(600, 'sine', 0.15, 0.05, true),
@@ -365,7 +384,7 @@ let bottomY = gameHeight - 20; let topBound = 80;
 function triggerShake(type = 'mild') {
     const container = document.getElementById('game-container');
     container.classList.remove('shake-active', 'shake-mild');
-    void container.offsetWidth; // trigger reflow
+    void container.offsetWidth;
     container.classList.add(type === 'strong' ? 'shake-active' : 'shake-mild');
     setTimeout(() => { container.classList.remove('shake-active', 'shake-mild'); }, type === 'strong' ? 400 : 150);
 }
@@ -491,6 +510,10 @@ function setupMenuEvents() {
     document.getElementById('btn-levels').onclick = () => { SFX.click(); initAudio(); gameState = STATE.LEVEL_SELECT; buildLevelGrid(); showScreen('screen-levels'); };
     document.getElementById('btn-levels-back').onclick = () => { SFX.click(); gameState = STATE.MENU; setMainMenuBackground(); showScreen('screen-main'); };
     
+    // Readme Events
+    document.getElementById('btn-readme').onclick = () => { SFX.click(); gameState = STATE.MENU; showScreen('screen-readme'); };
+    document.getElementById('btn-readme-back').onclick = () => { SFX.click(); showScreen('screen-main'); };
+
     document.getElementById('btn-hud-back').onclick = () => { 
         SFX.click(); if(timerInterval) clearInterval(timerInterval); 
         try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStop(); } catch(e){}
@@ -719,9 +742,24 @@ function update() {
         for (let s = 0; s < steps; s++) {
             let prevX = b.x; let prevY = b.y; b.x += subVx; b.y += subVy;
 
-            if (b.x - b.r <= 0) { b.x = b.r; b.vx *= -1; subVx = b.vx / steps; SFX.bounce(); createDotParticle(b.x, b.y, '#00e5ff'); }
-            else if (b.x + b.r >= gameWidth) { b.x = gameWidth - b.r; b.vx *= -1; subVx = b.vx / steps; SFX.bounce(); createDotParticle(b.x, b.y, '#00e5ff'); }
-            if (b.y - b.r <= topBound) { b.y = topBound + b.r; b.vy *= -1; subVy = b.vy / steps; SFX.bounce(); createDotParticle(b.x, b.y, '#00e5ff'); }
+            // BUG FIX: Added anti-stuck velocity nudge to walls and blocks to prevent infinite flat bouncing
+            if (b.x - b.r <= 0) { 
+                b.x = b.r; b.vx *= -1; 
+                if (Math.abs(b.vy) < 0.2) b.vy += (b.vy >= 0 ? 0.2 : -0.2);
+                subVx = b.vx / steps; subVy = b.vy / steps;
+                SFX.bounce(); createDotParticle(b.x, b.y, '#00e5ff'); 
+            }
+            else if (b.x + b.r >= gameWidth) { 
+                b.x = gameWidth - b.r; b.vx *= -1; 
+                if (Math.abs(b.vy) < 0.2) b.vy += (b.vy >= 0 ? 0.2 : -0.2);
+                subVx = b.vx / steps; subVy = b.vy / steps;
+                SFX.bounce(); createDotParticle(b.x, b.y, '#00e5ff'); 
+            }
+            if (b.y - b.r <= topBound) { 
+                b.y = topBound + b.r; b.vy *= -1; 
+                subVy = b.vy / steps; 
+                SFX.bounce(); createDotParticle(b.x, b.y, '#00e5ff'); 
+            }
 
             if (b.y + b.r >= bottomY) {
                 b.y = bottomY - b.r; b.vx = 0; b.vy = 0; b.active = false; b.returning = true;
@@ -742,6 +780,9 @@ function update() {
                     let hitTopBottom = (prevX >= rx && prevX <= rx + rw); let hitLeftRight = (prevY >= ry && prevY <= ry + rh);
                     if (hitTopBottom) { b.vy *= -1; b.y = prevY; } else if (hitLeftRight) { b.vx *= -1; b.x = prevX; } else { b.vx *= -1; b.vy *= -1; b.x = prevX; b.y = prevY; }
                     
+                    // BUG FIX: Prevent perfect horizontal bounces making the game stuck
+                    if (Math.abs(b.vy) < 0.4) b.vy = (b.vy >= 0) ? 0.4 : -0.4;
+
                     subVx = b.vx / steps; subVy = b.vy / steps;
                     createDotParticle(b.x, b.y, '#ff007f'); damageBlock(blk, getHeroDmg()); 
                     break; 
