@@ -87,21 +87,22 @@
 
   #ui-target { text-align:center; background:#2ed573; padding:5px 15px; border-radius:20px; font-weight:bold; font-size:16px; box-shadow:0 3px 0 #27ae60; display:inline-block; border: 2px solid #fff; flex-shrink: 0; }
 
-  /* GAME LAYOUT & EXPANDED BOARD AREA */
+  /* GAME LAYOUT (FIXED FOR AUTO RESOLUTION) */
   .game-layout { 
     display:flex; 
     gap:8px; 
     width:100%; 
-    max-width:500px; 
+    max-width: 550px; 
     flex: 1; 
     justify-content:center; 
-    align-items:stretch; 
+    align-items:center; /* Center content vertically and horizontally */
     min-height:0; 
     margin-top: 5px;
+    padding-bottom: 5px;
   }
   
   /* DOG ROOM WITH WATER EFFECTS */
-  .dog-container { position: relative; width:70px; flex-shrink:0; display:flex; flex-direction:column; }
+  .dog-container { position: relative; width:70px; flex-shrink:0; display:flex; flex-direction:column; max-height: 100%; }
   
   .dog-speech { position:absolute; top:25px; left:50%; transform:translateX(-50%); background:#fff; color:#000; padding:4px 8px; border-radius:10px; font-size:12px; font-weight:bold; white-space:nowrap; z-index:20; box-shadow:0 4px 8px rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s; animation: speechFloat 2s ease-in-out infinite;}
   .dog-speech::after { content:''; position:absolute; bottom:-5px; left:50%; transform:translateX(-50%); border-width:6px 6px 0; border-style:solid; border-color:#fff transparent transparent transparent; }
@@ -119,14 +120,19 @@
   @keyframes breathe { 0%,100%{transform:scale(1) translateY(0);} 50%{transform:scale(1.05) translateY(-2px);} }
   @keyframes panicShake { 0%,100%{transform:translate(0,0);} 25%{transform:translate(-2px,-2px);} 75%{transform:translate(2px,2px);} }
 
-  /* BOARD RESPONSIVE MAX AUTO-FITTING (Updated to 8x10 Grid) */
+  /* BOARD RESPONSIVE MAX AUTO-FITTING (Fixed for all screens) */
   #board { 
     display:grid; 
     grid-template-columns:repeat(8, 1fr); 
     grid-template-rows:repeat(10, 1fr);
     gap:2px; 
-    flex:1; 
-    max-height:100%; 
+    width: 100%;
+    height: auto;
+    /* Aspect Ratio ensures perfect grid fit */
+    aspect-ratio: 8 / 10;
+    /* Max height calculation for PC/Mobile to not overflow */
+    max-height: calc(100vh - 220px); 
+    max-height: calc(100dvh - 220px);
     background:rgba(0,0,0,0.5); 
     padding:6px; 
     border-radius:12px; 
@@ -134,7 +140,6 @@
     touch-action:none;
   }
   
-  /* Wrapper ensures cell content is centered and circular */
   .cell-wrapper { 
     width:100%; height:100%; position:relative; 
     display: flex; justify-content: center; align-items: center; 
@@ -144,13 +149,14 @@
   .cell { 
     width:100%; height:100%; 
     max-width:100%; max-height:100%;
-    aspect-ratio: 1/1; /* Forces exact circular shape regardless of grid stretch */
+    aspect-ratio: 1/1; 
     border-radius:50%; position:relative; cursor:grab; 
     box-shadow:inset -3px -3px 6px rgba(0,0,0,0.4), 0 3px 5px rgba(0,0,0,0.3); z-index:5; 
     display:flex; justify-content:center; align-items:center; touch-action:none; 
   }
   .cell:active { cursor:grabbing; }
-  .active-drag { transform:scale(1.1) !important; filter:brightness(1.3); z-index:20 !important; }
+  /* Scale styling removed from CSS so JS can animate drag smoothly */
+  .active-drag { filter:brightness(1.3); z-index:50 !important; }
   .cell * { pointer-events: none !important; }
 
   /* COLORS & CSS FACES */
@@ -320,7 +326,7 @@
 <script>
   // ================= VARIABLES & DATA =================
   const C = 8; // Columns
-  const R = 10; // Rows (Increased to fill vertical space)
+  const R = 10; // Rows 
   const colors = ['red','blue','green','yellow','purple','orange'];
   
   let grid=[], iceGrid=[], score=0, moves=0, lvl=1, coins=250;
@@ -500,7 +506,6 @@
           c.classList.add('bean-'+clr); c.color=clr; c.innerHTML = getFaceHTML(clr);
       }
       
-      // UNIFIED CANDY CRUSH STYLE DRAG SYSTEM
       c.addEventListener('pointerdown', handleInputStart);
       
       wrap.appendChild(c);
@@ -514,13 +519,13 @@
     }
   }
 
-  // ================= CANDY CRUSH STYLE DRAG & DROP LOGIC =================
+  // ================= CANDY CRUSH STYLE DRAG & DROP LOGIC (FIXED) =================
   let dragId = null, startX = 0, startY = 0, isDragging = false;
   let currentDragEl = null;
 
   function handleInputStart(e) {
       if(isAnim || moves <= 0 || isPaused) return;
-      let el = this; // Bind strictly to the cell
+      let el = this; 
       if(el.color === 'bird' && !activePower) return;
       
       dragId = parseInt(el.dataset.id);
@@ -532,6 +537,7 @@
       startY = e.clientY;
 
       el.classList.add('active-drag');
+      el.style.transition = 'none'; // Prevent lag on drag start
       try {
           if(e.target.setPointerCapture) e.target.setPointerCapture(e.pointerId);
       } catch(err){}
@@ -547,33 +553,56 @@
       
       let dx = e.clientX - startX;
       let dy = e.clientY - startY;
+      let cellWidth = currentDragEl.offsetWidth;
 
-      // Candy Crush Swipe Threshold (px)
-      let swipeThreshold = 15;
+      // Restrict drag strictly to main axis (either Horizontal or Vertical)
+      if (Math.abs(dx) > Math.abs(dy)) { dy = 0; } else { dx = 0; }
+
+      // Clamp movement to 1 visual cell size
+      let moveX = Math.max(-cellWidth, Math.min(cellWidth, dx));
+      let moveY = Math.max(-cellWidth, Math.min(cellWidth, dy));
+
+      // Visually follow the cursor
+      currentDragEl.style.transform = `translate(${moveX}px, ${moveY}px) scale(1.1)`;
       
-      if(Math.abs(dx) > swipeThreshold || Math.abs(dy) > swipeThreshold) {
+      // Swipe Threshold: 60% of cell width triggers the swap directly
+      if(Math.abs(moveX) > cellWidth * 0.6 || Math.abs(moveY) > cellWidth * 0.6) {
           let tId = dragId;
-          if(Math.abs(dx) > Math.abs(dy)) {
-              tId += dx > 0 ? 1 : -1;
+          if(Math.abs(moveX) > 0) {
+              tId += moveX > 0 ? 1 : -1;
           } else {
-              tId += dy > 0 ? C : -C;
+              tId += moveY > 0 ? C : -C;
           }
 
-          currentDragEl.classList.remove('active-drag');
           let fromId = dragId;
+          let el = currentDragEl;
+
+          // Clear drag states before animation
           dragId = null;
           isDragging = false;
           currentDragEl = null;
 
+          el.classList.remove('active-drag');
+          el.style.transform = ''; // Reset transform for swap logic
+
           if(tId >= 0 && tId < R*C && isAdjacent(fromId, tId) && grid[tId].color !== 'bird') {
               animateSwap(fromId, tId);
+          } else {
+              // Invalid drag direction bounce back
+              el.style.transition = 'transform 0.2s ease-out';
+              el.style.transform = 'translate(0px, 0px) scale(1)';
+              setTimeout(() => { el.style.transition = ''; }, 200);
           }
       }
   }
 
   function handleInputEnd(e) {
       if(currentDragEl) {
-          currentDragEl.classList.remove('active-drag');
+          let el = currentDragEl;
+          el.classList.remove('active-drag');
+          el.style.transition = 'transform 0.2s ease-out';
+          el.style.transform = 'translate(0px, 0px) scale(1)'; // Return to original pos on release
+          setTimeout(() => { if (el) el.style.transition = ''; }, 200);
       }
       dragId = null;
       isDragging = false;
@@ -590,7 +619,6 @@
       isAnim = true; sndSwap();
       let c1 = grid[id1], c2 = grid[id2];
       
-      // Pixel-perfect Candy Crush Swapping utilizing bounding rects
       let rect1 = c1.getBoundingClientRect();
       let rect2 = c2.getBoundingClientRect();
       let dx = rect2.left - rect1.left;
@@ -608,7 +636,6 @@
           c1.style.zIndex = "5"; c2.style.zIndex = "5";
           swapLogic(id1, id2);
           
-          // Force layout recalculation
           void c1.offsetWidth; void c2.offsetWidth;
           c1.style.transition = ''; c2.style.transition = '';
 
