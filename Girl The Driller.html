@@ -99,39 +99,6 @@
         
         #info-toast { position: absolute; top: 75px; left: 50%; transform: translateX(-50%); z-index: 15; background: rgba(0,0,0,0.8); border: 1px solid #00f3ff; padding: 8px 16px; border-radius: 20px; font-size: 12px; color: #00f3ff; pointer-events: none; animation: fadeOut 6s forwards; display: none; }
         @keyframes fadeOut { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
-
-        /* =========================================
-           MOBILE & TABLET RESPONSIVE CSS (AUTO FIX)
-           ========================================= */
-        @media screen and (max-width: 768px) {
-            #hud { top: 5px; left: 5px; padding: 6px 10px; border-width: 1px; }
-            .resource-row { font-size: 10px; margin: 4px 0; }
-            .res-icon { width: 14px; height: 14px; margin-right: 6px; }
-
-            #score-hud { top: 5px; padding: 5px 12px; font-size: 12px; border-width: 1px; }
-
-            #tool-status-hud { top: 38px; right: 5px; padding: 5px; width: 100px; border-width: 1px; }
-            .sys-row { font-size: 8px; margin: 3px 0; }
-            .sys-dot { width: 6px; height: 6px; margin-right: 4px; }
-
-            #overdrives-container { top: 105px; left: 5px; grid-template-columns: 1fr; gap: 4px; }
-            .od-box { padding: 4px; width: 85px; }
-            .od-name { font-size: 8px; }
-            .od-btn { font-size: 7px; padding: 3px 2px; }
-
-            #minimap-container { bottom: 5px; right: 5px; transform: scale(0.6); transform-origin: bottom right; }
-
-            #level-hud { bottom: 5px; left: 5px; min-width: 130px; padding: 6px 10px; border-width: 1px; }
-            #level-hud div { font-size: 9px !important; }
-
-            .overlay-title { font-size: 28px; margin-bottom: 20px; }
-            .menu-btn { font-size: 12px; padding: 10px 15px; width: 180px; margin: 6px; }
-            #pause-btn { font-size: 12px; padding: 6px 15px; top: 5px; right: 5px; }
-
-            #menu-upgrades { top: 2%; left: 2%; width: 96%; height: 96%; }
-            .modal-title { font-size: 16px; }
-            .close-btn { font-size: 10px; padding: 4px 10px; }
-        }
     </style>
 </head>
 <body>
@@ -144,21 +111,6 @@
         <button class="menu-btn" onclick="startGame()" style="background: #155f5f;">▶ PLAY NOW</button>
         <button class="menu-btn" onclick="openUpgradesFromMenu()">⚙️ SKILL TREE</button>
         <button class="menu-btn" id="btn-music-toggle" onclick="toggleMusic()">🎵 MUSIC: ON</button>
-        <!-- NEW README BUTTON -->
-        <button class="menu-btn" onclick="openReadme()">📄 README</button>
-    </div>
-
-    <!-- NEW README MODAL -->
-    <div id="readme-menu" class="overlay-menu" style="display: none; background: rgba(5, 5, 8, 0.95);">
-        <div class="overlay-title" style="color: #00f3ff; font-size: 35px;">README</div>
-        <div style="color: #fff; font-size: 16px; max-width: 90%; width: 500px; padding: 25px; line-height: 1.6; text-align: center; margin-bottom: 25px; border: 2px solid #00f3ff; background: rgba(10, 15, 20, 0.8); border-radius: 10px; box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);">
-            <p>Ye aik AI created game hai.</p>
-            <p>Agar koi issue aye ya game mein bug nazar aye, to aap neche diye gaye email par mail kar sakte hain takay us bug ko fix kiya ja sake:</p>
-            <p style="margin-top: 20px;">
-                <a href="mailto:pixelgaunt@gmail.com" style="color: #ffcc00; font-weight: bold; font-size: 18px; text-decoration: none; text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);">pixelgaunt@gmail.com</a>
-            </p>
-        </div>
-        <button class="menu-btn" onclick="closeReadme()" style="border-color: #ff3333; color: #ff3333;">❌ CLOSE / BACK</button>
     </div>
 
     <div id="pause-menu" class="overlay-menu" style="display: none; background: rgba(5, 5, 8, 0.85);">
@@ -282,25 +234,12 @@
         }
     }
 
-    // --- NEW README FUNCTIONS ---
-    function openReadme() {
-        document.getElementById('main-menu').style.display = 'none';
-        document.getElementById('readme-menu').style.display = 'flex';
-    }
-    
-    function closeReadme() {
-        document.getElementById('readme-menu').style.display = 'none';
-        document.getElementById('main-menu').style.display = 'flex';
-    }
-    // -----------------------------
-
     function startGame() {
         document.getElementById('main-menu').style.display = 'none';
         document.getElementById('pause-btn').style.display = 'block';
         gameState = "PLAYING";
         startBgMusic();
         refreshLiveUiDisplays();
-        renderFrame(); // start loop immediately if not already running
     }
 
     function pauseGame() {
@@ -394,20 +333,7 @@
     }
 
     const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
-    
-    // --- SMART CANVAS RESOLUTION SCALING (DOES NOT BREAK MECHANICS) ---
-    let displayScale = 1;
-    function resizeCanvas() { 
-        if (window.innerWidth < 768) {
-            displayScale = 1.6; // Automatically scales up the logical resolution on mobile so items appear properly sized
-        } else {
-            displayScale = 1;
-        }
-        canvas.width = window.innerWidth * displayScale; 
-        canvas.height = window.innerHeight * displayScale; 
-        canvas.style.width = window.innerWidth + 'px';
-        canvas.style.height = window.innerHeight + 'px';
-    }
+    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
     const specialItemImages = [
@@ -433,6 +359,7 @@
 
     let inventory = { iron: 0, bronze: 0, silver: 0, gold: 0, uranium: 0 };
     
+    // --- UPDATED: Fireball aur Rocket by default ACTIVE kar diye gaye hain ---
     let playerStats = { 
         level: 1, xp: 0, nextLevelXp: 100, score: 0, energy: 100, 
         damage: 1, speed: 2.5, drillFlySpeed: 4.0, maxEnergy: 100, energyRegen: 0.02, energyDrain: 0.2,
@@ -440,6 +367,7 @@
         hasLaser: false, hasFireball: true, hasPickaxe: false, hasRocket: true
     };
 
+    // --- UPDATED: 6 SEPARATE OVERDRIVES CONFIGURATION (Fireball & Rocket unlocked set to true) ---
     const overdrives = {
         suit:     { name: 'Girl Power', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: true, color: '#d942ff' },
         drill:    { name: 'Drill Storm', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: true, color: '#aaa' },
@@ -451,17 +379,24 @@
 
     window.activateOverdrive = function(key) {
         let od = overdrives[key];
+        // CHECK DUAL CONDITIONS: Charge Must Be Full AND Cooldown must be 0
         if (od.charge >= od.maxCharge && od.cooldownTimer <= 0 && od.activeTimer <= 0) {
+            
+            // STRICTLY 5 SECONDS ACTIVE TIME (60 frames * 5 = 300)
             od.activeTimer = 300; 
+            
+            // RESET CHARGE
             od.charge = 0;
+            
+            // DYNAMIC TIMING INCREMENT: Start cooldown wait for the NEXT usage
             od.cooldownTimer = od.maxCooldown;
-            od.maxCooldown += 600; 
+            od.maxCooldown += 600; // Adds 10 seconds every time (25s -> 35s -> 45s...)
             
             playSound('levelup');
             addFloatingText(`${od.name.toUpperCase()} ACTIVATED!`, playerShip.x, playerShip.y - 60, od.color, "20px");
             refreshLiveUiDisplays();
         } else {
-            playSound('click'); 
+            playSound('click'); // Error sound/feedback if they try to click early
         }
     };
 
@@ -495,13 +430,13 @@
         }
     };
 
-    // MOUSE / TOUCH SUPPORT WITH DISPLAY SCALING
+    // MOUSE / TOUCH SUPPORT 
     let mouseX = 0; let mouseY = 0; let isMouseThrusting = false;
-    window.addEventListener('mousemove', e => { mouseX = e.clientX * displayScale; mouseY = e.clientY * displayScale; });
+    window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
     window.addEventListener('mousedown', e => { isMouseThrusting = true; initAudio(); });
     window.addEventListener('mouseup', e => { isMouseThrusting = false; });
-    window.addEventListener('touchstart', e => { isMouseThrusting = true; mouseX = e.touches[0].clientX * displayScale; mouseY = e.touches[0].clientY * displayScale; initAudio(); });
-    window.addEventListener('touchmove', e => { mouseX = e.touches[0].clientX * displayScale; mouseY = e.touches[0].clientY * displayScale; });
+    window.addEventListener('touchstart', e => { isMouseThrusting = true; mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; initAudio(); });
+    window.addEventListener('touchmove', e => { mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; });
     window.addEventListener('touchend', e => { isMouseThrusting = false; });
 
     const inputKeys = {};
@@ -513,16 +448,18 @@
             this.isThrusting = false; let moving = false; let dx = 0; let dy = 0;
             let activeSpeed = playerStats.speed * (overdrives.suit.activeTimer > 0 ? 1.5 : 1.0); 
 
+            // Keyboard Checks
             if ((inputKeys['ArrowLeft'] || inputKeys['KeyA']) && playerStats.energy > 0) { this.velocityX -= activeSpeed * 0.04; dx = -1; moving = true; }
             if ((inputKeys['ArrowRight'] || inputKeys['KeyD']) && playerStats.energy > 0) { this.velocityX += activeSpeed * 0.04; dx = 1; moving = true; }
             if ((inputKeys['ArrowUp'] || inputKeys['KeyW']) && playerStats.energy > 0) { this.velocityY -= activeSpeed * 0.04; dy = -1; moving = true; }
             if ((inputKeys['ArrowDown'] || inputKeys['KeyS']) && playerStats.energy > 0) { this.velocityY += activeSpeed * 0.04; dy = 1; moving = true; }
 
+            // Mouse / Touch Check
             if (isMouseThrusting && !moving && playerStats.energy > 0 && gameState === "PLAYING") {
                 let mDx = (mouseX + camera.x) - this.x;
                 let mDy = (mouseY + camera.y) - this.y;
                 let angle = Math.atan2(mDy, mDx);
-                if (Math.hypot(mDx, mDy) > 20) { 
+                if (Math.hypot(mDx, mDy) > 20) { // Don't thrust if cursor is exactly on ship
                     this.velocityX += Math.cos(angle) * activeSpeed * 0.04;
                     this.velocityY += Math.sin(angle) * activeSpeed * 0.04;
                     dx = Math.cos(angle); dy = Math.sin(angle);
@@ -643,11 +580,13 @@
             else { tree.laser.forEach(upg => { if(upgradeLevels[upg.id] === undefined) upgradeLevels[upg.id] = 0; }); tree.fireball.forEach(upg => { if(upgradeLevels[upg.id] === undefined) upgradeLevels[upg.id] = 0; }); }
         });
 
+        // --- UPDATED: Automatically set Rocket and Fireball level to 1 at start ---
         upgradeLevels['wpn_fb1'] = 1;
         upgradeLevels['rkt_1'] = 1;
     }
     initLevels();
 
+    // EXPONENTIAL COST FOR HARDER GRIND
     function getCost(baseCostObj, level) {
         let scaledCost = {};
         for(let res in baseCostObj) {
@@ -786,335 +725,392 @@
         document.getElementById('val-score').innerText = formatNumber(playerStats.score); 
         document.getElementById('val-iron').innerText = formatNumber(inventory.iron); document.getElementById('val-bronze').innerText = formatNumber(inventory.bronze);
         document.getElementById('val-gold').innerText = formatNumber(inventory.gold); document.getElementById('val-uranium').innerText = formatNumber(inventory.uranium);
-
-        document.getElementById('lbl-level').innerText = playerStats.level;
-        document.getElementById('lbl-xp').innerText = `${Math.floor(playerStats.xp)} / ${playerStats.nextLevelXp} XP`;
-        document.getElementById('xp-bar').style.width = Math.min(100, (playerStats.xp / playerStats.nextLevelXp) * 100) + '%';
+        document.getElementById('lbl-level').innerText = formatNumber(playerStats.level); document.getElementById('lbl-xp').innerText = `${formatNumber(playerStats.xp)}/${formatNumber(playerStats.nextLevelXp)} XP`;
+        document.getElementById('xp-bar').style.width = `${Math.min(100, (playerStats.xp / playerStats.nextLevelXp) * 100)}%`; 
+        document.getElementById('energy-bar').style.width = `${Math.min(100, (playerStats.energy / playerStats.maxEnergy) * 100)}%`;
         
-        let energyPercent = Math.min(100, (playerStats.energy / playerStats.maxEnergy) * 100);
-        document.getElementById('lbl-energy').innerText = `${Math.floor(energyPercent)}%`;
-        document.getElementById('energy-bar').style.width = energyPercent + '%';
-
-        const updateOdUI = (key) => {
-            let od = overdrives[key]; let box = document.getElementById(`od-box-${key}`);
-            if(!box) return; 
-            if(!od.unlocked) { box.style.display = 'none'; return; }
-            box.style.display = 'block';
-            let btn = document.getElementById(`od-btn-${key}`);
-            let fill = document.getElementById(`od-fill-${key}`);
-            
-            if(od.activeTimer > 0) {
-                btn.innerText = "ACTIVE!"; btn.style.background = od.color; btn.style.color = "#000"; fill.style.width = "100%";
-            } else if (od.cooldownTimer > 0) {
-                btn.innerText = `WAIT ${Math.ceil(od.cooldownTimer/60)}s`; btn.style.background = "#222"; btn.style.color = "gray"; fill.style.width = "0%";
-            } else if (od.charge >= od.maxCharge) {
-                btn.innerText = "READY!"; btn.style.background = od.color; btn.style.color = "#000"; btn.classList.add('glow-active'); fill.style.width = "100%";
-            } else {
-                btn.innerText = `${Math.floor(od.charge)}/${od.maxCharge}`; btn.style.background = "#333"; btn.style.color = "gray"; btn.classList.remove('glow-active'); fill.style.width = (od.charge/od.maxCharge)*100 + "%";
-            }
-        };
-
-        for(let key in overdrives) updateOdUI(key);
-
-        document.getElementById('sys-pickaxe').style.display = playerStats.hasPickaxe ? 'flex' : 'none';
-        document.getElementById('sys-rocket').style.display = playerStats.hasRocket ? 'flex' : 'none';
-        document.getElementById('sys-laser').style.display = playerStats.hasLaser ? 'flex' : 'none';
-        document.getElementById('sys-fireball').style.display = playerStats.hasFireball ? 'flex' : 'none';
-        
-        checkUpgradeGlow();
-    }
-
-    function addScore(amt) { playerStats.score += amt; }
-    
-    function addXp(amt) {
-        playerStats.xp += amt;
-        if(playerStats.xp >= playerStats.nextLevelXp) {
-            playerStats.level++; playerStats.xp -= playerStats.nextLevelXp; playerStats.nextLevelXp = Math.floor(playerStats.nextLevelXp * 1.5);
-            addFloatingText("LEVEL UP!", playerShip.x, playerShip.y - 80, "#ffcc00", "30px"); playSound('levelup');
-        } refreshLiveUiDisplays();
-    }
-
-    function applyDamageToAsteroid(ast, damage, sourceKey) {
-        ast.health -= damage;
-        spawnCollisionEffect(ast.x, ast.y, '#ffffff'); playSound('drill_hit');
-        if (sourceKey) { let od = overdrives[sourceKey]; if (od.charge < od.maxCharge && od.cooldownTimer <= 0 && od.activeTimer <= 0) { od.charge = Math.min(od.maxCharge, od.charge + 1); refreshLiveUiDisplays(); } }
-        if (ast.health <= 0) {
-            playSound('explode'); spawnCollisionEffect(ast.x, ast.y, ast.typeInfo.color);
-            addXp(ast.typeInfo.rewardMax * 5);
-            
-            let amount = Math.floor(Math.random() * (ast.typeInfo.rewardMax - ast.typeInfo.rewardMin + 1)) + ast.typeInfo.rewardMin;
-            let val = amount * (1 + (playerStats.level * 0.1));
-            inventory[ast.typeInfo.name] += val;
-            addFloatingText(`+${formatNumber(val)} ${ast.typeInfo.name.toUpperCase()}`, ast.x, ast.y, ast.typeInfo.color, "14px");
-            addScore(amount * ast.typeInfo.baseHealth); produceAsteroidNode(); refreshLiveUiDisplays();
-            return true;
-        } return false;
-    }
-
-    function renderMinimap() {
-        const mmCanvas = document.getElementById('minimap');
-        const mmCtx = mmCanvas.getContext('2d');
-        mmCtx.clearRect(0,0, mmCanvas.width, mmCanvas.height);
-        
-        let mapScale = 0.015;
-        let centerX = mmCanvas.width/2; let centerY = mmCanvas.height/2;
-
-        mmCtx.fillStyle = '#0a0a0f'; mmCtx.fillRect(0,0, mmCanvas.width, mmCanvas.height);
-
-        mmCtx.fillStyle = '#ff3333';
-        mmCtx.beginPath(); mmCtx.arc(centerX + (blackHole.x - playerShip.x) * mapScale, centerY + (blackHole.y - playerShip.y) * mapScale, 5, 0, Math.PI*2); mmCtx.fill();
-
-        if (magicCrystalEvent.active) {
-            mmCtx.fillStyle = '#d942ff';
-            mmCtx.beginPath(); mmCtx.arc(centerX + (magicCrystalEvent.crystal.x - playerShip.x) * mapScale, centerY + (magicCrystalEvent.crystal.y - playerShip.y) * mapScale, 4, 0, Math.PI*2); mmCtx.fill();
-        }
-
-        asteroidsList.forEach(ast => { mmCtx.fillStyle = ast.typeInfo.color; mmCtx.beginPath(); mmCtx.arc(centerX + (ast.x - playerShip.x) * mapScale, centerY + (ast.y - playerShip.y) * mapScale, 2, 0, Math.PI*2); mmCtx.fill(); });
-        
-        mmCtx.fillStyle = '#00f3ff';
-        mmCtx.beginPath(); mmCtx.arc(centerX, centerY, 3, 0, Math.PI*2); mmCtx.fill();
-        mmCtx.strokeStyle = 'rgba(0, 243, 255, 0.3)'; mmCtx.beginPath(); mmCtx.arc(centerX, centerY, playerStats.magnetRadius * mapScale, 0, Math.PI*2); mmCtx.stroke();
-    }
-
-    function renderFrame() {
-        if (gameState !== "PLAYING") { requestAnimationFrame(renderFrame); return; }
-        
-        ctx.fillStyle = '#050508'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-        
-        // Handle Camera & Screen Shake
-        let targetCamX = playerShip.x - canvas.width / 2; let targetCamY = playerShip.y - canvas.height / 2;
-        camera.x += (targetCamX - camera.x) * 0.1; camera.y += (targetCamY - camera.y) * 0.1;
-        let shakeOffsetX = 0; let shakeOffsetY = 0; if (cameraShake > 0) { shakeOffsetX = (Math.random() - 0.5) * cameraShake; shakeOffsetY = (Math.random() - 0.5) * cameraShake; cameraShake *= 0.9; if(cameraShake < 0.5) cameraShake = 0; }
-        ctx.translate(-camera.x + shakeOffsetX, -camera.y + shakeOffsetY);
-
-        stars.forEach(s => { let px = s.x + (camera.x * s.depth); let py = s.y + (camera.y * s.depth); px = ((px % 2000) + 2000) % 2000 - 1000 + camera.x; py = ((py % 2000) + 2000) % 2000 - 1000 + camera.y; ctx.fillStyle = `rgba(255,255,255,${1 - s.depth})`; ctx.beginPath(); ctx.arc(px, py, s.size, 0, Math.PI*2); ctx.fill(); });
+        if (playerStats.hasPickaxe) document.getElementById('sys-pickaxe').style.display = 'flex';
+        if (playerStats.hasRocket) document.getElementById('sys-rocket').style.display = 'flex';
+        if (playerStats.hasLaser) document.getElementById('sys-laser').style.display = 'flex';
+        if (playerStats.hasFireball) document.getElementById('sys-fireball').style.display = 'flex';
 
         for(let key in overdrives) {
             let od = overdrives[key];
-            if(od.activeTimer > 0) od.activeTimer--;
-            if(od.cooldownTimer > 0) { od.cooldownTimer--; if(od.cooldownTimer % 60 === 0) refreshLiveUiDisplays(); }
-            if(od.activeTimer === 0 && document.getElementById(`od-btn-${key}`).innerText.includes("ACTIVE")) refreshLiveUiDisplays();
-        }
+            let box = document.getElementById(`od-box-${key}`);
+            if (!box) continue;
 
-        playerShip.update();
+            if (od.unlocked) {
+                box.style.display = 'block';
+                let btn = document.getElementById(`od-btn-${key}`);
+                let fill = document.getElementById(`od-fill-${key}`);
+                let pct = Math.min(100, (od.charge / od.maxCharge) * 100);
 
-        blackHole.spinAngle += 0.02;
-        ctx.save(); ctx.translate(blackHole.x, blackHole.y); ctx.rotate(blackHole.spinAngle);
-        let bhGrad = ctx.createRadialGradient(0,0,10, 0,0, blackHole.radius);
-        bhGrad.addColorStop(0, '#000000'); bhGrad.addColorStop(0.5, '#220044'); bhGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = bhGrad; ctx.beginPath(); ctx.arc(0,0, blackHole.radius*1.5, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = "#000"; ctx.beginPath(); ctx.arc(0,0, blackHole.radius*0.6, 0, Math.PI*2); ctx.fill();
-        ctx.restore();
-
-        let distToBH = Math.hypot(playerShip.x - blackHole.x, playerShip.y - blackHole.y);
-        if (distToBH < 500) { let pullStr = (500 - distToBH) * 0.0002; let ang = Math.atan2(blackHole.y - playerShip.y, blackHole.x - playerShip.x); playerShip.velocityX += Math.cos(ang) * pullStr; playerShip.velocityY += Math.sin(ang) * pullStr; if(Math.random() < 0.1) createParticle(playerShip.x, playerShip.y, '#5900ff', Math.cos(ang)*2, Math.sin(ang)*2, 0.02, 3); }
-
-        if (Math.random() < 0.0005 && !magicCrystalEvent.active) { magicCrystalEvent.spawn(playerShip.x + (Math.random()-0.5)*2000, playerShip.y + (Math.random()-0.5)*2000); }
-        magicCrystalEvent.update(playerShip); magicCrystalEvent.draw(ctx, playerShip);
-
-        for (let i = specialItemsList.length - 1; i >= 0; i--) {
-            let spec = specialItemsList[i];
-            let dist = Math.hypot(spec.x - playerShip.x, spec.y - playerShip.y);
-            
-            if (dist < playerStats.magnetRadius * (overdrives.suit.activeTimer > 0 ? 3 : 1) + 80) {
-                spec.isBeingCaught = true; spec.x += (playerShip.x - spec.x) * 0.08; spec.y += (playerShip.y - spec.y) * 0.08;
-                if (Math.random() < 0.2) createParticle(spec.x, spec.y, '#00f3ff', 0, 0, 0.1, 2);
-                if (dist < playerShip.radius) {
-                    specialItemsList.splice(i, 1); playSound('coin'); specialScore++; 
-                    playerStats.score += 500 * playerStats.level;
-                    addFloatingText("+1 SPECIAL", spec.x, spec.y - 30, '#00f3ff', "16px"); 
-                    addXp(50);
-                    refreshLiveUiDisplays();
-                    specialItemsList.push({ x: playerShip.x + (Math.random()*8000-4000), y: playerShip.y + (Math.random()*8000-4000), img: specialItemImages[Math.floor(Math.random()*specialItemImages.length)], isCollected: false, isBeingCaught: false, width: 40, height: 40 });
-                }
-            }
-            if (!spec.isCollected) {
-                ctx.save(); ctx.translate(spec.x, spec.y); ctx.scale(Math.sin(Date.now() * 0.003 + spec.x)*0.2 + 0.8, 1);
-                if(spec.img.complete && spec.img.naturalWidth !== 0) ctx.drawImage(spec.img, -spec.width/2, -spec.height/2, spec.width, spec.height);
-                else { ctx.fillStyle = '#00f3ff'; ctx.fillRect(-15, -15, 30, 30); }
-                ctx.restore();
-            }
-        }
-
-        let drillsNeeded = overdrives.drill.activeTimer > 0 ? 3 : 1;
-        while(drillsList.length < drillsNeeded) drillsList.push({ x: playerShip.x, y: playerShip.y, targetId: -1, vx: 0, vy: 0, angle: 0 });
-        if(drillsList.length > drillsNeeded) drillsList.splice(drillsNeeded, drillsList.length - drillsNeeded);
-
-        drillsList.forEach((drill, index) => {
-            let activeTarget = asteroidsList.find(a => a.id === drill.targetId);
-            if (!activeTarget || activeTarget.health <= 0) {
-                let closest = null; let minD = Infinity;
-                asteroidsList.forEach(ast => {
-                    let d = Math.hypot(ast.x - drill.x, ast.y - drill.y); 
-                    if(d < minD && ast.health > 0) { minD = d; closest = ast; }
-                });
-                if (closest) drill.targetId = closest.id || (closest.id = Math.random());
-                else drill.targetId = -1;
-                activeTarget = closest;
-            }
-
-            let drillSpd = playerStats.drillFlySpeed * (overdrives.drill.activeTimer > 0 ? 2 : 1);
-            if (activeTarget) {
-                let tx = activeTarget.x; let ty = activeTarget.y; let ang = Math.atan2(ty - drill.y, tx - drill.x);
-                drill.vx = Math.cos(ang) * drillSpd; drill.vy = Math.sin(ang) * drillSpd; drill.angle = ang + Math.PI/2;
-                if (Math.hypot(tx - drill.x, ty - drill.y) < activeTarget.radius) {
-                    if (applyDamageToAsteroid(activeTarget, playerStats.damage * (overdrives.drill.activeTimer > 0 ? 3 : 1), 'drill')) drill.targetId = -1;
-                    drill.vx = -drill.vx * 0.5; drill.vy = -drill.vy * 0.5;
+                if (od.activeTimer > 0) {
+                    fill.style.width = `100%`;
+                    btn.innerText = `ACTIVE (${Math.ceil(od.activeTimer/60)}s)`;
+                    btn.style.background = od.color; btn.style.color = '#000';
+                    btn.style.boxShadow = `0 0 10px ${od.color}`; btn.style.pointerEvents = 'none';
+                    if(document.getElementById(`val-${key}-sys`)) {
+                        document.getElementById(`val-${key}-sys`).innerText = "OVERDRIVE";
+                        document.getElementById(`val-${key}-sys`).style.color = od.color;
+                    }
+                } else if (od.charge >= od.maxCharge && od.cooldownTimer <= 0) {
+                    fill.style.width = `100%`;
+                    btn.innerText = "READY! (CLICK)";
+                    btn.style.background = '#39ff14'; btn.style.color = '#000';
+                    btn.style.boxShadow = '0 0 10px #39ff14'; btn.style.pointerEvents = 'auto';
+                    if(document.getElementById(`val-${key}-sys`)) {
+                        document.getElementById(`val-${key}-sys`).innerText = "READY";
+                        document.getElementById(`val-${key}-sys`).style.color = "#39ff14";
+                    }
+                } else {
+                    fill.style.width = `${pct}%`;
+                    
+                    if (od.cooldownTimer > 0 && od.charge >= od.maxCharge) {
+                        btn.innerText = `WAIT: ${Math.ceil(od.cooldownTimer/60)}s`;
+                        fill.style.width = '100%';
+                        fill.style.background = 'gray';
+                    } else if (od.cooldownTimer > 0 && od.charge < od.maxCharge) {
+                        btn.innerText = `C: ${od.charge}/${od.maxCharge} | W: ${Math.ceil(od.cooldownTimer/60)}s`;
+                        fill.style.background = od.color;
+                    } else {
+                        btn.innerText = `CHARGE: ${od.charge}/${od.maxCharge}`;
+                        fill.style.background = od.color;
+                    }
+                    
+                    btn.style.background = '#333'; btn.style.color = 'gray';
+                    btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none';
+                    if(document.getElementById(`val-${key}-sys`)) {
+                        document.getElementById(`val-${key}-sys`).innerText = "Standby";
+                        document.getElementById(`val-${key}-sys`).style.color = od.color;
+                    }
                 }
             } else {
-                let orbitAng = Date.now() * 0.002 + (index * Math.PI*2/drillsNeeded);
-                let tx = playerShip.x + Math.cos(orbitAng) * 60; let ty = playerShip.y + Math.sin(orbitAng) * 60;
-                let ang = Math.atan2(ty - drill.y, tx - drill.x);
-                drill.vx += Math.cos(ang) * 0.5; drill.vy += Math.sin(ang) * 0.5; drill.vx *= 0.9; drill.vy *= 0.9;
-                drill.angle = Math.atan2(drill.vy, drill.vx) + Math.PI/2;
+                box.style.display = 'none';
             }
+        }
+        checkUpgradeGlow();
+    }
 
-            drill.x += drill.vx; drill.y += drill.vy;
-            ctx.save(); ctx.translate(drill.x, drill.y); ctx.rotate(drill.angle);
-            if (drillImage.complete && drillImage.naturalWidth !== 0) ctx.drawImage(drillImage, -15, -25, 30, 50);
-            else { ctx.fillStyle = '#aaa'; ctx.fillRect(-5,-15,10,30); }
-            ctx.restore();
-            createParticle(drill.x - Math.cos(drill.angle-Math.PI/2)*15, drill.y - Math.sin(drill.angle-Math.PI/2)*15, '#ffaa00', 0, 0, 0.1, 2);
-        });
-
-        if (playerStats.hasPickaxe) {
-            let pSpd = overdrives.pickaxe.activeTimer > 0 ? 0.015 : 0.005;
-            handMines.forEach((hm, idx) => {
-                let pAngle = Date.now() * pSpd + (idx * Math.PI);
-                let pRadius = overdrives.pickaxe.activeTimer > 0 ? 120 : 80;
-                hm.x = playerShip.x + Math.cos(pAngle) * pRadius;
-                hm.y = playerShip.y + Math.sin(pAngle) * pRadius;
-                
-                asteroidsList.forEach(ast => {
-                    if(Math.hypot(ast.x - hm.x, ast.y - hm.y) < ast.radius + 20) {
-                        applyDamageToAsteroid(ast, playerStats.damage * 0.5 * (overdrives.pickaxe.activeTimer > 0 ? 5 : 1), 'pickaxe');
-                        cameraShake = overdrives.pickaxe.activeTimer > 0 ? 4 : 2;
-                    }
-                });
-
-                ctx.save(); ctx.translate(hm.x, hm.y); ctx.rotate(pAngle + Math.PI/2 + (Date.now()*0.01));
-                if(pickaxeImg.complete && pickaxeImg.naturalWidth !== 0) ctx.drawImage(pickaxeImg, -20, -20, 40, 40);
-                else { ctx.fillStyle = '#ff9900'; ctx.fillRect(-10, -10, 20, 20); }
-                ctx.restore();
-                if(overdrives.pickaxe.activeTimer > 0) createParticle(hm.x, hm.y, '#ff9900', 0,0, 0.1, 4);
-            });
+    let frameCount = 0; 
+    function renderFrame() {
+        if (gameState !== "PLAYING") {
+            requestAnimationFrame(renderFrame);
+            return;
         }
 
-        if (playerStats.hasLaser && Date.now() - lastDrillDeploy > (overdrives.laser.activeTimer > 0 ? 100 : 500)) {
-            lastDrillDeploy = Date.now();
-            let nearest = null; let md = overdrives.laser.activeTimer > 0 ? 800 : 400;
-            asteroidsList.forEach(a => { let d = Math.hypot(a.x - playerShip.x, a.y - playerShip.y); if (d < md) { md = d; nearest = a; } });
-            if (nearest) {
-                let ang = Math.atan2(nearest.y - playerShip.y, nearest.x - playerShip.x);
-                ctx.save(); ctx.lineWidth = overdrives.laser.activeTimer > 0 ? 8 : 3; ctx.strokeStyle = overdrives.laser.activeTimer > 0 ? '#ff3366' : '#ff0044';
-                ctx.beginPath(); ctx.moveTo(playerShip.x, playerShip.y); ctx.lineTo(nearest.x, nearest.y); ctx.stroke(); ctx.restore();
-                applyDamageToAsteroid(nearest, playerStats.damage * (overdrives.laser.activeTimer > 0 ? 5 : 2), 'laser');
-                playSound('laser');
+        ctx.clearRect(0, 0, canvas.width, canvas.height); const timeNow = Date.now(); frameCount++;
+        
+        let needsUiRefresh = false;
+        for(let key in overdrives) {
+            if (overdrives[key].activeTimer > 0) {
+                overdrives[key].activeTimer--;
+                if (overdrives[key].activeTimer % 60 === 0 || overdrives[key].activeTimer === 0) needsUiRefresh = true;
+            }
+            if (overdrives[key].cooldownTimer > 0) {
+                overdrives[key].cooldownTimer--;
+                if (overdrives[key].cooldownTimer % 60 === 0 || overdrives[key].cooldownTimer === 0) needsUiRefresh = true;
+            }
+        }
+        if (needsUiRefresh) refreshLiveUiDisplays();
+
+        if (playerStats.hasRocket) { 
+            let rktCooldown = overdrives.rocket.activeTimer > 0 ? 150 : Math.max(400, 2500 - (upgradeLevels['rkt_2']*2)); 
+            if ((timeNow - lastRocketLaunch) >= rktCooldown && overdrives.rocket.activeTimer <= 0) {
+                document.getElementById('val-rocket-sys').innerText = "Ready"; 
             }
         }
 
-        if (playerStats.hasFireball && Date.now() - lastFireballThrow > (overdrives.fireball.activeTimer > 0 ? 150 : 800)) {
-            lastFireballThrow = Date.now();
-            let ang = playerShip.drawAngle - Math.PI/2;
-            let amount = overdrives.fireball.activeTimer > 0 ? 3 : 1;
-            for(let i=0; i<amount; i++) {
-                let spread = amount > 1 ? (i - 1)*0.3 : 0;
-                thrownFireballs.push({ x: playerShip.x, y: playerShip.y, vx: Math.cos(ang+spread)*8, vy: Math.sin(ang+spread)*8 });
+        camera.x = playerShip.x - canvas.width / 2; camera.y = playerShip.y - canvas.height / 2;
+        let shakeOffsetX = 0; let shakeOffsetY = 0; if (cameraShake > 0.5) { shakeOffsetX = (Math.random() - 0.5) * cameraShake; shakeOffsetY = (Math.random() - 0.5) * cameraShake; cameraShake *= 0.85; }
+
+        ctx.save(); ctx.translate(-camera.x + shakeOffsetX, -camera.y + shakeOffsetY);
+
+        ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < stars.length; i++) { let star = stars[i]; let drawX = ((star.x - camera.x * star.depth) % 2000 + 2000) % 2000 + camera.x - 1000; let drawY = ((star.y - camera.y * star.depth) % 2000 + 2000) % 2000 + camera.y - 1000; ctx.fillRect(drawX, drawY, star.size, star.size); }
+
+        if (Math.hypot(blackHole.x - playerShip.x, blackHole.y - playerShip.y) > 3000) { let angle = Math.random() * Math.PI * 2; blackHole.x = playerShip.x + Math.cos(angle) * 1500; blackHole.y = playerShip.y + Math.sin(angle) * 1500; } else { blackHole.x += (playerShip.x - blackHole.x) * 0.0003; blackHole.y += (playerShip.y - blackHole.y) * 0.0003; }
+
+        blackHole.spinAngle += 0.01; ctx.save(); ctx.translate(blackHole.x, blackHole.y); ctx.rotate(blackHole.spinAngle); let bgGlow = ctx.createRadialGradient(0, 0, blackHole.radius * 0.8, 0, 0, blackHole.radius * 2); bgGlow.addColorStop(0, "rgba(89, 0, 255, 0.8)"); bgGlow.addColorStop(0.5, "rgba(217, 66, 255, 0.3)"); bgGlow.addColorStop(1, "rgba(0, 0, 0, 0)"); ctx.fillStyle = bgGlow; ctx.beginPath(); ctx.arc(0, 0, blackHole.radius * 2, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(0, 0, blackHole.radius, 0, Math.PI * 2); ctx.fillStyle = "#000000"; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "#d942ff"; ctx.stroke(); ctx.beginPath(); ctx.ellipse(0, 0, blackHole.radius * 1.8, blackHole.radius * 0.4, 0, 0, Math.PI * 2); ctx.strokeStyle = "#5900ff"; ctx.lineWidth = 4; ctx.stroke(); ctx.restore(); ctx.fillStyle = "#ff0000"; ctx.font = "bold 16px Orbitron"; ctx.fillText("DANGER: BLACK HOLE", blackHole.x - 95, blackHole.y - 100);
+
+        let bhDistX = blackHole.x - playerShip.x; let bhDistY = blackHole.y - playerShip.y; let bhDist = Math.hypot(bhDistX, bhDistY);
+        if (bhDist < 1200) { let pull = (1200 - bhDist) / 1200 * 0.008; playerShip.velocityX += (bhDistX / bhDist) * pull; playerShip.velocityY += (bhDistY / bhDist) * pull; if (Math.random() < 0.2) createParticle(playerShip.x, playerShip.y, '#ff0000', -playerShip.velocityX, -playerShip.velocityY, 0.05, 4); }
+        if (bhDist < blackHole.radius) { 
+            if (overdrives.suit.activeTimer > 0) {
+                createParticle(playerShip.x, playerShip.y, '#d942ff', (Math.random()-0.5)*5, (Math.random()-0.5)*5, 0.05, 4);
+            } else {
+                playerStats.energy = Math.max(0, playerStats.energy - Math.max(0.5, 3 - playerStats.defense*0.2)); addFloatingText("WARNING! BLACK HOLE DAMAGE!", playerShip.x, playerShip.y - 80, '#ff0000'); playerShip.velocityX = (playerShip.x - blackHole.x) * 0.6; playerShip.velocityY = (playerShip.y - blackHole.y) * 0.6; cameraShake = 20; refreshLiveUiDisplays(); 
             }
         }
 
-        for (let i = thrownFireballs.length - 1; i >= 0; i--) {
-            let fb = thrownFireballs[i]; fb.x += fb.vx; fb.y += fb.vy;
-            ctx.fillStyle = overdrives.fireball.activeTimer > 0 ? '#00f3ff' : '#ff5500'; ctx.beginPath(); ctx.arc(fb.x, fb.y, 8, 0, Math.PI*2); ctx.fill();
-            createParticle(fb.x, fb.y, overdrives.fireball.activeTimer > 0 ? '#00f3ff' : '#ffcc00', 0, 0, 0.1, 5);
-            let hit = false;
-            for(let a of asteroidsList) { if(Math.hypot(a.x - fb.x, a.y - fb.y) < a.radius + 10) { applyDamageToAsteroid(a, playerStats.damage * (overdrives.fireball.activeTimer > 0 ? 8 : 3), 'fireball'); hit = true; break; } }
-            if (hit || Math.hypot(fb.x - playerShip.x, fb.y - playerShip.y) > 1000) thrownFireballs.splice(i, 1);
-        }
+        playerShip.update(); playerShip.draw(); let isMoving = playerShip.distanceMoved > 0.1;
 
-        if (playerStats.hasRocket && Date.now() - lastRocketLaunch > (overdrives.rocket.activeTimer > 0 ? 400 : 1500)) {
-            lastRocketLaunch = Date.now();
-            let rCount = overdrives.rocket.activeTimer > 0 ? 5 : 1;
-            for(let i=0; i<rCount; i++) { rocketsList.push({ x: playerShip.x, y: playerShip.y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 100, targetId: -1 }); }
+        let visibleAsts = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(canvas.width, canvas.height)*0.6);
+
+        if (playerStats.hasRocket && visibleAsts.length > 0) {
+            let isRocketOd = overdrives.rocket.activeTimer > 0;
+            let actualCooldown = isRocketOd ? 150 : Math.max(400, 2500 - (upgradeLevels['rkt_2']*2));
+            if (timeNow - lastRocketLaunch >= actualCooldown) {
+                let numRockets = Math.min(10, 1 + Math.floor(playerStats.level / 10) + Math.floor(upgradeLevels['rkt_3']/20)); 
+                if (isRocketOd) numRockets += 5;
+                for(let r=0; r<numRockets; r++) { let target = visibleAsts[Math.floor(Math.random() * visibleAsts.length)]; let rAngle = Math.atan2(target.y - playerShip.y, target.x - playerShip.x) + ((Math.random()-0.5)*0.6); rocketsList.push({ x: playerShip.x, y: playerShip.y, vx: Math.cos(rAngle)*5, vy: Math.sin(rAngle)*5, target: target, angle: rAngle, life: 250 }); }
+                playSound('laser'); lastRocketLaunch = timeNow; refreshLiveUiDisplays();
+            }
         }
 
         for (let i = rocketsList.length - 1; i >= 0; i--) {
-            let rkt = rocketsList[i]; rkt.life--;
-            let t = asteroidsList.find(a => a.id === rkt.targetId);
-            if(!t || t.health <= 0) {
-                let md = Infinity; asteroidsList.forEach(a => { let d = Math.hypot(a.x - rkt.x, a.y - rkt.y); if(d < md) { md = d; t = a; } });
-                if(t) rkt.targetId = t.id || (t.id = Math.random());
-            }
-            if(t) {
-                let ang = Math.atan2(t.y - rkt.y, t.x - rkt.x);
-                rkt.vx += Math.cos(ang) * 0.5; rkt.vy += Math.sin(ang) * 0.5;
-                rkt.vx *= 0.95; rkt.vy *= 0.95;
-            }
-            rkt.x += rkt.vx; rkt.y += rkt.vy;
-            let drawAng = Math.atan2(rkt.vy, rkt.vx) + Math.PI/2;
-            
-            ctx.save(); ctx.translate(rkt.x, rkt.y); ctx.rotate(drawAng);
-            if(rocketImg.complete && rocketImg.naturalWidth !== 0) ctx.drawImage(rocketImg, -10, -20, 20, 40);
-            else { ctx.fillStyle = '#39ff14'; ctx.fillRect(-5,-10,10,20); }
-            ctx.restore();
-            createParticle(rkt.x, rkt.y, '#39ff14', 0,0, 0.15, 3);
+            let rk = rocketsList[i]; rk.life--;
+            if (rk.target && rk.target.health > 0) { let targetAngle = Math.atan2(rk.target.y - rk.y, rk.target.x - rk.x); rk.vx += Math.cos(targetAngle) * 0.5; rk.vy += Math.sin(targetAngle) * 0.5; let spd = Math.hypot(rk.vx, rk.vy); if (spd > 12) { rk.vx = (rk.vx/spd)*12; rk.vy = (rk.vy/spd)*12; } rk.angle = Math.atan2(rk.vy, rk.vx); }
+            rk.x += rk.vx; rk.y += rk.vy; createParticle(rk.x - Math.cos(rk.angle)*15, rk.y - Math.sin(rk.angle)*15, '#ff3300', -rk.vx*0.3, -rk.vy*0.3, 0.1, 6);
+            ctx.save(); ctx.translate(rk.x, rk.y); ctx.rotate(rk.angle); if (rocketImg.complete && rocketImg.naturalWidth !== 0) { ctx.drawImage(rocketImg, -25, -15, 50, 30); } else { ctx.fillStyle = '#39ff14'; ctx.fillRect(-15,-8,30,16); } ctx.restore();
 
             let hit = false;
-            if(t && Math.hypot(t.x - rkt.x, t.y - rkt.y) < t.radius + 15) {
-                applyDamageToAsteroid(t, playerStats.damage * (overdrives.rocket.activeTimer > 0 ? 10 : 4), 'rocket');
-                hit = true;
-                for(let k=0; k<20; k++) createParticle(rkt.x, rkt.y, '#39ff14', (Math.random()-0.5)*15, (Math.random()-0.5)*15, 0.05, 5);
-                cameraShake = 5; playSound('explode');
+            for (let j = 0; j < asteroidsList.length; j++) {
+                let ast = asteroidsList[j];
+                if (Math.hypot(ast.x - rk.x, ast.y - rk.y) < ast.radius + 20) {
+                    ast.health -= playerStats.damage * 1.5; playSound('explode'); spawnCollisionEffect(ast.x, ast.y); shockwaves.push({x: rk.x, y: rk.y, radius: 10, speed: 8, life: 1.0, color: '#ff3300'}); for(let k=0; k<15; k++) createParticle(rk.x, rk.y, '#ffaa00', (Math.random()-0.5)*15, (Math.random()-0.5)*15, 0.05, 5); hit = true; break;
+                }
             }
-            if(hit || rkt.life <= 0) rocketsList.splice(i, 1);
+            if (hit || rk.life <= 0) rocketsList.splice(i, 1);
         }
+
+        let activeMagnetRadius = playerStats.magnetRadius * 10;
+        if (overdrives.suit.activeTimer > 0) activeMagnetRadius += 1000;
+        
+        for (let i = specialItemsList.length - 1; i >= 0; i--) {
+            let item = specialItemsList[i];
+            if (!item.isCollected) {
+                if (Math.hypot(playerShip.x - item.x, playerShip.y - item.y) < 400 + activeMagnetRadius) { item.isBeingCaught = true; }
+                if (item.isBeingCaught) {
+                    ctx.save(); ctx.beginPath(); ctx.moveTo(playerShip.x, playerShip.y); ctx.lineTo(item.x, item.y); ctx.strokeStyle = "#00f3ff"; ctx.lineWidth = 3; ctx.shadowColor = "#00f3ff"; ctx.shadowBlur = 15; ctx.stroke(); ctx.restore();
+                    item.x += (playerShip.x - item.x) * 0.08; item.y += (playerShip.y - item.y) * 0.08;
+                    if (Math.hypot(playerShip.x - item.x, playerShip.y - item.y) < 50) { item.isCollected = true; item.isBeingCaught = false; addFloatingText("ITEM CAUGHT!", item.x, item.y, '#00ffff', "16px"); playSound('collect'); item.targetPortalX = playerShip.x + (Math.random() > 0.5 ? 250 : -250); item.targetPortalY = playerShip.y - 150; item.portalRadius = 0; }
+                }
+                if (item.img && item.img.complete && item.img.naturalWidth !== 0) { ctx.drawImage(item.img, item.x - item.width/2, (item.y - item.height/2) + Math.sin(timeNow*0.003+i)*10, item.width, item.height); } else { ctx.fillStyle = "#ff00ff"; ctx.fillRect(item.x - 10, item.y - 10, 20, 20); }
+            } else {
+                item.portalRadius = Math.min(50, (item.portalRadius || 0) + 3);
+                ctx.save(); ctx.translate(item.targetPortalX, item.targetPortalY); ctx.rotate(timeNow * 0.005); let pGlow = ctx.createRadialGradient(0, 0, 5, 0, 0, item.portalRadius); pGlow.addColorStop(0, "#ffffff"); pGlow.addColorStop(0.3, "#00f3ff"); pGlow.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = pGlow; ctx.beginPath(); ctx.arc(0, 0, item.portalRadius, 0, Math.PI*2); ctx.fill(); ctx.restore();
+                item.x += (item.targetPortalX - item.x) * 0.15; item.y += (item.targetPortalY - item.y) * 0.15;
+                let shrink = Math.max(0.1, Math.hypot(item.targetPortalX - item.x, item.targetPortalY - item.y) / 200);
+                if (item.img && item.img.complete && item.img.naturalWidth !== 0) { ctx.drawImage(item.img, item.x - (item.width*shrink)/2, item.y - (item.height*shrink)/2, item.width*shrink, item.height*shrink); }
+                if (Math.hypot(item.targetPortalX - item.x, item.targetPortalY - item.y) < 15) { specialScore += 1000; playerStats.score += 1000; addFloatingText("+1000 GALAXY POINTS!", item.targetPortalX, item.targetPortalY, '#00f3ff', "20px"); playSound('levelup'); refreshLiveUiDisplays(); specialItemsList.splice(i, 1); }
+            }
+        }
+
+        magicCrystalEvent.update(playerShip); magicCrystalEvent.draw(ctx, playerShip);
+
+        let screenBoundTargets = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(canvas.width, canvas.height)*0.55);
+        if (screenBoundTargets.length === 0) drillsList = [];
+
+        let isDrillOd = overdrives.drill.activeTimer > 0;
+        let drillCooldown = isDrillOd ? 200 : 1200;
+        if (timeNow - lastDrillDeploy > drillCooldown && document.getElementById('menu-upgrades').style.display !== 'flex' && screenBoundTargets.length > 0) {
+            let target = screenBoundTargets[Math.floor(Math.random() * screenBoundTargets.length)]; let angleToTarget = Math.atan2(target.y - playerShip.y, target.x - playerShip.x); drillsList.push({ x: playerShip.x, y: playerShip.y, target: target, angle: angleToTarget, life: 1000 }); createParticle(playerShip.x, playerShip.y, '#ffcc00', 0, 0, 0.05, 10); playSound('drill_deploy'); lastDrillDeploy = timeNow;
+        }
+
+        if (playerStats.hasFireball) {
+            let isFbOd = overdrives.fireball.activeTimer > 0;
+            let numOrbs = isFbOd ? Math.min(10, 3 + Math.floor(upgradeLevels['wpn_fb2'] / 20)) : 1; 
+            let orbitSpeed = timeNow / 300;
+            let orbitRadius = Math.min(150, 75 + (upgradeLevels['wpn_fb3'] * 0.2));
+
+            for(let i=0; i<numOrbs; i++) { let angle = orbitSpeed + (i * (Math.PI*2/numOrbs)); let ox = playerShip.x + Math.cos(angle) * orbitRadius; let oy = playerShip.y + Math.sin(angle) * orbitRadius; createParticle(ox, oy, '#00aaff', 0, 0, 0.2, 8); ctx.beginPath(); ctx.arc(ox, oy, 18, 0, Math.PI*2); ctx.fillStyle = '#00f3ff'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#ffffff'; ctx.stroke(); }
+            
+            let throwCooldown = isFbOd ? 300 : 1500;
+            if (timeNow - lastFireballThrow > throwCooldown && asteroidsList.length > 0) {
+                let targetAst = null; let minDist = 1200; 
+                for(let j=0; j < asteroidsList.length; j++) { let d = Math.hypot(asteroidsList[j].x - playerShip.x, asteroidsList[j].y - playerShip.y); if(d < minDist) { minDist = d; targetAst = asteroidsList[j]; } }
+                if (targetAst) { let fAngle = Math.atan2(targetAst.y - playerShip.y, targetAst.x - playerShip.x); thrownFireballs.push({x: playerShip.x, y: playerShip.y, vx: Math.cos(fAngle)*9, vy: Math.sin(fAngle)*9, target: targetAst, life: 150}); lastFireballThrow = timeNow; playSound('laser'); }
+            }
+        }
+
+        for(let i = thrownFireballs.length - 1; i >= 0; i--) {
+            let fb = thrownFireballs[i]; fb.x += fb.vx; fb.y += fb.vy; fb.life--;
+            if (fb.target && fb.target.health > 0) { let angle = Math.atan2(fb.target.y - fb.y, fb.target.x - fb.x); fb.vx += Math.cos(angle) * 0.4; fb.vy += Math.sin(angle) * 0.4; let speed = Math.hypot(fb.vx, fb.vy); if (speed > 10) { fb.vx = (fb.vx/speed)*10; fb.vy = (fb.vy/speed)*10; } }
+            createParticle(fb.x, fb.y, '#00aaff', -fb.vx*0.2, -fb.vy*0.2, 0.1, 7); ctx.beginPath(); ctx.arc(fb.x, fb.y, 22, 0, Math.PI*2); ctx.fillStyle='#00f3ff'; ctx.fill();
+
+            let hit = false;
+            for(let j = 0; j < asteroidsList.length; j++) {
+                let ast = asteroidsList[j]; let astHealthPercent = ast.health / ast.maxHealth; let bloatScale = 1 + (1 - astHealthPercent) * 0.4;
+                if (Math.hypot(ast.x - fb.x, ast.y - fb.y) < (ast.radius * bloatScale) + 25) { ast.health -= playerStats.damage * 0.5; createParticle(fb.x, fb.y, '#00f3ff', (Math.random()-0.5)*12, (Math.random()-0.5)*12, 0.05, 6); hit = true; break; }
+            }
+            if (hit || fb.life <= 0) thrownFireballs.splice(i, 1);
+        }
+
+        if (playerStats.hasLaser && asteroidsList.length > 0) {
+            let isLaserOd = overdrives.laser.activeTimer > 0;
+            if (isLaserOd || frameCount % 60 === 0) {
+                ctx.save(); ctx.globalCompositeOperation = "lighter"; let currentSourceX = playerShip.x; let currentSourceY = playerShip.y; let unvisited = [...asteroidsList]; let chainCount = 0;
+                
+                let baseLaserWidth = Math.min(25, 4 + (upgradeLevels['wpn_laser3'] * 0.1));
+                let maxTargets = isLaserOd ? Math.min(10, 2 + Math.floor(upgradeLevels['wpn_laser2'] / 20)) : 1;
+
+                while (unvisited.length > 0) {
+                    if (chainCount >= maxTargets) break;
+                    let targetAst = null; let minDist = 1500; let targetIndex = -1;
+                    for (let j = 0; j < unvisited.length; j++) { let d = Math.hypot(unvisited[j].x - currentSourceX, unvisited[j].y - currentSourceY); if (d < minDist) { minDist = d; targetAst = unvisited[j]; targetIndex = j; } }
+                    if (targetAst) {
+                        const bX = targetAst.x - currentSourceX; const bY = targetAst.y - currentSourceY; const pAngle = Math.atan2(bY, bX) + Math.PI / 2;
+                        ['rgba(255, 50, 100, 0.8)', '#ffffff'].forEach((color, idx) => { ctx.beginPath(); ctx.lineWidth = idx === 0 ? baseLaserWidth : baseLaserWidth * 0.4; ctx.strokeStyle = color; ctx.moveTo(currentSourceX, currentSourceY); for (let i = 1; i <= 12; i++) { let offset = (i < 12) ? (Math.random() - 0.5) * 15 : 0; ctx.lineTo(currentSourceX + bX * (i/12) + Math.cos(pAngle) * offset, currentSourceY + bY * (i/12) + Math.sin(pAngle) * offset); } ctx.stroke(); });
+                        targetAst.health -= playerStats.damage * (isLaserOd ? 0.1 : 0.8);
+                        if (Math.random() < 0.2) createParticle(targetAst.x, targetAst.y, '#ff3366', (Math.random()-0.5)*5, (Math.random()-0.5)*5, 0.1, 1.5); currentSourceX = targetAst.x; currentSourceY = targetAst.y; unvisited.splice(targetIndex, 1); chainCount++;
+                    } else break;
+                }
+                ctx.restore(); if (chainCount > 0 && Math.random() < 0.2) playSound('laser');
+            }
+        }
+
+        for(let i=visualParticles.length-1; i>=0; i--) { let p = visualParticles[i]; p.x += p.vx; p.y += p.vy; p.life -= p.decay; if(p.life <= 0) visualParticles.splice(i, 1); else { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size); } } ctx.globalAlpha = 1.0; 
+        for(let i = shockwaves.length - 1; i >= 0; i--) { let sw = shockwaves[i]; sw.radius += sw.speed; sw.life -= 0.04; if(sw.life <= 0) shockwaves.splice(i, 1); else { ctx.save(); ctx.beginPath(); ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2); ctx.strokeStyle = sw.color; ctx.lineWidth = 3 * sw.life; ctx.globalAlpha = sw.life; ctx.stroke(); ctx.restore(); } }
+
+        for (let i = homingParticles.length - 1; i >= 0; i--) {
+            let hp = homingParticles[i];
+            let checkDist = Math.hypot(playerShip.x - hp.x, playerShip.y - hp.y);
+            let magnetCheckArea = (playerStats.magnetRadius * 15) + (overdrives.suit.activeTimer > 0 ? 1000 : 0);
+
+            if (hp.timer > 0 && checkDist > magnetCheckArea) { hp.timer--; hp.x += hp.vx; hp.y += hp.vy; hp.vx *= 0.92; hp.vy *= 0.92; hp.spin += 0.1; } else {
+                let dx = playerShip.x - hp.x; let dy = playerShip.y - hp.y;
+                if (checkDist < playerShip.radius + playerStats.magnetRadius + (overdrives.suit.activeTimer > 0 ? 50 : 0)) {
+                    if (hp.typeInfo.isCoin) { let scoreEarned = hp.value * 250; playerStats.score += scoreEarned; playSound('coin'); addFloatingText(`+$${scoreEarned}`, hp.x, hp.y, hp.typeInfo.color, "15px"); } 
+                    else { 
+                        inventory[hp.typeInfo.name] += hp.value; let scoreEarned = hp.value * 1500; playerStats.score += scoreEarned; playSound('collect'); addFloatingText(`+${hp.value} ${hp.typeInfo.name.toUpperCase()}`, hp.x, hp.y, hp.typeInfo.color); 
+                        
+                        for(let key in overdrives) {
+                            if(overdrives[key].unlocked && overdrives[key].activeTimer <= 0 && overdrives[key].cooldownTimer <= 0) {
+                                overdrives[key].charge = Math.min(overdrives[key].maxCharge, overdrives[key].charge + 1);
+                                if(overdrives[key].charge === overdrives[key].maxCharge) refreshLiveUiDisplays();
+                            }
+                        }
+                    }
+                    homingParticles.splice(i, 1); continue;
+                } else { let angleToPlayer = Math.atan2(dy, dx); hp.x += Math.cos(angleToPlayer) * 12; hp.y += Math.sin(angleToPlayer) * 12; hp.spin += 0.2; }
+            }
+            ctx.save(); ctx.translate(hp.x, hp.y); ctx.rotate(hp.spin); 
+            if (hp.typeInfo.isCoin) { ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#ffaa00'; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = '#aa6600'; ctx.font = 'bold 12px Orbitron'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('$', 0, 1); } else { ctx.fillStyle = hp.typeInfo.color; ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(12, 0); ctx.lineTo(0, 12); ctx.lineTo(-12, 0); ctx.fill(); if (hp.img && hp.img.complete && hp.img.naturalWidth !== 0) ctx.drawImage(hp.img, -10, -10, 20, 20); } ctx.restore();
+        }
+
+        for (let i = drillsList.length - 1; i >= 0; i--) {
+            let drill = drillsList[i]; drill.life--;
+            if (!drill.target || drill.target.health <= 0 || !asteroidsList.includes(drill.target)) { let closest = null; let minDist = 9999; asteroidsList.forEach(ast => { let d = Math.hypot(ast.x - drill.x, ast.y - drill.y); if(d < minDist) { minDist = d; closest = ast; }}); drill.target = closest; }
+            let drawX = drill.x; let drawY = drill.y; createParticle(drill.x - Math.cos(drill.angle)*15, drill.y - Math.sin(drill.angle)*15, '#ffaa00', -Math.cos(drill.angle)*2, -Math.sin(drill.angle)*2, 0.1, 4);
+
+            if (drill.target) {
+                let dx = drill.target.x - drill.x; let dy = drill.target.y - drill.y; let dist = Math.hypot(dx, dy); let activeTargetRadius = drill.target.radius * (1 + (1 - (drill.target.health / drill.target.maxHealth)) * 0.4);
+                if (dist > activeTargetRadius + 12) { drill.angle = Math.atan2(dy, dx); drill.x += Math.cos(drill.angle) * playerStats.drillFlySpeed; drill.y += Math.sin(drill.angle) * playerStats.drillFlySpeed; createParticle(drill.x - Math.cos(drill.angle)*16, drill.y - Math.sin(drill.angle)*16, '#ff9900', -Math.cos(drill.angle)*2, -Math.sin(drill.angle)*2, 0.1, 2.5); } else { drill.x = drill.target.x - Math.cos(drill.angle) * (activeTargetRadius + 10); drill.y = drill.target.y - Math.sin(drill.angle) * (activeTargetRadius + 10); drill.target.health -= playerStats.damage * 0.1; drawX += (Math.random() - 0.5) * 5; drawY += (Math.random() - 0.5) * 5; if (Math.random() < 0.1) playSound('drill_hit'); spawnCollisionEffect(drill.target.x, drill.target.y); createParticle(drill.x + Math.cos(drill.angle)*16, drill.y + Math.sin(drill.angle)*16, '#ffffff', (Math.random()-0.5)*5, (Math.random()-0.5)*5, 0.1, 1.5); }
+            } else { drill.x += Math.cos(drill.angle) * playerStats.drillFlySpeed; drill.y += Math.sin(drill.angle) * playerStats.drillFlySpeed; }
+
+            if (drillImage.complete && drillImage.naturalWidth !== 0) { ctx.save(); ctx.translate(drawX, drawY); ctx.rotate(drill.angle + Math.PI/2); ctx.drawImage(drillImage, -12, -18, 24, 36); ctx.restore(); } else { ctx.beginPath(); ctx.arc(drawX, drawY, 5, 0, Math.PI*2); ctx.fillStyle = "red"; ctx.fill(); }
+            if (drill.life <= 0) { createParticle(drill.x, drill.y, '#ff3333', 0, 0, 0.1, 15); drillsList.splice(i, 1); }
+        }
+
+        let spawnChance = 0.02 + (playerStats.level * 0.002);
+        let maxAsteroidsOnScreen = 15 + (playerStats.level * 2);
+
+        if (isMoving && asteroidsList.length < maxAsteroidsOnScreen && Math.random() < spawnChance) produceAsteroidNode();
+        if (isMoving && !magicCrystalEvent.active && Math.random() < 0.002) { let spawnAngle = Math.random() * Math.PI * 2; let spawnDist = Math.random() * 500 + 400; magicCrystalEvent.spawn(playerShip.x + Math.cos(spawnAngle) * spawnDist, playerShip.y + Math.sin(spawnAngle) * spawnDist); }
+        if (frameCount % 60 === 0) asteroidsList = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < 2500);
 
         for (let i = asteroidsList.length - 1; i >= 0; i--) {
-            let ast = asteroidsList[i];
-            ast.x += ast.vx; ast.y += ast.vy; ast.spinAngle += ast.spinVelocity;
-            if (Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) > 2500) { ast.x = playerShip.x + (Math.random()-0.5)*2000; ast.y = playerShip.y + (Math.random()-0.5)*2000; }
+            let ast = asteroidsList[i]; ast.x += ast.vx; ast.y += ast.vy; ast.spinAngle += ast.spinVelocity;
+            let astBhDistX = blackHole.x - ast.x; let astBhDistY = blackHole.y - ast.y; let astBhDist = Math.hypot(astBhDistX, astBhDistY);
+            if (astBhDist < 1200) { let astPull = (1200 - astBhDist) / 1200 * 0.005; ast.vx += (astBhDistX / astBhDist) * astPull; ast.vy += (astBhDistY / astBhDist) * astPull; }
+            if (astBhDist < blackHole.radius) { asteroidsList.splice(i, 1); continue; }
+
+            let healthPercent = ast.health / ast.maxHealth; let bloatScale = 1 + (1 - healthPercent) * 0.4; 
+            ctx.save(); ctx.translate(ast.x, ast.y); ctx.rotate(ast.spinAngle); ctx.scale(bloatScale, bloatScale); if (ast.img && ast.img.complete && ast.img.naturalWidth !== 0) ctx.drawImage(ast.img, -ast.radius, -ast.radius, ast.radius * 2, ast.radius * 2); ctx.restore();
+            ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(ast.x - 20, ast.y - (ast.radius * bloatScale) - 15, 40, 5); ctx.fillStyle = ast.typeInfo.color; ctx.fillRect(ast.x - 20, ast.y - (ast.radius * bloatScale) - 15, 40 * healthPercent, 5);
+
+            if (ast.health <= 0) {
+                cameraShake = 15; playSound('explode'); shockwaves.push({x: ast.x, y: ast.y, radius: ast.radius * bloatScale, speed: 6, life: 1.0, color: ast.typeInfo.color}); for(let k=0; k<20; k++) createParticle(ast.x, ast.y, ast.typeInfo.color, (Math.random()-0.5)*18, (Math.random()-0.5)*18, 0.03, Math.random()*4 + 2); 
+                
+                let levelRewardMultiplier = 1 + Math.floor(playerStats.level / 5);
+                let rewardAmount = Math.floor(Math.random() * (ast.typeInfo.rewardMax - ast.typeInfo.rewardMin + 1)) + ast.typeInfo.rewardMin;
+                
+                for(let k = 0; k < rewardAmount; k++) homingParticles.push({ x: ast.x, y: ast.y, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, typeInfo: ast.typeInfo, img: mineralImages[Math.floor(Math.random() * mineralImages.length)], value: levelRewardMultiplier, timer: 60, spin: Math.random() * Math.PI * 2 });
+                
+                let coinAmount = Math.floor(Math.random() * 3) + 2; for(let k = 0; k < coinAmount; k++) homingParticles.push({ x: ast.x, y: ast.y, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, typeInfo: { name: 'coin', color: '#ffd700', isCoin: true }, img: null, value: levelRewardMultiplier, timer: 60, spin: Math.random() * Math.PI * 2 });
+
+                playerStats.xp += Math.floor(ast.typeInfo.baseHealth / 5);
+                if (playerStats.xp >= playerStats.nextLevelXp) { playerStats.xp -= playerStats.nextLevelXp; playerStats.level++; playerStats.nextLevelXp = Math.floor(playerStats.nextLevelXp * 1.4); addFloatingText("LEVEL UP! 🌟", playerShip.x, playerShip.y - 45, '#ffcc00', "18px"); playSound('levelup'); }
+                asteroidsList.splice(i, 1); refreshLiveUiDisplays();
+            }
+        }
+
+        if (playerStats.hasPickaxe && handMines.length === 2) {
+            let isAxeOd = overdrives.pickaxe.activeTimer > 0;
+            let orbitSpeed = isAxeOd ? -timeNow / 50 : -timeNow / 250;
+            let pRadius = isAxeOd ? 200 : 105;
+
+            let screenTargets = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(canvas.width, canvas.height)*0.7);
+
+            for(let i=0; i<2; i++) {
+                let hm = handMines[i]; let targetAst = null; let minDist = 2500; 
+                let isDigging = false; 
+                
+                for(let a of screenTargets) { let d = Math.hypot(a.x - hm.x, a.y - hm.y); if(d < minDist) { minDist = d; targetAst = a; } }
+                
+                if (targetAst) { 
+                    hm.x += (targetAst.x - hm.x) * (isAxeOd ? 0.3 : 0.15); 
+                    hm.y += (targetAst.y - hm.y) * (isAxeOd ? 0.3 : 0.15); 
+                    if(minDist < targetAst.radius + 30) { 
+                        targetAst.health -= playerStats.damage * (isAxeOd ? 0.3 : 0.08); 
+                        createParticle(hm.x, hm.y, '#ff9900', (Math.random()-0.5)*8, (Math.random()-0.5)*8, 0.1, 4); 
+                        isDigging = true; 
+                    } 
+                } else { 
+                    let pAngle = orbitSpeed + (i * Math.PI); 
+                    let targetX = playerShip.x + Math.cos(pAngle) * pRadius; 
+                    let targetY = playerShip.y + Math.sin(pAngle) * pRadius; 
+                    hm.x += (targetX - hm.x) * 0.15; hm.y += (targetY - hm.y) * 0.15; 
+                }
+                
+                ctx.save(); ctx.translate(hm.x, hm.y); 
+                
+                let drawAngle = (timeNow/200) + i; 
+                if (isDigging && targetAst) {
+                    drawAngle = Math.atan2(targetAst.y - hm.y, targetAst.x - hm.x) + Math.PI/4; 
+                    let swing = Math.sin(timeNow / 40) * 1.5;
+                    ctx.rotate(drawAngle + swing); 
+                    
+                    if (pickaxeImg.complete && pickaxeImg.naturalWidth !== 0) { ctx.drawImage(pickaxeImg, -10, -40, 50, 50); } else { ctx.fillStyle = '#ff9900'; ctx.fillRect(-10,-40,30,30); }
+                } else {
+                    ctx.rotate(drawAngle); 
+                    if (pickaxeImg.complete && pickaxeImg.naturalWidth !== 0) { ctx.drawImage(pickaxeImg, -25, -25, 50, 50); } else { ctx.fillStyle = '#ff9900'; ctx.fillRect(-25,-25,30,30); }
+                }
+                ctx.restore();
+            }
+        }
+
+        for (let i = textParticles.length - 1; i >= 0; i--) { let tp = textParticles[i]; tp.y -= 0.6; tp.life--; ctx.globalAlpha = Math.min(1, tp.life / 20); ctx.fillStyle = tp.color; ctx.font = `bold ${tp.size} 'Orbitron'`; ctx.fillText(tp.text, tp.x, tp.y); ctx.globalAlpha = 1.0; if (tp.life <= 0) textParticles.splice(i, 1); }
+
+        const minimapCanvas = document.getElementById('minimap');
+        if (minimapCanvas) {
+            const mCtx = minimapCanvas.getContext('2d');
+            mCtx.clearRect(0, 0, 130, 130);
             
-            ctx.save(); ctx.translate(ast.x, ast.y); ctx.rotate(ast.spinAngle);
-            if (ast.img.complete && ast.img.naturalWidth !== 0) { ctx.drawImage(ast.img, -ast.radius, -ast.radius, ast.radius * 2, ast.radius * 2); } 
-            else { ctx.fillStyle = ast.typeInfo.color; ctx.beginPath(); ctx.arc(0, 0, ast.radius, 0, Math.PI*2); ctx.fill(); }
-            ctx.restore();
-            
-            if (ast.health < ast.maxHealth) { ctx.fillStyle = '#f00'; ctx.fillRect(ast.x - 20, ast.y - ast.radius - 15, 40, 5); ctx.fillStyle = '#0f0'; ctx.fillRect(ast.x - 20, ast.y - ast.radius - 15, 40 * (ast.health / ast.maxHealth), 5); }
+            mCtx.save();
+            mCtx.translate(65, 65); 
+            let mapScale = 0.015; 
+
+            asteroidsList.forEach(a => {
+                mCtx.beginPath();
+                mCtx.arc((a.x - playerShip.x)*mapScale, (a.y - playerShip.y)*mapScale, Math.max(1, a.radius*mapScale), 0, Math.PI*2);
+                mCtx.fillStyle = a.typeInfo.color;
+                mCtx.fill();
+            });
+
+            mCtx.beginPath();
+            mCtx.arc(0, 0, 3, 0, Math.PI*2);
+            mCtx.fillStyle = '#00f3ff';
+            mCtx.fill();
+
+            mCtx.restore();
         }
 
-        for (let i = visualParticles.length - 1; i >= 0; i--) {
-            let p = visualParticles[i]; p.x += p.vx; p.y += p.vy; p.life -= p.decay;
-            if (p.life <= 0) { visualParticles.splice(i, 1); continue; }
-            ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1.0;
-        }
-
-        for (let i = textParticles.length - 1; i >= 0; i--) {
-            let tp = textParticles[i]; tp.y -= 1; tp.life -= 1;
-            if (tp.life <= 0) { textParticles.splice(i, 1); continue; }
-            ctx.fillStyle = tp.color; ctx.globalAlpha = tp.life / 50; ctx.font = `bold ${tp.size} 'Orbitron'`; ctx.fillText(tp.text, tp.x - ctx.measureText(tp.text).width/2, tp.y); ctx.globalAlpha = 1.0;
-        }
-
-        ctx.restore();
-        renderMinimap();
-        requestAnimationFrame(renderFrame);
+        ctx.restore(); requestAnimationFrame(renderFrame);
     }
     
-    playerShip.draw = function() {
-        ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.drawAngle);
-        const activeFrame = girlFrames[this.currentFrameIndex];
-        if (activeFrame && activeFrame.complete && activeFrame.naturalWidth !== 0) { ctx.drawImage(activeFrame, -this.drawWidth / 2, -this.drawHeight / 2, this.drawWidth, this.drawHeight); } 
-        else { ctx.fillStyle = '#00f3ff'; ctx.fillRect(-15, -25, 30, 50); }
-        if (overdrives.suit.activeTimer > 0) {
-            ctx.beginPath(); ctx.arc(0, 0, 50, 0, Math.PI*2);
-            ctx.strokeStyle = `rgba(217, 66, 255, ${Math.abs(Math.sin(Date.now()*0.01))})`;
-            ctx.lineWidth = 4; ctx.stroke();
-        }
-        ctx.restore();
-    };
-
-    renderFrame();
-
+    refreshLiveUiDisplays(); requestAnimationFrame(renderFrame);
 </script>
 </body>
 </html>
