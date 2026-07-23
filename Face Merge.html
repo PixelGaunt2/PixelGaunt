@@ -5,8 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Face Merge</title>
 <style>
-  body { margin:0; font-family:sans-serif; background:#1a0033; color:#fff; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; }
-  .screen { position:absolute; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg, #2c003e, #005c97); transition:opacity 0.3s; z-index:10; }
+  * { box-sizing: border-box; }
+  body { 
+    margin:0; 
+    font-family:sans-serif; 
+    background:#1a0033; 
+    color:#fff; 
+    display:flex; 
+    justify-content:center; 
+    align-items:center; 
+    height:100vh; 
+    height:100dvh; 
+    overflow:hidden; 
+    touch-action:none; 
+    user-select:none; 
+    -webkit-user-select:none; 
+  }
+  .screen { 
+    position:absolute; 
+    width:100%; 
+    height:100%; 
+    height:100dvh; 
+    display:flex; 
+    flex-direction:column; 
+    align-items:center; 
+    justify-content:center; 
+    background:linear-gradient(135deg, #2c003e, #005c97); 
+    transition:opacity 0.3s; 
+    z-index:10; 
+  }
   .hidden { opacity:0; pointer-events:none; z-index:-1; }
   
   .animated-title { font-size: 60px; font-weight: bold; text-align: center; margin-bottom: 40px; text-transform: uppercase; background: linear-gradient(90deg, #ff4757, #ffa502, #2ed573, #1e90ff, #9b59b6, #ff4757); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 3s linear infinite, bounceTitle 2s ease-in-out infinite; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8)); line-height: 1.1;}
@@ -22,18 +49,33 @@
   .lvl-unlocked:active { transform:translateY(4px); box-shadow:0 0 0 rgba(0,0,0,0.3); }
   .lvl-locked { background:#7f8c8d; color:#bdc3c7; cursor:not-allowed; }
 
-  /* GAME UI */
-  .top-bar { display:flex; width:95vw; max-width:420px; justify-content:space-between; align-items:center; margin-bottom:5px; box-sizing:border-box;}
+  /* GAME UI - TOP ADJUSTED */
+  #game-screen {
+    justify-content: flex-start;
+    padding: env(safe-area-inset-top, 15px) 10px env(safe-area-inset-bottom, 15px) 10px;
+  }
+
+  .top-ui {
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .top-bar { display:flex; width:100%; justify-content:space-between; align-items:center; flex-shrink: 0; }
   .back-btn { background:rgba(0,0,0,0.5); border:none; color:#fff; padding:8px 15px; border-radius:10px; cursor:pointer; font-weight:bold; box-shadow:0 3px 0 rgba(0,0,0,0.8); }
   .back-btn:active { transform:translateY(3px); box-shadow:0 0 0 rgba(0,0,0,0.8); }
   .coin-counter { background:#f39c12; padding:5px 15px; border-radius:15px; font-weight:bold; font-size:18px; box-shadow:0 3px 0 #d35400; text-shadow:0 1px 2px rgba(0,0,0,0.5); border:2px solid #fff;}
 
-  .header { display:flex; justify-content:space-between; width:95vw; max-width:420px; margin-bottom:10px; background:rgba(255,255,255,0.1); padding:10px; border-radius:10px; box-sizing:border-box;}
+  .header { display:flex; justify-content:space-between; width:100%; background:rgba(255,255,255,0.1); padding:8px 10px; border-radius:10px; flex-shrink: 0; }
   .stat { text-align:center; flex:1; font-size:12px; text-transform:uppercase; color:#ccc; } 
   .stat span { display:block; font-size:20px; font-weight:bold; color:#fff; margin-top:2px; text-shadow: 0 0 5px #fff; }
   
   /* POWER-UPS WITH INVENTORY SYSTEM */
-  .powers { display:flex; gap:6px; margin-bottom:10px; width:95vw; max-width:420px; justify-content:space-between; box-sizing:border-box;}
+  .powers { display:flex; gap:6px; width:100%; justify-content:space-between; flex-shrink: 0; }
   .power-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
   .power-btn { width: 100%; background: #9b59b6; color: #fff; border: 2px solid #8e44ad; padding: 6px 0; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 0 #732d91; font-size: 16px; position:relative;}
   .power-btn span { font-size: 12px; background: #2ed573; padding: 1px 6px; border-radius: 10px; position:absolute; top:-8px; right:-5px; box-shadow: 0 2px 0 #27ae60; border: 1px solid #fff; }
@@ -43,13 +85,23 @@
   .buy-btn:active { transform: translateY(3px); box-shadow: 0 0 0 #d35400; }
   @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.05);} }
 
-  #ui-target { text-align:center; margin-bottom:10px; background:#2ed573; padding:5px 15px; border-radius:20px; font-weight:bold; font-size:16px; box-shadow:0 3px 0 #27ae60; display:inline-block; border: 2px solid #fff;}
+  #ui-target { text-align:center; background:#2ed573; padding:5px 15px; border-radius:20px; font-weight:bold; font-size:16px; box-shadow:0 3px 0 #27ae60; display:inline-block; border: 2px solid #fff; flex-shrink: 0; }
 
-  /* GAME LAYOUT */
-  .game-layout { display:flex; gap:10px; width:95vw; max-width:420px; justify-content:center; align-items:stretch; }
+  /* GAME LAYOUT & EXPANDED BOARD AREA */
+  .game-layout { 
+    display:flex; 
+    gap:8px; 
+    width:100%; 
+    max-width:500px; 
+    flex: 1; 
+    justify-content:center; 
+    align-items:stretch; 
+    min-height:0; 
+    margin-top: 5px;
+  }
   
   /* DOG ROOM WITH WATER EFFECTS */
-  .dog-container { position: relative; width:75px; flex-shrink:0; display:flex; flex-direction:column; }
+  .dog-container { position: relative; width:70px; flex-shrink:0; display:flex; flex-direction:column; }
   
   .dog-speech { position:absolute; top:25px; left:50%; transform:translateX(-50%); background:#fff; color:#000; padding:4px 8px; border-radius:10px; font-size:12px; font-weight:bold; white-space:nowrap; z-index:20; box-shadow:0 4px 8px rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s; animation: speechFloat 2s ease-in-out infinite;}
   .dog-speech::after { content:''; position:absolute; bottom:-5px; left:50%; transform:translateX(-50%); border-width:6px 6px 0; border-style:solid; border-color:#fff transparent transparent transparent; }
@@ -67,16 +119,39 @@
   @keyframes breathe { 0%,100%{transform:scale(1) translateY(0);} 50%{transform:scale(1.05) translateY(-2px);} }
   @keyframes panicShake { 0%,100%{transform:translate(0,0);} 25%{transform:translate(-2px,-2px);} 75%{transform:translate(2px,2px);} }
 
-  /* BOARD */
-  #board { display:grid; grid-template-columns:repeat(8, 1fr); gap:2px; flex:1; aspect-ratio:1/1; background:rgba(0,0,0,0.5); padding:6px; border-radius:12px; box-sizing:border-box; position:relative; touch-action:none;}
-  .cell-wrapper { width:100%; height:100%; position:relative; border-radius:50%; touch-action:none;}
+  /* BOARD RESPONSIVE MAX AUTO-FITTING (Updated to 8x10 Grid) */
+  #board { 
+    display:grid; 
+    grid-template-columns:repeat(8, 1fr); 
+    grid-template-rows:repeat(10, 1fr);
+    gap:2px; 
+    flex:1; 
+    max-height:100%; 
+    background:rgba(0,0,0,0.5); 
+    padding:6px; 
+    border-radius:12px; 
+    position:relative; 
+    touch-action:none;
+  }
   
-  .cell { width:100%; height:100%; border-radius:50%; position:absolute; top:0; left:0; cursor:grab; 
-          transition:transform 0.2s ease-in-out; box-shadow:inset -3px -3px 6px rgba(0,0,0,0.4), 0 3px 5px rgba(0,0,0,0.3); z-index:5; 
-          display:flex; justify-content:center; align-items:center; touch-action:none; }
+  /* Wrapper ensures cell content is centered and circular */
+  .cell-wrapper { 
+    width:100%; height:100%; position:relative; 
+    display: flex; justify-content: center; align-items: center; 
+    touch-action:none; 
+  }
+  
+  .cell { 
+    width:100%; height:100%; 
+    max-width:100%; max-height:100%;
+    aspect-ratio: 1/1; /* Forces exact circular shape regardless of grid stretch */
+    border-radius:50%; position:relative; cursor:grab; 
+    box-shadow:inset -3px -3px 6px rgba(0,0,0,0.4), 0 3px 5px rgba(0,0,0,0.3); z-index:5; 
+    display:flex; justify-content:center; align-items:center; touch-action:none; 
+  }
   .cell:active { cursor:grabbing; }
-  .active-drag { transform:scale(0.85); filter:brightness(1.3); z-index:10 !important; }
-  .cell * { pointer-events: none !important; } /* Stops dragging bugs */
+  .active-drag { transform:scale(1.1) !important; filter:brightness(1.3); z-index:20 !important; }
+  .cell * { pointer-events: none !important; }
 
   /* COLORS & CSS FACES */
   .bean-red { background: radial-gradient(circle at 30% 30%, #ff6b81, #ff4757); } 
@@ -86,7 +161,7 @@
   .bean-purple { background: radial-gradient(circle at 30% 30%, #a29bfe, #9b59b6); } 
   .bean-orange { background: radial-gradient(circle at 30% 30%, #ff7f50, #ff6348); }
 
-  /* NEW: CAGE & BIRD CSS */
+  /* CAGE & BIRD CSS */
   .bean-bird { background: #34495e; box-shadow: inset 0 0 10px #000; cursor: not-allowed; }
   .cage-bars { position: absolute; width: 100%; height: 100%; border-radius: 10px; background: repeating-linear-gradient(90deg, transparent, transparent 15%, #95a5a6 15%, #95a5a6 25%); border: 4px solid #7f8c8d; box-sizing: border-box; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
   .bird-emoji { font-size: 26px; z-index: 5; animation: bounceTitle 1s infinite; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8)); }
@@ -175,40 +250,42 @@
 </div>
 
 <div id="game-screen" class="screen hidden">
-  <div class="top-bar">
-      <div style="display:flex; gap:5px;">
-          <button class="back-btn" onclick="showLevelSelector()" title="Back to Levels">⬅</button>
-          <button class="back-btn" onclick="pauseGame()" title="Pause Game">⏸</button>
-          <button class="back-btn" id="sound-btn" onclick="toggleSound()" title="Toggle Sound">🔊</button>
+  <div class="top-ui">
+      <div class="top-bar">
+          <div style="display:flex; gap:5px;">
+              <button class="back-btn" onclick="showLevelSelector()" title="Back to Levels">⬅</button>
+              <button class="back-btn" onclick="pauseGame()" title="Pause Game">⏸</button>
+              <button class="back-btn" id="sound-btn" onclick="toggleSound()" title="Toggle Sound">🔊</button>
+          </div>
+          <div class="coin-counter">🪙 <span id="ui-coins">50</span></div>
       </div>
-      <div class="coin-counter">🪙 <span id="ui-coins">50</span></div>
-  </div>
 
-  <div style="text-align:center;"><div id="ui-target">Target: Score 500 pts</div></div>
+      <div id="ui-target">Target: Score 500 pts</div>
 
-  <div class="header">
-    <div class="stat">Level<span id="ui-lvl">1</span></div>
-    <div class="stat">Score<span id="ui-score">0</span></div>
-    <div class="stat">Moves<span id="ui-moves">15</span></div>
-  </div>
-  
-  <div class="powers">
-    <div class="power-slot">
-        <button class="power-btn" id="btn-hammer" onclick="togglePower('hammer')">🔨<span id="h-cnt">1</span></button>
-        <button class="buy-btn" id="buy-hammer" onclick="buyPower('hammer')">+ 100🪙</button>
-    </div>
-    <div class="power-slot">
-        <button class="power-btn" id="btn-bomb" onclick="togglePower('bomb')">💣<span id="b-cnt">1</span></button>
-        <button class="buy-btn" id="buy-bomb" onclick="buyPower('bomb')">+ 150🪙</button>
-    </div>
-    <div class="power-slot">
-        <button class="power-btn" id="btn-rocket" onclick="togglePower('rocket')">🚀<span id="r-cnt">1</span></button>
-        <button class="buy-btn" id="buy-rocket" onclick="buyPower('rocket')">+ 200🪙</button>
-    </div>
-    <div class="power-slot">
-        <button class="power-btn" id="btn-magic" onclick="togglePower('magic')">🌈<span id="m-cnt">1</span></button>
-        <button class="buy-btn" id="buy-magic" onclick="buyPower('magic')">+ 250🪙</button>
-    </div>
+      <div class="header">
+        <div class="stat">Level<span id="ui-lvl">1</span></div>
+        <div class="stat">Score<span id="ui-score">0</span></div>
+        <div class="stat">Moves<span id="ui-moves">15</span></div>
+      </div>
+      
+      <div class="powers">
+        <div class="power-slot">
+            <button class="power-btn" id="btn-hammer" onclick="togglePower('hammer')">🔨<span id="h-cnt">1</span></button>
+            <button class="buy-btn" id="buy-hammer" onclick="buyPower('hammer')">+ 100🪙</button>
+        </div>
+        <div class="power-slot">
+            <button class="power-btn" id="btn-bomb" onclick="togglePower('bomb')">💣<span id="b-cnt">1</span></button>
+            <button class="buy-btn" id="buy-bomb" onclick="buyPower('bomb')">+ 150🪙</button>
+        </div>
+        <div class="power-slot">
+            <button class="power-btn" id="btn-rocket" onclick="togglePower('rocket')">🚀<span id="r-cnt">1</span></button>
+            <button class="buy-btn" id="buy-rocket" onclick="buyPower('rocket')">+ 200🪙</button>
+        </div>
+        <div class="power-slot">
+            <button class="power-btn" id="btn-magic" onclick="togglePower('magic')">🌈<span id="m-cnt">1</span></button>
+            <button class="buy-btn" id="buy-magic" onclick="buyPower('magic')">+ 250🪙</button>
+        </div>
+      </div>
   </div>
   
   <div class="game-layout">
@@ -242,7 +319,8 @@
 
 <script>
   // ================= VARIABLES & DATA =================
-  const W = 8; 
+  const C = 8; // Columns
+  const R = 10; // Rows (Increased to fill vertical space)
   const colors = ['red','blue','green','yellow','purple','orange'];
   
   let grid=[], iceGrid=[], score=0, moves=0, lvl=1, coins=250;
@@ -343,7 +421,6 @@
     
     moves = 15 + Math.floor(l/2); timeLimit = 70 - Math.min(30, l);
     
-    // Updated Cycle: Added 4th type "Bird/Cage"
     let cycle = l % 4;
     if(cycle === 1) { 
         targetType='score'; targetAmount = 500 + (l*200); 
@@ -396,36 +473,35 @@
     let iceSet=new Set(); let birdSet=new Set();
     
     if(targetType==='ice') {
-        while(iceSet.size < targetAmount) iceSet.add(Math.floor(Math.random()*(W*W)));
+        while(iceSet.size < targetAmount) iceSet.add(Math.floor(Math.random()*(R*C)));
     } else if(targetType==='bird') {
         while(birdSet.size < targetAmount) {
-            let rnd = Math.floor(Math.random()*(W*W));
-            if(rnd > W*2) birdSet.add(rnd); // Better to put cages lower down
+            let rnd = Math.floor(Math.random()*(R*C));
+            if(rnd > C*2) birdSet.add(rnd); // Keep birds away from very top
         }
     }
 
-    for(let i=0; i<W*W; i++) {
+    for(let i=0; i<R*C; i++) {
       let wrap = document.createElement('div'); wrap.className = 'cell-wrapper';
       let c = document.createElement('div'); c.className='cell'; c.dataset.id=i;
       
       let avoid = [];
-      if(i%W >= 2 && grid[i-1] && grid[i-1].color === grid[i-2].color) avoid.push(grid[i-1].color);
-      if(i >= W*2 && grid[i-W] && grid[i-W].color === grid[i-W*2].color) avoid.push(grid[i-W].color);
+      if(i%C >= 2 && grid[i-1] && grid[i-1].color === grid[i-2].color) avoid.push(grid[i-1].color);
+      if(Math.floor(i/C) >= 2 && grid[i-C] && grid[i-C].color === grid[i-C*2].color) avoid.push(grid[i-C].color);
       
       let valid = colors.filter(x=>!avoid.includes(x));
       
       if(birdSet.has(i)) {
           c.classList.add('bean-bird');
-          c.color = 'bird'; // Special unmatchable type
+          c.color = 'bird';
           c.innerHTML = getBirdHTML();
       } else {
           let clr = valid[Math.floor(Math.random()*valid.length)] || colors[0];
           c.classList.add('bean-'+clr); c.color=clr; c.innerHTML = getFaceHTML(clr);
       }
       
-      // BULLETPROOF TOUCH & MOUSE EVENTS
-      c.addEventListener('touchstart', handleInputStart, {passive: false});
-      c.addEventListener('mousedown', handleInputStart);
+      // UNIFIED CANDY CRUSH STYLE DRAG SYSTEM
+      c.addEventListener('pointerdown', handleInputStart);
       
       wrap.appendChild(c);
       
@@ -438,89 +514,126 @@
     }
   }
 
-  // ================= 100% BULLETPROOF GLOBAL DRAG LOGIC =================
-  let dragId=null, startX, startY;
+  // ================= CANDY CRUSH STYLE DRAG & DROP LOGIC =================
+  let dragId = null, startX = 0, startY = 0, isDragging = false;
+  let currentDragEl = null;
 
   function handleInputStart(e) {
-      if(isAnim || moves<=0 || isPaused) return;
-      e.preventDefault(); // STOPS SCROLLING BUG!
+      if(isAnim || moves <= 0 || isPaused) return;
+      let el = this; // Bind strictly to the cell
+      if(el.color === 'bird' && !activePower) return;
       
-      if(this.color === 'bird' && !activePower) return; // Cannot drag cages normally!
-      
-      dragId = parseInt(this.dataset.id);
-      
+      dragId = parseInt(el.dataset.id);
       if(activePower) { usePower(dragId); return; }
+
+      isDragging = true;
+      currentDragEl = el;
+      startX = e.clientX;
+      startY = e.clientY;
+
+      el.classList.add('active-drag');
+      try {
+          if(e.target.setPointerCapture) e.target.setPointerCapture(e.pointerId);
+      } catch(err){}
+  }
+
+  document.addEventListener('pointermove', handleInputMove, {passive: false});
+  document.addEventListener('pointerup', handleInputEnd);
+  document.addEventListener('pointercancel', handleInputEnd);
+
+  function handleInputMove(e) {
+      if(!isDragging || dragId === null || !currentDragEl) return;
+      if(e.cancelable) e.preventDefault();
       
-      this.classList.add('active-drag');
+      let dx = e.clientX - startX;
+      let dy = e.clientY - startY;
+
+      // Candy Crush Swipe Threshold (px)
+      let swipeThreshold = 15;
       
-      if(e.type === 'touchstart') {
-          startX = e.touches[0].clientX; startY = e.touches[0].clientY;
-      } else {
-          startX = e.clientX; startY = e.clientY;
+      if(Math.abs(dx) > swipeThreshold || Math.abs(dy) > swipeThreshold) {
+          let tId = dragId;
+          if(Math.abs(dx) > Math.abs(dy)) {
+              tId += dx > 0 ? 1 : -1;
+          } else {
+              tId += dy > 0 ? C : -C;
+          }
+
+          currentDragEl.classList.remove('active-drag');
+          let fromId = dragId;
+          dragId = null;
+          isDragging = false;
+          currentDragEl = null;
+
+          if(tId >= 0 && tId < R*C && isAdjacent(fromId, tId) && grid[tId].color !== 'bird') {
+              animateSwap(fromId, tId);
+          }
       }
   }
 
-  // Catch the release anywhere on the screen
-  document.addEventListener('mouseup', handleInputEnd);
-  document.addEventListener('touchend', handleInputEnd);
-
   function handleInputEnd(e) {
-      if(dragId === null) return;
-      
-      let activeCell = document.querySelector('.active-drag');
-      if(activeCell) activeCell.classList.remove('active-drag');
-      
-      let endX, endY;
-      if(e.type === 'touchend' && e.changedTouches) {
-          endX = e.changedTouches[0].clientX; endY = e.changedTouches[0].clientY;
-      } else {
-          endX = e.clientX; endY = e.clientY;
-      }
-      
-      let dx = endX - startX, dy = endY - startY;
-      
-      if(Math.abs(dx) > 15 || Math.abs(dy) > 15) {
-          let tId = dragId;
-          if(Math.abs(dx) > Math.abs(dy)) { tId += dx > 0 ? 1 : -1; } else { tId += dy > 0 ? W : -W; }
-          // Don't allow swapping WITH a bird cage
-          if(tId >= 0 && tId < W*W && isAdjacent(dragId, tId) && grid[tId].color !== 'bird') { 
-              animateSwap(dragId, tId); 
-          }
+      if(currentDragEl) {
+          currentDragEl.classList.remove('active-drag');
       }
       dragId = null;
+      isDragging = false;
+      currentDragEl = null;
   }
 
   function isAdjacent(id1, id2) {
-      let r1 = Math.floor(id1/W), c1 = id1%W;
-      let r2 = Math.floor(id2/W), c2 = id2%W;
+      let r1 = Math.floor(id1/C), c1 = id1%C;
+      let r2 = Math.floor(id2/C), c2 = id2%C;
       return (Math.abs(r1-r2) + Math.abs(c1-c2)) === 1;
   }
 
   function animateSwap(id1, id2) {
       isAnim = true; sndSwap();
       let c1 = grid[id1], c2 = grid[id2];
-      let xDist = ((id2%W) - (id1%W)) * 100;
-      let yDist = (Math.floor(id2/W) - Math.floor(id1/W)) * 100;
+      
+      // Pixel-perfect Candy Crush Swapping utilizing bounding rects
+      let rect1 = c1.getBoundingClientRect();
+      let rect2 = c2.getBoundingClientRect();
+      let dx = rect2.left - rect1.left;
+      let dy = rect2.top - rect1.top;
 
-      c1.style.transform = `translate(${xDist}%, ${yDist}%)`;
-      c2.style.transform = `translate(${-xDist}%, ${-yDist}%)`;
+      c1.style.transition = 'transform 0.2s ease-in-out';
+      c2.style.transition = 'transform 0.2s ease-in-out';
+      c1.style.transform = `translate(${dx}px, ${dy}px)`;
+      c2.style.transform = `translate(${-dx}px, ${-dy}px)`;
       c1.style.zIndex = "10"; c2.style.zIndex = "10";
 
       setTimeout(() => {
+          c1.style.transition = 'none'; c2.style.transition = 'none';
           c1.style.transform = ''; c2.style.transform = '';
           c1.style.zIndex = "5"; c2.style.zIndex = "5";
           swapLogic(id1, id2);
           
+          // Force layout recalculation
+          void c1.offsetWidth; void c2.offsetWidth;
+          c1.style.transition = ''; c2.style.transition = '';
+
           if(!checkMatches(true)) {
               sndSwap();
-              c1.style.transform = `translate(${xDist}%, ${yDist}%)`;
-              c2.style.transform = `translate(${-xDist}%, ${-yDist}%)`;
+              let r1_new = grid[id1].getBoundingClientRect();
+              let r2_new = grid[id2].getBoundingClientRect();
+              let bdx = r2_new.left - r1_new.left;
+              let bdy = r2_new.top - r1_new.top;
+              
+              grid[id1].style.transition = 'transform 0.2s ease-in-out';
+              grid[id2].style.transition = 'transform 0.2s ease-in-out';
+              grid[id1].style.transform = `translate(${bdx}px, ${bdy}px)`;
+              grid[id2].style.transform = `translate(${-bdx}px, ${-bdy}px)`;
+              
               setTimeout(() => {
-                  c1.style.transform = ''; c2.style.transform = '';
-                  swapLogic(id1, id2); isAnim = false;
-              }, 250);
+                  grid[id1].style.transition = 'none'; grid[id2].style.transition = 'none';
+                  grid[id1].style.transform = ''; grid[id2].style.transform = '';
+                  swapLogic(id1, id2);
+                  void grid[id1].offsetWidth; void grid[id2].offsetWidth;
+                  grid[id1].style.transition = ''; grid[id2].style.transition = '';
+                  isAnim = false;
+              }, 200);
           } else { moves--; updateUI(); doMatches(); }
-      }, 250);
+      }, 200);
   }
 
   function swapLogic(i1, i2) {
@@ -555,22 +668,23 @@
 
   function usePower(id) {
     isAnim=true; moves--; 
-    powers[activePower]--; // Deduct from inventory
+    powers[activePower]--; 
     document.getElementById('btn-'+activePower).classList.remove('active-power');
     
     let t = [];
     if(activePower === 'hammer') { t.push(id); } 
     else if(activePower === 'bomb') {
-      let r=Math.floor(id/W), c=id%W;
+      let r=Math.floor(id/C), c=id%C;
       for(let x=-1;x<=1;x++) for(let y=-1;y<=1;y++){
-        let nr=r+x, nc=c+y; if(nr>=0&&nr<W&&nc>=0&&nc<W) t.push(nr*W+nc);
+        let nr=r+x, nc=c+y; if(nr>=0&&nr<R&&nc>=0&&nc<C) t.push(nr*C+nc);
       }
     } else if(activePower === 'rocket') {
-      let r=Math.floor(id/W), c=id%W;
-      for(let i=0; i<W; i++) { t.push(r*W + i); t.push(i*W + c); }
+      let r=Math.floor(id/C), c=id%C;
+      for(let i=0; i<C; i++) { t.push(r*C + i); }
+      for(let i=0; i<R; i++) { t.push(i*C + c); }
     } else if(activePower === 'magic') {
       let targetColor = grid[id].color;
-      for(let i=0; i<W*W; i++) if(grid[i].color === targetColor) t.push(i);
+      for(let i=0; i<R*C; i++) if(grid[i].color === targetColor) t.push(i);
     }
 
     sndBlast(); 
@@ -583,20 +697,22 @@
   // ================= MATCHING ENGINE =================
   function checkMatches(justCheck=false) {
     let m=new Set();
-    for(let r=0;r<W;r++) for(let c=0;c<W-2;c++){
-      let i=r*W+c; let clr=grid[i].color; if(!clr || clr === 'bird') continue;
+    // Horizontal Check
+    for(let r=0;r<R;r++) for(let c=0;c<C-2;c++){
+      let i=r*C+c; let clr=grid[i].color; if(!clr || clr === 'bird') continue;
       if(grid[i+1].color===clr && grid[i+2].color===clr) {
         m.add(i); m.add(i+1); m.add(i+2);
-        if(c<W-3 && grid[i+3].color===clr) m.add(i+3); 
-        if(c<W-4 && grid[i+4].color===clr) m.add(i+4); 
+        if(c<C-3 && grid[i+3].color===clr) m.add(i+3); 
+        if(c<C-4 && grid[i+4].color===clr) m.add(i+4); 
       }
     }
-    for(let c=0;c<W;c++) for(let r=0;r<W-2;r++){
-      let i=r*W+c; let clr=grid[i].color; if(!clr || clr === 'bird') continue;
-      if(grid[i+W].color===clr && grid[i+W*2].color===clr) {
-        m.add(i); m.add(i+W); m.add(i+W*2);
-        if(r<W-3 && grid[i+W*3].color===clr) m.add(i+W*3); 
-        if(r<W-4 && grid[i+4*W].color===clr) m.add(i+4*W); 
+    // Vertical Check
+    for(let c=0;c<C;c++) for(let r=0;r<R-2;r++){
+      let i=r*C+c; let clr=grid[i].color; if(!clr || clr === 'bird') continue;
+      if(grid[i+C].color===clr && grid[i+C*2].color===clr) {
+        m.add(i); m.add(i+C); m.add(i+C*2);
+        if(r<R-3 && grid[i+C*3].color===clr) m.add(i+C*3); 
+        if(r<R-4 && grid[i+4*C].color===clr) m.add(i+4*C); 
       }
     }
     if(justCheck) return m.size>0;
@@ -608,10 +724,10 @@
     if(m.size>0) {
       if(m.size>=4) { 
         sndBlast();
-        coins += 10; // Extra coins for big matches!
+        coins += 10; 
         let added=0, attempts=0;
         while(added<4 && attempts<100) {
-          let rnd=Math.floor(Math.random()*(W*W));
+          let rnd=Math.floor(Math.random()*(R*C));
           if(!m.has(rnd) && grid[rnd].color && grid[rnd].color !== 'bird') { m.add(rnd); added++; }
           attempts++;
         }
@@ -637,11 +753,11 @@
   }
 
   function breakBirdCage(id) {
-      if(grid[id].color !== 'bird') return; // Double check
+      if(grid[id].color !== 'bird') return; 
       sndBirdFree();
-      grid[id].color = null; // Important! Allow it to fall empty
+      grid[id].color = null; 
       grid[id].classList.remove('bean-bird');
-      grid[id].innerHTML = '<div class="bird-emoji">🐦</div>'; // Removes bars for animation
+      grid[id].innerHTML = '<div class="bird-emoji">🐦</div>'; 
       grid[id].classList.add('bird-fly-anim');
       
       score += 150;
@@ -651,7 +767,6 @@
   function breakCell(id) {
     if(!grid[id].color) return;
     
-    // Direct hits on birds via powerups
     if(grid[id].color === 'bird') {
         breakBirdCage(id); return;
     }
@@ -662,19 +777,18 @@
     
     score+=10; grid[id].classList.add('pop'); grid[id].color=null; grid[id].innerHTML='';
     
-    let adj=[id, id-1, id+1, id-W, id+W];
+    let adj=[id, id-1, id+1, id-C, id+C];
     adj.forEach(a=>{
-      if(a>=0 && a<W*W) {
-        if((a===id-1 && id%W===0) || (a===id+1 && id%W===W-1)) return; 
+      if(a>=0 && a<R*C) {
+        // Prevent horizontal wrap break around edges
+        if((a===id-1 && id%C===0) || (a===id+1 && id%C===C-1)) return; 
         
-        // Ice logic
         if(iceGrid[a]) {
             iceGrid[a]=false; score+=50;
             let ice=document.getElementById('ice-'+a); if(ice) ice.remove();
             if(targetType==='ice') targetAmount--;
         }
         
-        // Bird/Cage logic from adjacent hits
         if(grid[a].color === 'bird') {
             breakBirdCage(a);
         }
@@ -690,22 +804,21 @@
   }
 
   function fall() {
-    for(let c=0; c<W; c++) {
+    for(let c=0; c<C; c++) {
       let col=[];
-      // Preserve HTML for birds if they fell, and normal beans
-      for(let r=0; r<W; r++) { 
-          if(grid[r*W+c].color) col.push({clr:grid[r*W+c].color, cls:grid[r*W+c].className, html: grid[r*W+c].innerHTML}); 
+      for(let r=0; r<R; r++) { 
+          if(grid[r*C+c].color) col.push({clr:grid[r*C+c].color, cls:grid[r*C+c].className, html: grid[r*C+c].innerHTML}); 
       }
       
-      while(col.length<W) {
+      while(col.length<R) {
         let clr=colors[Math.floor(Math.random()*colors.length)];
         col.unshift({clr:clr, cls:'cell bean-'+clr, html: getFaceHTML(clr)});
       }
       
-      for(let r=0; r<W; r++) {
-        grid[r*W+c].color=col[r].clr; 
-        grid[r*W+c].className=col[r].cls;
-        grid[r*W+c].innerHTML=col[r].html;
+      for(let r=0; r<R; r++) {
+        grid[r*C+c].color=col[r].clr; 
+        grid[r*C+c].className=col[r].cls;
+        grid[r*C+c].innerHTML=col[r].html;
       }
     }
     setTimeout(doMatches, 300);
@@ -717,13 +830,11 @@
     document.getElementById('ui-moves').innerText=moves; 
     document.getElementById('ui-coins').innerText=coins; 
     
-    // Update inventory counts
     document.getElementById('h-cnt').innerText=powers.hammer;
     document.getElementById('b-cnt').innerText=powers.bomb;
     document.getElementById('r-cnt').innerText=powers.rocket;
     document.getElementById('m-cnt').innerText=powers.magic;
 
-    // Check if player can afford powers to dim the BUY buttons
     document.getElementById('buy-hammer').style.opacity = coins >= powerCosts.hammer ? '1' : '0.4';
     document.getElementById('buy-bomb').style.opacity = coins >= powerCosts.bomb ? '1' : '0.4';
     document.getElementById('buy-rocket').style.opacity = coins >= powerCosts.rocket ? '1' : '0.4';
