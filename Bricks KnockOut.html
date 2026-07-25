@@ -17,6 +17,12 @@
         body {
             background-color: #05050a; display: flex; justify-content: center;
             align-items: center; height: 100vh; width: 100vw; overflow: hidden; color: white;
+            /* Added wide screen background */
+            background-image: url('Gemini_Generated_Image_wwcxqcwwcxqcwwcx.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
         }
 
         #game-container {
@@ -29,7 +35,8 @@
             transition: background-image 0.6s ease-in-out;
         }
 
-        canvas { display: block; width: 100%; height: 100%; background-color: transparent; }
+        /* Added position and z-index to keep canvas above the new background layer */
+        canvas { display: block; width: 100%; height: 100%; background-color: transparent; position: relative; z-index: 5; transition: opacity 0.3s ease; }
 
         @keyframes shake {
             0% { transform: translate(2px, 2px) rotate(0deg); }
@@ -125,6 +132,9 @@
 <body>
 
 <div id="game-container">
+    <!-- background-size to contain for auto-fit without crop -->
+    <div id="game-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background-size: contain; background-repeat: no-repeat; background-position: center; transition: filter 1s ease;"></div>
+    
     <canvas id="gameCanvas"></canvas>
 
     <div id="game-hud" class="hidden">
@@ -155,12 +165,10 @@
             <button class="btn btn-primary" id="btn-play-now">Play Now</button>
             <button class="btn" id="btn-levels">Select Level</button>
             
-            <!-- Readme Button Added Here -->
             <button class="btn btn-info" id="btn-readme" style="margin-top: 15px;">Readme</button>
         </div>
     </div>
     
-    <!-- Readme Window / Screen Added Here -->
     <div id="screen-readme" class="screen hidden" style="background: rgba(10, 10, 20, 0.95); z-index: 60;">
         <div class="screen-content">
             <h2 style="color: #00e5ff; text-shadow: 0 0 15px rgba(0, 229, 255, 0.8); margin-bottom: 25px;">README</h2>
@@ -201,12 +209,11 @@
         </div>
     </div>
 
-    <div id="screen-clear" class="screen hidden" style="background: rgba(0,0,0,0.9);">
+    <!-- End Level Screen -->
+    <div id="screen-clear" class="screen hidden" style="background: transparent; z-index: 15;">
         <div class="screen-content">
-            <h1 style="color: #00e5ff;">STAGE CLEAR!</h1>
-            <p style="margin-bottom: 30px; font-size: 18px;">Enemy formation destroyed!</p>
-            <button class="btn btn-success" id="btn-next-level">Next Level</button>
-            <button class="btn" id="btn-clear-menu">Main Menu</button>
+            <h1 id="clear-text" style="color: #00e5ff; font-size: 40px; text-shadow: 0 0 15px #000, 0 0 20px #00e5ff; transition: opacity 0.5s ease;">LEVEL COMPLETED</h1>
+            <button class="btn btn-success hidden" id="btn-next-level" style="font-size: 22px; padding: 15px 30px;">Next Level</button>
         </div>
     </div>
 
@@ -307,27 +314,31 @@ const SFX = {
     coin: () => { playTone(1000, 'sine', 0.05, 0.05); setTimeout(()=>playTone(1500, 'sine', 0.1, 0.05), 50); }
 };
 
+// 2 new images added to the backgrounds array below
 const LEVEL_BACKGROUNDS = [
-    'Gemini_Generated_Image_5lka1w5lka1w5lka.png', 
-    'Gemini_Generated_Image_v7r94fv7r94fv7r9.png',
-    'Gemini_Generated_Image_ol9mljol9mljol9m.png', 
-    'Gemini_Generated_Image_ev0b51ev0b51ev0b.png',
-    'Gemini_Generated_Image_6m92mf6m92mf6m92.png',
-    'Gemini_Generated_Image_hdrkc6hdrkc6hdrk.png',
-    'Gemini_Generated_Image_mtxy05mtxy05mtxy.png',
-    'Gemini_Generated_Image_qx4yqdqx4yqdqx4y.png',
-    'Gemini_Generated_Image_j7xxnmj7xxnmj7xx.png',
-    'Gemini_Generated_Image_n2fbk5n2fbk5n2fb.png',
-    'Gemini_Generated_Image_jiv991jiv991jiv9.png',
-    'Gemini_Generated_Image_9zqs1s9zqs1s9zqs.png',
-    'Gemini_Generated_Image_72zvh072zvh072zv.png',
-    'Gemini_Generated_Image_9qe49z9qe49z9qe4.png'
+    '4c822c51-8814-43ac-9d10-84867c71e831.jpg',
+    'de41655f-a066-4456-b06c-a5fd66872cc5.jpg',
+    '7028f85e-7343-451c-a566-2add9c2d3d2d.jpg',
+    '6d7d8286-15bd-4a0b-ac4d-30306388757a.jpg',
+    '95b4dff3-2c4c-44b4-9cc0-de95a41efe83.jpg',
+    '9c09f281-c4cb-46c3-a7f5-034f7218d51d.jpg',
+    'ac540c05-5ed6-466e-9fbf-28af32bcfebf.jpg',
+    '8f5cf407-bf83-4fe1-9158-95479a98793b.jpg',
+    '7ca8b3d4-0874-4286-a591-e762e2652bb0.jpg',
+    'a89219e7-51c0-47c6-b19c-7bf8c5b45306.jpg',
+    '9df4f049-fdcc-4043-b4f7-343bc3a2ec18.jpg'
 ];
 
 function setMainMenuBackground() { document.getElementById('screen-main').style.backgroundImage = `linear-gradient(rgba(5, 5, 15, 0.6), rgba(5, 5, 15, 0.9)), url('Gemini_Generated_Image_69fbdb69fbdb69fb.png')`; }
 function updateLevelBackground(lvl) {
-    let bgIndex = Math.floor(Math.random() * LEVEL_BACKGROUNDS.length);
-    document.getElementById('game-container').style.backgroundImage = `linear-gradient(rgba(10, 10, 20, 0.4), rgba(10, 10, 20, 0.85)), url('${LEVEL_BACKGROUNDS[bgIndex]}')`;
+    let bgIndex = (lvl - 1) % LEVEL_BACKGROUNDS.length;
+    let bgDiv = document.getElementById('game-bg');
+    bgDiv.style.backgroundImage = `url('${LEVEL_BACKGROUNDS[bgIndex]}')`;
+    bgDiv.style.backgroundSize = 'contain';
+    bgDiv.style.backgroundRepeat = 'no-repeat';
+    bgDiv.style.backgroundPosition = 'center';
+    bgDiv.style.filter = 'blur(12px)'; // Starting the level blurred
+    document.getElementById('game-container').style.backgroundImage = 'none'; // Removing default gradient
 }
 
 /* ================= JAVASCRIPT GAME LOGIC ================= */
@@ -380,6 +391,9 @@ const FRAMES_FOR_DRAFT = 15 * 60;
 let currentLevel = 1;
 let blocks = [], balls = [], particles = [], lasers = [], lightning = [], drops = [];
 let bottomY = gameHeight - 20; let topBound = 80; 
+
+let clearStageTimeout1 = null;
+let clearStageTimeout2 = null;
 
 function triggerShake(type = 'mild') {
     const container = document.getElementById('game-container');
@@ -440,6 +454,12 @@ function calculateBlockHP(lvl, isCenter) {
 function loadLevel(lvl) {
     try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStart(); } catch(e){}
 
+    if (clearStageTimeout1) clearTimeout(clearStageTimeout1);
+    if (clearStageTimeout2) clearTimeout(clearStageTimeout2);
+
+    // Make canvas visible again on next level
+    document.getElementById('gameCanvas').style.display = 'block';
+
     document.getElementById('game-hud').classList.remove('hidden'); updateTopBound();
     currentLevel = lvl; blocks = []; particles = []; lasers = []; lightning = []; drops = [];
     blocksFrozen = false; baseX = gameWidth / 2; nextBaseX = baseX;
@@ -463,7 +483,9 @@ function loadLevel(lvl) {
     }
 
     updateLevelBackground(lvl);
-    balls = Array.from({length: 5}, () => ({ x: baseX, y: bottomY - 8, vx: 0, vy: 0, r: 4.5, active: false, returning: false, isClone: false }));
+    
+    // Configured for 10 initial balls on level start
+    balls = Array.from({length: 10}, () => ({ x: baseX, y: bottomY - 8, vx: 0, vy: 0, r: 4.5, active: false, returning: false, isClone: false }));
 
     let cols = 9; let layout = generateDistinctLevelLayout(lvl); 
     let colGap = 2; let rowGap = 2; let brickWidth = 46; let brickHeight = 46;
@@ -510,7 +532,6 @@ function setupMenuEvents() {
     document.getElementById('btn-levels').onclick = () => { SFX.click(); initAudio(); gameState = STATE.LEVEL_SELECT; buildLevelGrid(); showScreen('screen-levels'); };
     document.getElementById('btn-levels-back').onclick = () => { SFX.click(); gameState = STATE.MENU; setMainMenuBackground(); showScreen('screen-main'); };
     
-    // Readme Events
     document.getElementById('btn-readme').onclick = () => { SFX.click(); gameState = STATE.MENU; showScreen('screen-readme'); };
     document.getElementById('btn-readme-back').onclick = () => { SFX.click(); showScreen('screen-main'); };
 
@@ -537,11 +558,6 @@ function setupMenuEvents() {
         gameState = STATE.MENU; setMainMenuBackground(); showScreen('screen-main'); saveGame(); 
     };
     document.getElementById('btn-next-level').onclick = () => { SFX.click(); loadLevel(currentLevel + 1); };
-    document.getElementById('btn-clear-menu').onclick = () => { 
-        SFX.click(); 
-        try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStop(); } catch(e){}
-        gameState = STATE.MENU; setMainMenuBackground(); showScreen('screen-main'); 
-    };
     
     document.getElementById('btn-gameover-retry').onclick = () => { SFX.click(); initAudio(); loadLevel(currentLevel); };
     document.getElementById('btn-gameover-menu').onclick = () => { SFX.click(); gameState = STATE.MENU; setMainMenuBackground(); showScreen('screen-main'); };
@@ -742,7 +758,6 @@ function update() {
         for (let s = 0; s < steps; s++) {
             let prevX = b.x; let prevY = b.y; b.x += subVx; b.y += subVy;
 
-            // BUG FIX: Added anti-stuck velocity nudge to walls and blocks to prevent infinite flat bouncing
             if (b.x - b.r <= 0) { 
                 b.x = b.r; b.vx *= -1; 
                 if (Math.abs(b.vy) < 0.2) b.vy += (b.vy >= 0 ? 0.2 : -0.2);
@@ -780,7 +795,6 @@ function update() {
                     let hitTopBottom = (prevX >= rx && prevX <= rx + rw); let hitLeftRight = (prevY >= ry && prevY <= ry + rh);
                     if (hitTopBottom) { b.vy *= -1; b.y = prevY; } else if (hitLeftRight) { b.vx *= -1; b.x = prevX; } else { b.vx *= -1; b.vy *= -1; b.x = prevX; b.y = prevY; }
                     
-                    // BUG FIX: Prevent perfect horizontal bounces making the game stuck
                     if (Math.abs(b.vy) < 0.4) b.vy = (b.vy >= 0) ? 0.4 : -0.4;
 
                     subVx = b.vx / steps; subVy = b.vy / steps;
@@ -819,6 +833,7 @@ function update() {
     }
 }
 
+// Custom level clear text, animation mechanic, and canvas hide logic
 function endTurn() {
     let allCleared = true; let gameOver = false; let stepDown = 46;
     blocks.forEach(b => { if (b.active) { allCleared = false; if (!blocksFrozen) { b.y += stepDown; if (b.y + b.h >= bottomY - 10) gameOver = true; } } });
@@ -828,7 +843,34 @@ function endTurn() {
     if (allCleared) {
         if(timerInterval) clearInterval(timerInterval);
         SFX.win(); if (currentLevel === player.maxLevelUnlocked) { player.maxLevelUnlocked++; saveGame(); }
-        gameState = STATE.CLEAR; showScreen('screen-clear');
+        gameState = STATE.CLEAR; 
+        
+        // Unblur the girl image
+        document.getElementById('game-bg').style.filter = 'blur(0px)';
+        
+        // Hide canvas entirely so ONLY girl picture is visible
+        document.getElementById('gameCanvas').style.display = 'none';
+        
+        // Level complete sequence setup
+        let clearText = document.getElementById('clear-text');
+        let nextBtn = document.getElementById('btn-next-level');
+        
+        clearText.style.opacity = '1';
+        clearText.innerText = 'LEVEL COMPLETED';
+        clearText.classList.remove('hidden');
+        nextBtn.classList.add('hidden');
+        
+        showScreen('screen-clear'); // Hides the HUD as well
+        
+        // Wait exactly 5 seconds, then hide the text and show "Next Level" button
+        clearStageTimeout1 = setTimeout(() => {
+            clearText.style.opacity = '0';
+            clearStageTimeout2 = setTimeout(() => {
+                clearText.classList.add('hidden');
+                nextBtn.classList.remove('hidden');
+            }, 500); 
+        }, 5000);
+
     } else if (gameOver) {
         triggerGameOver("Enemies reached the wall!");
     } else if (levelConstraint.type === 'shots' && levelConstraint.value <= 0) {
