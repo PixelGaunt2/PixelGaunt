@@ -314,7 +314,7 @@ const SFX = {
     coin: () => { playTone(1000, 'sine', 0.05, 0.05); setTimeout(()=>playTone(1500, 'sine', 0.1, 0.05), 50); }
 };
 
-// 2 new images added to the backgrounds array below
+// 9 new images added to the backgrounds array alongside the old ones
 const LEVEL_BACKGROUNDS = [
     '4c822c51-8814-43ac-9d10-84867c71e831.jpg',
     'de41655f-a066-4456-b06c-a5fd66872cc5.jpg',
@@ -326,12 +326,22 @@ const LEVEL_BACKGROUNDS = [
     '8f5cf407-bf83-4fe1-9158-95479a98793b.jpg',
     '7ca8b3d4-0874-4286-a591-e762e2652bb0.jpg',
     'a89219e7-51c0-47c6-b19c-7bf8c5b45306.jpg',
-    '9df4f049-fdcc-4043-b4f7-343bc3a2ec18.jpg'
+    '9df4f049-fdcc-4043-b4f7-343bc3a2ec18.jpg',
+    'Gemini_Generated_Image_vykogjvykogjvyko.png',
+    'Gemini_Generated_Image_qx4yqdqx4yqdqx4y.png',
+    'Gemini_Generated_Image_n2fbk5n2fbk5n2fb.png',
+    'Gemini_Generated_Image_mtxy05mtxy05mtxy.png',
+    'Gemini_Generated_Image_jiv991jiv991jiv9.png',
+    'Gemini_Generated_Image_j7xxnmj7xxnmj7xx.png',
+    'Gemini_Generated_Image_hdrkc6hdrkc6hdrk.png',
+    'Gemini_Generated_Image_9zqs1s9zqs1s9zqs.png',
+    'Gemini_Generated_Image_9qe49z9qe49z9qe4.png'
 ];
 
 function setMainMenuBackground() { document.getElementById('screen-main').style.backgroundImage = `linear-gradient(rgba(5, 5, 15, 0.6), rgba(5, 5, 15, 0.9)), url('Gemini_Generated_Image_69fbdb69fbdb69fb.png')`; }
 function updateLevelBackground(lvl) {
-    let bgIndex = (lvl - 1) % LEVEL_BACKGROUNDS.length;
+    // Math.random() ensures any image from the old and new list is picked uniquely each time a level starts
+    let bgIndex = Math.floor(Math.random() * LEVEL_BACKGROUNDS.length);
     let bgDiv = document.getElementById('game-bg');
     bgDiv.style.backgroundImage = `url('${LEVEL_BACKGROUNDS[bgIndex]}')`;
     bgDiv.style.backgroundSize = 'contain';
