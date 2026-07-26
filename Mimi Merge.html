@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mimi Merge</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <style>
+:root {
+    --primary-color: #ff66a3;
+    --primary-hover: #ff4d94;
+    --secondary-color: #99ccff;
+    --text-color: #4a4a4a;
+    --panel-bg: rgba(255, 255, 255, 0.95);
+    --border-radius: 25px;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --neon-glow: 0 0 10px rgba(0, 255, 255, 0.6), 0 0 20px rgba(0, 255, 255, 0.4);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+body {
+    background-color: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    font-family: var(--font-family);
+    color: var(--text-color);
+}
+
+#game-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 720px;
+    height: 100%;
+    max-height: 1280px;
+    aspect-ratio: 9 / 16;
+    background-image: url('assets/image_0.png'); 
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 0 30px rgba(0,255,255,0.2);
+    overflow: hidden;
+}
+
+#game-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    object-fit: contain;
+}
+
+/* UI Layering */
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: auto;
+    transition: opacity 0.3s ease;
+    background: transparent; 
+}
+
+.screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.pointer-events-none { pointer-events: none; }
+.pointer-events-auto { pointer-events: auto; }
+
+/* Menus & Popups */
+#level-selector, #main-menu {
+    background: linear-gradient(135deg, rgba(20, 20, 30, 0.8), rgba(10, 40, 50, 0.8));
+    padding: 20px;
+}
+
+.title-container {
+    text-align: center;
+    margin: 10vh 0 5vh 0;
+}
+
+h1 {
+    font-size: 3.5rem;
+    color: #fff;
+    text-shadow: 0 0 15px var(--primary-color), 0 0 30px var(--primary-color);
+    line-height: 1.1;
+}
+
+h2 {
+    font-size: 1.8rem;
+    color: #00ffff;
+    text-shadow: 0 0 10px #00ffff;
+}
+
+.popup-overlay {
+    background-color: rgba(0,0,0,0.75);
+    justify-content: center;
+}
+
+.popup-box {
+    background: var(--panel-bg);
+    padding: 25px;
+    border-radius: var(--border-radius);
+    text-align: center;
+    width: 80%;
+    box-shadow: var(--neon-glow);
+    border: 3px solid #00ffff;
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Buttons (Shrunk and Beautified) */
+button {
+    font-family: var(--font-family);
+    font-size: 1rem; /* Smaller text */
+    font-weight: bold;
+    border: none;
+    border-radius: 40px;
+    padding: 12px 30px; /* Smaller padding */
+    margin: 8px 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    outline: none;
+    width: 70%; /* Narrower */
+    max-width: 250px;
+    letter-spacing: 1px;
+}
+
+button:active {
+    transform: scale(0.92);
+}
+
+.primary-btn {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 0 #cc0052, var(--neon-glow);
+}
+.primary-btn:hover {
+    background-color: var(--primary-hover);
+    box-shadow: 0 4px 0 #cc0052, 0 0 20px rgba(255, 102, 163, 0.8);
+}
+.primary-btn:active {
+    box-shadow: 0 0px 0 #cc0052, var(--neon-glow);
+    transform: translateY(4px);
+}
+
+.secondary-btn {
+    background-color: #222;
+    color: #00ffff;
+    border: 2px solid #00ffff;
+    box-shadow: 0 4px 0 #008888;
+}
+.secondary-btn:active {
+    box-shadow: 0 0px 0 #008888;
+    transform: translateY(4px);
+}
+
+.icon-btn {
+    width: 45px;
+    height: 45px;
+    padding: 0;
+    border-radius: 50%;
+    background: #222;
+    color: #00ffff;
+    border: 2px solid #00ffff;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 0px #008888;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.icon-btn:active {
+    box-shadow: 0 0px 0 #008888;
+    transform: translateY(4px);
+}
+
+/* Gameplay UI Specifics */
+.top-bar {
+    width: 100%;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.score-container {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 8px 25px;
+    border-radius: 20px;
+    border: 2px solid #00ffff;
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #00ffff;
+    box-shadow: var(--neon-glow);
+}
+
+.coin-counter {
+    position: absolute;
+    top: 80px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid #ffcc00;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-weight: bold;
+    color: #ffcc00;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+}
+
+.next-preview {
+    position: absolute;
+    top: 80px;
+    left: 15px;
+    width: 55px;
+    height: 55px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid #ff66a3;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 15px rgba(255, 102, 163, 0.5);
+}
+
+/* Level Grid */
+.level-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    width: 90%;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.level-btn {
+    width: 100%;
+    aspect-ratio: 1;
+    padding: 0;
+    margin: 0;
+    font-size: 1.2rem;
+    border-radius: 12px;
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 0 #cc0052;
+}
+.level-btn.locked {
+    background: #444;
+    border: 2px solid #666;
+    box-shadow: 0 4px 0 #222;
+    color: #888;
+    cursor: not-allowed;
+}
+
+/* Animations */
+@keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.pulse {
+    animation: pulseAnim 2s infinite;
+}
+
+@keyframes pulseAnim {
+    0% { transform: scale(1); box-shadow: 0 4px 0 #cc0052, 0 0 15px rgba(255, 102, 163, 0.5); }
+    50% { transform: scale(1.03); box-shadow: 0 4px 0 #cc0052, 0 0 25px rgba(255, 102, 163, 0.9); }
+    100% { transform: scale(1); box-shadow: 0 4px 0 #cc0052, 0 0 15px rgba(255, 102, 163, 0.5); }
+}
+
+.mt-auto { margin-top: auto; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div id="game-wrapper">
+        <canvas id="game-canvas"></canvas>
+
+        <div id="ui-layer">
+            
+            <div id="main-menu" class="screen active">
+                <div class="title-container">
+                    <h1>Mimi Merge</h1>
+                    <h2>Adventure</h2>
+                </div>
+                <button id="btn-play-now" class="primary-btn pulse">PLAY NOW</button>
+                <button id="btn-levels" class="secondary-btn">LEVELS</button>
+                <button id="btn-readme" class="secondary-btn">README</button>
+            </div>
+
+            <div id="level-selector" class="screen hidden">
+                <h2>Select Level</h2>
+                <div class="level-grid" id="level-grid">
+                    </div>
+                <button id="btn-back-menu" class="secondary-btn mt-auto">Back to Menu</button>
+            </div>
+
+            <div id="gameplay-ui" class="screen hidden pointer-events-none">
+                <div class="top-bar">
+                    <button id="btn-ingame-back" class="icon-btn pointer-events-auto">◀</button>
+                    <div class="score-container">
+                        <span id="score-display">0</span>
+                    </div>
+                    <button id="btn-pause" class="icon-btn pointer-events-auto">❚❚</button>
+                </div>
+                <div class="coin-counter">
+                    <span class="coin-icon">💰</span> <span id="coin-display">0</span>
+                </div>
+                <div id="next-face-preview" class="next-preview">
+                    </div>
+            </div>
+
+            <div id="readme-menu" class="screen hidden popup-overlay">
+                <div class="popup-box">
+                    <h2>Readme</h2>
+                    <p>This game was created using AI technology.<br>
+                    If you find any bugs or issues, please report them at:<br>
+                    <strong>pixelgaunt@gmail.com</strong><br>
+                    Thank you for playing.</p>
+                    <button id="btn-readme-back" class="secondary-btn">Back</button>
+                </div>
+            </div>
+
+            <div id="pause-menu" class="screen hidden popup-overlay">
+                <div class="popup-box">
+                    <h2>PAUSED</h2>
+                    <button id="btn-resume" class="primary-btn">Resume</button>
+                    <button id="btn-restart" class="secondary-btn">Restart Level</button>
+                    <button id="btn-pause-menu" class="secondary-btn">Main Menu</button>
+                </div>
+            </div>
+
+            <div id="game-over" class="screen hidden popup-overlay">
+                <div class="popup-box">
+                    <h2>GAME OVER!</h2>
+                    <p>The space is full!</p>
+                    <div class="stats">
+                        <p>Score: <span id="go-score">0</span></p>
+                        <p>Coins: <span id="go-coins">0</span></p>
+                    </div>
+                    <button id="btn-retry" class="primary-btn pulse">Retry</button>
+                    <button id="btn-go-menu" class="secondary-btn">Main Menu</button>
+                </div>
+            </div>
+
+            <div id="level-complete" class="screen hidden popup-overlay">
+                <div class="popup-box victory-box">
+                    <h2>LEVEL COMPLETE!</h2>
+                    <h3 id="lc-level-num">Level 1</h3>
+                    <div class="stats">
+                        <p>Score: <span id="lc-score">0</span></p>
+                        <p>Coins Earned: <span id="lc-coins">0</span></p>
+                    </div>
+                    <button id="btn-next-level" class="primary-btn pulse">Next Level</button>
+                    <button id="btn-lc-menu" class="secondary-btn">Main Menu</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script>
+/**
+ * Mimi Merge Adventure - Enhanced Lightning & Aandhi (Tornado) Update
+ * Engine: Vanilla JS + Matter.js
+ */
+
+// --- Audio System ---
+const audioCache = {};
+const playSound = (name) => {
+    if (!audioCache[name]) {
+        const audio = new Audio(`assets/sounds/${name}.mp3`);
+        audioCache[name] = audio;
+    }
+    const a = audioCache[name].cloneNode();
+    a.volume = 0.5;
+    a.play().catch(e => console.log(`Audio missing or blocked: ${name}`));
+};
+
+// --- Config & State ---
+const GAME_WIDTH = 720;
+const GAME_HEIGHT = 1280;
+const MAX_FACES = 25;
+
+const getRadiusForFace = (id) => 50 + (id * 4); 
+
+let gameState = 'menu';
+let currentLevel = 1;
+let unlockedLevels = parseInt(localStorage.getItem('mimiMergeProgress')) || 1;
+let coins = parseInt(localStorage.getItem('mimiMergeCoins')) || 0;
+let score = 0;
+let nextFaceId = 1;
+let canDrop = true;
+let screenShake = 0;
+
+// Electric Shock Timer & Visuals
+let nextShockTime = 0; 
+let activeLightnings = []; 
+
+// 🌪️ NEW: Aandhi (Tornado) State
+let nextTornadoTime = 0;
+let isTornadoActive = false;
+let tornadoEndTime = 0;
+
+// --- Assets (Images) ---
+const faceImages = {};
+for (let i = 1; i <= MAX_FACES; i++) {
+    const img = new Image();
+    img.src = `assets/faces/face${i}.png`;
+    faceImages[i] = img;
+}
+
+// --- DOM Elements ---
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = GAME_WIDTH;
+canvas.height = GAME_HEIGHT;
+
+const screens = {
+    menu: document.getElementById('main-menu'),
+    levels: document.getElementById('level-selector'),
+    readme: document.getElementById('readme-menu'),
+    ui: document.getElementById('gameplay-ui'),
+    pause: document.getElementById('pause-menu'),
+    over: document.getElementById('game-over'),
+    complete: document.getElementById('level-complete')
+};
+
+// --- Matter.js Setup ---
+const { Engine, World, Bodies, Body, Composite, Events } = Matter;
+const engine = Engine.create();
+const world = engine.world;
+engine.world.gravity.y = 1.5; 
+
+let boundaries = [];
+let gameBodies = [];
+
+// --- Object Pooling (Particles & Text) ---
+class ParticlePool {
+    constructor(size) {
+        this.pool = Array.from({ length: size }, () => ({
+            active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 1, color: '', size: 5, type: 'circle'
+        }));
+    }
+    spawn(x, y, color, type = 'circle') {
+        const p = this.pool.find(p => !p.active);
+        if (p) {
+            p.active = true; p.x = x; p.y = y;
+            p.vx = (Math.random() - 0.5) * 12; 
+            p.vy = (Math.random() - 0.5) * 12;
+            p.life = 1; p.maxLife = 1;
+            p.color = color; p.size = Math.random() * 10 + 5;
+            p.type = type;
+        }
+    }
+    updateAndDraw(ctx) {
+        this.pool.forEach(p => {
+            if (p.active) {
+                p.x += p.vx; p.y += p.vy;
+                p.vy += 0.2; 
+                p.life -= 0.02;
+                if (p.life <= 0) p.active = false;
+                else {
+                    ctx.globalAlpha = p.life;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    if (p.type === 'circle') {
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (p.type === 'star') { 
+                        ctx.fillRect(p.x, p.y, p.size, p.size);
+                    }
+                    ctx.globalAlpha = 1;
+                }
+            }
+        });
+    }
+}
+
+class TextPool {
+    constructor(size) {
+        this.pool = Array.from({ length: size }, () => ({ active: false, x:0, y:0, text:'', life:0, color:'' }));
+    }
+    spawn(x, y, text, color) {
+        const t = this.pool.find(t => !t.active);
+        if (t) {
+            t.active = true; t.x = x; t.y = y; t.text = text; t.life = 1; t.color = color;
+        }
+    }
+    updateAndDraw(ctx) {
+        this.pool.forEach(t => {
+            if (t.active) {
+                t.y -= 2; t.life -= 0.015;
+                if (t.life <= 0) t.active = false;
+                else {
+                    ctx.globalAlpha = t.life;
+                    ctx.fillStyle = t.color;
+                    ctx.font = 'bold 28px Arial';
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 4;
+                    ctx.strokeText(t.text, t.x, t.y);
+                    ctx.fillText(t.text, t.x, t.y);
+                    ctx.globalAlpha = 1;
+                }
+            }
+        });
+    }
+}
+
+class BackgroundParticlePool {
+    constructor(size) {
+        this.pool = Array.from({ length: size }, () => ({
+            active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, size: 0, color: ''
+        }));
+    }
+    spawn() {
+        const p = this.pool.find(p => !p.active);
+        if (p) {
+            p.active = true;
+            p.x = Math.random() * GAME_WIDTH;
+            p.y = GAME_HEIGHT + Math.random() * 50; 
+            p.vx = (Math.random() - 0.5) * 2; 
+            p.vy = -(Math.random() * 3 + 1); 
+            p.life = Math.random() * 2 + 2; 
+            p.size = Math.random() * 8 + 3; 
+            const colors = ['rgba(0, 255, 255, 0.4)', 'rgba(255, 102, 163, 0.3)', 'rgba(255, 255, 255, 0.5)'];
+            p.color = colors[Math.floor(Math.random() * colors.length)];
+        }
+    }
+    updateAndDraw(ctx) {
+        if (gameState !== 'playing') return; 
+        if (Math.random() < 0.25) this.spawn(); 
+
+        this.pool.forEach(p => {
+            if (p.active) {
+                p.x += p.vx; p.y += p.vy;
+                const alpha = Math.min(1, p.life * 0.5);
+                p.life -= 0.015;
+                if (p.life <= 0) p.active = false;
+                else {
+                    ctx.globalAlpha = alpha;
+                    ctx.fillStyle = p.color;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.globalAlpha = 1;
+                }
+            }
+        });
+    }
+}
+
+const particles = new ParticlePool(400); // Increased pool size for aandhi
+const floatingTexts = new TextPool(50);
+const backgroundParticles = new BackgroundParticlePool(150);
+
+// --- Level Generation ---
+function getAvailableFacesForLevel(lvl) {
+    const startIdx = Math.max(1, Math.floor(lvl / 10));
+    const maxTypes = Math.min(5 + Math.floor(lvl / 20), 10);
+    let available = [];
+    for(let i=0; i < maxTypes; i++) {
+        const id = startIdx + i;
+        if(id < MAX_FACES) available.push(id);
+    }
+    return available;
+}
+
+function getRandomFaceId() {
+    const bag = getAvailableFacesForLevel(currentLevel);
+    return bag[Math.floor(Math.random() * bag.length)];
+}
+
+const faceColors = ["#ff9999", "#ffcc99", "#ffff99", "#99ff99", "#99ffff", "#9999ff", "#cc99ff", "#ff99cc", "#ff99ff"];
+
+// --- Game Logic ---
+function initLevel(lvl) {
+    currentLevel = lvl;
+    score = 0;
+    updateUI();
+    
+    Composite.clear(world, false);
+    gameBodies = [];
+    activeLightnings = []; 
+    isTornadoActive = false;
+    
+    const wallOpts = { isStatic: true, render: { visible: false }, friction: 0.5, restitution: 0.2 };
+    const floor = Bodies.rectangle(GAME_WIDTH/2, GAME_HEIGHT + 25, GAME_WIDTH, 50, wallOpts);
+    const leftWall = Bodies.rectangle(-25, GAME_HEIGHT/2, 50, GAME_HEIGHT * 2, wallOpts);
+    const rightWall = Bodies.rectangle(GAME_WIDTH + 25, GAME_HEIGHT/2, 50, GAME_HEIGHT * 2, wallOpts);
+    
+    const deathLine = Bodies.rectangle(GAME_WIDTH/2, 100, GAME_WIDTH, 10, {
+        isStatic: true, isSensor: true, label: 'deathLine'
+    });
+
+    boundaries = [floor, leftWall, rightWall, deathLine];
+    Composite.add(world, boundaries);
+    
+    nextFaceId = getRandomFaceId();
+    drawPreview();
+    
+    // Set Timers
+    nextShockTime = Date.now() + (Math.random() * 15000 + 10000); 
+    nextTornadoTime = Date.now() + (Math.random() * 60000 + 60000); // 1 to 2 mins (60k to 120k ms)
+
+    switchScreen('ui');
+    gameState = 'playing';
+}
+
+// 🌪️ NEW MECHANIC: Trigger Aandhi (Tornado)
+function triggerTornado() {
+    isTornadoActive = true;
+    tornadoEndTime = Date.now() + 3000; // Lasts exactly 3 seconds
+    playSound('shock'); // Reuse intense sound
+    screenShake = 25; // Shake screen for chaos
+    
+    floatingTexts.spawn(GAME_WIDTH/2 - 100, GAME_HEIGHT/2, "🌪️ AANDHI! 🌪️", "#ffffff");
+}
+
+// ⚡ Trigger Visible Electric Shock
+function triggerElectricShock() {
+    const activeFaces = gameBodies.filter(b => b.label === 'face' && b.position.y > 150);
+    if (activeFaces.length === 0) return;
+    
+    const target = activeFaces[Math.floor(Math.random() * activeFaces.length)];
+    
+    const startX = target.position.x + (Math.random() * 100 - 50); 
+    const startY = 0; 
+    const endX = target.position.x;
+    const endY = target.position.y;
+    
+    let points = [];
+    points.push({x: startX, y: startY});
+    const segments = 12; 
+    for(let i=1; i<segments; i++) {
+        let y = startY + (endY - startY) * (i / segments);
+        let x = startX + (endX - startX) * (i / segments) + (Math.random() * 60 - 30); 
+        points.push({x, y});
+    }
+    points.push({x: endX, y: endY});
+    
+    activeLightnings.push({ points: points, life: 1.0 });
+
+    Composite.remove(world, target);
+    gameBodies = gameBodies.filter(b => b.id !== target.id);
+    
+    playSound('shock'); 
+    screenShake = 35; 
+    
+    floatingTexts.spawn(target.position.x, target.position.y, "⚡ ZAPPED! ⚡", "#00ffff");
+    
+    for(let p=0; p<40; p++) {
+        particles.spawn(target.position.x, target.position.y, '#00ffff', 'star');
+        particles.spawn(target.position.x, target.position.y, '#ffffff', 'circle');
+    }
+}
+
+function dropFace(x) {
+    if(!canDrop || gameState !== 'playing') return;
+    canDrop = false;
+    playSound('drop');
+
+    const drawRadius = getRadiusForFace(nextFaceId);
+    const physicsRadius = drawRadius * 0.93; 
+    
+    const safeX = Math.max(drawRadius, Math.min(GAME_WIDTH - drawRadius, x));
+    
+    const body = Bodies.circle(safeX, 150, physicsRadius, {
+        restitution: 0.3,
+        friction: 0.8,
+        density: 0.001 * nextFaceId,
+        label: 'face',
+        faceId: nextFaceId,
+        drawRadius: drawRadius,
+        renderScale: 0 
+    });
+    
+    gameBodies.push(body);
+    Composite.add(world, body);
+    
+    nextFaceId = getRandomFaceId();
+    drawPreview();
+    
+    setTimeout(() => { canDrop = true; }, 800);
+}
+
+// Collision Logic
+Events.on(engine, 'collisionStart', (event) => {
+    if(gameState !== 'playing') return;
+    
+    const pairs = event.pairs;
+    let mergedThisTick = new Set();
+
+    for (let i = 0; i < pairs.length; i++) {
+        const { bodyA, bodyB } = pairs[i];
+
+        if ((bodyA.label === 'deathLine' && bodyB.label === 'face') || 
+            (bodyB.label === 'deathLine' && bodyA.label === 'face')) {
+            const face = bodyA.label === 'face' ? bodyA : bodyB;
+            // CRITICAL: Don't kill if tornado is active blowing them up
+            if (!isTornadoActive && face.velocity.y < 0.5 && face.position.y < 120) {
+                gameOver();
+            }
+            continue;
+        }
+
+        if (bodyA.label === 'face' && bodyB.label === 'face') {
+            if (bodyA.faceId === bodyB.faceId && !mergedThisTick.has(bodyA.id) && !mergedThisTick.has(bodyB.id)) {
+                
+                mergedThisTick.add(bodyA.id);
+                mergedThisTick.add(bodyB.id);
+                
+                const currentId = bodyA.faceId;
+                if (currentId >= MAX_FACES) continue;
+
+                const newX = (bodyA.position.x + bodyB.position.x) / 2;
+                const newY = (bodyA.position.y + bodyB.position.y) / 2;
+                
+                Composite.remove(world, [bodyA, bodyB]);
+                gameBodies = gameBodies.filter(b => b.id !== bodyA.id && b.id !== bodyB.id);
+                
+                const nextId = currentId + 1;
+                const newDrawRadius = getRadiusForFace(nextId);
+                const newPhysicsRadius = newDrawRadius * 0.93; 
+                
+                const newBody = Bodies.circle(newX, newY, newPhysicsRadius, {
+                    restitution: 0.2,
+                    friction: 0.8,
+                    density: 0.001 * nextId,
+                    label: 'face',
+                    faceId: nextId,
+                    drawRadius: newDrawRadius,
+                    renderScale: 0
+                });
+                
+                Composite.add(world, newBody);
+                gameBodies.push(newBody);
+                
+                playSound('merge');
+                screenShake = 20 + (currentId * 1.5); 
+                
+                const mergeScore = currentId * 10;
+                score += mergeScore;
+                
+                if (currentId > 2 && Math.random() > 0.5) {
+                    coins += 1;
+                    playSound('coin');
+                    floatingTexts.spawn(newX, newY - 20, "+1 Coin", "#ffaa00");
+                    localStorage.setItem('mimiMergeCoins', coins);
+                }
+                
+                floatingTexts.spawn(newX, newY, `+${mergeScore}`, "#ff00ff");
+                
+                for(let p=0; p<20; p++) {
+                    particles.spawn(newX, newY, faceColors[currentId % faceColors.length]);
+                    if(Math.random() > 0.5) particles.spawn(newX, newY, "#ffffff"); 
+                }
+                
+                updateUI();
+                
+                const targetFaceId = Math.min(MAX_FACES, Math.floor(currentLevel/5) + 5);
+                if (nextId >= targetFaceId) {
+                    levelComplete();
+                }
+            }
+        }
+    }
+});
+
+// --- Rendering Loop ---
+let lastTime = 0;
+function renderLoop(time) {
+    requestAnimationFrame(renderLoop);
+    if(gameState === 'menu' || gameState === 'levels' || gameState === 'readme') return;
+
+    const delta = time - lastTime;
+    lastTime = time;
+
+    if (gameState === 'playing') {
+        Engine.update(engine, 1000 / 60);
+        
+        const now = Date.now();
+        
+        // ⚡ Check Electric Shock Timer (10s to 25s)
+        if (now > nextShockTime) {
+            triggerElectricShock();
+            nextShockTime = now + (Math.random() * 15000 + 10000); 
+        }
+
+        // 🌪️ Check Aandhi Timer (1-2 mins)
+        if (!isTornadoActive && now > nextTornadoTime) {
+            triggerTornado();
+            nextTornadoTime = now + (Math.random() * 60000 + 60000);
+        }
+
+        // 🌪️ Process Aandhi Physics
+        if (isTornadoActive) {
+            if (now > tornadoEndTime) {
+                isTornadoActive = false; // Turn off Aandhi
+            } else {
+                screenShake = 5; // Constant minor shake during wind
+                gameBodies.forEach(b => {
+                    if (b.label === 'face') {
+                        // Fast Spinning
+                        Body.setAngularVelocity(b, (Math.random() - 0.5) * 0.8);
+                        
+                        // Chaotic Wind Forces
+                        let forceX = (Math.random() - 0.5) * 0.04 * b.mass;
+                        let forceY = -(Math.random() * 0.03) * b.mass; // Lift up
+                        
+                        // STRICT RULE: Keep them safely inside dead boundary
+                        // If they go above y=200, push them DOWN hard
+                        if (b.position.y < 250) {
+                            forceY = Math.abs(forceY) * 3; // Strong push downwards
+                        }
+                        
+                        Body.applyForce(b, b.position, {x: forceX, y: forceY});
+                    }
+                });
+                
+                // Extra visual wind particles
+                for(let w=0; w<5; w++) {
+                    particles.spawn(Math.random() * GAME_WIDTH, Math.random() * GAME_HEIGHT, 'rgba(255,255,255,0.7)', 'circle');
+                }
+            }
+        }
+    }
+
+    ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    ctx.save();
+
+    // Screen Shake
+    if (screenShake > 0) {
+        const dx = (Math.random() - 0.5) * screenShake;
+        const dy = (Math.random() - 0.5) * screenShake;
+        ctx.translate(dx, dy);
+        screenShake *= 0.85;
+        if(screenShake < 0.5) screenShake = 0;
+    }
+
+    // Draw Neon Walls
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = '#00ffff';
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.8)';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(3, 100); ctx.lineTo(3, GAME_HEIGHT);
+    ctx.moveTo(GAME_WIDTH - 3, 100); ctx.lineTo(GAME_WIDTH - 3, GAME_HEIGHT);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Draw Death Line
+    ctx.beginPath();
+    ctx.moveTo(0, 100);
+    ctx.lineTo(GAME_WIDTH, 100);
+    ctx.setLineDash([10, 10]);
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.6)';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    backgroundParticles.updateAndDraw(ctx);
+
+    // Draw Bodies
+    gameBodies.forEach(b => {
+        if(b.renderScale < 1) b.renderScale = Math.min(1, b.renderScale + 0.15); 
+        
+        ctx.translate(b.position.x, b.position.y);
+        ctx.rotate(b.angle);
+        
+        let speed = Math.abs(b.velocity.y) + Math.abs(b.velocity.x); // Include x for wind squish
+        let squishY = Math.max(0.85, 1 - (speed * 0.01)); 
+        let stretchX = Math.min(1.15, 1 + (speed * 0.008)); 
+        
+        ctx.scale(b.renderScale * stretchX, b.renderScale * squishY);
+
+        const r = b.drawRadius; 
+        const img = faceImages[b.faceId];
+        
+        if (img && img.complete && img.naturalHeight !== 0) {
+            ctx.drawImage(img, -r, -r, r*2, r*2);
+        } else {
+            ctx.fillStyle = faceColors[b.faceId % faceColors.length];
+            ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
+            ctx.lineWidth = 3; ctx.strokeStyle = '#333'; ctx.stroke();
+            ctx.fillStyle = '#333';
+            ctx.beginPath(); ctx.arc(-r/3, -r/5, r/6, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(r/3, -r/5, r/6, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, r/4, r/4, 0, Math.PI); ctx.stroke();
+            ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.font = '12px Arial';
+            ctx.fillText(b.faceId, -5, r - 5);
+        }
+
+        ctx.scale(1/(b.renderScale * stretchX), 1/(b.renderScale * squishY));
+        ctx.rotate(-b.angle);
+        ctx.translate(-b.position.x, -b.position.y);
+    });
+
+    // Draw Lightnings
+    activeLightnings.forEach((l) => {
+        if(l.life > 0) {
+            ctx.save();
+            ctx.shadowBlur = 15 + Math.random() * 10;
+            ctx.shadowColor = '#00ffff';
+            ctx.strokeStyle = `rgba(255, 255, 255, ${l.life})`;
+            ctx.lineJoin = 'miter';
+            ctx.lineWidth = 5 + Math.random() * 3;
+            ctx.beginPath();
+            ctx.moveTo(l.points[0].x, l.points[0].y);
+            for(let i=1; i<l.points.length; i++) {
+                ctx.lineTo(l.points[i].x, l.points[i].y);
+            }
+            ctx.stroke();
+
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = `rgba(0, 255, 255, ${l.life})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+
+            l.life -= 0.06; 
+        }
+    });
+    activeLightnings = activeLightnings.filter(l => l.life > 0);
+
+    if (gameState === 'playing' && canDrop) {
+        ctx.globalAlpha = 0.6;
+        const r = getRadiusForFace(nextFaceId);
+        ctx.fillStyle = faceColors[nextFaceId % faceColors.length];
+        ctx.beginPath(); ctx.arc(mouseX, 150, r, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 1;
+        
+        ctx.beginPath();
+        ctx.moveTo(mouseX, 150);
+        ctx.lineTo(mouseX, GAME_HEIGHT);
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.4)'; 
+        ctx.lineWidth = 3;
+        ctx.stroke();
+    }
+
+    particles.updateAndDraw(ctx);
+    floatingTexts.updateAndDraw(ctx);
+    ctx.restore();
+}
+requestAnimationFrame(renderLoop);
+
+// --- Inputs & Controls ---
+let mouseX = GAME_WIDTH / 2;
+function getEventX(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    return (clientX - rect.left) * scaleX;
+}
+
+canvas.addEventListener('mousemove', (e) => { mouseX = getEventX(e); });
+canvas.addEventListener('touchmove', (e) => { mouseX = getEventX(e); e.preventDefault(); }, {passive:false});
+canvas.addEventListener('mousedown', (e) => { mouseX = getEventX(e); dropFace(mouseX); });
+canvas.addEventListener('touchend', (e) => { dropFace(mouseX); });
+
+// --- UI & Flow Management ---
+function switchScreen(screenName) {
+    Object.values(screens).forEach(s => {
+        s.classList.add('hidden');
+        s.classList.remove('active');
+    });
+    if(screens[screenName]) {
+        screens[screenName].classList.remove('hidden');
+        screens[screenName].classList.add('active');
+    }
+}
+
+function updateUI() {
+    document.getElementById('score-display').innerText = score;
+    document.getElementById('coin-display').innerText = coins;
+}
+
+function drawPreview() {
+    const previewDiv = document.getElementById('next-face-preview');
+    const img = faceImages[nextFaceId];
+    if (img && img.complete && img.naturalHeight !== 0) {
+        previewDiv.innerHTML = `<img src="${img.src}" style="width:100%; height:100%; border-radius:50%">`;
+    } else {
+        previewDiv.style.backgroundColor = faceColors[nextFaceId % faceColors.length];
+        previewDiv.innerHTML = `<span style="font-weight:bold; color:#333;">${nextFaceId}</span>`;
+    }
+}
+
+function populateLevelGrid() {
+    const grid = document.getElementById('level-grid');
+    grid.innerHTML = '';
+    for(let i=1; i<=100; i++) {
+        const btn = document.createElement('button');
+        btn.className = `level-btn ${i > unlockedLevels ? 'locked' : ''}`;
+        btn.innerText = i;
+        if(i <= unlockedLevels) {
+            btn.onclick = () => { playSound('button'); initLevel(i); };
+        }
+        grid.appendChild(btn);
+    }
+}
+
+function gameOver() {
+    gameState = 'gameover';
+    playSound('gameover');
+    document.getElementById('go-score').innerText = score;
+    document.getElementById('go-coins').innerText = coins;
+    switchScreen('over');
+}
+
+function levelComplete() {
+    gameState = 'victory';
+    playSound('victory');
+    const coinsEarned = Math.floor(currentLevel * 2 + (score / 100));
+    coins += coinsEarned;
+    localStorage.setItem('mimiMergeCoins', coins);
+    if (currentLevel === unlockedLevels && unlockedLevels < 100) {
+        unlockedLevels++;
+        localStorage.setItem('mimiMergeProgress', unlockedLevels);
+    }
+    document.getElementById('lc-level-num').innerText = `Level ${currentLevel}`;
+    document.getElementById('lc-score').innerText = score;
+    document.getElementById('lc-coins').innerText = coinsEarned;
+    switchScreen('complete');
+}
+
+// --- Button Listeners ---
+document.getElementById('btn-play-now').onclick = () => { playSound('button'); initLevel(unlockedLevels); };
+document.getElementById('btn-levels').onclick = () => { playSound('button'); populateLevelGrid(); switchScreen('levels'); };
+document.getElementById('btn-back-menu').onclick = () => { playSound('button'); switchScreen('menu'); };
+
+document.getElementById('btn-readme').onclick = () => { playSound('button'); switchScreen('readme'); };
+document.getElementById('btn-readme-back').onclick = () => { playSound('button'); switchScreen('menu'); };
+
+document.getElementById('btn-pause').onclick = () => {
+    playSound('button');
+    gameState = 'paused';
+    document.getElementById('pause-menu').classList.remove('hidden');
+};
+document.getElementById('btn-resume').onclick = () => {
+    playSound('button');
+    gameState = 'playing';
+    document.getElementById('pause-menu').classList.add('hidden');
+};
+document.getElementById('btn-restart').onclick = () => { playSound('button'); document.getElementById('pause-menu').classList.add('hidden'); initLevel(currentLevel); };
+document.getElementById('btn-pause-menu').onclick = () => { playSound('button'); switchScreen('menu'); };
+document.getElementById('btn-ingame-back').onclick = () => { playSound('button'); switchScreen('menu'); gameState='menu'; };
+
+document.getElementById('btn-retry').onclick = () => { playSound('button'); initLevel(currentLevel); };
+document.getElementById('btn-go-menu').onclick = () => { playSound('button'); switchScreen('menu'); };
+
+document.getElementById('btn-next-level').onclick = () => { playSound('button'); initLevel(currentLevel + 1); };
+document.getElementById('btn-lc-menu').onclick = () => { playSound('button'); switchScreen('menu'); };
+    </script>
+</body>
+</html>
