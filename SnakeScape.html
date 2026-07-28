@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SnakeScape</title>
+    <style>
+        :root {
+            --bg-gradient-1: #1a1a2e;
+            --bg-gradient-2: #16213e;
+            --panel-bg: rgba(255, 255, 255, 0.95);
+            --text-color: #2c2c54;
+            --btn-color: #40407a;
+            --btn-hover: #2c2c54;
+            --accent: #ff5252;
+            --border-radius: 12px;
+            --shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: #0f0f1b;
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh; /* Fixes mobile bottom bar clipping */
+            width: 100vw;
+            touch-action: none;
+        }
+
+        header, footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: var(--panel-bg);
+            box-shadow: 0 2px 15px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .stats {
+            display: flex;
+            gap: 15px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            align-items: center;
+        }
+
+        .stars { color: #f1c40f; letter-spacing: 2px;}
+        .lives { color: #ff4757; font-size: 1.2rem; letter-spacing: 2px;}
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-group-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 250px;
+            margin: 0 auto;
+        }
+
+        button {
+            background: var(--btn-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 1rem;
+        }
+
+        button:active { transform: scale(0.95); }
+        button:hover { background: var(--btn-hover); box-shadow: 0 6px 12px rgba(0,0,0,0.2); }
+        button.accent { background: var(--accent); }
+        button.accent:hover { background: #d13939; }
+
+        #game-container {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background: radial-gradient(circle at center, var(--bg-gradient-2), var(--bg-gradient-1));
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+
+        .game-ui { display: none; }
+        .playing .game-ui { display: flex; }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: var(--panel-bg);
+            padding: 35px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            box-shadow: var(--shadow);
+            transform: translateY(20px) scale(0.95);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%;
+            width: 400px;
+        }
+
+        .modal-overlay.active .modal { transform: translateY(0) scale(1); }
+        .modal h1 { margin-bottom: 10px; font-size: 2.2rem; }
+        .modal p { margin-bottom: 20px; font-size: 1.1rem; color: #444; line-height: 1.5; }
+        .modal .stars-display { font-size: 3rem; color: #f1c40f; margin-bottom: 20px; letter-spacing: 5px; text-shadow: 0 2px 5px rgba(0,0,0,0.2);}
+
+        @media (max-width: 650px) {
+            header, footer { padding: 8px; flex-wrap: wrap; justify-content: center; gap: 8px; }
+            .stats { font-size: 0.95rem; gap: 10px; flex-wrap: wrap; justify-content: center;}
+            button { padding: 8px 12px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body id="body">
+
+    <header class="game-ui">
+        <div class="stats">
+            <div id="level-display">Level: 1</div>
+            <div id="hero-display" style="color: var(--accent);">Hero</div>
+            <div id="moves-display">Moves: 0</div>
+            <div class="stars" id="stars-display">★★★</div>
+            <div class="lives" id="lives-display">❤️❤️❤️</div>
+        </div>
+        <div class="btn-group">
+            <button onclick="game.undo()">Undo</button>
+            <button onclick="game.useHint()">Hint</button>
+            <button class="accent" onclick="game.resetLevel()">Reset</button>
+        </div>
+    </header>
+
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <div id="menu-modal" class="modal-overlay active">
+            <!-- White box background removed for menu -->
+            <div class="modal" style="background: transparent; box-shadow: none;">
+                <h1 style="color: var(--accent); font-size: 3.5rem; text-shadow: 0 4px 8px rgba(0,0,0,0.8); margin-bottom: 30px;">SnakeScape</h1>
+                <div class="btn-group-vertical">
+                    <button style="font-size: 1.2rem; padding: 15px;" class="accent" onclick="game.start()">Play Now</button>
+                    <button style="font-size: 1.1rem; padding: 12px;" onclick="game.showLevels()">Levels</button>
+                    <button style="font-size: 1.1rem; padding: 12px;" onclick="game.showReadme()">Readme</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="readme-modal" class="modal-overlay">
+            <div class="modal">
+                <h2 style="color: var(--text-color); margin-bottom: 15px;">Readme</h2>
+                <p>Enjoy the 100 levels!</p>
+                <p>If you encounter any bug or issue, please contact and report it to:</p>
+                <p style="font-weight: bold; color: var(--accent); font-size: 1.1rem; user-select: text; -webkit-user-select: text;">pixelgaunt@gmail.com</p>
+                <div class="btn-group" style="justify-content: center; margin-top: 25px;">
+                    <button onclick="game.closeReadme()" style="padding: 10px 30px;">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="levels-modal" class="modal-overlay">
+            <div class="modal">
+                <h2>Select Level</h2>
+                <p>Play through 100 challenging Faces!</p>
+                <div class="btn-group" style="justify-content: center; margin-top: 20px;">
+                    <button onclick="document.getElementById('levels-modal').classList.remove('active')">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="victory-modal" class="modal-overlay">
+            <div class="modal">
+                <h1 id="victory-title" style="color: #2ed573;">Face Cleared!</h1>
+                <div class="stars-display" id="victory-stars">★★★</div>
+                <p id="victory-stats">Moves: 10 | Lives Left: 3</p>
+                <div class="btn-group" style="justify-content: center;">
+                    <button onclick="game.nextLevel()">Next Level</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="gameover-modal" class="modal-overlay">
+            <div class="modal">
+                <h1 style="color: var(--accent);">Game Over!</h1>
+                <p>You ran out of lifelines.</p>
+                <div class="btn-group" style="justify-content: center; margin-top: 15px;">
+                    <button class="accent" onclick="game.resetLevel()">Try Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="game-ui">
+        <div class="btn-group">
+            <button onclick="game.prevLevel()">Prev Level</button>
+            <button onclick="game.nextLevel()">Next Level</button>
+        </div>
+        <div class="btn-group">
+            <button id="sound-btn" onclick="audio.toggleSound()">Sound: ON</button>
+            <button onclick="toggleFullscreen()">Fullscreen</button>
+        </div>
+    </footer>
+
+<script>
+const audio = {
+    ctx: null,
+    enabled: true,
+    init() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    },
+    toggleSound() {
+        this.enabled = !this.enabled;
+        document.getElementById('sound-btn').innerText = `Sound: ${this.enabled ? 'ON' : 'OFF'}`;
+    },
+    playTone(freq, type, duration, vol=0.1, slideFreq=null) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            if (slideFreq) {
+                osc.frequency.exponentialRampToValueAtTime(slideFreq, this.ctx.currentTime + duration);
+            }
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+    },
+    playMove() { this.playTone(300, 'sine', 0.1, 0.05); },
+    playSlide() { this.playTone(200, 'triangle', 0.3, 0.1, 500); },
+    playBlocked() { 
+        this.playTone(150, 'sawtooth', 0.2, 0.15, 100); 
+        setTimeout(() => this.playTone(120, 'sawtooth', 0.2, 0.15, 80), 100);
+    },
+    playEat() { 
+        this.playTone(800, 'sine', 0.1, 0.1, 1200); 
+        setTimeout(() => this.playTone(1000, 'sine', 0.1, 0.1, 1400), 50);
+    },
+    playVictory() {
+        [440, 554, 659, 880, 1108].forEach((freq, i) => {
+            setTimeout(() => this.playTone(freq, 'square', 0.3, 0.08), i * 120);
+        });
+    },
+    playGameOver() {
+        [400, 350, 300, 250].forEach((freq, i) => {
+            setTimeout(() => this.playTone(freq, 'sawtooth', 0.4, 0.1), i * 200);
+        });
+    }
+};
+
+const DIRS = { UP: {r: -1, c: 0}, DOWN: {r: 1, c: 0}, LEFT: {r: 0, c: -1}, RIGHT: {r: 0, c: 1} };
+
+const ANIME_HEROES = [
+    "Naruto Uzumaki", "Monkey D. Luffy", "Son Goku", "Ichigo Kurosaki", "Izuku Midoriya (Deku)", 
+    "Eren Yeager", "Tanjiro Kamado", "Yuji Itadori", "Gon Freecss", "Killua Zoldyck", 
+    "Edward Elric", "Alphonse Elric", "Light Yagami", "Lelouch Lamperouge", "Natsu Dragneel", 
+    "Gray Fullbuster", "Asta", "Yuno", "Meliodas", "Saitama", "Genos", "Mob (Shigeo Kageyama)", 
+    "Denji", "Power", "Makima", "Kenshin Himura", "Yusuke Urameshi", "Hiei", "Kurama", 
+    "Gintoki Sakata", "Joseph Joestar", "Jotaro Kujo", "Jonathan Joestar", "Josuke Higashikata", 
+    "Giorno Giovanna", "Jolyne Cujoh", "Spike Spiegel", "Vash the Stampede", "Simon", "Kamina", 
+    "Shinji Ikari", "Rei Ayanami", "Asuka Langley", "Kirito", "Asuna Yuuki", "Subaru Natsuki", 
+    "Emilia", "Rimuru Tempest", "Sora", "Shiro", "Naofumi Iwatani", "Raphtalia", "Senku Ishigami", 
+    "Chrome", "Emma", "Norman", "Ray", "Hyakkimaru", "Dororo", "Thorfinn", "Canute", 
+    "Ash Ketchum", "Yugi Muto", "Seto Kaiba", "Yoh Asakura", "Hao Asakura", "Inuyasha", 
+    "Kagome Higurashi", "Ranma Saotome", "Akane Tendo", "Kyo Sohma", "Tohru Honda", 
+    "Haruhi Fujioka", "Haruhi Suzumiya", "Kyon", "Tomoya Okazaki", "Nagisa Furukawa", 
+    "Taiga Aisaka", "Ryuuji Takasu", "Hachiman Hikigaya", "Yukino Yukinoshita", "Rintarou Okabe", 
+    "Kurisu Makise", "Kousei Arima", "Kaori Miyazono", "Allen Walker", "Maka Albarn", 
+    "Soul Eater Evans", "Crona", "Shinra Kusakabe", "Arthur Boyle", "Akira Fudo", 
+    "Joe Yabuki", "Hajime no Ippo", "Joe Hibiki", "Dai", "Popp", "Bell Cranel", 
+    "Accelerator", "Touma Kamijou", "Gojo Satoru", "Cloud Strife", "Devil Jin"
+];
+
+const MULTI_COLORS = [
+    '#ff5252', '#34ace0', '#33d9b2', '#ffda79', '#706fd3', '#ff793f', '#218c74', '#f5cd79', 
+    '#c44569', '#546de5', '#e056fd', '#badc58', '#f9ca24', '#eb4d4b', '#686de0', '#00d2d3', 
+    '#ff9f43', '#10ac84', '#5f27cd', '#ff6b6b', '#48dbfb', '#1dd1a1', '#feca57', '#ff9ff3', '#00a8ff'
+];
+
+class LevelGenerator {
+    static generate(levelNum) {
+        let size = 22 + Math.floor(((levelNum - 1) % 10) * 0.8); 
+        let rows = size, cols = size;
+        let grid = Array(rows).fill(0).map(() => Array(cols).fill(0));
+
+        let heroIndex = (levelNum - 1) % ANIME_HEROES.length;
+        let heroName = ANIME_HEROES[heroIndex];
+        let styleType = (levelNum - 1) % 25; 
+        
+        let cells = [];
+        for(let r = 0; r < rows; r++) {
+            for(let c = 0; c < cols; c++) {
+                let dr = (r - rows / 2) / (rows / 2);
+                let dc = (c - cols / 2) / (cols / 2);
+                let isFace = false;
+
+                switch(styleType) {
+                    case 0: isFace = (dr*dr + dc*dc < 0.65) || (dr < -0.3 && dr > -0.7 && Math.abs(dc) < 0.8) || (dr < -0.45 && Math.abs(dc) < 0.6 && (r+c)%2===0); break;
+                    case 1: isFace = (dr*dr + dc*dc < 0.6 && dr > -0.2) || (dr > -0.5 && dr < -0.2 && Math.abs(dc) < 0.95) || (dr < -0.5 && dr > -0.8 && Math.abs(dc) < 0.5); break;
+                    case 2: isFace = (dr > -0.1 && dr*dr + dc*dc < 0.58) || (dr <= -0.1 && dr > -0.9 && Math.abs(dc) < (0.95 + dr * 0.7) && (r*3+c)%3 !== 0); break;
+                    case 3: isFace = (dr*dr + dc*dc < 0.62) || (dr > -0.25 && dr < 0.05 && Math.abs(dc) < 0.85) || (dr < -0.4 && Math.abs(dc) < 0.55); break;
+                    case 4: isFace = (dr*dr + dc*dc < 0.58) || (dr < 0.1 && dc < 0.1 && Math.abs(dr+dc) < 0.85) || (dr < -0.2 && dc > -0.2 && (r*2+c)%2===0); break;
+                    case 5: isFace = (dr*dr + dc*dc < 0.58) || (dr < -0.2 && Math.abs(dc) > 0.3 && Math.abs(dc) < 0.8 && dr > -0.85) || (Math.abs(dc) > 0.5 && Math.abs(dr) < 0.4); break;
+                    case 6: isFace = (dr*dr*0.8 + dc*dc*1.3 < 0.7) && !(dr > 0.4 && (c%3===0)); break;
+                    case 7: isFace = (dr*dr*0.7 + dc*dc*1.2 < 0.75) || (dr > 0.3 && dr < 0.8 && Math.abs(dc) < 0.6 && (c%2===0)); break;
+                    case 8: isFace = (dr*dr + dc*dc < 0.64) || (dr < -0.3 && dc < -0.1 && Math.abs(dr+dc) < 0.95); break;
+                    case 9: isFace = (dr*dr*1.1 + dc*dc*0.9 < 0.78) && dr < 0.5; break;
+                    case 10: isFace = (dr < 0.2 && dr*dr + dc*dc < 0.65) || (dr >= 0.2 && dr < 0.8 && Math.abs(dc) < (0.75 - dr)); break;
+                    case 11: isFace = (dr*dr*0.9 + dc*dc*1.1 < 0.7) || (dr < -0.6 && Math.abs(dc) < 0.25) || (dr > 0.4 && Math.abs(dc) < 0.4); break;
+                    case 12: isFace = (Math.abs(dr) < 0.65 && Math.abs(dc) < 0.6) && !(Math.abs(dc) > 0.4 && dr > 0.4); break;
+                    case 13: isFace = (dr*dr + dc*dc < 0.52) || (dr > -0.5 && dr < 0.7 && Math.abs(dc) > 0.45 && Math.abs(dc) < 0.88); break;
+                    case 14: isFace = (Math.abs(dr) < 0.7 && Math.abs(dc) < 0.65) && !(dr < -0.3 && Math.abs(dc) > 0.3) && !(dr > 0.5 && Math.abs(dc) > 0.3); break;
+                    case 15: isFace = (dr*dr + dc*dc < 0.65) && !(dr > 0.1 && dr < 0.3 && Math.abs(dc) < 0.6); break;
+                    case 16: isFace = (dr*dr + dc*dc < 0.6) || (dr < -0.4 && Math.abs(dc) > 0.3 && Math.abs(dc) < 0.7 && dr > -0.85); break;
+                    case 17: isFace = (dr > -0.1 && dr*dr + dc*dc < 0.55) || (dr <= -0.1 && dr > -0.8 && Math.abs(dc) < (0.8 + dr)); break;
+                    case 18: isFace = (dr*dr + dc*dc < 0.65) && !(dr > -0.2 && dr < 0.05 && Math.abs(dc) > 0.2); break;
+                    case 19: isFace = (dr*dr + dc*dc < 0.6) || (dr < -0.5 && Math.abs(dc) < 0.15) || (dr < -0.3 && Math.abs(dc) < 0.6 && dr > -0.5); break;
+                    case 20: isFace = (dr*dr + dc*dc < 0.68) && ((r+c)%3 !== 0 || dr < 0); break;
+                    case 21: isFace = (dr*dr + dc*dc < 0.7) && (Math.sin(r*1.5)*Math.cos(c*1.5) > -0.5); break;
+                    case 22: isFace = (dr > -0.2 && dr*dr + dc*dc < 0.6) || (dr <= -0.2 && dr > -0.6 && Math.abs(dc) < 0.6 && (c%2===0)); break;
+                    case 23: isFace = (dr*dr*0.85 + dc*dc*1.15 < 0.72) || (dr < -0.4 && Math.abs(dc) < 0.8 && (r+c)%2===0); break;
+                    default: isFace = (dr*dr + dc*dc < 0.68) && !(dr > 0.4 && Math.abs(dc) < 0.2); break;
+                }
+                
+                let isLeftEye = (dr > -0.15 && dr < -0.02 && dc > -0.42 && dc < -0.15);
+                let isRightEye = (dr > -0.15 && dr < -0.02 && dc > 0.15 && dc < 0.42);
+                let isMouth = (dr > 0.32 && dr < 0.42 && dc > -0.22 && dc < 0.22);
+                if (styleType === 3 || styleType === 18) { isLeftEye = false; isRightEye = false; } 
+
+                if (isFace && !isLeftEye && !isRightEye && !isMouth) {
+                    grid[r][c] = 1;
+                    cells.push({r, c});
+                }
+            }
+        }
+        
+        cells.sort(() => Math.random() - 0.5);
+
+        let snakes = [];
+        let snakeId = 0;
+
+        for (let head of cells) {
+            if (grid[head.r][head.c] !== 1) continue; 
+            
+            // Limit snake density here so players always have space to drag!
+            if (Math.random() > 0.40) continue; 
+
+            let dirs = Object.values(DIRS).sort(() => Math.random() - 0.5);
+            for (let dir of dirs) {
+                let nextR = head.r - dir.r, nextC = head.c - dir.c;
+                if (nextR >= 0 && nextR < rows && nextC >= 0 && nextC < cols && grid[nextR][nextC] === 1) {
+                    let segs = [{r: head.r, c: head.c}, {r: nextR, c: nextC}];
+                    grid[head.r][head.c] = 2; grid[nextR][nextC] = 2;
+                    
+                    // Reduced snake lengths to prevent hanging the level completely
+                    let randType = Math.random();
+                    let targetLen = 2;
+                    if (randType < 0.45) targetLen = Math.floor(Math.random() * 2) + 2;      // Short
+                    else if (randType < 0.85) targetLen = Math.floor(Math.random() * 3) + 4; // Medium
+                    else targetLen = Math.floor(Math.random() * 2) + 6;                      // Long (Capped so it doesn't block level)
+
+                    let currR = nextR - dir.r, currC = nextC - dir.c;
+                    while (segs.length < targetLen && currR >= 0 && currR < rows && currC >= 0 && currC < cols && grid[currR][currC] === 1) {
+                        segs.push({r: currR, c: currC});
+                        grid[currR][currC] = 2;
+                        currR -= dir.r; currC -= dir.c;
+                    }
+
+                    let randColor = MULTI_COLORS[Math.floor(Math.random() * MULTI_COLORS.length)];
+                    snakes.push({
+                        id: snakeId++, 
+                        segments: segs, 
+                        dir: dir, color: randColor, isHappy: false
+                    });
+                    break;
+                }
+            }
+        }
+        
+        return { rows, cols, snakes, heroName: heroName };
+    }
+}
+
+const game = {
+    state: 'MENU', 
+    level: parseInt(localStorage.getItem('snakeScape_level')) || 1,
+    moves: 0, lives: 3, snakes: [], history: [], mice: [], floatingTexts: [],
+    rows: 0, cols: 0, tileSize: 0, offsetX: 0, offsetY: 0, heroName: "",
+    
+    canvas: document.getElementById('game-canvas'),
+    ctx: document.getElementById('game-canvas').getContext('2d'),
+    particles: [], exitingSnakes: [], menuSnakes: [],
+    
+    draggedSnake: null, dragStartPos: {x:0, y:0}, dragCurrentPos: {x:0, y:0},
+    lastTime: 0, textTimer: 3.0, activeHelpMouseId: null,
+
+    init() {
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        this.setupInputs();
+        requestAnimationFrame((t) => this.loop(t));
+    },
+    
+    initMenuSnakes() {
+        this.menuSnakes = [];
+        for(let i=0; i<3; i++) { this.resetMenuSnake(i, true); }
+    },
+
+    resetMenuSnake(i, initial = false) {
+        let y = this.canvas.height * 0.15 + Math.random() * (this.canvas.height * 0.7);
+        let speed = 120 + Math.random() * 150;
+        let startX = initial ? (Math.random() * this.canvas.width * -1) - 200 : -300;
+        let targetX = this.canvas.width * 0.4 + Math.random() * (this.canvas.width * 0.5);
+        let color = MULTI_COLORS[Math.floor(Math.random() * MULTI_COLORS.length)];
+        this.menuSnakes[i] = { x: startX, y: y, targetX: targetX, speed: speed, color: color, mouseEaten: false };
+    },
+
+    showLevels() { document.getElementById('levels-modal').classList.add('active'); },
+    showReadme() { document.getElementById('readme-modal').classList.add('active'); },
+    closeReadme() { document.getElementById('readme-modal').classList.remove('active'); },
+
+    start() {
+        audio.init();
+        document.getElementById('menu-modal').classList.remove('active');
+        document.getElementById('body').classList.add('playing');
+        this.state = 'PLAYING';
+        this.loadLevel();
+    },
+
+    loadLevel() {
+        document.getElementById('gameover-modal').classList.remove('active');
+        document.getElementById('victory-modal').classList.remove('active');
+
+        if(this.level > 100) this.level = 100;
+
+        let levelData = LevelGenerator.generate(this.level);
+        this.rows = levelData.rows; this.cols = levelData.cols;
+        this.heroName = levelData.heroName;
+        
+        this.snakes = levelData.snakes.map(s => ({
+            id: s.id, segments: s.segments.map(seg => ({...seg})),
+            dir: {...s.dir}, color: s.color, visualOffset: 0, isHappy: false
+        }));
+        
+        this.moves = 0; 
+        this.lives = Math.floor(this.level / 10) + 5; 
+        this.history = []; this.exitingSnakes = []; this.particles = []; this.mice = []; this.floatingTexts = [];
+        this.textTimer = 3.0; this.activeHelpMouseId = null;
+        
+        this.snakes.forEach(s => {
+            let edgeR = s.segments[0].r, edgeC = s.segments[0].c;
+            while (edgeR >= 0 && edgeR < this.rows && edgeC >= 0 && edgeC < this.cols) {
+                edgeR += s.dir.r; edgeC += s.dir.c;
+            }
+            this.mice.push({ id: s.id, r: edgeR, c: edgeC, color: s.color, randomOffset: Math.random() * 100 });
+        });
+
+        this.resize();
+        this.updateUI();
+        localStorage.setItem('snakeScape_level', this.level);
+    },
+
+    resize() {
+        // Fix for precise container-based scaling
+        let container = document.getElementById('game-container');
+        this.canvas.width = container.clientWidth;
+        this.canvas.height = container.clientHeight;
+        
+        if (this.state === 'PLAYING') {
+            const availableW = this.canvas.width * 0.95;
+            const availableH = this.canvas.height * 0.95;
+            // Pad by +4 to make sure mice are perfectly framed on screen
+            this.tileSize = Math.min(availableW / (this.cols + 4), availableH / (this.rows + 4)); 
+            
+            this.offsetX = (this.canvas.width - this.cols * this.tileSize) / 2;
+            this.offsetY = (this.canvas.height - this.rows * this.tileSize) / 2;
+        } else {
+            if (this.menuSnakes.length === 0) this.initMenuSnakes();
+        }
+    },
+
+    updateUI() {
+        document.getElementById('level-display').innerText = `Level: ${this.level}/100`;
+        document.getElementById('hero-display').innerText = `Hero: ${this.heroName}`;
+        document.getElementById('moves-display').innerText = `Moves: ${this.moves}`;
+        document.getElementById('lives-display').innerText = '❤️'.repeat(this.lives) || '💔';
+        let stars = this.lives >= 5 ? 3 : this.lives >= 3 ? 2 : 1;
+        document.getElementById('stars-display').innerText = '★'.repeat(stars) + '☆'.repeat(3-stars);
+    },
+
+    nextLevel() { if (this.level < 100) { this.level++; this.loadLevel(); } },
+    prevLevel() { if (this.level > 1) { this.level--; this.loadLevel(); } },
+    resetLevel() { this.loadLevel(); },
+
+    undo() {
+        if (this.history.length === 0) return;
+        let lastState = this.history.pop();
+        this.snakes = JSON.parse(lastState.snakes);
+        this.mice = JSON.parse(lastState.mice);
+        this.exitingSnakes = []; 
+        this.moves++; this.updateUI(); audio.playMove();
+    },
+
+    useHint() {
+        if(this.lives <= 1) return; 
+        for (let s of this.snakes) {
+            if (this.canSnakeEscape(s)) {
+                this.hintSnake = s.id; setTimeout(() => this.hintSnake = null, 1500);
+                this.moves++; this.lives--; this.updateUI(); return;
+            }
+        }
+    },
+
+    canSnakeEscape(snake) {
+        let dr = snake.dir.r;
+        let dc = snake.dir.c;
+        let r = snake.segments[0].r + dr;
+        let c = snake.segments[0].c + dc;
+        
+        while (r >= 0 && r < this.rows && c >= 0 && c < this.cols) {
+            for (let i = 0; i < this.snakes.length; i++) {
+                let s = this.snakes[i];
+                if (s.id === snake.id) continue;
+                for (let j = 0; j < s.segments.length; j++) {
+                    let seg = s.segments[j];
+                    if (seg.r === r && seg.c === c) return false; 
+                }
+            }
+            r += dr;
+            c += dc;
+        }
+        return true;
+    },
+
+    setupInputs() {
+        let isDown = false;
+        const getGridPos = (evt) => {
+            let rect = this.canvas.getBoundingClientRect();
+            let x = (evt.clientX || (evt.touches && evt.touches[0].clientX)) - rect.left - this.offsetX;
+            let y = (evt.clientY || (evt.touches && evt.touches[0].clientY)) - rect.top - this.offsetY;
+            return {x, y};
+        };
+
+        const down = (evt) => {
+            if (this.state !== 'PLAYING' || evt.button === 2) return;
+            let pos = getGridPos(evt);
+            let c = Math.floor(pos.x / this.tileSize), r = Math.floor(pos.y / this.tileSize);
+            this.draggedSnake = this.snakes.find(s => s.segments.some(seg => seg.r === r && seg.c === c));
+            if (this.draggedSnake) { isDown = true; this.dragStartPos = pos; this.dragCurrentPos = pos; }
+        };
+
+        const move = (evt) => {
+            if (!isDown || !this.draggedSnake) return;
+            this.dragCurrentPos = getGridPos(evt);
+            let dx = this.dragCurrentPos.x - this.dragStartPos.x, dy = this.dragCurrentPos.y - this.dragStartPos.y;
+            let proj = (this.draggedSnake.dir.c === 0 ? dy * this.draggedSnake.dir.r : dx * this.draggedSnake.dir.c) / this.tileSize;
+            if (proj < 0) proj = 0;
+            if (!this.canSnakeEscape(this.draggedSnake) && proj > 0.4) proj = 0.4;
+            this.draggedSnake.visualOffset = proj;
+        };
+
+        const up = () => {
+            if (!isDown || !this.draggedSnake) return;
+            isDown = false;
+            if (this.draggedSnake.visualOffset > 0.3) {
+                if (this.canSnakeEscape(this.draggedSnake)) {
+                    this.history.push({snakes: JSON.stringify(this.snakes), mice: JSON.stringify(this.mice)});
+                    audio.playSlide(); this.moves++; this.updateUI();
+                    this.exitingSnakes.push(this.draggedSnake);
+                    this.snakes = this.snakes.filter(s => s.id !== this.draggedSnake.id);
+                } else {
+                    audio.playBlocked(); this.draggedSnake.visualOffset = 0; this.lives--; this.updateUI();
+                    if(this.lives <= 0) { audio.playGameOver(); document.getElementById('gameover-modal').classList.add('active'); }
+                }
+            } else this.draggedSnake.visualOffset = 0;
+            this.draggedSnake = null;
+        };
+
+        this.canvas.addEventListener('mousedown', down); this.canvas.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', up);
+        this.canvas.addEventListener('touchstart', down, {passive: true}); this.canvas.addEventListener('touchmove', move, {passive: true});
+        window.addEventListener('touchend', up);
+    },
+
+    createParticles(x, y, color) {
+        if (this.particles.length > 80) return; 
+        let count = 8;
+        for(let i=0; i<count; i++) this.particles.push({x, y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 1.0, color});
+    },
+
+    loop(timestamp) {
+        let dt = (timestamp - this.lastTime) / 1000;
+        this.lastTime = timestamp;
+        if(dt > 0.1) dt = 0.1;
+        this.update(dt);
+        this.draw();
+        requestAnimationFrame((t) => this.loop(t));
+    },
+
+    update(dt) {
+        if (this.state === 'MENU') {
+            if (this.menuSnakes.length === 0) this.initMenuSnakes();
+            this.menuSnakes.forEach((ms, i) => {
+                ms.x += dt * ms.speed;
+                if (ms.x > this.canvas.width + 300) {
+                    this.resetMenuSnake(i);
+                }
+                if (!ms.mouseEaten && ms.x >= ms.targetX) {
+                    ms.mouseEaten = true;
+                    this.createParticles(ms.targetX, ms.y, ms.color);
+                }
+            });
+            for (let i = this.particles.length - 1; i >= 0; i--) {
+                let p = this.particles[i]; p.x += p.vx; p.y += p.vy; p.life -= dt * 2.5;
+                if (p.life <= 0) this.particles.splice(i, 1);
+            }
+            return;
+        }
+
+        this.textTimer += dt;
+        if (this.textTimer >= 3.0) {
+            this.textTimer = 0;
+            this.activeHelpMouseId = this.mice.length > 0 ? this.mice[Math.floor(Math.random() * this.mice.length)].id : null;
+        }
+
+        for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+            let ft = this.floatingTexts[i];
+            ft.y -= dt * 45;
+            ft.life -= dt * 0.8;
+            if (ft.life <= 0) this.floatingTexts.splice(i, 1);
+        }
+
+        for (let i = this.exitingSnakes.length - 1; i >= 0; i--) {
+            let s = this.exitingSnakes[i];
+            s.visualOffset += dt * 28; 
+            
+            let mouseIdx = this.mice.findIndex(m => m.id === s.id);
+            if (mouseIdx !== -1) {
+                let m = this.mice[mouseIdx];
+                let headC = s.segments[0].c + s.dir.c * s.visualOffset;
+                let headR = s.segments[0].r + s.dir.r * s.visualOffset;
+                
+                let passed = false;
+                if (s.dir.c === 1 && headC >= m.c) passed = true;
+                if (s.dir.c === -1 && headC <= m.c) passed = true;
+                if (s.dir.r === 1 && headR >= m.r) passed = true;
+                if (s.dir.r === -1 && headR <= m.r) passed = true;
+                
+                if (passed && !s.isHappy) {
+                    s.isHappy = true;
+                    this.createParticles(this.offsetX + (m.c + 0.5) * this.tileSize, this.offsetY + (m.r + 0.5) * this.tileSize, s.color);
+                    this.floatingTexts.push({
+                        x: this.offsetX + (m.c + 0.5) * this.tileSize, 
+                        y: this.offsetY + (m.r) * this.tileSize, 
+                        text: "Happy!", life: 1.0
+                    });
+                    audio.playEat();
+                }
+            }
+
+            if (s.visualOffset > Math.max(this.rows, this.cols) + 2) {
+                let rmIdx = this.mice.findIndex(m => m.id === s.id);
+                if (rmIdx !== -1) this.mice.splice(rmIdx, 1);
+                this.exitingSnakes.splice(i, 1);
+                
+                if (this.snakes.length === 0 && this.exitingSnakes.length === 0) {
+                    this.mice = []; 
+                    audio.playVictory();
+                    document.getElementById('victory-stars').innerText = '★'.repeat(this.calculateStars()) + '☆'.repeat(3-this.calculateStars());
+                    document.getElementById('victory-stats').innerText = `Moves: ${this.moves} | Lives Left: ${this.lives}`;
+                    document.getElementById('victory-modal').classList.add('active');
+                }
+            }
+        }
+
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            let p = this.particles[i]; p.x += p.vx; p.y += p.vy; p.life -= dt * 2.5;
+            if (p.life <= 0) this.particles.splice(i, 1);
+        }
+    },
+
+    calculateStars() { return this.lives >= 5 ? 3 : this.lives >= 3 ? 2 : 1; },
+
+    drawMouseIcon(ctx, x, y, size, showHelp, timeNow, randomOffset) {
+        ctx.save();
+        ctx.translate(x, y);
+        if (showHelp) {
+            ctx.fillStyle = '#ff4757'; ctx.font = `bold ${size * 0.4}px Arial`; ctx.textAlign = 'center';
+            ctx.fillText("help", 0, -size * 0.7);
+        }
+        ctx.rotate(Math.sin(timeNow / 150 + randomOffset) * 0.15);
+        ctx.strokeStyle = '#f5f6fa'; ctx.lineWidth = size*0.06;
+        ctx.beginPath(); ctx.moveTo(0, size * 0.2); ctx.lineTo(0, size * 0.6); ctx.stroke();
+        ctx.fillStyle = '#dcdde1'; ctx.beginPath(); ctx.arc(0, 0, size * 0.25, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ff9ff3';
+        ctx.beginPath(); ctx.arc(-size*0.15, -size*0.15, size * 0.12, 0, Math.PI*2); ctx.arc(size*0.15, -size*0.15, size * 0.12, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#2f3640';
+        ctx.beginPath(); ctx.arc(-size*0.08, -size*0.02, size * 0.04, 0, Math.PI*2); ctx.arc(size*0.08, -size*0.02, size * 0.04, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+    },
+
+    draw() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        let timeNow = Date.now();
+
+        if (this.state === 'MENU') {
+            let size = Math.min(this.canvas.width, this.canvas.height) * 0.05;
+            if (size < 25) size = 25;
+            if (size > 45) size = 45;
+
+            this.menuSnakes.forEach(ms => {
+                if (!ms.mouseEaten) {
+                    this.drawMouseIcon(this.ctx, ms.targetX, ms.y, size, false, timeNow, ms.y);
+                }
+                let sx = ms.x, sy = ms.y;
+                this.ctx.lineCap = 'round'; this.ctx.lineJoin = 'round'; this.ctx.lineWidth = size * 0.7;
+                this.ctx.strokeStyle = ms.color;
+                this.ctx.beginPath(); this.ctx.moveTo(sx-size*2.5, sy); this.ctx.lineTo(sx, sy); this.ctx.stroke();
+                
+                this.ctx.fillStyle = '#fff';
+                this.ctx.beginPath(); this.ctx.arc(sx, sy - size*0.16, size*0.13, 0, Math.PI*2); this.ctx.fill();
+                this.ctx.beginPath(); this.ctx.arc(sx, sy + size*0.16, size*0.13, 0, Math.PI*2); this.ctx.fill();
+                
+                this.ctx.fillStyle = '#111';
+                this.ctx.beginPath(); this.ctx.arc(sx + size*0.05, sy - size*0.16, size*0.06, 0, Math.PI*2); this.ctx.fill();
+                this.ctx.beginPath(); this.ctx.arc(sx + size*0.05, sy + size*0.16, size*0.06, 0, Math.PI*2); this.ctx.fill();
+            });
+
+            this.particles.forEach(p => {
+                this.ctx.globalAlpha = p.life; this.ctx.fillStyle = p.color;
+                this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.life * 6, 0, Math.PI*2); this.ctx.fill();
+            });
+            this.ctx.globalAlpha = 1.0;
+            return;
+        }
+
+        this.ctx.strokeStyle = 'rgba(255,255,255,0.02)'; this.ctx.lineWidth = 1;
+        for(let r=0; r<=this.rows; r++) { this.ctx.beginPath(); this.ctx.moveTo(this.offsetX, this.offsetY + r*this.tileSize); this.ctx.lineTo(this.offsetX + this.cols*this.tileSize, this.offsetY + r*this.tileSize); this.ctx.stroke(); }
+        for(let c=0; c<=this.cols; c++) { this.ctx.beginPath(); this.ctx.moveTo(this.offsetX + c*this.tileSize, this.offsetY); this.ctx.lineTo(this.offsetX + c*this.tileSize, this.offsetY + this.rows*this.tileSize); this.ctx.stroke(); }
+
+        if (this.mice.length > 0) {
+            this.ctx.strokeStyle = '#f5f6fa'; this.ctx.lineWidth = this.tileSize*0.06;
+            this.ctx.beginPath();
+            this.mice.forEach(m => {
+                let cx = this.offsetX + (m.c + 0.5) * this.tileSize;
+                let cy = this.offsetY + (m.r + 0.5) * this.tileSize;
+                this.ctx.moveTo(cx, cy + this.tileSize * 0.2);
+                this.ctx.lineTo(cx, cy + this.tileSize * 0.6);
+            });
+            this.ctx.stroke();
+
+            this.ctx.fillStyle = '#dcdde1';
+            this.ctx.beginPath();
+            this.mice.forEach(m => {
+                let cx = this.offsetX + (m.c + 0.5) * this.tileSize;
+                let cy = this.offsetY + (m.r + 0.5) * this.tileSize;
+                this.ctx.moveTo(cx + this.tileSize * 0.25, cy);
+                this.ctx.arc(cx, cy, this.tileSize * 0.25, 0, Math.PI*2);
+            });
+            this.ctx.fill();
+
+            this.ctx.fillStyle = '#ff9ff3';
+            this.ctx.beginPath();
+            this.mice.forEach(m => {
+                let cx = this.offsetX + (m.c + 0.5) * this.tileSize;
+                let cy = this.offsetY + (m.r + 0.5) * this.tileSize;
+                this.ctx.moveTo(cx - this.tileSize*0.15 + this.tileSize * 0.12, cy - this.tileSize*0.15);
+                this.ctx.arc(cx - this.tileSize*0.15, cy - this.tileSize*0.15, this.tileSize * 0.12, 0, Math.PI*2);
+                this.ctx.moveTo(cx + this.tileSize*0.15 + this.tileSize * 0.12, cy - this.tileSize*0.15);
+                this.ctx.arc(cx + this.tileSize*0.15, cy - this.tileSize*0.15, this.tileSize * 0.12, 0, Math.PI*2);
+            });
+            this.ctx.fill();
+
+            this.ctx.fillStyle = '#2f3640';
+            this.ctx.beginPath();
+            this.mice.forEach(m => {
+                let cx = this.offsetX + (m.c + 0.5) * this.tileSize;
+                let cy = this.offsetY + (m.r + 0.5) * this.tileSize;
+                this.ctx.moveTo(cx - this.tileSize*0.08 + this.tileSize * 0.04, cy - this.tileSize*0.02);
+                this.ctx.arc(cx - this.tileSize*0.08, cy - this.tileSize*0.02, this.tileSize * 0.04, 0, Math.PI*2);
+                this.ctx.moveTo(cx + this.tileSize*0.08 + this.tileSize * 0.04, cy - this.tileSize*0.02);
+                this.ctx.arc(cx + this.tileSize*0.08, cy - this.tileSize*0.02, this.tileSize * 0.04, 0, Math.PI*2);
+            });
+            this.ctx.fill();
+        }
+
+        if (this.activeHelpMouseId) {
+            let helpMouse = this.mice.find(m => m.id === this.activeHelpMouseId);
+            if (helpMouse) {
+                this.ctx.fillStyle = '#ff4757'; 
+                this.ctx.font = `bold ${this.tileSize * 0.45}px Arial`; 
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText("help", this.offsetX + (helpMouse.c + 0.5) * this.tileSize, this.offsetY + (helpMouse.r + 0.5) * this.tileSize - this.tileSize * 0.7);
+            }
+        }
+
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.lineWidth = this.tileSize * 0.72;
+
+        let colorGroups = {};
+        this.snakes.forEach(s => {
+            if (s === this.draggedSnake) return;
+            let col = this.hintSnake === s.id ? '#ffffff' : s.color;
+            if (!colorGroups[col]) colorGroups[col] = [];
+            colorGroups[col].push(s);
+        });
+
+        for (let col in colorGroups) {
+            this.ctx.strokeStyle = col;
+            this.ctx.beginPath();
+            colorGroups[col].forEach(s => {
+                for (let i = 0; i < s.segments.length; i++) {
+                    let px = this.offsetX + (s.segments[i].c + 0.5) * this.tileSize;
+                    let py = this.offsetY + (s.segments[i].r + 0.5) * this.tileSize;
+                    if (i === 0) this.ctx.moveTo(px, py);
+                    else this.ctx.lineTo(px, py);
+                }
+            });
+            this.ctx.stroke();
+        }
+
+        this.ctx.fillStyle = '#ffffff';
+        let eyeOff = this.tileSize * 0.15;
+        let eyeSize = this.tileSize * 0.12;
+        this.ctx.beginPath();
+        this.snakes.forEach(s => {
+            if (s === this.draggedSnake) return;
+            let headX = this.offsetX + (s.segments[0].c + 0.5) * this.tileSize;
+            let headY = this.offsetY + (s.segments[0].r + 0.5) * this.tileSize;
+            let ex1 = headX + (s.dir.r === 0 ? 0 : -eyeOff), ey1 = headY + (s.dir.c === 0 ? 0 : -eyeOff);
+            let ex2 = headX + (s.dir.r === 0 ? 0 : eyeOff), ey2 = headY + (s.dir.c === 0 ? 0 : eyeOff);
+            if (s.dir.r !== 0) { ex1 = headX - eyeOff; ex2 = headX + eyeOff; }
+            if (s.dir.c !== 0) { ey1 = headY - eyeOff; ey2 = headY + eyeOff; }
+            
+            this.ctx.moveTo(ex1 + eyeSize, ey1); this.ctx.arc(ex1, ey1, eyeSize, 0, Math.PI*2);
+            this.ctx.moveTo(ex2 + eyeSize, ey2); this.ctx.arc(ex2, ey2, eyeSize, 0, Math.PI*2);
+        });
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#000000';
+        let pupilSize = eyeSize * 0.45;
+        this.ctx.beginPath();
+        this.snakes.forEach(s => {
+            if (s === this.draggedSnake) return;
+            let headX = this.offsetX + (s.segments[0].c + 0.5) * this.tileSize;
+            let headY = this.offsetY + (s.segments[0].r + 0.5) * this.tileSize;
+            let ex1 = headX + (s.dir.r === 0 ? 0 : -eyeOff), ey1 = headY + (s.dir.c === 0 ? 0 : -eyeOff);
+            let ex2 = headX + (s.dir.r === 0 ? 0 : eyeOff), ey2 = headY + (s.dir.c === 0 ? 0 : eyeOff);
+            if (s.dir.r !== 0) { ex1 = headX - eyeOff; ex2 = headX + eyeOff; }
+            if (s.dir.c !== 0) { ey1 = headY - eyeOff; ey2 = headY + eyeOff; }
+            
+            this.ctx.moveTo(ex1 + pupilSize, ey1); this.ctx.arc(ex1, ey1, pupilSize, 0, Math.PI*2);
+            this.ctx.moveTo(ex2 + pupilSize, ey2); this.ctx.arc(ex2, ey2, pupilSize, 0, Math.PI*2);
+        });
+        this.ctx.fill();
+
+        const drawDynamicSnake = (s, isExiting) => {
+            let track = [{c: s.segments[0].c + s.dir.c * s.visualOffset, r: s.segments[0].r + s.dir.r * s.visualOffset}];
+            if (s.visualOffset > 0) track.push({ c: s.segments[0].c, r: s.segments[0].r });
+            for (let i = 1; i < s.segments.length; i++) track.push({ c: s.segments[i].c, r: s.segments[i].r });
+            
+            let targetLength = Math.max(1, s.segments.length - 1), currentLength = 0, gridPts = [track[0]];
+            for (let i = 1; i < track.length; i++) {
+                let dx = track[i].c - track[i-1].c, dy = track[i].r - track[i-1].r;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist === 0) continue;
+                if (currentLength + dist <= targetLength) {
+                    gridPts.push(track[i]); currentLength += dist;
+                    if (Math.abs(currentLength - targetLength) < 0.001) break;
+                } else {
+                    let ratio = (targetLength - currentLength) / dist;
+                    gridPts.push({c: track[i-1].c + dx * ratio, r: track[i-1].r + dy * ratio}); break;
+                }
+            }
+            
+            let pts = gridPts.map((p, index) => {
+                let x = this.offsetX + (p.c + 0.5) * this.tileSize, y = this.offsetY + (p.r + 0.5) * this.tileSize;
+                let wave = Math.sin(timeNow / 80 - index) * (this.tileSize * 0.15) * Math.min(1, s.visualOffset);
+                x += (s.dir.c === 0 ? 1 : 0) * wave; y += (s.dir.r === 0 ? 1 : 0) * wave;
+                return { x, y };
+            });
+
+            this.ctx.strokeStyle = s.color;
+            this.ctx.lineWidth = this.tileSize * 0.72; 
+            this.ctx.beginPath(); pts.forEach((p, i) => i===0 ? this.ctx.moveTo(p.x, p.y) : this.ctx.lineTo(p.x, p.y)); this.ctx.stroke();
+
+            let head = pts[0], eyeOffset = this.tileSize * 0.15; 
+            let ex1 = head.x + (s.dir.r === 0 ? 0 : -eyeOffset), ey1 = head.y + (s.dir.c === 0 ? 0 : -eyeOffset);
+            let ex2 = head.x + (s.dir.r === 0 ? 0 : eyeOffset), ey2 = head.y + (s.dir.c === 0 ? 0 : eyeOffset);
+            if (s.dir.r !== 0) { ex1 = head.x - eyeOffset; ex2 = head.x + eyeOffset; }
+            if (s.dir.c !== 0) { ey1 = head.y - eyeOffset; ey2 = head.y + eyeOffset; }
+
+            let eyeSize = this.tileSize*0.12, pupilSize = this.tileSize*0.06;
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.beginPath(); this.ctx.arc(ex1, ey1, eyeSize, 0, Math.PI*2); this.ctx.fill();
+            this.ctx.beginPath(); this.ctx.arc(ex2, ey2, eyeSize, 0, Math.PI*2); this.ctx.fill();
+
+            this.ctx.fillStyle = '#111'; let pxOffset = s.dir.c * this.tileSize * 0.04, pyOffset = s.dir.r * this.tileSize * 0.04;
+            this.ctx.beginPath(); this.ctx.arc(ex1 + pxOffset, ey1 + pyOffset, pupilSize, 0, Math.PI*2); this.ctx.fill();
+            this.ctx.beginPath(); this.ctx.arc(ex2 + pxOffset, ey2 + pyOffset, pupilSize, 0, Math.PI*2); this.ctx.fill();
+
+            if (s.isHappy) {
+                this.ctx.strokeStyle = '#2ed573'; this.ctx.lineWidth = this.tileSize * 0.08;
+                this.ctx.beginPath(); this.ctx.arc(head.x, head.y, this.tileSize*0.2, 0, Math.PI); this.ctx.stroke();
+            }
+        };
+
+        if (this.draggedSnake) drawDynamicSnake(this.draggedSnake, false);
+        this.exitingSnakes.forEach(s => drawDynamicSnake(s, true));
+
+        this.particles.forEach(p => {
+            this.ctx.globalAlpha = p.life; this.ctx.fillStyle = p.color;
+            this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.life * 6, 0, Math.PI*2); this.ctx.fill();
+        });
+        this.ctx.globalAlpha = 1.0;
+
+        this.floatingTexts.forEach(ft => {
+            this.ctx.globalAlpha = ft.life;
+            this.ctx.fillStyle = '#ff9ff3';
+            this.ctx.font = `900 ${Math.max(16, this.tileSize * 1.8)}px 'Segoe UI', Arial`;
+            this.ctx.textAlign = 'center';
+            this.ctx.shadowColor = "rgba(0,0,0,0.5)";
+            this.ctx.shadowBlur = 4;
+            this.ctx.fillText(ft.text, ft.x, ft.y);
+            this.ctx.shadowBlur = 0;
+        });
+
+        this.ctx.globalAlpha = 1.0;
+    }
+};
+
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => { console.log(`Error: ${err.message}`); });
+    } else { document.exitFullscreen(); }
+}
+
+window.onload = () => { game.init(); };
+</script>
+</body>
+</html>
