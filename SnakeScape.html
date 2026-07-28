@@ -33,7 +33,6 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            height: 100dvh; /* Fixes mobile bottom bar clipping */
             width: 100vw;
             touch-action: none;
         }
@@ -101,6 +100,8 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            width: 100%;
+            height: 100%;
             background: radial-gradient(circle at center, var(--bg-gradient-2), var(--bg-gradient-1));
         }
 
@@ -162,7 +163,6 @@
     <header class="game-ui">
         <div class="stats">
             <div id="level-display">Level: 1</div>
-            <div id="hero-display" style="color: var(--accent);">Hero</div>
             <div id="moves-display">Moves: 0</div>
             <div class="stars" id="stars-display">★★★</div>
             <div class="lives" id="lives-display">❤️❤️❤️</div>
@@ -177,10 +177,9 @@
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
         
-        <div id="menu-modal" class="modal-overlay active">
-            <!-- White box background removed for menu -->
+        <div id="menu-modal" class="modal-overlay active" style="background: rgba(0,0,0,0.3); backdrop-filter: none;">
             <div class="modal" style="background: transparent; box-shadow: none;">
-                <h1 style="color: var(--accent); font-size: 3.5rem; text-shadow: 0 4px 8px rgba(0,0,0,0.8); margin-bottom: 30px;">SnakeScape</h1>
+                <h1 style="color: var(--accent); font-size: 4rem; text-shadow: 0 4px 15px rgba(0,0,0,0.8); margin-bottom: 40px;">SnakeScape</h1>
                 <div class="btn-group-vertical">
                     <button style="font-size: 1.2rem; padding: 15px;" class="accent" onclick="game.start()">Play Now</button>
                     <button style="font-size: 1.1rem; padding: 12px;" onclick="game.showLevels()">Levels</button>
@@ -192,7 +191,7 @@
         <div id="readme-modal" class="modal-overlay">
             <div class="modal">
                 <h2 style="color: var(--text-color); margin-bottom: 15px;">Readme</h2>
-                <p>Enjoy the 100 levels!</p>
+                <p>Enjoy the 100 levels of SnakeScape!</p>
                 <p>If you encounter any bug or issue, please contact and report it to:</p>
                 <p style="font-weight: bold; color: var(--accent); font-size: 1.1rem; user-select: text; -webkit-user-select: text;">pixelgaunt@gmail.com</p>
                 <div class="btn-group" style="justify-content: center; margin-top: 25px;">
@@ -204,7 +203,7 @@
         <div id="levels-modal" class="modal-overlay">
             <div class="modal">
                 <h2>Select Level</h2>
-                <p>Play through 100 challenging Faces!</p>
+                <p>Play through 100 challenging levels!</p>
                 <div class="btn-group" style="justify-content: center; margin-top: 20px;">
                     <button onclick="document.getElementById('levels-modal').classList.remove('active')">Back</button>
                 </div>
@@ -213,7 +212,7 @@
 
         <div id="victory-modal" class="modal-overlay">
             <div class="modal">
-                <h1 id="victory-title" style="color: #2ed573;">Face Cleared!</h1>
+                <h1 id="victory-title" style="color: #2ed573;">Level Cleared!</h1>
                 <div class="stars-display" id="victory-stars">★★★</div>
                 <p id="victory-stats">Moves: 10 | Lives Left: 3</p>
                 <div class="btn-group" style="justify-content: center;">
@@ -299,42 +298,51 @@ const audio = {
 
 const DIRS = { UP: {r: -1, c: 0}, DOWN: {r: 1, c: 0}, LEFT: {r: 0, c: -1}, RIGHT: {r: 0, c: 1} };
 
-const ANIME_HEROES = [
-    "Naruto Uzumaki", "Monkey D. Luffy", "Son Goku", "Ichigo Kurosaki", "Izuku Midoriya (Deku)", 
-    "Eren Yeager", "Tanjiro Kamado", "Yuji Itadori", "Gon Freecss", "Killua Zoldyck", 
-    "Edward Elric", "Alphonse Elric", "Light Yagami", "Lelouch Lamperouge", "Natsu Dragneel", 
-    "Gray Fullbuster", "Asta", "Yuno", "Meliodas", "Saitama", "Genos", "Mob (Shigeo Kageyama)", 
-    "Denji", "Power", "Makima", "Kenshin Himura", "Yusuke Urameshi", "Hiei", "Kurama", 
-    "Gintoki Sakata", "Joseph Joestar", "Jotaro Kujo", "Jonathan Joestar", "Josuke Higashikata", 
-    "Giorno Giovanna", "Jolyne Cujoh", "Spike Spiegel", "Vash the Stampede", "Simon", "Kamina", 
-    "Shinji Ikari", "Rei Ayanami", "Asuka Langley", "Kirito", "Asuna Yuuki", "Subaru Natsuki", 
-    "Emilia", "Rimuru Tempest", "Sora", "Shiro", "Naofumi Iwatani", "Raphtalia", "Senku Ishigami", 
-    "Chrome", "Emma", "Norman", "Ray", "Hyakkimaru", "Dororo", "Thorfinn", "Canute", 
-    "Ash Ketchum", "Yugi Muto", "Seto Kaiba", "Yoh Asakura", "Hao Asakura", "Inuyasha", 
-    "Kagome Higurashi", "Ranma Saotome", "Akane Tendo", "Kyo Sohma", "Tohru Honda", 
-    "Haruhi Fujioka", "Haruhi Suzumiya", "Kyon", "Tomoya Okazaki", "Nagisa Furukawa", 
-    "Taiga Aisaka", "Ryuuji Takasu", "Hachiman Hikigaya", "Yukino Yukinoshita", "Rintarou Okabe", 
-    "Kurisu Makise", "Kousei Arima", "Kaori Miyazono", "Allen Walker", "Maka Albarn", 
-    "Soul Eater Evans", "Crona", "Shinra Kusakabe", "Arthur Boyle", "Akira Fudo", 
-    "Joe Yabuki", "Hajime no Ippo", "Joe Hibiki", "Dai", "Popp", "Bell Cranel", 
-    "Accelerator", "Touma Kamijou", "Gojo Satoru", "Cloud Strife", "Devil Jin"
-];
-
 const MULTI_COLORS = [
     '#ff5252', '#34ace0', '#33d9b2', '#ffda79', '#706fd3', '#ff793f', '#218c74', '#f5cd79', 
     '#c44569', '#546de5', '#e056fd', '#badc58', '#f9ca24', '#eb4d4b', '#686de0', '#00d2d3', 
     '#ff9f43', '#10ac84', '#5f27cd', '#ff6b6b', '#48dbfb', '#1dd1a1', '#feca57', '#ff9ff3', '#00a8ff'
 ];
 
+// NAYA LOGIC: Directed Acyclic Graph (DAG) for 100% Deadlock Prevention
+class DependencyGraph {
+    constructor() { this.adj = new Map(); }
+    addNode(id) { if (!this.adj.has(id)) this.adj.set(id, new Set()); }
+    addEdge(u, v) { this.adj.get(u).add(v); }
+    
+    hasCycle() {
+        let visited = new Set(), recStack = new Set();
+        const isCyclic = (node) => {
+            if (recStack.has(node)) return true;
+            if (visited.has(node)) return false;
+            visited.add(node); recStack.add(node);
+            for (let neighbor of this.adj.get(node)) {
+                if (isCyclic(neighbor)) return true;
+            }
+            recStack.delete(node);
+            return false;
+        };
+        for (let node of this.adj.keys()) {
+            if (isCyclic(node)) return true;
+        }
+        return false;
+    }
+    
+    clone() {
+        let g = new DependencyGraph();
+        for (let [u, edges] of this.adj.entries()) {
+            g.adj.set(u, new Set(edges));
+        }
+        return g;
+    }
+}
+
 class LevelGenerator {
     static generate(levelNum) {
-        let size = 22 + Math.floor(((levelNum - 1) % 10) * 0.8); 
+        let size = 12 + Math.floor(((levelNum - 1) % 10)); 
         let rows = size, cols = size;
         let grid = Array(rows).fill(0).map(() => Array(cols).fill(0));
-
-        let heroIndex = (levelNum - 1) % ANIME_HEROES.length;
-        let heroName = ANIME_HEROES[heroIndex];
-        let styleType = (levelNum - 1) % 25; 
+        let styleType = (levelNum - 1) % 10; 
         
         let cells = [];
         for(let r = 0; r < rows; r++) {
@@ -343,38 +351,51 @@ class LevelGenerator {
                 let dc = (c - cols / 2) / (cols / 2);
                 let isFace = false;
 
+                // Anime Hero Faces / Motif Generators
                 switch(styleType) {
-                    case 0: isFace = (dr*dr + dc*dc < 0.65) || (dr < -0.3 && dr > -0.7 && Math.abs(dc) < 0.8) || (dr < -0.45 && Math.abs(dc) < 0.6 && (r+c)%2===0); break;
-                    case 1: isFace = (dr*dr + dc*dc < 0.6 && dr > -0.2) || (dr > -0.5 && dr < -0.2 && Math.abs(dc) < 0.95) || (dr < -0.5 && dr > -0.8 && Math.abs(dc) < 0.5); break;
-                    case 2: isFace = (dr > -0.1 && dr*dr + dc*dc < 0.58) || (dr <= -0.1 && dr > -0.9 && Math.abs(dc) < (0.95 + dr * 0.7) && (r*3+c)%3 !== 0); break;
-                    case 3: isFace = (dr*dr + dc*dc < 0.62) || (dr > -0.25 && dr < 0.05 && Math.abs(dc) < 0.85) || (dr < -0.4 && Math.abs(dc) < 0.55); break;
-                    case 4: isFace = (dr*dr + dc*dc < 0.58) || (dr < 0.1 && dc < 0.1 && Math.abs(dr+dc) < 0.85) || (dr < -0.2 && dc > -0.2 && (r*2+c)%2===0); break;
-                    case 5: isFace = (dr*dr + dc*dc < 0.58) || (dr < -0.2 && Math.abs(dc) > 0.3 && Math.abs(dc) < 0.8 && dr > -0.85) || (Math.abs(dc) > 0.5 && Math.abs(dr) < 0.4); break;
-                    case 6: isFace = (dr*dr*0.8 + dc*dc*1.3 < 0.7) && !(dr > 0.4 && (c%3===0)); break;
-                    case 7: isFace = (dr*dr*0.7 + dc*dc*1.2 < 0.75) || (dr > 0.3 && dr < 0.8 && Math.abs(dc) < 0.6 && (c%2===0)); break;
-                    case 8: isFace = (dr*dr + dc*dc < 0.64) || (dr < -0.3 && dc < -0.1 && Math.abs(dr+dc) < 0.95); break;
-                    case 9: isFace = (dr*dr*1.1 + dc*dc*0.9 < 0.78) && dr < 0.5; break;
-                    case 10: isFace = (dr < 0.2 && dr*dr + dc*dc < 0.65) || (dr >= 0.2 && dr < 0.8 && Math.abs(dc) < (0.75 - dr)); break;
-                    case 11: isFace = (dr*dr*0.9 + dc*dc*1.1 < 0.7) || (dr < -0.6 && Math.abs(dc) < 0.25) || (dr > 0.4 && Math.abs(dc) < 0.4); break;
-                    case 12: isFace = (Math.abs(dr) < 0.65 && Math.abs(dc) < 0.6) && !(Math.abs(dc) > 0.4 && dr > 0.4); break;
-                    case 13: isFace = (dr*dr + dc*dc < 0.52) || (dr > -0.5 && dr < 0.7 && Math.abs(dc) > 0.45 && Math.abs(dc) < 0.88); break;
-                    case 14: isFace = (Math.abs(dr) < 0.7 && Math.abs(dc) < 0.65) && !(dr < -0.3 && Math.abs(dc) > 0.3) && !(dr > 0.5 && Math.abs(dc) > 0.3); break;
-                    case 15: isFace = (dr*dr + dc*dc < 0.65) && !(dr > 0.1 && dr < 0.3 && Math.abs(dc) < 0.6); break;
-                    case 16: isFace = (dr*dr + dc*dc < 0.6) || (dr < -0.4 && Math.abs(dc) > 0.3 && Math.abs(dc) < 0.7 && dr > -0.85); break;
-                    case 17: isFace = (dr > -0.1 && dr*dr + dc*dc < 0.55) || (dr <= -0.1 && dr > -0.8 && Math.abs(dc) < (0.8 + dr)); break;
-                    case 18: isFace = (dr*dr + dc*dc < 0.65) && !(dr > -0.2 && dr < 0.05 && Math.abs(dc) > 0.2); break;
-                    case 19: isFace = (dr*dr + dc*dc < 0.6) || (dr < -0.5 && Math.abs(dc) < 0.15) || (dr < -0.3 && Math.abs(dc) < 0.6 && dr > -0.5); break;
-                    case 20: isFace = (dr*dr + dc*dc < 0.68) && ((r+c)%3 !== 0 || dr < 0); break;
-                    case 21: isFace = (dr*dr + dc*dc < 0.7) && (Math.sin(r*1.5)*Math.cos(c*1.5) > -0.5); break;
-                    case 22: isFace = (dr > -0.2 && dr*dr + dc*dc < 0.6) || (dr <= -0.2 && dr > -0.6 && Math.abs(dc) < 0.6 && (c%2===0)); break;
-                    case 23: isFace = (dr*dr*0.85 + dc*dc*1.15 < 0.72) || (dr < -0.4 && Math.abs(dc) < 0.8 && (r+c)%2===0); break;
-                    default: isFace = (dr*dr + dc*dc < 0.68) && !(dr > 0.4 && Math.abs(dc) < 0.2); break;
+                    case 0: // Naruto (Headband + Face)
+                        isFace = (dr*dr + dc*dc < 0.6) || (dr < -0.3 && dr > -0.5 && Math.abs(dc) < 0.8) || (dr > 0.1 && dr < 0.5 && Math.abs(dc) > 0.4 && Math.abs(dc) < 0.7 && (r+c)%2===0); 
+                        break;
+                    case 1: // Goku (Spiky Hair)
+                        isFace = (dr*dr + dc*dc < 0.5) || (dr < -0.2 && Math.sin(dc * 10) > 0.3 && dr > -0.9);
+                        break;
+                    case 2: // Luffy (Straw Hat)
+                        isFace = (dr*dr + dc*dc < 0.45) || (Math.abs(dr + 0.3) < 0.15 && Math.abs(dc) < 0.95) || (dr < -0.3 && dr > -0.65 && Math.abs(dc) < 0.4);
+                        break;
+                    case 3: // Saitama (Egg head)
+                        isFace = (dr*dr*1.1 + dc*dc*0.9 < 0.65);
+                        break;
+                    case 4: // Ichigo (Hollow mask angles)
+                        isFace = (dr*dr + dc*dc < 0.55) || (dr < -0.1 && Math.abs(dc) < 0.8 && (r*2+c)%2===0) || (dr > 0.2 && Math.abs(dc) < 0.3);
+                        break;
+                    case 5: // Batman (Ears)
+                        isFace = (dr*dr + dc*dc < 0.55) || (dr < -0.4 && dr > -0.9 && Math.abs(Math.abs(dc) - 0.4) < 0.15);
+                        break;
+                    case 6: // Spider-man (Web pattern/Oval)
+                        isFace = (dr*dr*0.8 + dc*dc*1.2 < 0.7) && ((r+c)%4 !== 0);
+                        break;
+                    case 7: // Pikachu (Long ears)
+                        isFace = (dr*dr + dc*dc < 0.5) || (dr < -0.3 && dr > -0.9 && Math.abs(Math.abs(dc) - 0.6) < 0.2);
+                        break;
+                    case 8: // Zoro (Bandana line)
+                        isFace = (dr*dr + dc*dc < 0.5) || (Math.abs(dr + dc*0.5 + 0.3) < 0.15 && Math.abs(dc) < 0.8);
+                        break;
+                    case 9: // Generic Anime (Big eyes, small chin)
+                        isFace = (dr*dr*0.9 + dc*dc*1.3 < 0.6 && dr > -0.2) || (dr*dr + dc*dc < 0.6 && dr <= -0.2);
+                        break;
+                    default:
+                        isFace = (dr*dr + dc*dc < 0.6);
+                        break;
                 }
                 
                 let isLeftEye = (dr > -0.15 && dr < -0.02 && dc > -0.42 && dc < -0.15);
                 let isRightEye = (dr > -0.15 && dr < -0.02 && dc > 0.15 && dc < 0.42);
                 let isMouth = (dr > 0.32 && dr < 0.42 && dc > -0.22 && dc < 0.22);
-                if (styleType === 3 || styleType === 18) { isLeftEye = false; isRightEye = false; } 
+
+                // Disable face-carvings for structural styles so shapes stay distinct
+                if (styleType === 1 || styleType === 4 || styleType === 6 || styleType === 8) { 
+                    isLeftEye = false; isRightEye = false; isMouth = false; 
+                } 
 
                 if (isFace && !isLeftEye && !isRightEye && !isMouth) {
                     grid[r][c] = 1;
@@ -387,46 +408,101 @@ class LevelGenerator {
 
         let snakes = [];
         let snakeId = 0;
+        // Increased snake quantity significantly for harder puzzles
+        let maxSnakes = Math.floor((rows * cols) * 0.15);
+
+        let dag = new DependencyGraph();
+        let escapePathsMap = new Map(); 
 
         for (let head of cells) {
+            if (snakes.length >= maxSnakes) break;
             if (grid[head.r][head.c] !== 1) continue; 
             
-            // Limit snake density here so players always have space to drag!
-            if (Math.random() > 0.40) continue; 
-
             let dirs = Object.values(DIRS).sort(() => Math.random() - 0.5);
             for (let dir of dirs) {
                 let nextR = head.r - dir.r, nextC = head.c - dir.c;
+                
                 if (nextR >= 0 && nextR < rows && nextC >= 0 && nextC < cols && grid[nextR][nextC] === 1) {
-                    let segs = [{r: head.r, c: head.c}, {r: nextR, c: nextC}];
+                    
+                    let proposedBody = [{r: head.r, c: head.c}, {r: nextR, c: nextC}];
                     grid[head.r][head.c] = 2; grid[nextR][nextC] = 2;
                     
-                    // Reduced snake lengths to prevent hanging the level completely
-                    let randType = Math.random();
-                    let targetLen = 2;
-                    if (randType < 0.45) targetLen = Math.floor(Math.random() * 2) + 2;      // Short
-                    else if (randType < 0.85) targetLen = Math.floor(Math.random() * 3) + 4; // Medium
-                    else targetLen = Math.floor(Math.random() * 2) + 6;                      // Long (Capped so it doesn't block level)
-
-                    let currR = nextR - dir.r, currC = nextC - dir.c;
-                    while (segs.length < targetLen && currR >= 0 && currR < rows && currC >= 0 && currC < cols && grid[currR][currC] === 1) {
-                        segs.push({r: currR, c: currC});
-                        grid[currR][currC] = 2;
-                        currR -= dir.r; currC -= dir.c;
+                    let targetLen = Math.random() < 0.35 ? 2 : (Math.random() < 0.65 ? 3 : (Math.random() < 0.90 ? 4 : 5));
+                    let currR = nextR, currC = nextC;
+                    
+                    while (proposedBody.length < targetLen) {
+                        let possibleMoves = [];
+                        for (let d of Object.values(DIRS)) {
+                            let tr = currR + d.r, tc = currC + d.c;
+                            if (tr >= 0 && tr < rows && tc >= 0 && tc < cols && grid[tr][tc] === 1) {
+                                possibleMoves.push({r: tr, c: tc});
+                            }
+                        }
+                        if (possibleMoves.length > 0) {
+                            let pick = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                            proposedBody.push(pick);
+                            grid[pick.r][pick.c] = 2;
+                            currR = pick.r; currC = pick.c;
+                        } else {
+                            break;
+                        }
                     }
 
-                    let randColor = MULTI_COLORS[Math.floor(Math.random() * MULTI_COLORS.length)];
-                    snakes.push({
-                        id: snakeId++, 
-                        segments: segs, 
-                        dir: dir, color: randColor, isHappy: false
-                    });
-                    break;
+                    // Temporarily lift body block for logic checks
+                    for (let seg of proposedBody) grid[seg.r][seg.c] = 1;
+
+                    let proposedEscape = new Set();
+                    let er = head.r + dir.r, ec = head.c + dir.c;
+                    
+                    while (er >= 0 && er < rows && ec >= 0 && ec < cols) {
+                        proposedEscape.add(`${er},${ec}`);
+                        er += dir.r; ec += dir.c;
+                    }
+
+                    // Assess topological dependencies to absolutely prevent deadlocks
+                    let newEdges = [];
+                    for (let E of snakes) {
+                        // N -> E (New snake blocked by Existing snake's body)
+                        let hitsE = false;
+                        for (let seg of E.segments) {
+                            if (proposedEscape.has(`${seg.r},${seg.c}`)) { hitsE = true; break; }
+                        }
+                        if (hitsE) newEdges.push({from: snakeId, to: E.id});
+
+                        // E -> N (Existing snake blocked by New snake's body)
+                        let ePath = escapePathsMap.get(E.id);
+                        let eHitsN = false;
+                        for (let seg of proposedBody) {
+                            if (ePath.has(`${seg.r},${seg.c}`)) { eHitsN = true; break; }
+                        }
+                        if (eHitsN) newEdges.push({from: E.id, to: snakeId});
+                    }
+
+                    let tempDag = dag.clone();
+                    tempDag.addNode(snakeId);
+                    for (let edge of newEdges) tempDag.addEdge(edge.from, edge.to);
+
+                    // Accept placement ONLY if the dependency graph remains acyclic 
+                    // This guarantees 100% solvability with interlocking bodies!
+                    if (!tempDag.hasCycle()) {
+                        dag = tempDag;
+                        for (let seg of proposedBody) grid[seg.r][seg.c] = 2;
+                        escapePathsMap.set(snakeId, proposedEscape);
+                        
+                        let randColor = MULTI_COLORS[Math.floor(Math.random() * MULTI_COLORS.length)];
+                        snakes.push({
+                            id: snakeId++, 
+                            segments: proposedBody, 
+                            dir: dir, color: randColor, isHappy: false,
+                            bumpOffset: 0, isBumping: false, bumpTime: 0
+                        });
+                        break; 
+                    }
                 }
             }
         }
         
-        return { rows, cols, snakes, heroName: heroName };
+        return { rows, cols, snakes };
     }
 }
 
@@ -434,14 +510,13 @@ const game = {
     state: 'MENU', 
     level: parseInt(localStorage.getItem('snakeScape_level')) || 1,
     moves: 0, lives: 3, snakes: [], history: [], mice: [], floatingTexts: [],
-    rows: 0, cols: 0, tileSize: 0, offsetX: 0, offsetY: 0, heroName: "",
+    rows: 0, cols: 0, tileSize: 0, offsetX: 0, offsetY: 0,
     
     canvas: document.getElementById('game-canvas'),
     ctx: document.getElementById('game-canvas').getContext('2d'),
-    particles: [], exitingSnakes: [], menuSnakes: [],
+    particles: [], exitingSnakes: [], menuSnakes: null,
     
-    draggedSnake: null, dragStartPos: {x:0, y:0}, dragCurrentPos: {x:0, y:0},
-    lastTime: 0, textTimer: 3.0, activeHelpMouseId: null,
+    lastTime: 0, textTimer: 3.0, activeHelpMouseId: null, hintSnake: null,
 
     init() {
         this.resize();
@@ -449,19 +524,19 @@ const game = {
         this.setupInputs();
         requestAnimationFrame((t) => this.loop(t));
     },
-    
-    initMenuSnakes() {
-        this.menuSnakes = [];
-        for(let i=0; i<3; i++) { this.resetMenuSnake(i, true); }
-    },
 
-    resetMenuSnake(i, initial = false) {
-        let y = this.canvas.height * 0.15 + Math.random() * (this.canvas.height * 0.7);
-        let speed = 120 + Math.random() * 150;
-        let startX = initial ? (Math.random() * this.canvas.width * -1) - 200 : -300;
-        let targetX = this.canvas.width * 0.4 + Math.random() * (this.canvas.width * 0.5);
-        let color = MULTI_COLORS[Math.floor(Math.random() * MULTI_COLORS.length)];
-        this.menuSnakes[i] = { x: startX, y: y, targetX: targetX, speed: speed, color: color, mouseEaten: false };
+    createMenuSnake() {
+        let targetX = this.canvas.width * (0.3 + Math.random() * 0.4);
+        let y = this.canvas.height * (0.2 + Math.random() * 0.6);
+        return {
+            x: -200 - Math.random() * 400,
+            y: y,
+            speed: 150 + Math.random() * 150,
+            targetX: targetX,
+            eaten: false,
+            color: MULTI_COLORS[Math.floor(Math.random() * MULTI_COLORS.length)],
+            size: 30 + Math.random() * 20
+        };
     },
 
     showLevels() { document.getElementById('levels-modal').classList.add('active'); },
@@ -484,17 +559,18 @@ const game = {
 
         let levelData = LevelGenerator.generate(this.level);
         this.rows = levelData.rows; this.cols = levelData.cols;
-        this.heroName = levelData.heroName;
         
         this.snakes = levelData.snakes.map(s => ({
             id: s.id, segments: s.segments.map(seg => ({...seg})),
-            dir: {...s.dir}, color: s.color, visualOffset: 0, isHappy: false
+            dir: {...s.dir}, color: s.color, visualOffset: 0, isHappy: false,
+            bumpOffset: 0, isBumping: false, bumpTime: 0
         }));
         
         this.moves = 0; 
         this.lives = Math.floor(this.level / 10) + 5; 
         this.history = []; this.exitingSnakes = []; this.particles = []; this.mice = []; this.floatingTexts = [];
         this.textTimer = 3.0; this.activeHelpMouseId = null;
+        this.hintSnake = null;
         
         this.snakes.forEach(s => {
             let edgeR = s.segments[0].r, edgeC = s.segments[0].c;
@@ -510,27 +586,24 @@ const game = {
     },
 
     resize() {
-        // Fix for precise container-based scaling
         let container = document.getElementById('game-container');
         this.canvas.width = container.clientWidth;
         this.canvas.height = container.clientHeight;
         
         if (this.state === 'PLAYING') {
-            const availableW = this.canvas.width * 0.95;
-            const availableH = this.canvas.height * 0.95;
-            // Pad by +4 to make sure mice are perfectly framed on screen
-            this.tileSize = Math.min(availableW / (this.cols + 4), availableH / (this.rows + 4)); 
-            
+            const padding = 6; 
+            this.tileSize = Math.min(this.canvas.width / (this.cols + padding), this.canvas.height / (this.rows + padding)); 
             this.offsetX = (this.canvas.width - this.cols * this.tileSize) / 2;
             this.offsetY = (this.canvas.height - this.rows * this.tileSize) / 2;
         } else {
-            if (this.menuSnakes.length === 0) this.initMenuSnakes();
+            if (!this.menuSnakes) {
+                this.menuSnakes = Array(3).fill(0).map(() => this.createMenuSnake());
+            }
         }
     },
 
     updateUI() {
         document.getElementById('level-display').innerText = `Level: ${this.level}/100`;
-        document.getElementById('hero-display').innerText = `Hero: ${this.heroName}`;
         document.getElementById('moves-display').innerText = `Moves: ${this.moves}`;
         document.getElementById('lives-display').innerText = '❤️'.repeat(this.lives) || '💔';
         let stars = this.lives >= 5 ? 3 : this.lives >= 3 ? 2 : 1;
@@ -572,7 +645,9 @@ const game = {
                 if (s.id === snake.id) continue;
                 for (let j = 0; j < s.segments.length; j++) {
                     let seg = s.segments[j];
-                    if (seg.r === r && seg.c === c) return false; 
+                    if (seg.r === r && seg.c === c) {
+                        return false; 
+                    }
                 }
             }
             r += dr;
@@ -582,7 +657,6 @@ const game = {
     },
 
     setupInputs() {
-        let isDown = false;
         const getGridPos = (evt) => {
             let rect = this.canvas.getBoundingClientRect();
             let x = (evt.clientX || (evt.touches && evt.touches[0].clientX)) - rect.left - this.offsetX;
@@ -590,45 +664,37 @@ const game = {
             return {x, y};
         };
 
-        const down = (evt) => {
+        const clickHandler = (evt) => {
             if (this.state !== 'PLAYING' || evt.button === 2) return;
             let pos = getGridPos(evt);
             let c = Math.floor(pos.x / this.tileSize), r = Math.floor(pos.y / this.tileSize);
-            this.draggedSnake = this.snakes.find(s => s.segments.some(seg => seg.r === r && seg.c === c));
-            if (this.draggedSnake) { isDown = true; this.dragStartPos = pos; this.dragCurrentPos = pos; }
-        };
-
-        const move = (evt) => {
-            if (!isDown || !this.draggedSnake) return;
-            this.dragCurrentPos = getGridPos(evt);
-            let dx = this.dragCurrentPos.x - this.dragStartPos.x, dy = this.dragCurrentPos.y - this.dragStartPos.y;
-            let proj = (this.draggedSnake.dir.c === 0 ? dy * this.draggedSnake.dir.r : dx * this.draggedSnake.dir.c) / this.tileSize;
-            if (proj < 0) proj = 0;
-            if (!this.canSnakeEscape(this.draggedSnake) && proj > 0.4) proj = 0.4;
-            this.draggedSnake.visualOffset = proj;
-        };
-
-        const up = () => {
-            if (!isDown || !this.draggedSnake) return;
-            isDown = false;
-            if (this.draggedSnake.visualOffset > 0.3) {
-                if (this.canSnakeEscape(this.draggedSnake)) {
+            let clickedSnake = this.snakes.find(s => s.segments.some(seg => seg.r === r && seg.c === c));
+            
+            if (clickedSnake) {
+                if (this.canSnakeEscape(clickedSnake)) {
                     this.history.push({snakes: JSON.stringify(this.snakes), mice: JSON.stringify(this.mice)});
                     audio.playSlide(); this.moves++; this.updateUI();
-                    this.exitingSnakes.push(this.draggedSnake);
-                    this.snakes = this.snakes.filter(s => s.id !== this.draggedSnake.id);
+                    this.exitingSnakes.push(clickedSnake);
+                    this.snakes = this.snakes.filter(s => s.id !== clickedSnake.id);
                 } else {
-                    audio.playBlocked(); this.draggedSnake.visualOffset = 0; this.lives--; this.updateUI();
-                    if(this.lives <= 0) { audio.playGameOver(); document.getElementById('gameover-modal').classList.add('active'); }
+                    // BLOCKED: Single touch auto-move feature, bumps forward slightly and deducts heart
+                    audio.playBlocked(); 
+                    clickedSnake.isBumping = true;
+                    clickedSnake.bumpTime = 0;
+                    this.lives--; this.updateUI();
+                    
+                    if(this.lives <= 0) { 
+                        setTimeout(() => {
+                            audio.playGameOver(); 
+                            document.getElementById('gameover-modal').classList.add('active'); 
+                        }, 300);
+                    }
                 }
-            } else this.draggedSnake.visualOffset = 0;
-            this.draggedSnake = null;
+            }
         };
 
-        this.canvas.addEventListener('mousedown', down); this.canvas.addEventListener('mousemove', move);
-        window.addEventListener('mouseup', up);
-        this.canvas.addEventListener('touchstart', down, {passive: true}); this.canvas.addEventListener('touchmove', move, {passive: true});
-        window.addEventListener('touchend', up);
+        this.canvas.addEventListener('mousedown', clickHandler);
+        this.canvas.addEventListener('touchstart', clickHandler, {passive: true});
     },
 
     createParticles(x, y, color) {
@@ -648,17 +714,18 @@ const game = {
 
     update(dt) {
         if (this.state === 'MENU') {
-            if (this.menuSnakes.length === 0) this.initMenuSnakes();
-            this.menuSnakes.forEach((ms, i) => {
-                ms.x += dt * ms.speed;
-                if (ms.x > this.canvas.width + 300) {
-                    this.resetMenuSnake(i);
-                }
-                if (!ms.mouseEaten && ms.x >= ms.targetX) {
-                    ms.mouseEaten = true;
-                    this.createParticles(ms.targetX, ms.y, ms.color);
-                }
-            });
+            if (this.menuSnakes) {
+                this.menuSnakes.forEach(ms => {
+                    ms.x += dt * ms.speed;
+                    if (ms.x > this.canvas.width + 300) {
+                        Object.assign(ms, this.createMenuSnake());
+                    }
+                    if (!ms.eaten && ms.x >= ms.targetX) {
+                        ms.eaten = true;
+                        this.createParticles(ms.targetX, ms.y, ms.color);
+                    }
+                });
+            }
             for (let i = this.particles.length - 1; i >= 0; i--) {
                 let p = this.particles[i]; p.x += p.vx; p.y += p.vy; p.life -= dt * 2.5;
                 if (p.life <= 0) this.particles.splice(i, 1);
@@ -678,6 +745,19 @@ const game = {
             ft.life -= dt * 0.8;
             if (ft.life <= 0) this.floatingTexts.splice(i, 1);
         }
+
+        // Handle blocked snake bump animations
+        this.snakes.forEach(s => {
+            if (s.isBumping) {
+                s.bumpTime += dt * 15; // Animation speed
+                s.bumpOffset = Math.sin(s.bumpTime) * 0.35; // Forward bump amount
+                if (s.bumpTime >= Math.PI) {
+                    s.isBumping = false;
+                    s.bumpOffset = 0;
+                    s.bumpTime = 0;
+                }
+            }
+        });
 
         for (let i = this.exitingSnakes.length - 1; i >= 0; i--) {
             let s = this.exitingSnakes[i];
@@ -753,28 +833,23 @@ const game = {
         let timeNow = Date.now();
 
         if (this.state === 'MENU') {
-            let size = Math.min(this.canvas.width, this.canvas.height) * 0.05;
-            if (size < 25) size = 25;
-            if (size > 45) size = 45;
-
-            this.menuSnakes.forEach(ms => {
-                if (!ms.mouseEaten) {
-                    this.drawMouseIcon(this.ctx, ms.targetX, ms.y, size, false, timeNow, ms.y);
-                }
-                let sx = ms.x, sy = ms.y;
-                this.ctx.lineCap = 'round'; this.ctx.lineJoin = 'round'; this.ctx.lineWidth = size * 0.7;
-                this.ctx.strokeStyle = ms.color;
-                this.ctx.beginPath(); this.ctx.moveTo(sx-size*2.5, sy); this.ctx.lineTo(sx, sy); this.ctx.stroke();
-                
-                this.ctx.fillStyle = '#fff';
-                this.ctx.beginPath(); this.ctx.arc(sx, sy - size*0.16, size*0.13, 0, Math.PI*2); this.ctx.fill();
-                this.ctx.beginPath(); this.ctx.arc(sx, sy + size*0.16, size*0.13, 0, Math.PI*2); this.ctx.fill();
-                
-                this.ctx.fillStyle = '#111';
-                this.ctx.beginPath(); this.ctx.arc(sx + size*0.05, sy - size*0.16, size*0.06, 0, Math.PI*2); this.ctx.fill();
-                this.ctx.beginPath(); this.ctx.arc(sx + size*0.05, sy + size*0.16, size*0.06, 0, Math.PI*2); this.ctx.fill();
-            });
-
+            if (this.menuSnakes) {
+                this.menuSnakes.forEach(ms => {
+                    if (!ms.eaten) {
+                        this.drawMouseIcon(this.ctx, ms.targetX, ms.y, ms.size, false, timeNow, ms.y);
+                    }
+                    let sx = ms.x, sy = ms.y, size = ms.size;
+                    this.ctx.lineCap = 'round'; this.ctx.lineJoin = 'round'; this.ctx.lineWidth = size * 0.5;
+                    this.ctx.strokeStyle = ms.color;
+                    this.ctx.beginPath(); this.ctx.moveTo(sx-size*2, sy); this.ctx.lineTo(sx, sy); this.ctx.stroke();
+                    this.ctx.fillStyle = '#fff';
+                    this.ctx.beginPath(); this.ctx.arc(sx, sy - size*0.12, size*0.09, 0, Math.PI*2); this.ctx.fill();
+                    this.ctx.beginPath(); this.ctx.arc(sx, sy + size*0.12, size*0.09, 0, Math.PI*2); this.ctx.fill();
+                    this.ctx.fillStyle = '#111';
+                    this.ctx.beginPath(); this.ctx.arc(sx + size*0.04, sy - size*0.12, size*0.04, 0, Math.PI*2); this.ctx.fill();
+                    this.ctx.beginPath(); this.ctx.arc(sx + size*0.04, sy + size*0.12, size*0.04, 0, Math.PI*2); this.ctx.fill();
+                });
+            }
             this.particles.forEach(p => {
                 this.ctx.globalAlpha = p.life; this.ctx.fillStyle = p.color;
                 this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.life * 6, 0, Math.PI*2); this.ctx.fill();
@@ -845,68 +920,11 @@ const game = {
 
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
-        this.ctx.lineWidth = this.tileSize * 0.72;
-
-        let colorGroups = {};
-        this.snakes.forEach(s => {
-            if (s === this.draggedSnake) return;
-            let col = this.hintSnake === s.id ? '#ffffff' : s.color;
-            if (!colorGroups[col]) colorGroups[col] = [];
-            colorGroups[col].push(s);
-        });
-
-        for (let col in colorGroups) {
-            this.ctx.strokeStyle = col;
-            this.ctx.beginPath();
-            colorGroups[col].forEach(s => {
-                for (let i = 0; i < s.segments.length; i++) {
-                    let px = this.offsetX + (s.segments[i].c + 0.5) * this.tileSize;
-                    let py = this.offsetY + (s.segments[i].r + 0.5) * this.tileSize;
-                    if (i === 0) this.ctx.moveTo(px, py);
-                    else this.ctx.lineTo(px, py);
-                }
-            });
-            this.ctx.stroke();
-        }
-
-        this.ctx.fillStyle = '#ffffff';
-        let eyeOff = this.tileSize * 0.15;
-        let eyeSize = this.tileSize * 0.12;
-        this.ctx.beginPath();
-        this.snakes.forEach(s => {
-            if (s === this.draggedSnake) return;
-            let headX = this.offsetX + (s.segments[0].c + 0.5) * this.tileSize;
-            let headY = this.offsetY + (s.segments[0].r + 0.5) * this.tileSize;
-            let ex1 = headX + (s.dir.r === 0 ? 0 : -eyeOff), ey1 = headY + (s.dir.c === 0 ? 0 : -eyeOff);
-            let ex2 = headX + (s.dir.r === 0 ? 0 : eyeOff), ey2 = headY + (s.dir.c === 0 ? 0 : eyeOff);
-            if (s.dir.r !== 0) { ex1 = headX - eyeOff; ex2 = headX + eyeOff; }
-            if (s.dir.c !== 0) { ey1 = headY - eyeOff; ey2 = headY + eyeOff; }
-            
-            this.ctx.moveTo(ex1 + eyeSize, ey1); this.ctx.arc(ex1, ey1, eyeSize, 0, Math.PI*2);
-            this.ctx.moveTo(ex2 + eyeSize, ey2); this.ctx.arc(ex2, ey2, eyeSize, 0, Math.PI*2);
-        });
-        this.ctx.fill();
-
-        this.ctx.fillStyle = '#000000';
-        let pupilSize = eyeSize * 0.45;
-        this.ctx.beginPath();
-        this.snakes.forEach(s => {
-            if (s === this.draggedSnake) return;
-            let headX = this.offsetX + (s.segments[0].c + 0.5) * this.tileSize;
-            let headY = this.offsetY + (s.segments[0].r + 0.5) * this.tileSize;
-            let ex1 = headX + (s.dir.r === 0 ? 0 : -eyeOff), ey1 = headY + (s.dir.c === 0 ? 0 : -eyeOff);
-            let ex2 = headX + (s.dir.r === 0 ? 0 : eyeOff), ey2 = headY + (s.dir.c === 0 ? 0 : eyeOff);
-            if (s.dir.r !== 0) { ex1 = headX - eyeOff; ex2 = headX + eyeOff; }
-            if (s.dir.c !== 0) { ey1 = headY - eyeOff; ey2 = headY + eyeOff; }
-            
-            this.ctx.moveTo(ex1 + pupilSize, ey1); this.ctx.arc(ex1, ey1, pupilSize, 0, Math.PI*2);
-            this.ctx.moveTo(ex2 + pupilSize, ey2); this.ctx.arc(ex2, ey2, pupilSize, 0, Math.PI*2);
-        });
-        this.ctx.fill();
 
         const drawDynamicSnake = (s, isExiting) => {
-            let track = [{c: s.segments[0].c + s.dir.c * s.visualOffset, r: s.segments[0].r + s.dir.r * s.visualOffset}];
-            if (s.visualOffset > 0) track.push({ c: s.segments[0].c, r: s.segments[0].r });
+            let offset = isExiting ? s.visualOffset : (s.bumpOffset || 0);
+            let track = [{c: s.segments[0].c + s.dir.c * offset, r: s.segments[0].r + s.dir.r * offset}];
+            if (offset > 0) track.push({ c: s.segments[0].c, r: s.segments[0].r });
             for (let i = 1; i < s.segments.length; i++) track.push({ c: s.segments[i].c, r: s.segments[i].r });
             
             let targetLength = Math.max(1, s.segments.length - 1), currentLength = 0, gridPts = [track[0]];
@@ -925,12 +943,13 @@ const game = {
             
             let pts = gridPts.map((p, index) => {
                 let x = this.offsetX + (p.c + 0.5) * this.tileSize, y = this.offsetY + (p.r + 0.5) * this.tileSize;
-                let wave = Math.sin(timeNow / 80 - index) * (this.tileSize * 0.15) * Math.min(1, s.visualOffset);
+                let wave = Math.sin(timeNow / 80 - index) * (this.tileSize * 0.15) * Math.min(1, isExiting ? s.visualOffset : 0);
                 x += (s.dir.c === 0 ? 1 : 0) * wave; y += (s.dir.r === 0 ? 1 : 0) * wave;
                 return { x, y };
             });
 
-            this.ctx.strokeStyle = s.color;
+            let displayColor = (this.hintSnake === s.id) ? '#ffffff' : s.color;
+            this.ctx.strokeStyle = displayColor;
             this.ctx.lineWidth = this.tileSize * 0.72; 
             this.ctx.beginPath(); pts.forEach((p, i) => i===0 ? this.ctx.moveTo(p.x, p.y) : this.ctx.lineTo(p.x, p.y)); this.ctx.stroke();
 
@@ -955,7 +974,9 @@ const game = {
             }
         };
 
-        if (this.draggedSnake) drawDynamicSnake(this.draggedSnake, false);
+        // Draw regular and dynamically bumping snakes
+        this.snakes.forEach(s => drawDynamicSnake(s, false));
+        // Draw exiting snakes
         this.exitingSnakes.forEach(s => drawDynamicSnake(s, true));
 
         this.particles.forEach(p => {
