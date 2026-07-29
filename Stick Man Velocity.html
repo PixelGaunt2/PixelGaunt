@@ -1055,7 +1055,7 @@
             document.getElementById('shockTimerRow').style.display = 'none';
             
             enemies = [];
-            flyingBats = [];
+            flyingBats.length = 0; // Fix applied here: .length = 0 empty karta hai bajaye nayi array assign kiye 
             projectiles.length = 0;
             powerUps.length = 0;
             allies.length = 0;
