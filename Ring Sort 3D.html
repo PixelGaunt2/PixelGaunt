@@ -81,7 +81,7 @@
         .levels-container::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
 
         /* In-Game HUD */
-        .hud-top { position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 20px; box-sizing: border-box; pointer-events: auto; z-index: 10; }
+        .hud-top { position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 20px; box-sizing: border-box; pointer-events: auto; z-index: 10; }
         .hud-center { position: absolute; top: 50%; width: 100%; text-align: center; pointer-events: none; z-index: 10; }
         .win-text { font-size: 45px; color: #fff; text-shadow: 0 0 15px rgba(0,0,0,0.5), 3px 3px 0 #333; display: none; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         
@@ -151,6 +151,8 @@
         <div class="hud-top">
             <div class="btn btn-icon" style="pointer-events: auto;" onclick="togglePause()">⏸</div>
             <div class="btn" id="hud-level" style="pointer-events: auto;">Level 1</div>
+            <!-- Added Coins HUD -->
+            <div class="btn" id="hud-coins" style="pointer-events: auto; background: #fffde7; border-color: #fbc02d; color: #f57f17;">🪙 0</div>
             <div class="btn btn-icon" id="btn-music" style="pointer-events: auto;" onclick="toggleMusic()">🔊</div>
         </div>
         <div class="hud-center">
@@ -160,9 +162,9 @@
             </div>
         </div>
         
-        <!-- Dog Graphic and Status Bar overlay -->
+        <!-- Updated Graphic and Status Bar -->
         <div id="dog-status-container" style="position: absolute; bottom: 20px; left: 20px; display: flex; align-items: center; gap: 10px; pointer-events: auto;">
-            <div id="dog-graphic" style="font-size: 35px; text-shadow: 2px 2px 0 #333;">🐶</div>
+            <div id="dog-graphic" style="font-size: 35px; text-shadow: 2px 2px 0 #333;">💎</div>
             <div style="width: 120px; height: 18px; background: #333; border: 3px solid #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 0 #333;">
                 <div id="dog-status-bar" style="width: 0%; height: 100%; background: #4CAF50; transition: width 0.4s ease-out;"></div>
             </div>
@@ -174,7 +176,9 @@
     <script>
         // --- 1. LOCAL STORAGE & PROGRESSION ---
         const SAVE_KEY = "pg_ringsort_highestLevel";
+        const COINS_KEY = "pg_ringsort_coins";
         let highestLevelReached = parseInt(localStorage.getItem(SAVE_KEY)) || 1;
+        let totalCoins = parseInt(localStorage.getItem(COINS_KEY)) || 0;
         let levelIndex = highestLevelReached; 
 
         function saveProgress(level) {
@@ -182,6 +186,11 @@
                 highestLevelReached = level;
                 localStorage.setItem(SAVE_KEY, highestLevelReached);
             }
+        }
+
+        function updateCoinsHUD() {
+            document.getElementById('hud-coins').innerText = '🪙 ' + totalCoins;
+            localStorage.setItem(COINS_KEY, totalCoins);
         }
 
         // --- 2. AUDIO SYNTHESIZER ---
@@ -206,6 +215,10 @@
                 osc.type = 'triangle'; osc.frequency.setValueAtTime(440, now); osc.frequency.setValueAtTime(554, now + 0.1); osc.frequency.setValueAtTime(659, now + 0.2);
                 gain.gain.setValueAtTime(0.4, now); gain.gain.linearRampToValueAtTime(0, now + 0.6);
                 osc.start(now); osc.stop(now + 0.6);
+            } else if (type === 'coin') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(900, now); osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
             }
         }
 
@@ -214,31 +227,43 @@
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
         
-        let cameraAngle = 0; // Fixed starting view
-        let baseRadius = 35; // Dynamic view distance
+        let cameraAngle = 0; 
+        let baseRadius = 35; 
 
         const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
 
-        // Darker fog for better ring contrast
         scene.fog = new THREE.FogExp2(0x1a1a2e, 0.015);
         
-        // Brighter lights so the rings shine beautifully
         const hemiLight = new THREE.HemisphereLight(0xffffff, 0x555555, 0.9);
         hemiLight.position.set(0, 20, 0); scene.add(hemiLight);
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
         dirLight.position.set(5, 20, 10); dirLight.castShadow = true; scene.add(dirLight);
 
-        // --- 4. SCENERY (ENVIRONMENT) ---
+        // --- 4. SCENERY & PARTICLES FIX (NO MORE BOXES) ---
         const environmentGroup = new THREE.Group(); scene.add(environmentGroup);
 
+        // Making round soft texture for background particles dynamically without external images
+        function createCircleTexture() {
+            const canvasObj = document.createElement('canvas');
+            canvasObj.width = 64; canvasObj.height = 64;
+            const context = canvasObj.getContext('2d');
+            const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(1, 'rgba(255,255,255,0)');
+            context.fillStyle = gradient; context.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvasObj);
+        }
+        
         const particlesGeo = new THREE.BufferGeometry();
         const particlesCount = 300; const posArray = new Float32Array(particlesCount * 3);
         for(let i=0; i<particlesCount*3; i++) posArray[i] = (Math.random() - 0.5) * 60;
         particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const particlesMat = new THREE.PointsMaterial({ size: 0.4, color: 0xffffff, transparent: true, opacity: 0.8 });
+        
+        // Fixed: Added map with soft circle, adjusted size so they look elegant
+        const particlesMat = new THREE.PointsMaterial({ size: 1.2, map: createCircleTexture(), color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false });
         const bgParticles = new THREE.Points(particlesGeo, particlesMat); scene.add(bgParticles);
 
         function generateRandomBiome() {
@@ -249,12 +274,11 @@
             const biomes = ['forest', 'desert', 'water', 'ice', 'city'];
             const b = biomes[Math.floor(Math.random() * biomes.length)];
             
-            // Subdued environment colors so they don't clash with the vibrant rings
-            let groundColor = 0x1f3b1f; // Dark Green
-            if(b === 'desert') groundColor = 0x4a3424; // Dark Sand
-            if(b === 'water') groundColor = 0x1a4568;  // Deep Blue
-            if(b === 'ice') groundColor = 0x3d4b5c;    // Dark Ice
-            if(b === 'city') groundColor = 0x2b2b2b;   // Dark Grey
+            let groundColor = 0x1f3b1f; 
+            if(b === 'desert') groundColor = 0x4a3424; 
+            if(b === 'water') groundColor = 0x1a4568;  
+            if(b === 'ice') groundColor = 0x3d4b5c;    
+            if(b === 'city') groundColor = 0x2b2b2b;   
 
             const groundMat = new THREE.MeshStandardMaterial({
                 color: groundColor, 
@@ -317,7 +341,7 @@
             }
         }
 
-        // --- 5. DYNAMIC THEMES (SOOTHING & HIGH CONTRAST) ---
+        // --- 5. DYNAMIC THEMES ---
         const themes = [
             { name: "Deep Space", css: "linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #1a1a2e)", fog: 0x1a1a2e, light: 0xffffff, pColor: 0xe94560, behavior: "float" },
             { name: "Twilight", css: "linear-gradient(-45deg, #2c3e50, #34495e, #1f2a38, #2c3e50)", fog: 0x2c3e50, light: 0xffffee, pColor: 0x85c1e9, behavior: "dust" },
@@ -339,16 +363,9 @@
         let gameState = 'menu'; 
         let rewardObjectGroup = new THREE.Group(); scene.add(rewardObjectGroup);
 
-        // VIBRANT AND DISTINCT COLORS FOR RINGS (No Eye Strain!)
         const distinctColors = [ 
-            0xff3b30, // Vibrant Red
-            0x007aff, // Bright Blue
-            0x34c759, // Clear Green
-            0xffcc00, // Golden Yellow
-            0xaf52de, // Rich Purple
-            0xff9500, // Vivid Orange
-            0x5ac8fa, // Cyan
-            0xe5e5ea  // White / Light Gray
+            0xff3b30, 0x007aff, 0x34c759, 0xffcc00, 
+            0xaf52de, 0xff9500, 0x5ac8fa, 0xe5e5ea  
         ];
 
         function generateLevelLogic(level) {
@@ -372,18 +389,17 @@
         const pegGeo = new THREE.CylinderGeometry(0.5, 0.6, 7, 16); const pegMat = new THREE.MeshStandardMaterial({ color: 0xcd853f, roughness: 0.8 });
         const ringGeo = new THREE.TorusGeometry(0.85, 0.45, 12, 32);
         
-        // Platform slightly darker to ensure rings pop
         const platform = new THREE.Mesh(new THREE.CylinderGeometry(15, 15, 0.5, 32), new THREE.MeshStandardMaterial({ color: 0x777777 }));
         platform.position.set(0, -0.2, -4); platform.receiveShadow = true; scene.add(platform);
 
         function adjustCameraForMobile() {
             camera.aspect = window.innerWidth / window.innerHeight;
-            // Base radius adjusts dynamically so Canvas items fit horizontally on any screen
-            baseRadius = window.innerWidth < 800 ? 45 : 35;
+            // FIXED FOR MOBILE: Brought camera closer so Rings look big and clear
+            baseRadius = window.innerWidth < 900 ? 27 : 33; 
             camera.position.x = Math.sin(cameraAngle) * baseRadius;
             camera.position.z = Math.cos(cameraAngle) * baseRadius;
-            camera.position.y = window.innerWidth < 800 ? 18 : 15;
-            camera.lookAt(0, 4, 0);
+            camera.position.y = window.innerWidth < 900 ? 11 : 14; 
+            camera.lookAt(0, 3.5, 0);
             camera.updateProjectionMatrix();
         }
 
@@ -392,16 +408,17 @@
             generateRandomBiome();
             
             document.getElementById('hud-level').innerText = "Level " + levelIndex;
+            updateCoinsHUD();
             document.getElementById('win-message').style.display = 'none';
             document.getElementById('next-btn-container').style.display = 'none';
             
-            // Reset Camera Angle for new level
             cameraAngle = 0;
             adjustCameraForMobile();
 
             pegMeshes.forEach(p => scene.remove(p)); ringObjects.forEach(stack => stack.forEach(y => scene.remove(y)));
             pegMeshes = []; ringObjects = [];
             while(rewardObjectGroup.children.length > 0) rewardObjectGroup.remove(rewardObjectGroup.children[0]);
+            rewardObjectGroup.rotation.y = 0; // Reset spin
             
             currentLogic = generateLevelLogic(levelIndex);
             const numPegs = currentLogic.length;
@@ -410,7 +427,6 @@
 
             for (let i = 0; i < numPegs; i++) {
                 const peg = new THREE.Mesh(pegGeo, pegMat);
-                // Creating a beautiful two-row layout for higher levels
                 const zPos = numPegs > 6 && i >= Math.ceil(numPegs/2) ? 1 : -6; 
                 const rowPegCount = numPegs > 6 ? (i >= Math.ceil(numPegs/2) ? numPegs - Math.ceil(numPegs/2) : Math.ceil(numPegs/2)) : numPegs;
                 const rowStartX = -((rowPegCount - 1) * rowWidth) / 2;
@@ -423,7 +439,6 @@
                 ringObjects[i] = [];
                 for (let j = 0; j < currentLogic[i].length; j++) {
                     const colorId = currentLogic[i][j];
-                    // Glossy vibrant rings
                     const rMat = new THREE.MeshStandardMaterial({ color: distinctColors[colorId], roughness: 0.1, metalness: 0.1 });
                     const ring = new THREE.Mesh(ringGeo, rMat);
                     ring.position.set(peg.position.x, 1.3 + (j * 1.15), peg.position.z);
@@ -438,11 +453,17 @@
         }
 
         function buildProceduralModel() {
-            rewardObjectGroup.position.set(0, 0.5, -12); rewardObjectGroup.scale.set(0,0,0);
-            const mat = new THREE.MeshStandardMaterial({ color: distinctColors[Math.floor(Math.random()*distinctColors.length)], roughness: 0.9 });
-            const body = new THREE.Mesh(new THREE.BoxGeometry(3,3,3), mat); body.position.y = 2;
-            const head = new THREE.Mesh(new THREE.SphereGeometry(1.5), new THREE.MeshStandardMaterial({color: 0xffffff})); head.position.y = 4.5;
-            rewardObjectGroup.add(body, head);
+            // FIXED DUMMY: Beautiful Shiny 3D Gem / Diamond instead of weird shapes
+            rewardObjectGroup.position.set(0, 4, -12); 
+            rewardObjectGroup.scale.set(0,0,0);
+            
+            const gemGeo = new THREE.OctahedronGeometry(3, 0); // Cool Diamond Shape
+            const gemMat = new THREE.MeshStandardMaterial({ 
+                color: 0x00ffcc, roughness: 0.1, metalness: 0.8 
+            }); 
+            const gem = new THREE.Mesh(gemGeo, gemMat); 
+            
+            rewardObjectGroup.add(gem);
             rewardObjectGroup.children.forEach(c => { c.castShadow = true; c.receiveShadow = true; });
         }
 
@@ -458,7 +479,7 @@
             document.getElementById('dog-status-bar').style.width = progress + '%';
         }
 
-        // --- 7. INTERACTION LOGIC (DRAG TO ROTATE + CLICK TO SELECT) ---
+        // --- 7. INTERACTION LOGIC ---
         const raycaster = new THREE.Raycaster(); const mouse = new THREE.Vector2();
         
         let isDragging = false;
@@ -477,28 +498,25 @@
                 let deltaX = event.clientX - previousMouseX;
                 dragDistance += Math.abs(deltaX);
                 
-                // Adjusting view angle
                 cameraAngle -= deltaX * 0.006; 
                 
-                // Limiting rotation slightly so they don't get completely lost behind the board
                 const maxAngle = Math.PI / 2.2; 
                 cameraAngle = Math.max(-maxAngle, Math.min(maxAngle, cameraAngle));
 
                 camera.position.x = Math.sin(cameraAngle) * baseRadius;
                 camera.position.z = Math.cos(cameraAngle) * baseRadius;
-                camera.lookAt(0, 4, 0);
+                camera.lookAt(0, 3.5, 0);
                 
                 previousMouseX = event.clientX;
             }
         });
 
-        // Use PointerUp for selecting rings (only if player didn't drag/swipe to rotate view)
         window.addEventListener('pointerup', (event) => {
             if (!isDragging) return;
             isDragging = false;
             
-            if (dragDistance < 10 && gameState === 'playing') { 
-                // It was a click/tap! Process Raycast.
+            // FIXED CLICK/TOUCH: Increased drag threshold so taps register perfectly on mobile
+            if (dragDistance < 20 && gameState === 'playing') { 
                 mouse.x = (event.clientX / window.innerWidth) * 2 - 1; 
                 mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
                 raycaster.setFromCamera(mouse, camera);
@@ -541,11 +559,13 @@
 
         let activeParticles = [];
         function spawnParticles(position, colorHex) {
-            const geo = new THREE.SphereGeometry(0.3, 8, 8);
-            const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+            // FIXED WIN PARTICLES: Soft gem like objects instead of boxes
+            const geo = new THREE.IcosahedronGeometry(0.3, 0);
+            const mat = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.5, roughness: 0.2 });
             for(let i=0; i<15; i++) {
                 const p = new THREE.Mesh(geo, mat); p.position.copy(position);
-                p.userData = { velocity: new THREE.Vector3((Math.random()-0.5)*0.6, Math.random()*0.6, (Math.random()-0.5)*0.6), life: 1.0 };
+                p.userData = { velocity: new THREE.Vector3((Math.random()-0.5)*0.8, Math.random()*0.8, (Math.random()-0.5)*0.8), life: 1.0 };
+                p.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
                 scene.add(p); activeParticles.push(p);
             }
         }
@@ -560,12 +580,27 @@
             if (isWin) {
                 gameState = 'win'; playSound('win');
                 
-                // SAVE PROGRESS
                 saveProgress(levelIndex + 1);
                 document.getElementById('dog-status-bar').style.width = '100%';
 
+                // FIXED LEVEL COMPLETE: Rings fly up and Coins updated
                 setTimeout(() => {
-                    ringObjects.forEach(stack => { if(stack.length > 0) spawnParticles(stack[stack.length-1].position, distinctColors[stack[0].userData.colorId]); });
+                    let ringDelay = 0;
+                    ringObjects.forEach(stack => { 
+                        stack.forEach((r, index) => {
+                            setTimeout(() => {
+                                r.userData.targetPos.y += 25; // Ring udta hua upar jayega
+                                spawnParticles(r.position, distinctColors[stack[0].userData.colorId]);
+                                playSound('coin');
+                                
+                                // Score/Coins update
+                                totalCoins += 5;
+                                updateCoinsHUD();
+                            }, ringDelay + (index * 150));
+                        });
+                        ringDelay += 200;
+                    });
+                    
                     let scale = 0;
                     function popUp() {
                         scale += 0.08;
@@ -577,7 +612,7 @@
                             document.getElementById('next-btn-container').style.display = 'block';
                         }
                     }
-                    popUp();
+                    setTimeout(popUp, ringDelay + 200);
                 }, 500);
             }
         }
@@ -659,9 +694,19 @@
             for (let stack of ringObjects) { for (let r of stack) r.position.lerp(r.userData.targetPos, 0.2); }
             
             for(let i = activeParticles.length - 1; i >= 0; i--) {
-                let p = activeParticles[i]; p.position.add(p.userData.velocity); p.userData.velocity.y -= 0.02; p.userData.life -= 0.02;
-                p.scale.setScalar(p.userData.life); if(p.userData.life <= 0) { scene.remove(p); activeParticles.splice(i, 1); }
+                let p = activeParticles[i]; 
+                p.position.add(p.userData.velocity); 
+                p.rotation.x += 0.1; p.rotation.y += 0.1; // Sparkles rotate
+                p.userData.velocity.y -= 0.02; p.userData.life -= 0.02;
+                p.scale.setScalar(p.userData.life); 
+                if(p.userData.life <= 0) { scene.remove(p); activeParticles.splice(i, 1); }
             }
+            
+            // Spin the reward gem continuously
+            if(gameState === 'win' && rewardObjectGroup.children.length > 0) {
+                rewardObjectGroup.rotation.y += 0.01;
+            }
+            
             renderer.render(scene, camera);
         }
 
@@ -673,6 +718,7 @@
         applyTheme(themes[0]); 
         generateRandomBiome();
         adjustCameraForMobile();
+        updateCoinsHUD();
         animate();
     </script>
 </body>
