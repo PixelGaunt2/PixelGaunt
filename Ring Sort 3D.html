@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ring Sort 3D - PixelGaunt</title>
     <style>
-        /* --- DYNAMIC ANIMATED BACKGROUND --- */
+        /* --- DYNAMIC ANIMATED BACKGROUND (SOOTHING & HIGH CONTRAST) --- */
         body {
             margin: 0; overflow: hidden;
-            background: linear-gradient(-45deg, #a8e063, #ffb6c1, #ffc0cb, #56ab2f);
+            background: linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #1a1a2e);
             background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            animation: gradientBG 20s ease infinite;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             touch-action: none; user-select: none;
             transition: background 2s ease;
@@ -22,7 +22,8 @@
         }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-        #game-canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: block; z-index: 1; }
+        #game-canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: block; z-index: 1; cursor: grab; }
+        #game-canvas:active { cursor: grabbing; }
         
         /* --- UI LAYERS --- */
         .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; }
@@ -45,7 +46,7 @@
         /* Screens */
         .screen {
             position: absolute; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px);
         }
         .title { font-size: 50px; color: #fff; text-shadow: 3px 3px 0 #333, -1px -1px 0 #333, 1px -1px 0 #333, -1px 1px 0 #333, 1px 1px 0 #333; margin-bottom: 10px; text-align: center; line-height: 1.1; }
         
@@ -85,9 +86,28 @@
         .win-text { font-size: 45px; color: #fff; text-shadow: 0 0 15px rgba(0,0,0,0.5), 3px 3px 0 #333; display: none; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         
         @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+        /* --- ORIENTATION LOCK (FORCE LANDSCAPE) --- */
+        #orientation-warning {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #111; color: #fff; z-index: 99999;
+            flex-direction: column; justify-content: center; align-items: center; text-align: center;
+            padding: 20px; box-sizing: border-box;
+        }
+        @media screen and (orientation: portrait) {
+            #orientation-warning { display: flex !important; }
+        }
     </style>
 </head>
 <body>
+    <!-- Landscape Enforcer -->
+    <div id="orientation-warning">
+        <h1 style="font-size: 50px; margin-bottom: 10px;">📱 ➔ 🖥️</h1>
+        <h2>Please Rotate Your Device</h2>
+        <p>This game is best played in <b>Horizontal (Landscape)</b> mode to see all the rings clearly.</p>
+    </div>
+
     <canvas id="game-canvas"></canvas>
 
     <!-- Main Menu Screen -->
@@ -112,6 +132,7 @@
         <div class="modal">
             <h2>About Game</h2>
             <p><strong>Ring Sort 3D</strong><br>A relaxing sorting puzzle featuring dynamic biomes, 3D scenery, auto-generated levels, and progress saving.</p>
+            <p>Swipe left or right to look around!</p>
             <p>Developed for web browsers.<br><em>Hosted on PixelGaunt.</em></p>
             <p>Contact: <strong>pixelgaunt@gmail.com</strong></p>
             <div class="btn" onclick="hideReadme()" style="margin-top: 10px; width: auto;">Close</div>
@@ -192,32 +213,23 @@
         const canvas = document.getElementById('game-canvas');
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 15, 35);
-        camera.lookAt(0, 4, 0);
+        
+        let cameraAngle = 0; // Fixed starting view
+        let baseRadius = 35; // Dynamic view distance
 
-        // OPTIMIZATION: Power preference for better FPS, reduced max pixel ratio to fix lag
-        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: true, powerPreference: "high-performance" });
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0)); // Reduced pixel ratio for performance
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
-        renderer.outputEncoding = THREE.sRGBEncoding; 
 
-        scene.fog = new THREE.FogExp2(0xffe4e1, 0.015);
+        // Darker fog for better ring contrast
+        scene.fog = new THREE.FogExp2(0x1a1a2e, 0.015);
         
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Slightly brightened
-        scene.add(ambientLight);
-        
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+        // Brighter lights so the rings shine beautifully
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x555555, 0.9);
         hemiLight.position.set(0, 20, 0); scene.add(hemiLight);
-        
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        dirLight.position.set(5, 20, 10); 
-        dirLight.castShadow = true; 
-        // OPTIMIZATION: Lowered shadow map size for performance
-        dirLight.shadow.mapSize.width = 512;
-        dirLight.shadow.mapSize.height = 512;
-        scene.add(dirLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        dirLight.position.set(5, 20, 10); dirLight.castShadow = true; scene.add(dirLight);
 
         // --- 4. SCENERY (ENVIRONMENT) ---
         const environmentGroup = new THREE.Group(); scene.add(environmentGroup);
@@ -237,17 +249,18 @@
             const biomes = ['forest', 'desert', 'water', 'ice', 'city'];
             const b = biomes[Math.floor(Math.random() * biomes.length)];
             
-            let groundColor = 0x228b22;
-            if(b === 'desert') groundColor = 0xedc9af;
-            if(b === 'water') groundColor = 0x4da6ff;
-            if(b === 'ice') groundColor = 0xeeeeee;
-            if(b === 'city') groundColor = 0x555555;
+            // Subdued environment colors so they don't clash with the vibrant rings
+            let groundColor = 0x1f3b1f; // Dark Green
+            if(b === 'desert') groundColor = 0x4a3424; // Dark Sand
+            if(b === 'water') groundColor = 0x1a4568;  // Deep Blue
+            if(b === 'ice') groundColor = 0x3d4b5c;    // Dark Ice
+            if(b === 'city') groundColor = 0x2b2b2b;   // Dark Grey
 
-            // OPTIMIZATION: Changed MeshStandardMaterial to MeshLambertMaterial for background (faster rendering)
-            const groundMat = new THREE.MeshLambertMaterial({
+            const groundMat = new THREE.MeshStandardMaterial({
                 color: groundColor, 
+                roughness: 0.9, 
                 transparent: b === 'water', 
-                opacity: b === 'water' ? 0.8 : 1
+                opacity: b === 'water' ? 0.9 : 1
             });
             const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), groundMat);
             ground.rotation.x = -Math.PI / 2; ground.position.y = -3.5; 
@@ -255,62 +268,62 @@
             environmentGroup.add(ground);
 
             if(b === 'forest') {
-                const trunkGeo = new THREE.CylinderGeometry(0.5, 0.7, 3, 4);
-                const leafGeo = new THREE.ConeGeometry(2.5, 6, 4);
-                const treeTrunkMat = new THREE.MeshLambertMaterial({ color: 0x8b4513 });
-                const treeLeafMat = new THREE.MeshLambertMaterial({ color: 0x228b22 });
+                const trunkGeo = new THREE.CylinderGeometry(0.5, 0.7, 3, 5);
+                const leafGeo = new THREE.ConeGeometry(2.5, 6, 5);
+                const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x4a2e15, roughness: 1 });
+                const treeLeafMat = new THREE.MeshStandardMaterial({ color: 0x1a471a, roughness: 0.9 });
                 for(let i=0; i<20; i++) {
                     const tree = new THREE.Group();
                     const trunk = new THREE.Mesh(trunkGeo, treeTrunkMat); trunk.position.y = 1.5; 
                     const leaves = new THREE.Mesh(leafGeo, treeLeafMat); leaves.position.y = 5; 
                     tree.add(trunk, leaves);
-                    tree.position.set((Math.random()-0.5)*80, -3.5, -10 - Math.random()*40);
+                    tree.position.set((Math.random()-0.5)*80, -3.5, -15 - Math.random()*40);
                     environmentGroup.add(tree);
                 }
             } else if(b === 'desert') {
-                const cactusGeo = new THREE.CylinderGeometry(0.5, 0.5, 5, 4);
-                const cactusMat = new THREE.MeshLambertMaterial({color: 0x2e8b57});
+                const cactusGeo = new THREE.CylinderGeometry(0.5, 0.5, 5, 5);
+                const cactusMat = new THREE.MeshStandardMaterial({color: 0x1c4a2d, roughness: 1});
                 for(let i=0; i<15; i++) {
                     const cactus = new THREE.Mesh(cactusGeo, cactusMat);
-                    cactus.position.set((Math.random()-0.5)*80, -1, -10 - Math.random()*40);
+                    cactus.position.set((Math.random()-0.5)*80, -1, -15 - Math.random()*40);
                     environmentGroup.add(cactus);
                 }
             } else if(b === 'water') {
-                const islandGeo = new THREE.CylinderGeometry(4, 5, 1, 6);
-                const islandMat = new THREE.MeshLambertMaterial({color: 0x228b22});
+                const islandGeo = new THREE.CylinderGeometry(4, 5, 1, 8);
+                const islandMat = new THREE.MeshStandardMaterial({color: 0x1f3b1f});
                 for(let i=0; i<10; i++) {
                     const island = new THREE.Mesh(islandGeo, islandMat);
-                    island.position.set((Math.random()-0.5)*80, -3, -10 - Math.random()*40);
+                    island.position.set((Math.random()-0.5)*80, -3, -15 - Math.random()*40);
                     environmentGroup.add(island);
                 }
             } else if(b === 'ice') {
-                const icebergGeo = new THREE.ConeGeometry(4, 15, 4);
-                const icebergMat = new THREE.MeshLambertMaterial({color: 0xddddff});
+                const icebergGeo = new THREE.ConeGeometry(4, 15, 5);
+                const icebergMat = new THREE.MeshStandardMaterial({color: 0x8a9ba8});
                 for(let i=0; i<15; i++) {
                     const iceberg = new THREE.Mesh(icebergGeo, icebergMat);
-                    iceberg.position.set((Math.random()-0.5)*80, -2, -10 - Math.random()*40);
+                    iceberg.position.set((Math.random()-0.5)*80, -2, -15 - Math.random()*40);
                     iceberg.rotation.z = (Math.random()-0.5)*0.2;
                     environmentGroup.add(iceberg);
                 }
             } else if(b === 'city') {
                 const buildGeo = new THREE.BoxGeometry(5, 15, 5);
-                const buildMat = new THREE.MeshLambertMaterial({color: 0x888888});
+                const buildMat = new THREE.MeshStandardMaterial({color: 0x3d3d3d});
                 for(let i=0; i<20; i++) {
                     const bld = new THREE.Mesh(buildGeo, buildMat);
                     bld.scale.y = 0.5 + Math.random()*2;
-                    bld.position.set((Math.random()-0.5)*80, bld.scale.y*7.5 - 3.5, -15 - Math.random()*40);
+                    bld.position.set((Math.random()-0.5)*80, bld.scale.y*7.5 - 3.5, -20 - Math.random()*40);
                     environmentGroup.add(bld);
                 }
             }
         }
 
-        // --- 5. DYNAMIC THEMES ---
+        // --- 5. DYNAMIC THEMES (SOOTHING & HIGH CONTRAST) ---
         const themes = [
-            { name: "Spring", css: "linear-gradient(-45deg, #a8e063, #ffb6c1, #ffc0cb, #56ab2f)", fog: 0xffe4e1, light: 0xffffff, pColor: 0xffb6c1, behavior: "float" },
-            { name: "Summer", css: "linear-gradient(-45deg, #2980b9, #6dd5fa, #ffffff, #f1c40f)", fog: 0x6dd5fa, light: 0xffffee, pColor: 0xffffff, behavior: "dust" },
-            { name: "Autumn", css: "linear-gradient(-45deg, #e65c00, #F9D423, #ff4e50, #f9d423)", fog: 0xe65c00, light: 0xffd1a4, pColor: 0xffaa00, behavior: "fall" },
-            { name: "Winter", css: "linear-gradient(-45deg, #141e30, #243b55, #4ca1af, #c4e0e5)", fog: 0x243b55, light: 0xccffff, pColor: 0xffffff, behavior: "snow" },
-            { name: "Dark Fantasy", css: "linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #8e2de2)", fog: 0x0f2027, light: 0xaa88ff, pColor: 0x00ffcc, behavior: "fireflies" }
+            { name: "Deep Space", css: "linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #1a1a2e)", fog: 0x1a1a2e, light: 0xffffff, pColor: 0xe94560, behavior: "float" },
+            { name: "Twilight", css: "linear-gradient(-45deg, #2c3e50, #34495e, #1f2a38, #2c3e50)", fog: 0x2c3e50, light: 0xffffee, pColor: 0x85c1e9, behavior: "dust" },
+            { name: "Dark Forest", css: "linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #0f2027)", fog: 0x0f2027, light: 0xffd1a4, pColor: 0x58d68d, behavior: "fall" },
+            { name: "Midnight", css: "linear-gradient(-45deg, #000000, #111111, #222222, #111111)", fog: 0x111111, light: 0xccffff, pColor: 0xffffff, behavior: "snow" },
+            { name: "Royal Void", css: "linear-gradient(-45deg, #1d0f2e, #2b164d, #3c1e68, #1d0f2e)", fog: 0x1d0f2e, light: 0xaa88ff, pColor: 0x00ffcc, behavior: "fireflies" }
         ];
         let currentTheme = themes[0];
 
@@ -326,11 +339,20 @@
         let gameState = 'menu'; 
         let rewardObjectGroup = new THREE.Group(); scene.add(rewardObjectGroup);
 
-        // COLOR FIX: Made colors darker and much more distinguishable
-        const pastelColors = [ 0xd32f2f, 0x1976d2, 0x388e3c, 0xf57c00, 0x7b1fa2, 0xfbc02d, 0x0097a7, 0x5d4037 ];
+        // VIBRANT AND DISTINCT COLORS FOR RINGS (No Eye Strain!)
+        const distinctColors = [ 
+            0xff3b30, // Vibrant Red
+            0x007aff, // Bright Blue
+            0x34c759, // Clear Green
+            0xffcc00, // Golden Yellow
+            0xaf52de, // Rich Purple
+            0xff9500, // Vivid Orange
+            0x5ac8fa, // Cyan
+            0xe5e5ea  // White / Light Gray
+        ];
 
         function generateLevelLogic(level) {
-            let numColors = Math.min(2 + Math.floor((level - 1) / 3), pastelColors.length);
+            let numColors = Math.min(2 + Math.floor((level - 1) / 3), distinctColors.length);
             let numPegs = numColors + 2; 
             let colorPool = [];
             for (let i = 0; i < numColors; i++) { for (let j = 0; j < 4; j++) colorPool.push(i); }
@@ -347,22 +369,21 @@
             return logic;
         }
 
-        // OPTIMIZATION: Reduced cylinder/torus segments for huge performance gain
-        const pegGeo = new THREE.CylinderGeometry(0.5, 0.6, 7, 8); 
-        const pegMat = new THREE.MeshStandardMaterial({ color: 0xcd853f, roughness: 0.8 });
-        const ringGeo = new THREE.TorusGeometry(0.85, 0.45, 6, 14);
-        const platform = new THREE.Mesh(new THREE.CylinderGeometry(10, 10, 0.5, 12), new THREE.MeshLambertMaterial({ color: 0xaaaaaa }));
+        const pegGeo = new THREE.CylinderGeometry(0.5, 0.6, 7, 16); const pegMat = new THREE.MeshStandardMaterial({ color: 0xcd853f, roughness: 0.8 });
+        const ringGeo = new THREE.TorusGeometry(0.85, 0.45, 12, 32);
+        
+        // Platform slightly darker to ensure rings pop
+        const platform = new THREE.Mesh(new THREE.CylinderGeometry(15, 15, 0.5, 32), new THREE.MeshStandardMaterial({ color: 0x777777 }));
         platform.position.set(0, -0.2, -4); platform.receiveShadow = true; scene.add(platform);
 
         function adjustCameraForMobile() {
             camera.aspect = window.innerWidth / window.innerHeight;
-            if (window.innerWidth < 600) {
-                camera.fov = 75; 
-                camera.position.set(0, 18, 38);
-            } else {
-                camera.fov = 50;
-                camera.position.set(0, 15, 35);
-            }
+            // Base radius adjusts dynamically so Canvas items fit horizontally on any screen
+            baseRadius = window.innerWidth < 800 ? 45 : 35;
+            camera.position.x = Math.sin(cameraAngle) * baseRadius;
+            camera.position.z = Math.cos(cameraAngle) * baseRadius;
+            camera.position.y = window.innerWidth < 800 ? 18 : 15;
+            camera.lookAt(0, 4, 0);
             camera.updateProjectionMatrix();
         }
 
@@ -374,6 +395,10 @@
             document.getElementById('win-message').style.display = 'none';
             document.getElementById('next-btn-container').style.display = 'none';
             
+            // Reset Camera Angle for new level
+            cameraAngle = 0;
+            adjustCameraForMobile();
+
             pegMeshes.forEach(p => scene.remove(p)); ringObjects.forEach(stack => stack.forEach(y => scene.remove(y)));
             pegMeshes = []; ringObjects = [];
             while(rewardObjectGroup.children.length > 0) rewardObjectGroup.remove(rewardObjectGroup.children[0]);
@@ -385,17 +410,21 @@
 
             for (let i = 0; i < numPegs; i++) {
                 const peg = new THREE.Mesh(pegGeo, pegMat);
-                const zPos = numPegs > 6 && i >= numPegs/2 ? 6 : 3; 
-                const xOffset = numPegs > 6 && i >= numPegs/2 ? -((numPegs/2 - 1) * rowWidth)/2 + ((i-Math.ceil(numPegs/2)) * rowWidth) : startX + (i * rowWidth);
+                // Creating a beautiful two-row layout for higher levels
+                const zPos = numPegs > 6 && i >= Math.ceil(numPegs/2) ? 1 : -6; 
+                const rowPegCount = numPegs > 6 ? (i >= Math.ceil(numPegs/2) ? numPegs - Math.ceil(numPegs/2) : Math.ceil(numPegs/2)) : numPegs;
+                const rowStartX = -((rowPegCount - 1) * rowWidth) / 2;
+                const xOffset = numPegs > 6 ? rowStartX + ((i >= Math.ceil(numPegs/2) ? i - Math.ceil(numPegs/2) : i) * rowWidth) : startX + (i * rowWidth);
 
-                peg.position.set(xOffset, 3.3, zPos - 4);
+                peg.position.set(xOffset, 3.3, zPos);
                 peg.castShadow = true; peg.receiveShadow = true; peg.userData = { id: i };
                 scene.add(peg); pegMeshes.push(peg);
 
                 ringObjects[i] = [];
                 for (let j = 0; j < currentLogic[i].length; j++) {
                     const colorId = currentLogic[i][j];
-                    const rMat = new THREE.MeshStandardMaterial({ color: pastelColors[colorId], roughness: 0.3, metalness: 0.1 });
+                    // Glossy vibrant rings
+                    const rMat = new THREE.MeshStandardMaterial({ color: distinctColors[colorId], roughness: 0.1, metalness: 0.1 });
                     const ring = new THREE.Mesh(ringGeo, rMat);
                     ring.position.set(peg.position.x, 1.3 + (j * 1.15), peg.position.z);
                     ring.rotation.x = Math.PI / 2; ring.castShadow = true;
@@ -403,34 +432,17 @@
                     scene.add(ring); ringObjects[i].push(ring);
                 }
             }
-            adjustCameraForMobile();
             buildProceduralModel();
             updateDogStatus();
             gameState = 'playing';
         }
 
-        // VISUAL FIX: Added "Jaan" (Life/Animation/Features) to 3D Item
         function buildProceduralModel() {
-            rewardObjectGroup.position.set(0, 0.5, -8); rewardObjectGroup.scale.set(0,0,0);
-            
-            const bodyMat = new THREE.MeshStandardMaterial({ color: pastelColors[Math.floor(Math.random()*pastelColors.length)], roughness: 0.4, metalness: 0.2 });
-            const body = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.5, 2.5), bodyMat); body.position.y = 2;
-            
-            const headMat = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.2});
-            const head = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), headMat); head.position.y = 4.2;
-            
-            // Fixed Eyes (Bigger, more expressive)
-            const eyeGeo = new THREE.SphereGeometry(0.25, 8, 8);
-            const eyeMat = new THREE.MeshBasicMaterial({color: 0x111111});
-            const leftEye = new THREE.Mesh(eyeGeo, eyeMat); leftEye.position.set(-0.6, 4.5, 1.35);
-            const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.6, 4.5, 1.35);
-
-            // Added Arms
-            const armGeo = new THREE.CylinderGeometry(0.3, 0.3, 2, 8);
-            const leftArm = new THREE.Mesh(armGeo, headMat); leftArm.position.set(-1.8, 2, 0); leftArm.rotation.z = Math.PI / 4;
-            const rightArm = new THREE.Mesh(armGeo, headMat); rightArm.position.set(1.8, 2, 0); rightArm.rotation.z = -Math.PI / 4;
-
-            rewardObjectGroup.add(body, head, leftEye, rightEye, leftArm, rightArm);
+            rewardObjectGroup.position.set(0, 0.5, -12); rewardObjectGroup.scale.set(0,0,0);
+            const mat = new THREE.MeshStandardMaterial({ color: distinctColors[Math.floor(Math.random()*distinctColors.length)], roughness: 0.9 });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(3,3,3), mat); body.position.y = 2;
+            const head = new THREE.Mesh(new THREE.SphereGeometry(1.5), new THREE.MeshStandardMaterial({color: 0xffffff})); head.position.y = 4.5;
+            rewardObjectGroup.add(body, head);
             rewardObjectGroup.children.forEach(c => { c.castShadow = true; c.receiveShadow = true; });
         }
 
@@ -446,32 +458,72 @@
             document.getElementById('dog-status-bar').style.width = progress + '%';
         }
 
-        // --- 7. INTERACTION LOGIC ---
+        // --- 7. INTERACTION LOGIC (DRAG TO ROTATE + CLICK TO SELECT) ---
         const raycaster = new THREE.Raycaster(); const mouse = new THREE.Vector2();
+        
+        let isDragging = false;
+        let previousMouseX = 0;
+        let dragDistance = 0;
 
         window.addEventListener('pointerdown', (event) => {
             if (gameState !== 'playing' || event.target.classList.contains('btn') || event.target.closest('.hud-top')) return;
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1; mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(pegMeshes);
-            if (intersects.length > 0) handleClick(intersects[0].object.userData.id);
+            isDragging = true;
+            previousMouseX = event.clientX;
+            dragDistance = 0;
         });
+
+        window.addEventListener('pointermove', (event) => {
+            if (isDragging && gameState === 'playing') {
+                let deltaX = event.clientX - previousMouseX;
+                dragDistance += Math.abs(deltaX);
+                
+                // Adjusting view angle
+                cameraAngle -= deltaX * 0.006; 
+                
+                // Limiting rotation slightly so they don't get completely lost behind the board
+                const maxAngle = Math.PI / 2.2; 
+                cameraAngle = Math.max(-maxAngle, Math.min(maxAngle, cameraAngle));
+
+                camera.position.x = Math.sin(cameraAngle) * baseRadius;
+                camera.position.z = Math.cos(cameraAngle) * baseRadius;
+                camera.lookAt(0, 4, 0);
+                
+                previousMouseX = event.clientX;
+            }
+        });
+
+        // Use PointerUp for selecting rings (only if player didn't drag/swipe to rotate view)
+        window.addEventListener('pointerup', (event) => {
+            if (!isDragging) return;
+            isDragging = false;
+            
+            if (dragDistance < 10 && gameState === 'playing') { 
+                // It was a click/tap! Process Raycast.
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1; 
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(pegMeshes);
+                if (intersects.length > 0) handleClick(intersects[0].object.userData.id);
+            }
+        });
+
+        window.addEventListener('pointercancel', () => { isDragging = false; });
 
         function handleClick(pegId) {
             if (selectedPeg === null) {
                 if (currentLogic[pegId].length > 0) {
                     selectedPeg = pegId;
-                    ringObjects[pegId][ringObjects[pegId].length - 1].userData.targetPos.y += 2.0;
+                    ringObjects[pegId][ringObjects[pegId].length - 1].userData.targetPos.y += 2.5;
                     playSound('pop');
                 }
             } else if (selectedPeg === pegId) {
-                ringObjects[pegId][ringObjects[pegId].length - 1].userData.targetPos.y -= 2.0;
+                ringObjects[pegId][ringObjects[pegId].length - 1].userData.targetPos.y -= 2.5;
                 selectedPeg = null; playSound('pop');
             } else {
                 if (currentLogic[pegId].length < maxCapacity && (currentLogic[pegId].length === 0 || currentLogic[pegId][currentLogic[pegId].length - 1] === currentLogic[selectedPeg][currentLogic[selectedPeg].length - 1])) {
                     executeMove(selectedPeg, pegId);
                 } else {
-                    ringObjects[selectedPeg][ringObjects[selectedPeg].length - 1].userData.targetPos.y -= 2.0;
+                    ringObjects[selectedPeg][ringObjects[selectedPeg].length - 1].userData.targetPos.y -= 2.5;
                     playSound('error');
                 }
                 selectedPeg = null;
@@ -513,7 +565,7 @@
                 document.getElementById('dog-status-bar').style.width = '100%';
 
                 setTimeout(() => {
-                    ringObjects.forEach(stack => { if(stack.length > 0) spawnParticles(stack[stack.length-1].position, pastelColors[stack[0].userData.colorId]); });
+                    ringObjects.forEach(stack => { if(stack.length > 0) spawnParticles(stack[stack.length-1].position, distinctColors[stack[0].userData.colorId]); });
                     let scale = 0;
                     function popUp() {
                         scale += 0.08;
@@ -579,6 +631,7 @@
             document.getElementById('screen-game').classList.add('hidden'); 
             document.getElementById('screen-menu').classList.remove('hidden'); 
             gameState = 'menu'; applyTheme(themes[0]); generateRandomBiome();
+            cameraAngle = 0; adjustCameraForMobile();
         }
         window.toggleMusic = function() { isMusicOn = !isMusicOn; document.getElementById('btn-music').innerText = isMusicOn ? '🔊' : '🔇'; }
 
@@ -609,15 +662,6 @@
                 let p = activeParticles[i]; p.position.add(p.userData.velocity); p.userData.velocity.y -= 0.02; p.userData.life -= 0.02;
                 p.scale.setScalar(p.userData.life); if(p.userData.life <= 0) { scene.remove(p); activeParticles.splice(i, 1); }
             }
-            
-            // VISUAL FIX: Animated 3D reward character with squash & stretch bouncy effect when game is won
-            if (gameState === 'win') {
-                rewardObjectGroup.rotation.y += 0.03;
-                const bounce = Math.abs(Math.sin(time * 6));
-                rewardObjectGroup.position.y = 0.5 + bounce * 1.5; // Jump
-                rewardObjectGroup.scale.set(1 + (1 - bounce) * 0.2, 1 + bounce * 0.2, 1 + (1 - bounce) * 0.2); // Squash and stretch
-            }
-            
             renderer.render(scene, camera);
         }
 
@@ -628,6 +672,7 @@
         
         applyTheme(themes[0]); 
         generateRandomBiome();
+        adjustCameraForMobile();
         animate();
     </script>
 </body>
