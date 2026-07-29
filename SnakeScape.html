@@ -53,10 +53,13 @@
             font-weight: bold;
             font-size: 1.1rem;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .stars { color: #f1c40f; letter-spacing: 2px;}
         .lives { color: #ff4757; font-size: 1.2rem; letter-spacing: 2px;}
+        #coins-display { color: #e67e22; }
+        #score-display { color: #2980b9; }
 
         .btn-group {
             display: flex;
@@ -153,7 +156,7 @@
 
         @media (max-width: 650px) {
             header, footer { padding: 8px; flex-wrap: wrap; justify-content: center; gap: 8px; }
-            .stats { font-size: 0.95rem; gap: 10px; flex-wrap: wrap; justify-content: center;}
+            .stats { font-size: 0.85rem; gap: 8px; flex-wrap: wrap; justify-content: center;}
             button { padding: 8px 12px; font-size: 0.9rem; }
         }
     </style>
@@ -164,6 +167,8 @@
         <div class="stats">
             <div id="level-display">Level: 1</div>
             <div id="moves-display">Moves: 0</div>
+            <div id="score-display">Score: 0</div>
+            <div id="coins-display">Coins: 0</div>
             <div class="stars" id="stars-display">★★★</div>
             <div class="lives" id="lives-display">❤️❤️❤️</div>
         </div>
@@ -284,6 +289,13 @@ const audio = {
         this.playTone(800, 'sine', 0.1, 0.1, 1200); 
         setTimeout(() => this.playTone(1000, 'sine', 0.1, 0.1, 1400), 50);
     },
+    playCoin() {
+        this.playTone(1200, 'sine', 0.1, 0.1, 2000);
+    },
+    playItem() {
+        this.playTone(600, 'square', 0.1, 0.1, 800);
+        setTimeout(() => this.playTone(900, 'sine', 0.1, 0.1, 1200), 80);
+    },
     playVictory() {
         [440, 554, 659, 880, 1108].forEach((freq, i) => {
             setTimeout(() => this.playTone(freq, 'square', 0.3, 0.08), i * 120);
@@ -304,7 +316,6 @@ const MULTI_COLORS = [
     '#ff9f43', '#10ac84', '#5f27cd', '#ff6b6b', '#48dbfb', '#1dd1a1', '#feca57', '#ff9ff3', '#00a8ff'
 ];
 
-// NAYA LOGIC: Directed Acyclic Graph (DAG) for 100% Deadlock Prevention
 class DependencyGraph {
     constructor() { this.adj = new Map(); }
     addNode(id) { if (!this.adj.has(id)) this.adj.set(id, new Set()); }
@@ -351,36 +362,35 @@ class LevelGenerator {
                 let dc = (c - cols / 2) / (cols / 2);
                 let isFace = false;
 
-                // Anime Hero Faces / Motif Generators
                 switch(styleType) {
-                    case 0: // Naruto (Headband + Face)
+                    case 0: 
                         isFace = (dr*dr + dc*dc < 0.6) || (dr < -0.3 && dr > -0.5 && Math.abs(dc) < 0.8) || (dr > 0.1 && dr < 0.5 && Math.abs(dc) > 0.4 && Math.abs(dc) < 0.7 && (r+c)%2===0); 
                         break;
-                    case 1: // Goku (Spiky Hair)
+                    case 1: 
                         isFace = (dr*dr + dc*dc < 0.5) || (dr < -0.2 && Math.sin(dc * 10) > 0.3 && dr > -0.9);
                         break;
-                    case 2: // Luffy (Straw Hat)
+                    case 2: 
                         isFace = (dr*dr + dc*dc < 0.45) || (Math.abs(dr + 0.3) < 0.15 && Math.abs(dc) < 0.95) || (dr < -0.3 && dr > -0.65 && Math.abs(dc) < 0.4);
                         break;
-                    case 3: // Saitama (Egg head)
+                    case 3: 
                         isFace = (dr*dr*1.1 + dc*dc*0.9 < 0.65);
                         break;
-                    case 4: // Ichigo (Hollow mask angles)
+                    case 4: 
                         isFace = (dr*dr + dc*dc < 0.55) || (dr < -0.1 && Math.abs(dc) < 0.8 && (r*2+c)%2===0) || (dr > 0.2 && Math.abs(dc) < 0.3);
                         break;
-                    case 5: // Batman (Ears)
+                    case 5: 
                         isFace = (dr*dr + dc*dc < 0.55) || (dr < -0.4 && dr > -0.9 && Math.abs(Math.abs(dc) - 0.4) < 0.15);
                         break;
-                    case 6: // Spider-man (Web pattern/Oval)
+                    case 6: 
                         isFace = (dr*dr*0.8 + dc*dc*1.2 < 0.7) && ((r+c)%4 !== 0);
                         break;
-                    case 7: // Pikachu (Long ears)
+                    case 7: 
                         isFace = (dr*dr + dc*dc < 0.5) || (dr < -0.3 && dr > -0.9 && Math.abs(Math.abs(dc) - 0.6) < 0.2);
                         break;
-                    case 8: // Zoro (Bandana line)
+                    case 8: 
                         isFace = (dr*dr + dc*dc < 0.5) || (Math.abs(dr + dc*0.5 + 0.3) < 0.15 && Math.abs(dc) < 0.8);
                         break;
-                    case 9: // Generic Anime (Big eyes, small chin)
+                    case 9: 
                         isFace = (dr*dr*0.9 + dc*dc*1.3 < 0.6 && dr > -0.2) || (dr*dr + dc*dc < 0.6 && dr <= -0.2);
                         break;
                     default:
@@ -392,7 +402,6 @@ class LevelGenerator {
                 let isRightEye = (dr > -0.15 && dr < -0.02 && dc > 0.15 && dc < 0.42);
                 let isMouth = (dr > 0.32 && dr < 0.42 && dc > -0.22 && dc < 0.22);
 
-                // Disable face-carvings for structural styles so shapes stay distinct
                 if (styleType === 1 || styleType === 4 || styleType === 6 || styleType === 8) { 
                     isLeftEye = false; isRightEye = false; isMouth = false; 
                 } 
@@ -408,8 +417,9 @@ class LevelGenerator {
 
         let snakes = [];
         let snakeId = 0;
-        // Increased snake quantity significantly for harder puzzles
-        let maxSnakes = Math.floor((rows * cols) * 0.15);
+        
+        // Difficulty Increased: Now spawns significantly more snakes (65% density)
+        let maxSnakes = Math.floor((rows * cols) * 0.65);
 
         let dag = new DependencyGraph();
         let escapePathsMap = new Map(); 
@@ -448,7 +458,6 @@ class LevelGenerator {
                         }
                     }
 
-                    // Temporarily lift body block for logic checks
                     for (let seg of proposedBody) grid[seg.r][seg.c] = 1;
 
                     let proposedEscape = new Set();
@@ -459,17 +468,14 @@ class LevelGenerator {
                         er += dir.r; ec += dir.c;
                     }
 
-                    // Assess topological dependencies to absolutely prevent deadlocks
                     let newEdges = [];
                     for (let E of snakes) {
-                        // N -> E (New snake blocked by Existing snake's body)
                         let hitsE = false;
                         for (let seg of E.segments) {
                             if (proposedEscape.has(`${seg.r},${seg.c}`)) { hitsE = true; break; }
                         }
                         if (hitsE) newEdges.push({from: snakeId, to: E.id});
 
-                        // E -> N (Existing snake blocked by New snake's body)
                         let ePath = escapePathsMap.get(E.id);
                         let eHitsN = false;
                         for (let seg of proposedBody) {
@@ -482,8 +488,6 @@ class LevelGenerator {
                     tempDag.addNode(snakeId);
                     for (let edge of newEdges) tempDag.addEdge(edge.from, edge.to);
 
-                    // Accept placement ONLY if the dependency graph remains acyclic 
-                    // This guarantees 100% solvability with interlocking bodies!
                     if (!tempDag.hasCycle()) {
                         dag = tempDag;
                         for (let seg of proposedBody) grid[seg.r][seg.c] = 2;
@@ -502,14 +506,34 @@ class LevelGenerator {
             }
         }
         
-        return { rows, cols, snakes };
+        let items = [];
+        for (let [sId, pathSet] of escapePathsMap.entries()) {
+            let pathArr = Array.from(pathSet).map(str => {
+                let [r, c] = str.split(',').map(Number);
+                return {r, c};
+            });
+            
+            pathArr.forEach(pos => {
+                if (Math.random() < 0.30) {
+                    let typeRand = Math.random();
+                    let type = typeRand < 0.4 ? 'coin' : (typeRand < 0.7 ? 'burger' : 'ice_cream');
+                    if (!items.some(i => i.r === pos.r && i.c === pos.c)) {
+                        items.push({r: pos.r, c: pos.c, type: type});
+                    }
+                }
+            });
+        }
+
+        return { rows, cols, snakes, items };
     }
 }
 
 const game = {
     state: 'MENU', 
     level: parseInt(localStorage.getItem('snakeScape_level')) || 1,
-    moves: 0, lives: 3, snakes: [], history: [], mice: [], floatingTexts: [],
+    score: parseInt(localStorage.getItem('snakeScape_score')) || 0,
+    totalCoins: parseInt(localStorage.getItem('snakeScape_coins')) || 0,
+    moves: 0, lives: 3, snakes: [], items: [], history: [], mice: [], floatingTexts: [],
     rows: 0, cols: 0, tileSize: 0, offsetX: 0, offsetY: 0,
     
     canvas: document.getElementById('game-canvas'),
@@ -566,6 +590,8 @@ const game = {
             bumpOffset: 0, isBumping: false, bumpTime: 0
         }));
         
+        this.items = levelData.items.map(i => ({...i}));
+        
         this.moves = 0; 
         this.lives = Math.floor(this.level / 10) + 5; 
         this.history = []; this.exitingSnakes = []; this.particles = []; this.mice = []; this.floatingTexts = [];
@@ -605,6 +631,8 @@ const game = {
     updateUI() {
         document.getElementById('level-display').innerText = `Level: ${this.level}/100`;
         document.getElementById('moves-display').innerText = `Moves: ${this.moves}`;
+        document.getElementById('score-display').innerText = `Score: ${this.score}`;
+        document.getElementById('coins-display').innerText = `Coins: ${this.totalCoins}`;
         document.getElementById('lives-display').innerText = '❤️'.repeat(this.lives) || '💔';
         let stars = this.lives >= 5 ? 3 : this.lives >= 3 ? 2 : 1;
         document.getElementById('stars-display').innerText = '★'.repeat(stars) + '☆'.repeat(3-stars);
@@ -619,6 +647,7 @@ const game = {
         let lastState = this.history.pop();
         this.snakes = JSON.parse(lastState.snakes);
         this.mice = JSON.parse(lastState.mice);
+        this.items = JSON.parse(lastState.items);
         this.exitingSnakes = []; 
         this.moves++; this.updateUI(); audio.playMove();
     },
@@ -672,12 +701,15 @@ const game = {
             
             if (clickedSnake) {
                 if (this.canSnakeEscape(clickedSnake)) {
-                    this.history.push({snakes: JSON.stringify(this.snakes), mice: JSON.stringify(this.mice)});
+                    this.history.push({
+                        snakes: JSON.stringify(this.snakes), 
+                        mice: JSON.stringify(this.mice),
+                        items: JSON.stringify(this.items)
+                    });
                     audio.playSlide(); this.moves++; this.updateUI();
                     this.exitingSnakes.push(clickedSnake);
                     this.snakes = this.snakes.filter(s => s.id !== clickedSnake.id);
                 } else {
-                    // BLOCKED: Single touch auto-move feature, bumps forward slightly and deducts heart
                     audio.playBlocked(); 
                     clickedSnake.isBumping = true;
                     clickedSnake.bumpTime = 0;
@@ -746,11 +778,10 @@ const game = {
             if (ft.life <= 0) this.floatingTexts.splice(i, 1);
         }
 
-        // Handle blocked snake bump animations
         this.snakes.forEach(s => {
             if (s.isBumping) {
-                s.bumpTime += dt * 15; // Animation speed
-                s.bumpOffset = Math.sin(s.bumpTime) * 0.35; // Forward bump amount
+                s.bumpTime += dt * 15;
+                s.bumpOffset = Math.sin(s.bumpTime) * 0.35;
                 if (s.bumpTime >= Math.PI) {
                     s.isBumping = false;
                     s.bumpOffset = 0;
@@ -763,12 +794,51 @@ const game = {
             let s = this.exitingSnakes[i];
             s.visualOffset += dt * 28; 
             
+            let headC = s.segments[0].c + s.dir.c * s.visualOffset;
+            let headR = s.segments[0].r + s.dir.r * s.visualOffset;
+            
+            // Fixed Collision Logic for items!
+            for (let j = this.items.length - 1; j >= 0; j--) {
+                let item = this.items[j];
+                let passedItem = false;
+                let startC = s.segments[0].c;
+                let startR = s.segments[0].r;
+
+                if (s.dir.c !== 0 && startR === item.r) {
+                    if (s.dir.c === 1 && headC >= item.c && startC <= item.c) passedItem = true;
+                    if (s.dir.c === -1 && headC <= item.c && startC >= item.c) passedItem = true;
+                } else if (s.dir.r !== 0 && startC === item.c) {
+                    if (s.dir.r === 1 && headR >= item.r && startR <= item.r) passedItem = true;
+                    if (s.dir.r === -1 && headR <= item.r && startR >= item.r) passedItem = true;
+                }
+
+                if (passedItem) {
+                    let cx = this.offsetX + (item.c + 0.5) * this.tileSize;
+                    let cy = this.offsetY + (item.r) * this.tileSize;
+                    
+                    if (item.type === 'coin') {
+                        this.totalCoins++;
+                        this.score += 50;
+                        audio.playCoin();
+                        this.floatingTexts.push({ x: cx, y: cy, text: "+1 🪙", life: 1.0, color: '#f1c40f' });
+                    } else {
+                        this.score += 100;
+                        audio.playItem();
+                        let emoji = item.type === 'burger' ? '🍔' : '🍦';
+                        this.floatingTexts.push({ x: cx, y: cy, text: `+100 ${emoji}`, life: 1.0, color: '#2980b9' });
+                    }
+                    this.createParticles(cx, cy + this.tileSize/2, '#fff');
+                    this.items.splice(j, 1);
+                    this.updateUI();
+                    
+                    localStorage.setItem('snakeScape_score', this.score);
+                    localStorage.setItem('snakeScape_coins', this.totalCoins);
+                }
+            }
+
             let mouseIdx = this.mice.findIndex(m => m.id === s.id);
             if (mouseIdx !== -1) {
                 let m = this.mice[mouseIdx];
-                let headC = s.segments[0].c + s.dir.c * s.visualOffset;
-                let headR = s.segments[0].r + s.dir.r * s.visualOffset;
-                
                 let passed = false;
                 if (s.dir.c === 1 && headC >= m.c) passed = true;
                 if (s.dir.c === -1 && headC <= m.c) passed = true;
@@ -781,7 +851,7 @@ const game = {
                     this.floatingTexts.push({
                         x: this.offsetX + (m.c + 0.5) * this.tileSize, 
                         y: this.offsetY + (m.r) * this.tileSize, 
-                        text: "Happy!", life: 1.0
+                        text: "Happy!", life: 1.0, color: '#ff9ff3'
                     });
                     audio.playEat();
                 }
@@ -907,6 +977,18 @@ const game = {
             });
             this.ctx.fill();
         }
+        
+        this.items.forEach(item => {
+            let cx = this.offsetX + (item.c + 0.5) * this.tileSize;
+            let cy = this.offsetY + (item.r + 0.5) * this.tileSize;
+            let bounce = Math.sin(timeNow / 200 + item.r + item.c) * (this.tileSize * 0.1);
+            
+            this.ctx.font = `${this.tileSize * 0.6}px Arial`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            let emoji = item.type === 'burger' ? '🍔' : (item.type === 'ice_cream' ? '🍦' : '🪙');
+            this.ctx.fillText(emoji, cx, cy + bounce);
+        });
 
         if (this.activeHelpMouseId) {
             let helpMouse = this.mice.find(m => m.id === this.activeHelpMouseId);
@@ -974,9 +1056,7 @@ const game = {
             }
         };
 
-        // Draw regular and dynamically bumping snakes
         this.snakes.forEach(s => drawDynamicSnake(s, false));
-        // Draw exiting snakes
         this.exitingSnakes.forEach(s => drawDynamicSnake(s, true));
 
         this.particles.forEach(p => {
@@ -987,7 +1067,7 @@ const game = {
 
         this.floatingTexts.forEach(ft => {
             this.ctx.globalAlpha = ft.life;
-            this.ctx.fillStyle = '#ff9ff3';
+            this.ctx.fillStyle = ft.color || '#ff9ff3';
             this.ctx.font = `900 ${Math.max(16, this.tileSize * 1.8)}px 'Segoe UI', Arial`;
             this.ctx.textAlign = 'center';
             this.ctx.shadowColor = "rgba(0,0,0,0.5)";
