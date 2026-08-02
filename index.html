@@ -169,6 +169,8 @@
         .nav-btn.primary { background: linear-gradient(135deg, var(--neon-purple), #9333ea); color: #fff; font-weight: 600; box-shadow: 0 4px 15px rgba(188, 19, 254, 0.25); border: 1px solid rgba(255,255,255,0.1); }
         .nav-btn.primary:hover { box-shadow: 0 6px 25px rgba(188, 19, 254, 0.45); transform: translateY(-2px); }
 
+        #hero-play-btn:hover { background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)); color: #000; box-shadow: 0 6px 25px rgba(0, 243, 255, 0.55); }
+
         .premium-hero {
             width: 100%; max-width: 1300px; margin: 30px auto 10px auto; padding: 0 5%;
             display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 30px; align-items: center;
@@ -185,7 +187,8 @@
         .hero-info-panel:hover { transform: translateY(-8px); border-color: var(--neon-cyan); box-shadow: 0 15px 35px rgba(0, 243, 255, 0.25); }
         .hero-info-panel::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, var(--neon-cyan), var(--neon-purple)); }
         
-        .hero-tag { font-size: 0.75rem; color: var(--neon-cyan); letter-spacing: 2px; margin-bottom: 12px; font-weight: 700; display: inline-block; }
+        .hero-tag { font-size: 0.75rem; color: var(--neon-cyan); letter-spacing: 2px; margin-bottom: 12px; font-weight: 700; display: inline-block; cursor: pointer; transition: var(--transition-smooth); }
+        .hero-tag:hover { transform: scale(1.08); text-shadow: 0 0 16px var(--neon-cyan), 0 0 4px #fff; }
         .hero-title { font-size: 1.8rem; line-height: 1.4; color: #fff; margin-bottom: 16px; text-shadow: 0 0 20px rgba(255,255,255,0.05); }
         .hero-desc { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
         
@@ -227,7 +230,7 @@
         .scroll-btn { background: var(--bg-surface-light); border: 1px solid var(--glass-border); color: #fff; border-radius: 50%; width: 42px; height: 42px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: var(--transition-smooth); flex-shrink: 0; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .scroll-btn:hover { background: var(--neon-accent); border-color: transparent; box-shadow: 0 0 15px rgba(var(--neon-accent-rgb), 0.5); transform: scale(1.05); }
         
-        .category-bar { display: flex; gap: 8px; overflow-x: auto; scroll-behavior: smooth; padding: 2px 0; scrollbar-width: none; flex-grow: 1; justify-content: flex-start; }
+        .category-bar { display: flex; gap: 8px; overflow-x: auto; scroll-behavior: smooth; padding: 2px 0; scrollbar-width: none; flex-grow: 1; justify-content: flex-start; transition: opacity 0.35s ease; }
         .category-bar::-webkit-scrollbar { display: none; }
         
         .cat-btn { background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 10px 22px; border-radius: 30px; font-size: 0.86rem; font-weight: 600; white-space: nowrap; transition: var(--transition-smooth); }
@@ -238,6 +241,7 @@
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
             gap: 25px; width: 100%; max-width: 1300px; justify-content: center; 
+            transition: opacity 0.3s ease;
         }
         
         .game-card { 
@@ -617,16 +621,16 @@
                 <div class="theme-dot t-cyber" onclick="setGlobalTheme('cyber', this)"></div>
             </div>
             <button class="nav-btn" onclick="goHome()">Games</button>
-            <button class="nav-btn" onclick="openPage('store-page')">Store</button>
-            <button class="nav-btn" style="color: var(--neon-cyan);" onclick="openPage('tournament-page')">Tournaments</button>
-            <button class="nav-btn" style="color: #fbbf24;" onclick="openPage('subscribe-page')">Subscribe</button>
+            <button class="nav-btn" onclick="showComingSoon('Store')">Store</button>
+            <button class="nav-btn" style="color: var(--neon-cyan);" onclick="showComingSoon('Tournaments')">Tournaments</button>
+            <button class="nav-btn" style="color: #fbbf24;" onclick="showComingSoon('Subscribe')">Subscribe</button>
             <button class="nav-btn primary" id="main-login-btn" onclick="openModal('login-modal')">Login</button>
         </nav>
     </header>
 
     <section class="premium-hero" id="hero-presentation-section">
         <div class="hero-info-panel" id="hero-panel-bg" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(188, 19, 254, 0.45)), url('Girl%20The%20Driller.png') center/cover no-repeat;">
-            <span class="hero-tag" style="color: var(--neon-cyan); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);">FEATURED ADVENTURE</span>
+            <span class="hero-tag" id="hero-tag-label" style="color: var(--neon-cyan); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);" onclick="document.getElementById('hero-play-btn').click()" title="Play the current Top Play">TOP PLAYS</span>
             <h1 class="hero-title pixel-font" id="hero-title-text" style="text-shadow: 0 4px 15px rgba(0,0,0,0.9);">GIRL: THE DRILLER</h1>
             <p class="hero-desc" id="hero-desc-text" style="color: #e2e8f0; font-weight: 500; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Collect all Energy Orbs to unlock the Portal and reach it. Experience highly polished commercial-quality physics action gameplay.</p>
             
@@ -641,7 +645,7 @@
             </div>
         </div>
         <div class="spotlight-banner-wrapper" id="spotlight-panel-bg" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.85), rgba(0, 243, 255, 0.35)), url('Bricks%20KnockOut.png') center/cover no-repeat;">
-            <span class="spotlight-badge">FEATURED SPOTLIGHT</span>
+            <span class="spotlight-badge">TOP CATEGORIES</span>
             <div class="spotlight-title-box">
                 <p class="card-genre" id="spotlight-genre-text" style="color:var(--neon-cyan)">Arcade</p>
                 <h3 class="pixel-font" id="spotlight-title-text">Bricks KnockOut</h3>
@@ -1171,6 +1175,11 @@
         </div>
     </div>
 
+    <div id="pg-comingsoon" style="display:none;">
+        <p style="text-align:center; font-size: 3rem; color: var(--neon-cyan); text-shadow: 0 0 20px rgba(0, 243, 255, 0.5); margin-bottom: 10px;"><i class="fas fa-hourglass-half"></i></p>
+        <p style="text-align:center;">This section is currently under construction. We're working hard to bring you an amazing experience — check back soon!</p>
+    </div>
+
     <div id="pg-about" style="display:none;">
         <p><strong>Pixel Gaunt</strong> (pixelgaunt.com) is a modern retro games portal and digital studio founded by Pixel Gaunt. We develop and publish high-quality HTML5, CSS3, JavaScript, Three JS & WebGL and More browser-based games.</p>
         <p><br>Our games are designed for seamless cross-platform play, supporting PC, Android, iOS, Mac, and Linux. We focus on delivering polished gaming experiences with beautiful graphics, neon effects, and smooth gameplay.</p>
@@ -1230,63 +1239,162 @@
         let isLoggedIn = false;
         
         const games = [
-            { id: 1, studio: 'Pixel Gaunt', title: 'Stick Man Velocity', genre: 'Fighting', controls: '<strong>Movement:</strong> Joystick (Mobile) / A, D Keys (Desktop).<br><strong>Actions:</strong> W (Jump), S (Crouch/Slide), J (Punch), L (Kick), K (Fireball), SHIFT (Dash), U (Dive).<br><strong>Ultimate:</strong> J+K+L (When charged).', howToPlay: 'Navigate through the levels, defeat enemy waves (Small, Spider, Goliath), and conquer the Titan Boss. Track HP and collect coins to boost your score.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'Single-file HTML5, CSS Flexbox, Vanilla ES6 JavaScript, Web Audio API, Canvas API', aiPrompt: `To help you recreate your "Stickman Velocity" game or build a clone using Gemini, you should use a structured, modular approach. Rather than asking for everything at once, it is best to provide the AI with a logical roadmap.`, image: 'Stick Man Velocity.png', preview: 'Stick Man Velocity.gif', url: 'Stick Man Velocity.html', bgm: 'Stick Man Velocity.mp3' },
-            { id: 2, studio: 'Pixel Gaunt', title: 'Serpent Relic', genre: 'Puzzle Adventure', controls: '<strong>Movement:</strong> Swipe Up/Down/Left/Right (Mobile) / WASD or Arrow Keys (Desktop).', howToPlay: 'Navigate the serpent through dark tombs and ancient crypts. Avoid traps, use mirrors, and rescue your twin to escape before the darkness consumes you.', rating: '⭐⭐⭐⭐ (4.5/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5 Canvas, Vanilla JS', aiPrompt: `To create a game like "Serpent Relic" using Gemini or any other AI, you can use the step-by-step prompts below. Copy and paste them into the AI one by one to build, refine, and polish your game.`, image: 'Serpent Relic.png', preview: 'Serpent Relic.gif', url: 'Serpent Relic.html', bgm: 'Serpent Relic.mp3' },
-            { id: 3, studio: 'Pixel Gaunt', title: 'Pizza Chaos', genre: 'Action', controls: '<strong>Movement:</strong> On-screen Joystick (Mobile) / WASD or Arrows (Desktop).<br><strong>Actions:</strong> On-screen buttons or Keyboard keys to Jump, Dash, and Shoot.', howToPlay: 'Deliver pizzas in a chaotic environment. Fight multi-boss enemies, gather power-ups to level up, and complete campaign objectives before the timer runs out.', rating: '⭐⭐⭐⭐ (4.6/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5, CSS Flexbox, JavaScript', aiPrompt: `Step 1: The "Master Architect" Prompt. Copy and paste this prompt into an AI to get the complete code logic.`, image: 'Pizza Chaos.png', preview: 'Pizza Chaos.gif', url: 'Pizza Chaos.html', bgm: 'Pizza Chaos.mp3' },
-            { id: 4, studio: 'Pixel Gaunt', title: 'Face Merge', genre: 'Puzzle', controls: '<strong>Interaction:</strong> Touch/Drag (Mobile) / Mouse Click & Drag (Desktop) to swap adjacent emoji faces.', howToPlay: 'Merge matching emoji faces to clear the board, achieve the score target, and save the dog from going underwater within the given move limit.', rating: '⭐⭐⭐⭐ (4.3/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5, CSS Grid, Vanilla JS', aiPrompt: `To create a game like "Face Merge" or your "Bean Crush Saga," you can use the following step-by-step prompts.`, image: 'Face Merge.png', preview: 'Face Merge.gif', url: 'Face Merge.html', bgm: 'Face Merge.mp3' },
-            { id: 5, studio: 'Pixel Gaunt', title: 'Panda The Ocean Hunter', genre: 'Casual Adventure', controls: '<strong>Fishing:</strong> Tap/Click to cast the line.<br><strong>Combat:</strong> Hold screen/mouse to pull fish, Tap to shoot weapon.', howToPlay: 'Play as a panda fishing in the ocean. Cast your line, hook the fish, and pull them out in an intensive battle mode mini-game. Gather resources to upgrade.', rating: '⭐⭐⭐⭐ (4.7/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5 Canvas, Vanilla JS', aiPrompt: `To help others or yourself generate a similar high-quality game using any AI (like Gemini, GPT-4, or Claude), you can use the following Master Development Prompt.`, image: 'Panda The Ocean Hunter.png', preview: 'Panda The Ocean Hunter.gif', url: 'Panda The Ocean Hunter.html', bgm: 'Panda The Ocean Hunter.mp3' },
-            { id: 6, studio: 'Pixel Gaunt', title: 'Beggar Catcher', genre: '3D Simulation', controls: '<strong>Movement:</strong> WASD keys.<br><strong>Camera:</strong> Mouse movement.<br><strong>Interaction:</strong> Hold Right Click to Scan/Investigate, Left Click to interact/catch.', howToPlay: 'Explore the 3D environment, search for targets using the crosshair, and manage your caught entities. Use the shop to buy upgrades and progress through levels.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'May 2026', platform: 'Web Browser Desktop', technology: 'Three.js, WebGL, HTML5', aiPrompt: `To build an exact, professional-grade clone of this project, you need a modular approach. Here are the step-by-step prompts you should use to rebuild and expand the system.`, image: 'Beggar Catcher.png', preview: 'Beggar Catcher.gif', url: 'Beggar Catcher.html', bgm: 'Beggar Catcher.mp3' },
-            { id: 7, studio: 'Pixel Gaunt', title: 'Horse Turn', genre: 'Racing', controls: '<strong>Movement:</strong> Left/Right Arrow Keys or Screen Swipe.<br><strong>Actions:</strong> Spacebar or Swipe Up to Jump. Shift or Dash Button to Fast-Forward.', howToPlay: 'Race through an endless cosmic tunnel. Avoid drifting out into the deep cosmic abyss, collect coins, and use your dash speed to blast through levels.', rating: '⭐⭐⭐⭐ (4.4/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5 Canvas, RequestAnimationFrame', aiPrompt: `Step 1: The Core Engine (The Framework) Use this prompt to set up the foundation.`, image: 'Horse Turn.png', preview: 'Horse Turn.gif', url: 'Horse Turn.html', bgm: 'Horse Turn.mp3' },
-            { id: 8, studio: 'Pixel Gaunt', title: 'Deck of Doom', genre: 'Rogue-like', controls: '<strong>Combat:</strong> Mouse Click/Drag or Touch to select and play cards from your hand. Click "End Turn" when out of energy.', howToPlay: 'Engage in a turn-based card battle against a demon. Manage your energy, play attack and defense cards, and reduce the enemy HP to zero to survive.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5, CSS Animations, JS', aiPrompt: `Step 1: Core Engine, Setup Screen, Player & Difficulty Prompt. Why Use It: This builds the game’s baseline database structure.`, image: 'Deck of Doom.png', preview: 'Deck of Doom.gif', url: 'Deck of Doom.html', bgm: 'Deck of Doom.mp3' },
-            { id: 9, studio: 'Pixel Gaunt', title: 'Tetris Reimagine', genre: 'Puzzle', controls: 'Use the on screen buttons provided on the interface Left, Right Turn Float or Use Keyboard Arrow Keys Up , Down ,  Left ,  Right.', howToPlay: 'Organize the rising balloons into complete rows to clear them. Survive up to 100 levels and aim for the high score.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'June 1, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5, CSS3, JavaScript (Vanilla), Web Audio API', aiPrompt: `Create a complete browser-based game called "Tetris Reimagine". Core Concept: This game is inspired by Tetris but with a completely unique gameplay mechanic.`, image: 'Tetris Reimagine.png', preview: 'Tetris Reimagine.gif', url: 'Tetris Reimagine.html', bgm: 'Tetris Reimagine.mp3' },
-            { id: 10, studio: 'Pixel Gaunt', title: 'Iron Tide Rising', genre: '3D Shooting', controls: 'Movement: W (Forward), S (Backward), A (Left), D (Right) Action: SPACE (Jump), SHIFT (Sprint/Fast run) Combat: Left Click (Smart Automatic/Single Fire), TAB (Weapon Switch: Rifle/Bazooka), G (Throw Bomb/Grenade) Dodging: Q (Left Dash), E (Right Dash) System: ESC (Pause Menu).', howToPlay: 'Objective: Survive against waves of enemies and maximize your score.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'June 2, 2026', platform: 'Web Browser (Desktop Responsive)', technology: 'Three.js, WebGL, Web Audio API', aiPrompt: `Create a complete offline 3D browser game inspired by battle royale and tactical shooter gameplay.`, image: 'Iron Tide Rising.png', preview: 'Iron Tide Rising.gif', url: 'Iron Tide Rising.html', bgm: 'Iron Tide Rising.mp3' },
-            { id: 11, studio: 'Pixel Gaunt', title: 'ReBounce', genre: 'Arcade', controls: 'Mouse / Touch.', howToPlay: 'Launch: Drag and release the Skull Ball to launch Goal: Collect all Energy Orbs to unlock the Portal and reach it.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'June 5, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game called BOUNCE.`, image: 'ReBounce.png', preview: 'ReBounce.gif', url: 'ReBounce.html', bgm: 'ReBounce.mp3' },
-            { id: 12, studio: 'Pixel Gaunt', title: 'Girl: The Driller', genre: 'Adventure', controls: 'Keyboard / Mouse / Touch.', howToPlay: 'Collect all Energy Orbs to unlock the Portal and reach it.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'June 5, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Girl The Driller.png', preview: 'Girl: The Driller.gif', url: 'Girl The Driller.html', bgm: 'Girl The Driller.mp3' },
-            { id: 13, studio: 'Pixel Gaunt', title: 'Bricks KnockOut', genre: 'Arcade', controls: 'Mouse / Touch.', howToPlay: 'Destroy All Bricks.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'July 21, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Bricks KnockOut.png', preview: 'Bricks KnockOut.gif', url: 'Bricks KnockOut.html', bgm: 'Bricks KnockOut.mp3' },                                                           
-	        { id: 14, studio: 'Pixel Gaunt', title: 'Mimi Merge', genre: 'Adventure', controls: 'Mouse / Touch.', howToPlay: 'Merge and Swap Faces.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'July 27, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Mimi Merge.png', preview: 'Mimi Merge.gif', url: 'Mimi Merge.html', bgm: 'Mimi Merge.mp3' },
-            { id: 15, studio: 'Pixel Gaunt', title: 'SnakeScape', genre: 'Puzzle', controls: 'Mouse / Touch.', howToPlay: 'Click to Go & Eat Mouse.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'July 28, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'SnakeScape.png', preview: 'SnakeScape.gif', url: 'SnakeScape.html', bgm: 'SnakeScape.mp3' },
-			{ id: 16, studio: 'Pixel Gaunt', title: 'Ring Sort 3D', genre: 'Puzzle', controls: 'Mouse / Touch.', howToPlay: 'Match 4.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'July 29, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'Three JS & WebGL Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Ring Sort 3D.png', preview: 'Ring Sort 3D.gif', url: 'Ring Sort 3D.html', bgm: 'Ring Sort.mp3' }
+            { id: 1, studio: 'Pixel Gaunt', title: 'Stick Man Velocity', genre: 'Fighting', controls: '<strong>Movement:</strong> Joystick (Mobile) / A, D Keys (Desktop).<br><strong>Actions:</strong> W (Jump), S (Crouch/Slide), J (Punch), L (Kick), K (Fireball), SHIFT (Dash), U (Dive).<br><strong>Ultimate:</strong> J+K+L (When charged).', howToPlay: 'Navigate through the levels, defeat enemy waves (Small, Spider, Goliath), and conquer the Titan Boss. Track HP and collect coins to boost your score.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'Single-file HTML5, CSS Flexbox, Vanilla ES6 JavaScript, Web Audio API, Canvas API', aiPrompt: `To help you recreate your "Stickman Velocity" game or build a clone using Gemini, you should use a structured, modular approach. Rather than asking for everything at once, it is best to provide the AI with a logical roadmap.`, image: 'Stick Man Velocity.png', preview: 'Stick Man Velocity.gif', url: 'Stick Man Velocity.html', bgm: 'Stick Man Velocity.mp3', orientation: 'landscape' },
+            { id: 2, studio: 'Pixel Gaunt', title: 'Serpent Relic', genre: 'Puzzle Adventure', controls: '<strong>Movement:</strong> Swipe Up/Down/Left/Right (Mobile) / WASD or Arrow Keys (Desktop).', howToPlay: 'Navigate the serpent through dark tombs and ancient crypts. Avoid traps, use mirrors, and rescue your twin to escape before the darkness consumes you.', rating: '⭐⭐⭐⭐ (4.5/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5 Canvas, Vanilla JS', aiPrompt: `To create a game like "Serpent Relic" using Gemini or any other AI, you can use the step-by-step prompts below. Copy and paste them into the AI one by one to build, refine, and polish your game.`, image: 'Serpent Relic.png', preview: 'Serpent Relic.gif', url: 'Serpent Relic.html', bgm: 'Serpent Relic.mp3', orientation: 'portrait' },
+            { id: 3, studio: 'Pixel Gaunt', title: 'Pizza Chaos', genre: 'Action', controls: '<strong>Movement:</strong> On-screen Joystick (Mobile) / WASD or Arrows (Desktop).<br><strong>Actions:</strong> On-screen buttons or Keyboard keys to Jump, Dash, and Shoot.', howToPlay: 'Deliver pizzas in a chaotic environment. Fight multi-boss enemies, gather power-ups to level up, and complete campaign objectives before the timer runs out.', rating: '⭐⭐⭐⭐ (4.6/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5, CSS Flexbox, JavaScript', aiPrompt: `Step 1: The "Master Architect" Prompt. Copy and paste this prompt into an AI to get the complete code logic.`, image: 'Pizza Chaos.png', preview: 'Pizza Chaos.gif', url: 'Pizza Chaos.html', bgm: 'Pizza Chaos.mp3', orientation: 'landscape' },
+            { id: 4, studio: 'Pixel Gaunt', title: 'Face Merge', genre: 'Puzzle', controls: '<strong>Interaction:</strong> Touch/Drag (Mobile) / Mouse Click & Drag (Desktop) to swap adjacent emoji faces.', howToPlay: 'Merge matching emoji faces to clear the board, achieve the score target, and save the dog from going underwater within the given move limit.', rating: '⭐⭐⭐⭐ (4.3/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5, CSS Grid, Vanilla JS', aiPrompt: `To create a game like "Face Merge" or your "Bean Crush Saga," you can use the following step-by-step prompts.`, image: 'Face Merge.png', preview: 'Face Merge.gif', url: 'Face Merge.html', bgm: 'Face Merge.mp3', orientation: 'portrait' },
+            { id: 5, studio: 'Pixel Gaunt', title: 'Panda The Ocean Hunter', genre: 'Casual Adventure', controls: '<strong>Fishing:</strong> Tap/Click to cast the line.<br><strong>Combat:</strong> Hold screen/mouse to pull fish, Tap to shoot weapon.', howToPlay: 'Play as a panda fishing in the ocean. Cast your line, hook the fish, and pull them out in an intensive battle mode mini-game. Gather resources to upgrade.', rating: '⭐⭐⭐⭐ (4.7/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5 Canvas, Vanilla JS', aiPrompt: `To help others or yourself generate a similar high-quality game using any AI (like Gemini, GPT-4, or Claude), you can use the following Master Development Prompt.`, image: 'Panda The Ocean Hunter.png', preview: 'Panda The Ocean Hunter.gif', url: 'Panda The Ocean Hunter.html', bgm: 'Panda The Ocean Hunter.mp3', orientation: 'portrait' },
+            { id: 6, studio: 'Pixel Gaunt', title: 'Beggar Catcher', genre: '3D Simulation', controls: '<strong>Movement:</strong> WASD keys.<br><strong>Camera:</strong> Mouse movement.<br><strong>Interaction:</strong> Hold Right Click to Scan/Investigate, Left Click to interact/catch.', howToPlay: 'Explore the 3D environment, search for targets using the crosshair, and manage your caught entities. Use the shop to buy upgrades and progress through levels.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'May 2026', platform: 'Web Browser Desktop', technology: 'Three.js, WebGL, HTML5', aiPrompt: `To build an exact, professional-grade clone of this project, you need a modular approach. Here are the step-by-step prompts you should use to rebuild and expand the system.`, image: 'Beggar Catcher.png', preview: 'Beggar Catcher.gif', url: 'Beggar Catcher.html', bgm: 'Beggar Catcher.mp3', orientation: 'landscape' },
+            { id: 7, studio: 'Pixel Gaunt', title: 'Horse Turn', genre: 'Racing', controls: '<strong>Movement:</strong> Left/Right Arrow Keys or Screen Swipe.<br><strong>Actions:</strong> Spacebar or Swipe Up to Jump. Shift or Dash Button to Fast-Forward.', howToPlay: 'Race through an endless cosmic tunnel. Avoid drifting out into the deep cosmic abyss, collect coins, and use your dash speed to blast through levels.', rating: '⭐⭐⭐⭐ (4.4/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5 Canvas, RequestAnimationFrame', aiPrompt: `Step 1: The Core Engine (The Framework) Use this prompt to set up the foundation.`, image: 'Horse Turn.png', preview: 'Horse Turn.gif', url: 'Horse Turn.html', bgm: 'Horse Turn.mp3', orientation: 'landscape' },
+            { id: 8, studio: 'Pixel Gaunt', title: 'Deck of Doom', genre: 'Rogue-like', controls: '<strong>Combat:</strong> Mouse Click/Drag or Touch to select and play cards from your hand. Click "End Turn" when out of energy.', howToPlay: 'Engage in a turn-based card battle against a demon. Manage your energy, play attack and defense cards, and reduce the enemy HP to zero to survive.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'May 2026', platform: 'Web Browser, Mobile', technology: 'HTML5, CSS Animations, JS', aiPrompt: `Step 1: Core Engine, Setup Screen, Player & Difficulty Prompt. Why Use It: This builds the game’s baseline database structure.`, image: 'Deck of Doom.png', preview: 'Deck of Doom.gif', url: 'Deck of Doom.html', bgm: 'Deck of Doom.mp3', orientation: 'portrait' },
+            { id: 9, studio: 'Pixel Gaunt', title: 'Tetris Reimagine', genre: 'Puzzle', controls: 'Use the on screen buttons provided on the interface Left, Right Turn Float or Use Keyboard Arrow Keys Up , Down ,  Left ,  Right.', howToPlay: 'Organize the rising balloons into complete rows to clear them. Survive up to 100 levels and aim for the high score.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'June 1, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5, CSS3, JavaScript (Vanilla), Web Audio API', aiPrompt: `Create a complete browser-based game called "Tetris Reimagine". Core Concept: This game is inspired by Tetris but with a completely unique gameplay mechanic.`, image: 'Tetris Reimagine.png', preview: 'Tetris Reimagine.gif', url: 'Tetris Reimagine.html', bgm: 'Tetris Reimagine.mp3', orientation: 'portrait' },
+            { id: 10, studio: 'Pixel Gaunt', title: 'Iron Tide Rising', genre: '3D Shooting', controls: 'Movement: W (Forward), S (Backward), A (Left), D (Right) Action: SPACE (Jump), SHIFT (Sprint/Fast run) Combat: Left Click (Smart Automatic/Single Fire), TAB (Weapon Switch: Rifle/Bazooka), G (Throw Bomb/Grenade) Dodging: Q (Left Dash), E (Right Dash) System: ESC (Pause Menu).', howToPlay: 'Objective: Survive against waves of enemies and maximize your score.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'June 2, 2026', platform: 'Web Browser (Desktop Responsive)', technology: 'Three.js, WebGL, Web Audio API', aiPrompt: `Create a complete offline 3D browser game inspired by battle royale and tactical shooter gameplay.`, image: 'Iron Tide Rising.png', preview: 'Iron Tide Rising.gif', url: 'Iron Tide Rising.html', bgm: 'Iron Tide Rising.mp3', orientation: 'landscape' },
+            { id: 11, studio: 'Pixel Gaunt', title: 'ReBounce', genre: 'Arcade', controls: 'Mouse / Touch.', howToPlay: 'Launch: Drag and release the Skull Ball to launch Goal: Collect all Energy Orbs to unlock the Portal and reach it.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'June 5, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game called BOUNCE.`, image: 'ReBounce.png', preview: 'ReBounce.gif', url: 'ReBounce.html', bgm: 'ReBounce.mp3', orientation: 'portrait' },
+            { id: 12, studio: 'Pixel Gaunt', title: 'Girl: The Driller', genre: 'Adventure', controls: 'Keyboard / Mouse / Touch.', howToPlay: 'Collect all Energy Orbs to unlock the Portal and reach it.', rating: '⭐⭐⭐⭐⭐ (4.8/5)', releaseDate: 'June 5, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Girl The Driller.png', preview: 'Girl: The Driller.gif', url: 'Girl The Driller.html', bgm: 'Girl The Driller.mp3', orientation: 'landscape' },
+            { id: 13, studio: 'Pixel Gaunt', title: 'Bricks KnockOut', genre: 'Arcade', controls: 'Mouse / Touch.', howToPlay: 'Destroy All Bricks.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'July 21, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Bricks KnockOut.png', preview: 'Bricks KnockOut.gif', url: 'Bricks KnockOut.html', bgm: 'Bricks KnockOut.mp3', orientation: 'portrait' },                                                           
+	        { id: 14, studio: 'Pixel Gaunt', title: 'Mimi Merge', genre: 'Adventure', controls: 'Mouse / Touch.', howToPlay: 'Merge and Swap Faces.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'July 27, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Mimi Merge.png', preview: 'Mimi Merge.gif', url: 'Mimi Merge.html', bgm: 'Mimi Merge.mp3', orientation: 'portrait' },
+            { id: 15, studio: 'Pixel Gaunt', title: 'SnakeScape', genre: 'Puzzle', controls: 'Mouse / Touch.', howToPlay: 'Click to Go & Eat Mouse.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'July 28, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'SnakeScape.png', preview: 'SnakeScape.gif', url: 'SnakeScape.html', bgm: 'SnakeScape.mp3', orientation: 'portrait' },
+			{ id: 16, studio: 'Pixel Gaunt', title: 'Ring Sort 3D', genre: 'Puzzle', controls: 'Mouse / Touch.', howToPlay: 'Match 4.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'July 29, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'Three JS & WebGL Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Ring Sort 3D.png', preview: 'Ring Sort 3D.gif', url: 'Ring Sort 3D.html', bgm: 'Ring Sort.mp3', orientation: 'portrait' }
         ];
 
-        let heroGameIndex = 11; 
-        let spotlightGameIndex = 12; 
+        /* ================= POPULARITY / PLAY-COUNT RANKING SYSTEM ================= */
+        const PLAY_COUNT_STORAGE_KEY = 'pixelGauntPlayCounts';
 
-        // AUTO CHANGE FEATURED GAMES FUNCTION
-        window.updateFeaturedPanels = function() {
-            if (!games || games.length === 0) return;
-
-            heroGameIndex = (heroGameIndex + 1) % games.length;
-            spotlightGameIndex = (spotlightGameIndex + 1) % games.length;
-            
-            if (spotlightGameIndex === heroGameIndex) {
-                spotlightGameIndex = (spotlightGameIndex + 1) % games.length;
-            }
-
-            const heroGame = games[heroGameIndex];
-            const spotlightGame = games[spotlightGameIndex];
-
-            const heroBg = document.getElementById('hero-panel-bg');
-            if(heroBg) {
-                heroBg.style.backgroundImage = `linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(188, 19, 254, 0.45)), url('${encodeURI(heroGame.image)}')`;
-                document.getElementById('hero-title-text').innerText = heroGame.title.toUpperCase();
-                document.getElementById('hero-desc-text').innerText = heroGame.howToPlay;
-                
-                let ratingMatch = heroGame.rating.match(/\((.*?)\)/);
-                document.getElementById('hero-rating-text').innerText = ratingMatch ? ratingMatch[1] + " Rating" : "4.8/5 Rating";
-                document.getElementById('hero-play-btn').setAttribute('onclick', `launchViewport(${heroGame.id})`);
-            }
-
-            const spotBg = document.getElementById('spotlight-panel-bg');
-            if(spotBg) {
-                spotBg.style.backgroundImage = `linear-gradient(135deg, rgba(8, 8, 15, 0.85), rgba(0, 243, 255, 0.35)), url('${encodeURI(spotlightGame.image)}')`;
-                document.getElementById('spotlight-genre-text').innerText = spotlightGame.genre;
-                document.getElementById('spotlight-title-text').innerText = spotlightGame.title;
-                document.getElementById('spotlight-desc-text').innerText = spotlightGame.howToPlay;
-                document.getElementById('spotlight-play-btn').setAttribute('onclick', `launchViewport(${spotlightGame.id})`);
+        function loadPlayCounts() {
+            try {
+                const raw = localStorage.getItem(PLAY_COUNT_STORAGE_KEY);
+                return raw ? JSON.parse(raw) : {};
+            } catch (e) {
+                return {};
             }
         }
 
-        setInterval(window.updateFeaturedPanels, 3000);
+        function savePlayCounts(counts) {
+            try {
+                localStorage.setItem(PLAY_COUNT_STORAGE_KEY, JSON.stringify(counts));
+            } catch (e) {
+                /* storage unavailable - ranking will just reset each session */
+            }
+        }
+
+        let playCounts = loadPlayCounts();
+
+        // Seed each game object with its persisted play count
+        games.forEach(g => { g.playCount = playCounts[g.id] || 0; });
+
+        // Keeps track of the currently displayed grid list (All Games or a filtered/searched subset)
+        // so we can re-render it in the correct order after a ranking update without losing the active filter.
+        let currentDisplayedList = games;
+
+        // Rotates automatically over time so that games tied on play count reshuffle their display
+        // order within a category, while category tab names/positions themselves stay fixed.
+        let categoryRotationOffset = 0;
+
+        // Returns a NEW array of games sorted by play count (highest first).
+        // Ties are broken using a rotating offset so equally-popular games continuously reshuffle.
+        window.getRankedGames = function(list) {
+            const source = list || games;
+            const totalLen = games.length || 1;
+            return [...source].sort((a, b) => {
+                const diff = (b.playCount || 0) - (a.playCount || 0);
+                if (diff !== 0) return diff;
+                const ra = (a.id + categoryRotationOffset) % totalLen;
+                const rb = (b.id + categoryRotationOffset) % totalLen;
+                return ra - rb;
+            });
+        }
+
+        // Call this whenever a game is played to bump its popularity and refresh the UI.
+        window.registerGamePlay = function(gameId) {
+            playCounts[gameId] = (playCounts[gameId] || 0) + 1;
+            savePlayCounts(playCounts);
+
+            const game = games.find(g => g.id === gameId);
+            if (game) game.playCount = playCounts[gameId];
+
+            window.updateFeaturedPanels();
+            window.renderGames(currentDisplayedList);
+        }
+
+        // ===== POPULARITY-BASED, CONTINUOUSLY AUTO-ROTATING FEATURED CAROUSELS =====
+        // "Top Plays" (hero panel) cycles through every game ranked by play count.
+        // "Top Categories" (spotlight panel) cycles through each genre's current top-played game.
+        let heroCarouselList = [];
+        let categoryCarouselList = [];
+        let heroCarouselIndex = 0;
+        let categoryCarouselIndex = 0;
+        let heroCarouselTimer = null;
+        let categoryCarouselTimer = null;
+
+        function buildTopCategoryList() {
+            const byGenre = {};
+            games.forEach(g => {
+                const current = byGenre[g.genre];
+                if (!current || (g.playCount || 0) > (current.playCount || 0) ||
+                    ((g.playCount || 0) === (current.playCount || 0) && g.id < current.id)) {
+                    byGenre[g.genre] = g;
+                }
+            });
+            return Object.values(byGenre).sort((a, b) => (b.playCount || 0) - (a.playCount || 0) || a.id - b.id);
+        }
+
+        window.renderHeroSlide = function(game) {
+            if (!game) return;
+            const heroBg = document.getElementById('hero-panel-bg');
+            if (heroBg) {
+                heroBg.style.backgroundImage = `linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(188, 19, 254, 0.45)), url('${encodeURI(game.image)}')`;
+                document.getElementById('hero-title-text').innerText = game.title.toUpperCase();
+                document.getElementById('hero-desc-text').innerText = game.howToPlay;
+
+                let ratingMatch = game.rating.match(/\((.*?)\)/);
+                document.getElementById('hero-rating-text').innerText = ratingMatch ? ratingMatch[1] + " Rating" : "4.8/5 Rating";
+                document.getElementById('hero-play-btn').setAttribute('onclick', `launchViewport(${game.id})`);
+            }
+        }
+
+        window.renderCategorySlide = function(game) {
+            if (!game) return;
+            const spotBg = document.getElementById('spotlight-panel-bg');
+            if (spotBg) {
+                spotBg.style.backgroundImage = `linear-gradient(135deg, rgba(8, 8, 15, 0.85), rgba(0, 243, 255, 0.35)), url('${encodeURI(game.image)}')`;
+                document.getElementById('spotlight-genre-text').innerText = game.genre;
+                document.getElementById('spotlight-title-text').innerText = game.title;
+                document.getElementById('spotlight-desc-text').innerText = game.howToPlay;
+                document.getElementById('spotlight-play-btn').setAttribute('onclick', `launchViewport(${game.id})`);
+            }
+        }
+
+        // Rebuilds the ranked lists (call after play counts change) and redraws the current slide of each carousel.
+        window.updateFeaturedPanels = function() {
+            if (!games || games.length === 0) return;
+
+            heroCarouselList = window.getRankedGames();
+            categoryCarouselList = buildTopCategoryList();
+
+            if (heroCarouselIndex >= heroCarouselList.length) heroCarouselIndex = 0;
+            if (categoryCarouselIndex >= categoryCarouselList.length) categoryCarouselIndex = 0;
+
+            window.renderHeroSlide(heroCarouselList[heroCarouselIndex]);
+            window.renderCategorySlide(categoryCarouselList[categoryCarouselIndex]);
+        }
+
+        // Advances each carousel to its next slide, looping continuously back to the start.
+        window.advanceHeroCarousel = function() {
+            if (!heroCarouselList || heroCarouselList.length === 0) return;
+            heroCarouselIndex = (heroCarouselIndex + 1) % heroCarouselList.length;
+            window.renderHeroSlide(heroCarouselList[heroCarouselIndex]);
+        }
+
+        window.advanceCategoryCarousel = function() {
+            if (!categoryCarouselList || categoryCarouselList.length === 0) return;
+            categoryCarouselIndex = (categoryCarouselIndex + 1) % categoryCarouselList.length;
+            window.renderCategorySlide(categoryCarouselList[categoryCarouselIndex]);
+        }
+
+        if (heroCarouselTimer) clearInterval(heroCarouselTimer);
+        if (categoryCarouselTimer) clearInterval(categoryCarouselTimer);
+        heroCarouselTimer = setInterval(window.advanceHeroCarousel, 4000);
+        categoryCarouselTimer = setInterval(window.advanceCategoryCarousel, 5000);
 
         window.setGlobalTheme = function(themeName, element) {
             document.body.className = '';
@@ -1307,6 +1415,9 @@
             const portalBgm = document.getElementById('portal-bgm');
             gameIframe.src = ''; 
             portalBgm.pause();
+
+            exitElementFullscreen();
+            unlockGameOrientation();
         }
 
         window.openPage = function(pageId) {
@@ -1334,14 +1445,36 @@
             document.getElementById('top-cat-bar').scrollLeft += val;
         }
 
+        /* ================= AUTOMATIC IN-CATEGORY GAME ROTATION ================= */
+        // Category tab names/positions stay completely fixed. Instead, the games displayed
+        // for the active category (or All Games) continuously reshuffle among themselves.
+        // Games with a higher play count always stay ranked above less-played ones; the
+        // automatic rotation only cycles the display order among games that are currently tied.
+        window.rotateGamesInCategory = function() {
+            if (!games || games.length === 0) return;
+            categoryRotationOffset = (categoryRotationOffset + 1) % games.length;
+
+            const gameGrid = document.getElementById('game-grid');
+            if (gameGrid) gameGrid.style.opacity = '0';
+            setTimeout(() => {
+                window.renderGames(currentDisplayedList);
+                if (gameGrid) gameGrid.style.opacity = '1';
+            }, 300);
+        }
+
+        setInterval(window.rotateGamesInCategory, 4000);
+
         window.renderGames = function(gameList) {
+            currentDisplayedList = gameList;
+            const rankedList = window.getRankedGames(gameList);
+
             const gameGrid = document.getElementById('game-grid');
             gameGrid.innerHTML = '';
-            if (gameList.length === 0) {
+            if (rankedList.length === 0) {
                 gameGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px; font-size:0.9rem;">No entries found fitting active matrix fields.</p>';
                 return;
             }
-            gameList.forEach(game => {
+            rankedList.forEach(game => {
                 const card = document.createElement('div');
                 card.className = 'game-card';
                 card.onclick = () => window.launchViewport(game.id);
@@ -1379,9 +1512,77 @@
             else window.renderGames(games.filter(g => g.genre === category));
         }
 
+        /* ================= MOBILE / TABLET AUTO FULLSCREEN + ORIENTATION ================= */
+        // Detects phones and tablets (including iPadOS, which reports as "Mac" but supports multi-touch).
+        function isMobileOrTabletDevice() {
+            const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+            const mobileRegex = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i;
+            const isIPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+            return mobileRegex.test(ua) || isIPadOS;
+        }
+
+        function requestElementFullscreen(el) {
+            if (!el) return Promise.resolve();
+            const request = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+            if (request) {
+                try {
+                    const result = request.call(el);
+                    return result && result.catch ? result : Promise.resolve();
+                } catch (e) {
+                    return Promise.reject(e);
+                }
+            }
+            return Promise.resolve();
+        }
+
+        function exitElementFullscreen() {
+            const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+            if (exit && (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement)) {
+                try { exit.call(document); } catch (e) { /* ignore */ }
+            }
+        }
+
+        function lockGameOrientation(orientation) {
+            const target = orientation === 'portrait' ? 'portrait' : 'landscape';
+            try {
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock(target).catch(() => { /* lock not permitted on this browser/device */ });
+                } else if (screen.lockOrientation) {
+                    screen.lockOrientation(target);
+                } else if (screen.msLockOrientation) {
+                    screen.msLockOrientation(target);
+                }
+            } catch (e) { /* Screen Orientation API unavailable - ignore silently */ }
+        }
+
+        function unlockGameOrientation() {
+            try {
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                } else if (screen.unlockOrientation) {
+                    screen.unlockOrientation();
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        // Automatically fullscreens and orients the game viewport to match the game's design on phones/tablets.
+        // Desktop/PC is untouched here - it keeps using the manual Fullscreen button (toggleFullscreen).
+        window.applyMobileFullscreenForGame = function(game) {
+            if (!isMobileOrTabletDevice()) return;
+            const container = document.getElementById('game-container-element');
+            requestElementFullscreen(container).then(() => {
+                lockGameOrientation(game.orientation || 'landscape');
+            }).catch(() => {
+                // Some browsers require the fullscreen call to resolve before locking; still attempt the lock.
+                lockGameOrientation(game.orientation || 'landscape');
+            });
+        }
+
         window.launchViewport = function(gameId) {
             const game = games.find(g => g.id === gameId);
             if (!game) return;
+
+            window.registerGamePlay(gameId);
 
             window.hideAllPages();
             history.pushState({ page: 'game', id: gameId }, game.title, `?play=${encodeURIComponent(game.title.toLowerCase().replace(/ /g, '-'))}`);
@@ -1416,6 +1617,8 @@
                 portalBgm.src = encodeURI(game.bgm);
                 portalBgm.play().catch(e => console.log('Autoplay handled.', e));
             }
+
+            window.applyMobileFullscreenForGame(game);
         }
 
         window.goHome = function() {
@@ -1479,6 +1682,10 @@
             document.getElementById('pg-info-title').innerText = title;
             document.getElementById('pg-info-body').innerHTML = document.getElementById(contentId).innerHTML;
             document.getElementById('pg-info-modal').classList.add('active-modal');
+        }
+
+        window.showComingSoon = function(sectionName) {
+            window.openPageModal(sectionName + ' — Coming Soon', 'pg-comingsoon');
         }
 
         window.closePageModal = function() {
@@ -1595,6 +1802,7 @@
 
         window.onload = () => {
             window.renderGames(games);
+            window.updateFeaturedPanels();
             
             const urlParams = new URLSearchParams(window.location.search);
             const playQuery = urlParams.get('play');
