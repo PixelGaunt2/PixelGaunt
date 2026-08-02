@@ -315,235 +315,6 @@
 
         /* STORE CSS ADDITIONS */
         .content-box { max-width: 1000px; margin: 0 auto; background: rgba(15, 15, 26, 0.5); backdrop-filter: blur(15px); border-radius: 16px; padding: 35px; border: 1px solid var(--glass-border); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
-        .store-header-banner { background: linear-gradient(135deg, rgba(188, 19, 254, 0.1), rgba(0, 243, 255, 0.1)); border: 1px solid rgba(255,255,255,0.05); padding: 25px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
-        .store-grid-premium { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; }
-        
-        .product-card { background: rgba(8, 8, 15, 0.8); border: 1px solid rgba(255,255,255,0.05); border-radius: 14px; padding: 20px; text-align: center; transition: var(--transition-smooth); position: relative; overflow: hidden; }
-        .product-card:hover { transform: translateY(-5px); border-color: var(--neon-purple); box-shadow: 0 10px 25px rgba(188, 19, 254, 0.15); }
-        .product-badge { position: absolute; top: 12px; right: 12px; background: var(--neon-cyan); color: #000; font-size: 0.65rem; font-weight: bold; padding: 4px 8px; border-radius: 4px; z-index: 10; }
-        
-        .product-img-container { width: 100%; height: 190px; margin-bottom: 18px; border-radius: 10px; overflow: hidden; position: relative; display: flex; justify-content: center; align-items: center; background: rgba(255,255,255,0.02); }
-        .product-img { max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5)); }
-        
-        .product-overlay { position: absolute; inset: 0; background: rgba(10, 10, 20, 0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; opacity: 0; transition: var(--transition-smooth); backdrop-filter: blur(4px); }
-        .product-overlay-text { color: #e2e8f0; font-size: 0.88rem; text-align: center; line-height: 1.5; transform: translateY(15px); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); font-weight: 500; }
-        
-        .product-card:hover .product-img { transform: scale(1.18); }
-        .product-card:hover .product-overlay { opacity: 1; }
-        .product-card:hover .product-overlay-text { transform: translateY(0); }
-
-        .product-card h4 { color: #fff; font-size: 1.1rem; margin-bottom: 8px; font-weight: 700; }
-        .product-card p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px; }
-        .product-price { font-size: 1.4rem; color: #fbbf24; font-weight: 800; margin-bottom: 20px; text-shadow: 0 0 10px rgba(251, 191, 36, 0.2); }
-        
-        /* TOURNAMENT ENHANCED CSS & 300PX GRID AUTO-ADJUSTMENT */
-        .tournament-hero { background: url('Gemini_Generated_Image_82y03w82y03w82y0.png') center/cover; border-radius: 14px; padding: 40px; text-align: center; position: relative; overflow: hidden; margin-bottom: 30px; border: 1px solid rgba(0,243,255,0.3); }
-        .tournament-hero::before { content: ''; position: absolute; inset: 0; background: rgba(10,10,20,0.85); backdrop-filter: blur(3px); }
-        .tourney-content { position: relative; z-index: 2; }
-        
-        .tourney-300-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 25px;
-            margin-top: 20px;
-            margin-bottom: 40px;
-            width: 100%;
-        }
-
-        .tourney-300-card {
-            background: rgba(12, 12, 22, 0.75);
-            border: 1px solid var(--glass-border);
-            border-radius: 14px;
-            overflow: hidden;
-            transition: var(--transition-smooth);
-            display: flex;
-            flex-direction: column;
-            backdrop-filter: blur(10px);
-            position: relative;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-        }
-
-        .tourney-300-card:hover {
-            transform: translateY(-8px);
-            border-color: var(--neon-cyan);
-            box-shadow: 0 15px 30px rgba(0, 243, 255, 0.3);
-        }
-
-        .tourney-img-box {
-            width: 100%;
-            height: 200px;
-            max-width: 300px;
-            margin: 0 auto;
-            position: relative;
-            overflow: hidden;
-            background: #000;
-        }
-
-        .tourney-img-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-
-        .tourney-300-card:hover .tourney-img-box img {
-            transform: scale(1.25);
-        }
-
-        .tourney-badge-tag {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 243, 255, 0.9);
-            color: #000;
-            font-size: 0.65rem;
-            font-weight: 800;
-            padding: 4px 8px;
-            border-radius: 4px;
-            text-transform: uppercase;
-            z-index: 5;
-            letter-spacing: 0.5px;
-        }
-
-        .tourney-card-body {
-            padding: 18px;
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-        }
-
-        .tourney-card-body h4 {
-            color: #fff;
-            font-size: 1.05rem;
-            margin-bottom: 8px;
-            line-height: 1.3;
-        }
-
-        .tourney-card-body p {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            line-height: 1.5;
-            margin-bottom: 15px;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .tourney-card-footer {
-            margin-top: auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-top: 1px solid rgba(255,255,255,0.06);
-            padding-top: 12px;
-        }
-
-        .tourney-coins {
-            color: #fbbf24;
-            font-weight: 800;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        /* DYNAMIC BRACKET CHART SYSTEM */
-        .bracket-section-container {
-            background: rgba(13, 13, 23, 0.8);
-            border: 1px solid var(--neon-purple);
-            border-radius: 16px;
-            padding: 25px;
-            margin-top: 30px;
-            box-shadow: var(--shadow-glow-purple);
-        }
-
-        .bracket-controls {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-            margin-bottom: 25px;
-            background: rgba(0,0,0,0.3);
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .bracket-chart-grid {
-            display: flex;
-            gap: 20px;
-            overflow-x: auto;
-            padding: 15px 5px;
-            justify-content: space-between;
-        }
-
-        .bracket-round-col {
-            flex: 1;
-            min-width: 220px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            justify-content: center;
-        }
-
-        .bracket-match-node {
-            background: rgba(20, 20, 35, 0.9);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 10px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            position: relative;
-            transition: var(--transition-smooth);
-        }
-
-        .bracket-match-node:hover {
-            border-color: var(--neon-cyan);
-            box-shadow: 0 0 15px rgba(0,243,255,0.2);
-        }
-
-        .bracket-player-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .bracket-player-row.winner {
-            background: rgba(16, 185, 129, 0.2);
-            border: 1px solid #10b981;
-            color: #a7f3d0;
-            font-weight: bold;
-        }
-
-        .bracket-player-row.eliminated {
-            opacity: 0.4;
-            text-decoration: line-through;
-            color: #ef4444;
-        }
-
-        .bracket-coin-badge {
-            background: rgba(251, 191, 36, 0.15);
-            color: #fbbf24;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-
-        .subscription-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-top: 20px;}
-        .plan-card { background: rgba(8, 8, 15, 0.7); padding: 40px 30px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; position: relative; transition: var(--transition-smooth); }
-        .plan-card:hover { transform: translateY(-8px); border-color: rgba(255,255,255,0.2); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-        .plan-card.popular-plan { border-color: var(--neon-cyan); background: linear-gradient(180deg, rgba(0, 243, 255, 0.05) 0%, rgba(8, 8, 15, 0.8) 100%); box-shadow: 0 0 30px rgba(0, 243, 255, 0.1); }
-        .plan-features { margin: 25px 0; display: flex; flex-direction: column; gap: 12px; flex-grow: 1; text-align: left; }
-        .feature-item { display: flex; align-items: center; gap: 10px; color: #e2e8f0; font-size: 0.95rem; }
-        .feature-item i { color: var(--neon-cyan); font-size: 0.9rem; }
         
         .modal-overlay { position: fixed; inset: 0; background: rgba(3, 3, 6, 0.85); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 99999; opacity: 0; transition: opacity 0.3s ease; }
         .modal-overlay.active { display: flex; opacity: 1; }
@@ -604,8 +375,6 @@
 
     <audio id="portal-bgm" loop style="display:none;"></audio>
     <div id="loader" style="display: none !important;"></div>
-        <p class="pixel-font" style="font-size: 0.68rem; color: var(--neon-cyan); letter-spacing: 3px; margin-top:15px; animation: pxlFly 0.5s forwards;"></p>
-    </div>
 
     <header id="main-header">
         <div class="logo pixel-font" onclick="goHome()">Pixel <span>Gaunt</span></div>
@@ -625,13 +394,13 @@
     </header>
 
     <section class="premium-hero" id="hero-presentation-section">
-        <div class="hero-info-panel" id="hero-panel-bg" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(188, 19, 254, 0.45)), url('Girl%20The%20Driller.png') center/cover no-repeat;">
+        <div class="hero-info-panel" id="hero-panel-bg" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(188, 19, 254, 0.45));">
             <span class="hero-tag" style="color: var(--neon-cyan); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);">FEATURED ADVENTURE</span>
-            <h1 class="hero-title pixel-font" id="hero-title-text" style="text-shadow: 0 4px 15px rgba(0,0,0,0.9);">GIRL: THE DRILLER</h1>
-            <p class="hero-desc" id="hero-desc-text" style="color: #e2e8f0; font-weight: 500; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Collect all Energy Orbs to unlock the Portal and reach it. Experience highly polished commercial-quality physics action gameplay.</p>
+            <h1 class="hero-title pixel-font" id="hero-title-text" style="text-shadow: 0 4px 15px rgba(0,0,0,0.9);">LOADING...</h1>
+            <p class="hero-desc" id="hero-desc-text" style="color: #e2e8f0; font-weight: 500; text-shadow: 0 2px 5px rgba(0,0,0,0.8);"></p>
             
             <div class="hero-stats-row">
-                <button class="nav-btn primary pixel-font" id="hero-play-btn" onclick="launchViewport(12)" style="font-size: 0.8rem; padding: 14px 28px; box-shadow: 0 5px 20px rgba(188, 19, 254, 0.5);">
+                <button class="nav-btn primary pixel-font" id="hero-play-btn" style="font-size: 0.8rem; padding: 14px 28px; box-shadow: 0 5px 20px rgba(188, 19, 254, 0.5);">
                     ▶ PLAY NOW
                 </button>
                 <div class="stat-item" style="margin-left: 20px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">
@@ -640,14 +409,14 @@
                 </div>
             </div>
         </div>
-        <div class="spotlight-banner-wrapper" id="spotlight-panel-bg" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.85), rgba(0, 243, 255, 0.35)), url('Bricks%20KnockOut.png') center/cover no-repeat;">
-            <span class="spotlight-badge">FEATURED SPOTLIGHT</span>
+        <div class="spotlight-banner-wrapper" id="spotlight-panel-bg" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.85), rgba(0, 243, 255, 0.35));">
+            <span class="spotlight-badge">MOST POPULAR</span>
             <div class="spotlight-title-box">
-                <p class="card-genre" id="spotlight-genre-text" style="color:var(--neon-cyan)">Arcade</p>
-                <h3 class="pixel-font" id="spotlight-title-text">Bricks KnockOut</h3>
-                <p id="spotlight-desc-text" style="color:var(--text-muted); font-size:0.82rem; line-height:1.4; margin-top:8px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">Highly polished commercial-quality physics action game. Destroy all the bricks to achieve victory.</p>
+                <p class="card-genre" id="spotlight-genre-text" style="color:var(--neon-cyan)"></p>
+                <h3 class="pixel-font" id="spotlight-title-text">LOADING...</h3>
+                <p id="spotlight-desc-text" style="color:var(--text-muted); font-size:0.82rem; line-height:1.4; margin-top:8px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;"></p>
             </div>
-            <button class="spotlight-play-btn pixel-font" id="spotlight-play-btn" onclick="launchViewport(13)">PLAY NOW</button>
+            <button class="spotlight-play-btn pixel-font" id="spotlight-play-btn">PLAY NOW</button>
         </div>
     </section>
 
@@ -731,7 +500,7 @@
         </div>
     </main>
 
-    <!-- STORE PAGE -->
+    <!-- STORE PAGE (COMING SOON) -->
     <main class="viewport-page" id="store-page">
         <div class="page-header">
             <h2 class="page-title-large pixel-font" style="color: var(--neon-purple);">Digital Marketplace</h2>
@@ -739,127 +508,13 @@
         <div class="page-controls-top">
             <button class="back-btn" onclick="goHome()">← Back to Main Menu</button>
         </div>
-        <div class="content-box">
-            <div class="store-header-banner">
-                <h3 style="color: #fff; font-size: 1.2rem; margin-bottom: 10px;"><i class="fas fa-lock" style="color:var(--neon-purple);"></i> Pro Creator Economy</h3>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">Unlock the Pro Plan to list and sell your own game assets, 3D models, and official merchandise directly to the community.</p>
-            </div>
-            
-            <h3 class="pixel-font" style="color: var(--neon-cyan); font-size: 1rem; margin-bottom: 20px;"><i class="fas fa-tshirt"></i> Official Merchandise</h3>
-            <div class="store-grid-premium" style="margin-bottom: 40px;">
-                <div class="product-card">
-                    <span class="product-badge">HOT</span>
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_xvl5tuxvl5tuxvl5-removebg-preview.png" alt="Cyber Core Bundle" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">Premium 'Cyber Core' gaming t-shirt bundle. Includes high-quality fabric tee and custom gamer packaging pouch.</p>
-                        </div>
-                    </div>
-                    <h4>Cyber Core Bundle</h4>
-                    <p>Exclusive edition t-shirt package.</p>
-                    <div class="product-price">$35.00</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Added to cart!')">Add to Cart</button>
-                </div>
-                
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_ckmgfjckmgfjckmg-removebg-preview.png" alt="Neon Genesis Tee" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">High-quality neon cyberpunk t-shirt. Features glow-in-the-dark print elements and breathable material for intense gaming sessions.</p>
-                        </div>
-                    </div>
-                    <h4>Neon Genesis Tee</h4>
-                    <p>Cyberpunk graphic printed shirt.</p>
-                    <div class="product-price">$24.99</div>
-                    <button class="action-btn" style="width: 100%; border-color: var(--neon-purple);" onclick="alert('Added to cart!')">Add to Cart</button>
-                </div>
-                
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_bnkam9bnkam9bnka-removebg-preview.png" alt="Pixel Gaunt Hoodie" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">Exclusive dark retro gaming hoodie. Perfect for cold weather, featuring a minimal tech-wear design and custom fit.</p>
-                        </div>
-                    </div>
-                    <h4>Dark Techwear Hoodie</h4>
-                    <p>Comfortable retro gaming hoodie.</p>
-                    <div class="product-price">$45.00</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Added to cart!')">Add to Cart</button>
-                </div>
-            </div>
-
-            <h3 class="pixel-font" style="color: var(--neon-cyan); font-size: 1rem; margin-bottom: 20px;"><i class="fas fa-cubes"></i> Digital Game Assets</h3>
-            <div class="store-grid-premium">
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_cmplj4cmplj4cmpl-removebg-preview.png" alt="Sci-Fi Character Model" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">Fully rigged 3D Sci-Fi character model. Includes 4k textures, idle, walk, run, and attack animation sets for Unity & Unreal.</p>
-                        </div>
-                    </div>
-                    <h4>Sci-Fi Character Pack</h4>
-                    <p>Rigged 3D model with animations.</p>
-                    <div class="product-price">$19.99</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Buy Asset!')">Buy Asset</button>
-                </div>
-                
-                <div class="product-card">
-                    <span class="product-badge">NEW</span>
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_2g0dbu2g0dbu2g0d-removebg-preview.png" alt="Mecha Robot Asset" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">Heavy combat Mecha Robot 3D asset. Optimized low-poly topology with high-res baking. Perfect for mobile or PC strategy games.</p>
-                        </div>
-                    </div>
-                    <h4>Heavy Mecha Model</h4>
-                    <p>Combat ready robot asset.</p>
-                    <div class="product-price">$24.99</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Buy Asset!')">Buy Asset</button>
-                </div>
-                
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_mmgxcommgxcommgx-removebg-preview.jpg" alt="Game Environment Pack" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">High-resolution fantasy environment background pack. Contains skyboxes, mountains, and lighting setups.</p>
-                        </div>
-                    </div>
-                    <h4>Epic Environment Pack</h4>
-                    <p>Beautiful scenery & skyboxes.</p>
-                    <div class="product-price">$14.99</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Buy Asset!')">Buy Asset</button>
-                </div>
-
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_4en5qh4en5qh4en5-removebg-preview.png" alt="Futuristic Weapon" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">Next-gen sci-fi weapon asset. Modular attachments included. Ready for FPS or Top-Down shooter projects.</p>
-                        </div>
-                    </div>
-                    <h4>Sci-Fi Arsenal Pack</h4>
-                    <p>Detailed 3D weapon models.</p>
-                    <div class="product-price">$9.99</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Buy Asset!')">Buy Asset</button>
-                </div>
-
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_4dudwn4dudwn4dud-removebg-preview.png" alt="2D Cyberpunk Tileset" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">Complete 2D Cyberpunk tileset and sprite sheet. Build your own neon city platformer levels easily.</p>
-                        </div>
-                    </div>
-                    <h4>Neon City 2D Tileset</h4>
-                    <p>Pixel perfect level building blocks.</p>
-                    <div class="product-price">$12.99</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Buy Asset!')">Buy Asset</button>
-                </div>
-            </div>
+        <div class="content-box" style="text-align: center; padding: 100px 20px;">
+            <h1 class="pixel-font" style="color: var(--neon-cyan); font-size: 3rem; margin-bottom: 25px;">COMING SOON</h1>
+            <p style="color: var(--text-muted); font-size: 1.15rem; line-height: 1.6;">Our exclusive digital marketplace is currently under construction.<br>Check back later to buy and sell premium game assets and merchandise!</p>
         </div>
     </main>
 
-    <!-- TOURNAMENT PAGE UPDATED WITH TOP 10 TOURNAMENTS & AUTO 5-PLAYER BRACKET SYSTEM -->
+    <!-- TOURNAMENT PAGE (COMING SOON) -->
     <main class="viewport-page" id="tournament-page">
         <div class="page-header">
             <h2 class="page-title-large pixel-font" style="color: var(--neon-cyan);">Live Esports Arena</h2>
@@ -867,223 +522,13 @@
         <div class="page-controls-top">
             <button class="back-btn" onclick="goHome()">← Back to Main Menu</button>
         </div>
-
-        <div class="content-box" style="padding: 0; background: transparent; border: none; box-shadow: none;">
-            
-            <div class="tournament-hero">
-                <div class="tourney-content">
-                    <span class="status-badge" style="background: rgba(255, 0, 85, 0.2); color: #ff0055; border-color: #ff0055; margin-bottom: 15px; display: inline-block;">REGISTRATION OPEN</span>
-                    <h2 class="pixel-font" style="color: #fff; text-shadow: 0 0 20px rgba(0,0,0,0.8); margin-bottom: 15px; font-size: 1.8rem;">Pixel Gaunt World Cup 2026</h2>
-                    <p style="color: #e2e8f0; font-size: 1.1rem; margin-bottom: 25px; font-weight: bold;">Game: Cyber Strike & Battle Arenas</p>
-                    <div style="font-size: 2rem; color: #fbbf24; font-weight: 900; text-shadow: 0 5px 15px rgba(0,0,0,0.5); margin-bottom: 25px;">🪙 5,000 COINS PRIZE POOL</div>
-                    <button class="action-btn" onclick="registerSelectedTournament('Pixel Gaunt World Cup')" style="margin: 0 auto; padding: 14px 30px; font-size: 1.1rem; background: var(--neon-cyan); color: #000; border: none; font-weight: bold; text-transform: uppercase;">Register Now (100 Coins)</button>
-                </div>
-            </div>
-
-            <!-- 5-PLAYER AUTO TOURNAMENT BRACKET & CHART SYSTEM -->
-            <div class="bracket-section-container">
-                <h3 class="pixel-font" style="color: var(--neon-purple); font-size: 1.1rem; margin-bottom: 10px;">
-                    <i class="fas fa-sitemap"></i> 5-Player Auto Bracket Simulator & Coins System
-                </h3>
-                <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 15px;">
-                    Agar 5 players tournament mein hissa lete hain: <strong>Single Elimination System</strong> ke tehet jo haray ga wo foran out hoga! Pehle 2 random players ka Play-In match hoga, winner semi-finals mein pohnche ga. Complete winner single award (Winner Takes All) haasil karega.
-                </p>
-
-                <div class="bracket-controls">
-                    <div>
-                        <label style="font-size: 0.8rem; color: #fff; margin-right: 8px;">Match Entry Fee:</label>
-                        <select id="bracket-coin-select" style="background:#0c0c16; border:1px solid var(--neon-cyan); padding:8px 12px; border-radius:6px; color:#fbbf24; font-weight:bold;">
-                            <option value="50">50 Coins / Player</option>
-                            <option value="100" selected>100 Coins / Player</option>
-                            <option value="250">250 Coins / Player</option>
-                            <option value="500">500 Coins / Player</option>
-                        </select>
-                    </div>
-                    <button class="action-btn" style="background: var(--neon-purple); border:none; color:#fff;" onclick="generateAutoBracket()">
-                        ⚡ Auto-Select Matches & Simulate Winner
-                    </button>
-                    <div id="bracket-pool-display" style="margin-left:auto; color:#fbbf24; font-weight:bold; font-size:0.95rem;">
-                        Total Prize Pool: <span id="pool-coins-val">500 Coins</span> (1 Winner)
-                    </div>
-                </div>
-
-                <!-- DYNAMIC BRACKET CHART VISUALIZER -->
-                <div class="bracket-chart-grid" id="bracket-chart-wrapper">
-                    <!-- Dynamic Javascript rendering will populate 5-player chart here -->
-                </div>
-            </div>
-
-            <br><br>
-            <h3 class="pixel-font" style="color: #fff; font-size: 1.1rem; margin-bottom: 20px;"><i class="fas fa-trophy"></i> Top 10 Live Tournaments</h3>
-            
-            <!-- TOP 10 TOURNAMENT CARDS GRID (300PX FIT + HOVER ZOOM) -->
-            <div class="tourney-300-grid">
-
-                <!-- Tournament 1 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag">LIVE NOW</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_1cb2mv1cb2mv1cb2.png" alt="Neon Cyber Strike">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Neon Cyber Strike</h4>
-                        <p>High-stakes 1v1 FPS cyber duel. Master fast reflexes and eliminate opponents to secure victory.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 1,000 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Neon Cyber Strike')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 2 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag" style="background:var(--neon-purple); color:#fff;">UPCOMING</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_dzdieqdzdieqdzdi.png" alt="Shadow Mecha Arena">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Shadow Mecha Arena</h4>
-                        <p>Heavy armor robotic showdown. Tactical positioning and energy weapon timing are key to survive.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 850 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Shadow Mecha Arena')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 3 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag">FEATURED</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_82y03w82y03w82y0.png" alt="Titan Warfare 2026">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Titan Warfare 2026</h4>
-                        <p>Epic battle royale tournament featuring huge multi-player combat zones and instant elimination.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 2,500 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Titan Warfare 2026')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 4 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag" style="background:#10b981; color:#fff;">OPEN</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_w20h7yw20h7yw20h.png" alt="Pixel Brawl Royale">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Pixel Brawl Royale</h4>
-                        <p>Classic retro fighting tournament. Combo system, ultimate powers, and last-man standing rules.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 600 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Pixel Brawl Royale')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 5 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag">ACTIVE</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_8nbqoh8nbqoh8nbq.png" alt="Quantum Glitch League">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Quantum Glitch League</h4>
-                        <p>Mind-bending sci-fi arena battle. Teleport around hazard traps and defeat your rivals.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 750 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Quantum Glitch League')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 6 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag" style="background:#ff0055; color:#fff;">HOT</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_olztdeolztdeolzt.png" alt="Cosmic Drift Showdown">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Cosmic Drift Showdown</h4>
-                        <p>Interstellar racing cup. High speed drifts across cosmic tracks to claim the top trophy.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 500 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Cosmic Drift Showdown')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 7 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag">SQUAD</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_14po0c14po0c14po.png" alt="Iron Tide Supremacy">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Iron Tide Supremacy</h4>
-                        <p>3D Tactical shooter tournament. Assemble your squad, capture control points, and win the prize.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 1,200 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Iron Tide Supremacy')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 8 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag" style="background:var(--neon-purple); color:#fff;">UPCOMING</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_25uabx25uabx25ua.png" alt="Cyber Samurai Duel">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Cyber Samurai Duel</h4>
-                        <p>Precision katana slash duel. Single mistake means defeat in this high intensity reflex tournament.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 900 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Cyber Samurai Duel')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 9 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag">SOLO</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_ksj9dtksj9dtksj9.png" alt="Apex Retro League">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Apex Retro League</h4>
-                        <p>Multi-game retro triathlon. Score points across 3 different retro games to win the crown.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 1,500 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Apex Retro League')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 10 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag" style="background:#fbbf24; color:#000;">SPECIAL</span>
-                    <div class="tourney-img-box">
-                        <img src="Stick Man Velocity.png" alt="Stickman Velocity Clash">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Stickman Velocity Clash</h4>
-                        <p>Fast-paced melee combat championship. Execute combos, dash, and defeat opponent stickmen.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 2,000 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Stickman Velocity Clash')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
+        <div class="content-box" style="text-align: center; padding: 100px 20px;">
+            <h1 class="pixel-font" style="color: #ff0055; font-size: 3rem; margin-bottom: 25px;">COMING SOON</h1>
+            <p style="color: var(--text-muted); font-size: 1.15rem; line-height: 1.6;">The ultimate competitive esports arena is preparing for launch.<br>Get ready to participate in massive tournaments soon!</p>
         </div>
     </main>
 
+    <!-- SUBSCRIBE PAGE (COMING SOON) -->
     <main class="viewport-page" id="subscribe-page">
         <div class="page-header">
             <h2 class="page-title-large pixel-font" style="color: #fbbf24;">Premium Portal</h2>
@@ -1091,61 +536,9 @@
         <div class="page-controls-top">
             <button class="back-btn" onclick="goHome()">← Back to Main Menu</button>
         </div>
-        <div class="content-box" style="background: transparent; border: none; padding: 0; box-shadow: none;">
-            
-            <div style="text-align: center; margin-bottom: 20px;">
-                <p style="color: var(--text-muted); font-size: 1.05rem;">Upgrade your account to unlock professional developer tools, ad-free gaming, and marketplace access.</p>
-            </div>
-
-            <div class="subscription-grid">
-                <div class="plan-card">
-                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 1.5rem; font-weight: bold;">Gamer</h4>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">For casual players.</p>
-                    <p style="color: #fff; font-size: 2.5rem; font-weight: 900; margin-bottom: 15px;">$0<span style="font-size: 1rem; color:#64748b;">/mo</span></p>
-                    
-                    <div class="plan-features">
-                        <div class="feature-item"><i class="fas fa-check"></i> Unlimited Web Gameplay</div>
-                        <div class="feature-item"><i class="fas fa-check"></i> Cloud Save Enabled</div>
-                        <div class="feature-item"><i class="fas fa-check"></i> Standard 50MB Storage</div>
-                        <div class="feature-item" style="color: #475569;"><i class="fas fa-times" style="color: #475569;"></i> Ads Supported</div>
-                    </div>
-                    
-                    <button class="action-btn" style="width: 100%; justify-content: center; margin-top: auto;" onclick="alert('You are currently on the Free plan.')">Current Plan</button>
-                </div>
-
-                <div class="plan-card popular-plan">
-                    <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--neon-cyan); color: #000; padding: 6px 18px; border-radius: 20px; font-size: 0.75rem; font-weight: 900; letter-spacing: 1px;">MOST POPULAR</div>
-                    <h4 style="color: var(--neon-cyan); margin-bottom: 10px; font-size: 1.5rem; font-weight: bold;">Creator</h4>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">For competitive players & modders.</p>
-                    <p style="color: #fff; font-size: 2.5rem; font-weight: 900; margin-bottom: 15px;">$2.99<span style="font-size: 1rem; color:#64748b;">/mo</span></p>
-                    
-                    <div class="plan-features">
-                        <div class="feature-item"><i class="fas fa-check"></i> Everything in Gamer</div>
-                        <div class="feature-item"><i class="fas fa-check"></i> 100% Ad-Free Experience</div>
-                        <div class="feature-item"><i class="fas fa-check"></i> Official Tournaments Access</div>
-                        <div class="feature-item"><i class="fas fa-check"></i> 5GB Cloud Storage</div>
-                        <div class="feature-item"><i class="fas fa-check"></i> Unlock Base AI Prompts</div>
-                    </div>
-                    
-                    <button class="action-btn" style="width: 100%; justify-content: center; background: rgba(0, 243, 255, 0.15); border-color: var(--neon-cyan); color: #fff; margin-top: auto;" onclick="alert('Payment gateway connecting soon!')">Subscribe Now</button>
-                </div>
-
-                <div class="plan-card">
-                    <h4 style="color: var(--neon-purple); margin-bottom: 10px; font-size: 1.5rem; font-weight: bold;">Studio Pro</h4>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">For game developers & sellers.</p>
-                    <p style="color: #fff; font-size: 2.5rem; font-weight: 900; margin-bottom: 15px;">$9.99<span style="font-size: 1rem; color:#64748b;">/mo</span></p>
-                    
-                    <div class="plan-features">
-                        <div class="feature-item"><i class="fas fa-check"></i> Everything in Creator</div>
-                        <div class="feature-item"><i class="fas fa-check"></i> Marketplace Seller Account</div>
-                        <div class="feature-item"><i class="fas fa-check"></i> 0% Commission on Sales</div>
-                        <div class="feature-item"><i class="fas fa-check"></i> Unlimited Cloud Storage</div>
-                        <div class="feature-item"><i class="fas fa-check"></i> API & Master AI Prompts</div>
-                    </div>
-                    
-                    <button class="action-btn" style="width: 100%; justify-content: center; background: var(--neon-purple); color: #fff; border: none; margin-top: auto;" onclick="alert('Payment gateway connecting soon!')">Get Studio Pro</button>
-                </div>
-            </div>
+        <div class="content-box" style="text-align: center; padding: 100px 20px;">
+            <h1 class="pixel-font" style="color: #fbbf24; font-size: 3rem; margin-bottom: 25px;">COMING SOON</h1>
+            <p style="color: var(--text-muted); font-size: 1.15rem; line-height: 1.6;">Exciting new premium plans and creator memberships are on the way.<br>Stay tuned for amazing features and ad-free experiences!</p>
         </div>
     </main>
 
@@ -1248,22 +641,29 @@
 			{ id: 16, studio: 'Pixel Gaunt', title: 'Ring Sort 3D', genre: 'Puzzle', controls: 'Mouse / Touch.', howToPlay: 'Match 4.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'July 29, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'Three JS & WebGL Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Ring Sort 3D.png', preview: 'Ring Sort 3D.gif', url: 'Ring Sort 3D.html', bgm: 'Ring Sort.mp3' }
         ];
 
-        let heroGameIndex = 11; 
-        let spotlightGameIndex = 12; 
+        // LOAD PLAY COUNTS FROM LOCAL STORAGE
+        games.forEach(g => {
+            g.playCount = parseInt(localStorage.getItem('playCount_' + g.id)) || 0;
+            g.lastPlayed = parseInt(localStorage.getItem('lastPlayed_' + g.id)) || 0;
+        });
 
-        // AUTO CHANGE FEATURED GAMES FUNCTION
+        // DYNAMIC SORTING FUNCTION (MOST PLAYED & RECENT GO TO TOP)
+        window.sortGames = function() {
+            games.sort((a, b) => {
+                if (b.playCount !== a.playCount) {
+                    return b.playCount - a.playCount; 
+                }
+                return b.lastPlayed - a.lastPlayed; 
+            });
+        }
+
+        // UPDATE FEATURED PANELS BASED ON TOP GAMES
         window.updateFeaturedPanels = function() {
             if (!games || games.length === 0) return;
-
-            heroGameIndex = (heroGameIndex + 1) % games.length;
-            spotlightGameIndex = (spotlightGameIndex + 1) % games.length;
             
-            if (spotlightGameIndex === heroGameIndex) {
-                spotlightGameIndex = (spotlightGameIndex + 1) % games.length;
-            }
-
-            const heroGame = games[heroGameIndex];
-            const spotlightGame = games[spotlightGameIndex];
+            // Top 2 games after sorting
+            const heroGame = games[0];
+            const spotlightGame = games.length > 1 ? games[1] : games[0];
 
             const heroBg = document.getElementById('hero-panel-bg');
             if(heroBg) {
@@ -1286,8 +686,35 @@
             }
         }
 
-        setInterval(window.updateFeaturedPanels, 3000);
+        // RENDER GAMES GRID FUNCTION
+        window.renderGamesGrid = function(gamesToRender) {
+            const grid = document.getElementById('game-grid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            gamesToRender.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.setAttribute('onclick', `launchViewport(${game.id})`);
+                card.innerHTML = `
+                    <div class="card-thumb" style="background-image: url('${game.image}')">
+                        <div class="gif-overlay" style="background-image: url('${game.preview}')"></div>
+                        <div class="play-overlay">
+                            <div class="play-btn-circle"></div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <p class="card-genre">${game.genre}</p>
+                        <h4 class="card-title">${game.title}</h4>
+                        <div class="card-premium-meta">
+                            <span class="card-stars-layer">${game.rating.split(' ')[0]}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
 
+        // PAGE NAVIGATION FUNCTIONS
         window.setGlobalTheme = function(themeName, element) {
             document.body.className = '';
             document.body.classList.add('theme-' + themeName);
@@ -1322,430 +749,111 @@
             }
             
             const page = document.getElementById(pageId);
-            if(page) page.style.display = 'block';
-            window.scrollTo(0, 0);
-
-            if(pageId === 'tournament-page') {
-                window.generateAutoBracket();
-            }
-        }
-
-        window.scrollCat = function(val) {
-            document.getElementById('top-cat-bar').scrollLeft += val;
-        }
-
-        window.renderGames = function(gameList) {
-            const gameGrid = document.getElementById('game-grid');
-            gameGrid.innerHTML = '';
-            if (gameList.length === 0) {
-                gameGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px; font-size:0.9rem;">No entries found fitting active matrix fields.</p>';
-                return;
-            }
-            gameList.forEach(game => {
-                const card = document.createElement('div');
-                card.className = 'game-card';
-                card.onclick = () => window.launchViewport(game.id);
-                const safeImg = encodeURI(game.image);
-                const safePreview = encodeURI(game.preview || game.image.replace('.png', '.gif')); 
-                card.innerHTML = `
-                    <div class="card-thumb" style="background-image: url('${safeImg}');">
-                        <div class="gif-overlay" style="background-image: url('${safePreview}');"></div>
-                        <div class="play-overlay"><div class="play-btn-circle"></div></div>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-genre">${game.genre}</div>
-                        <div class="card-title">${game.title}</div>
-                        <div class="card-premium-meta">
-                            <div class="card-stars-layer">★★★★★</div>
-                        </div>
-                    </div>
-                `;
-                gameGrid.appendChild(card);
-            });
-        }
-
-        window.filterGames = function() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            const filtered = games.filter(g => g.title.toLowerCase().includes(query) || g.genre.toLowerCase().includes(query));
-            window.renderGames(filtered);
-            document.querySelectorAll('.cat-btn, .sidebar-menu button').forEach(b => b.classList.remove('active'));
-        }
-
-        window.filterCategory = function(category, btnElement) {
-            document.getElementById('search-input').value = ''; 
-            document.querySelectorAll('.cat-btn, .sidebar-menu button').forEach(b => b.classList.remove('active'));
-            if (btnElement) btnElement.classList.add('active');
-            if (category === 'All') window.renderGames(games);
-            else window.renderGames(games.filter(g => g.genre === category));
-        }
-
-        window.launchViewport = function(gameId) {
-            const game = games.find(g => g.id === gameId);
-            if (!game) return;
-
-            window.hideAllPages();
-            history.pushState({ page: 'game', id: gameId }, game.title, `?play=${encodeURIComponent(game.title.toLowerCase().replace(/ /g, '-'))}`);
-            document.getElementById('gameplay-page').style.display = 'block';
-            window.scrollTo(0, 0);
-
-            document.getElementById('current-game-title').innerText = game.title;
-            document.getElementById('current-game-studio').innerHTML = game.studio;
-            document.getElementById('current-game-releasedate').innerHTML = game.releaseDate;
-            document.getElementById('current-game-platform').innerHTML = game.platform;
-            document.getElementById('current-game-technology').innerHTML = game.technology;
-            document.getElementById('current-game-rating').innerHTML = game.rating;
-            document.getElementById('current-game-howtoplay').innerHTML = game.howToPlay;
-            document.getElementById('current-game-controls').innerHTML = game.controls;
-
-            const aiBox = document.getElementById('current-game-aiprompt');
-            const aiContainer = document.getElementById('ai-prompt-container');
-            aiBox.dataset.promptText = game.aiPrompt || ''; 
-
-            if (game.aiPrompt && game.aiPrompt !== '') {
-                aiContainer.style.display = 'block';
-                window.updatePromptVisibility();
-            } else {
-                aiContainer.style.display = 'none';
-            }
-            
-            const gameIframe = document.getElementById('game-canvas');
-            gameIframe.src = encodeURI(game.url); 
-            
-            const portalBgm = document.getElementById('portal-bgm');
-            if(game.bgm) {
-                portalBgm.src = encodeURI(game.bgm);
-                portalBgm.play().catch(e => console.log('Autoplay handled.', e));
+            if(page) {
+                page.style.display = 'block';
+                window.scrollTo({top: 0, behavior: 'smooth'});
             }
         }
 
         window.goHome = function() {
             window.openPage('homepage-page');
+            document.getElementById('game-canvas').src = '';
+            
+            // Re-render and apply sort when going home
+            sortGames();
+            updateFeaturedPanels();
+            
+            // Set "All Games" as active category
+            document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.cat-btn').classList.add('active'); 
+            renderGamesGrid(games);
         }
 
-        window.updatePromptVisibility = function() {
-            const aiBox = document.getElementById('current-game-aiprompt');
-            const hiddenMsg = document.getElementById('ai-prompt-hidden-msg');
-            if(isLoggedIn) {
-                aiBox.innerText = aiBox.dataset.promptText;
-                aiBox.style.display = 'block';
-                hiddenMsg.style.display = 'none';
+        // LAUNCH VIEWPORT & UPDATE PLAY COUNTS
+        window.launchViewport = function(id) {
+            let game = games.find(g => g.id === id);
+            if(game) {
+                // UPDATE STATS ON PLAY
+                game.playCount += 1;
+                game.lastPlayed = Date.now();
+                localStorage.setItem('playCount_' + id, game.playCount);
+                localStorage.setItem('lastPlayed_' + id, game.lastPlayed);
+                
+                // RE-SORT AND UPDATE PANELS SILENTLY IN BACKGROUND
+                sortGames();
+                updateFeaturedPanels();
+                
+                // LAUNCH GAME UI
+                window.hideAllPages();
+                const page = document.getElementById('gameplay-page');
+                if(page) page.style.display = 'block';
+                
+                document.getElementById('game-canvas').src = game.url || '';
+                document.getElementById('current-game-title').innerText = game.title;
+                document.getElementById('current-game-studio').innerText = game.studio;
+                document.getElementById('current-game-releasedate').innerText = game.releaseDate;
+                document.getElementById('current-game-platform').innerText = game.platform;
+                document.getElementById('current-game-technology').innerText = game.technology;
+                document.getElementById('current-game-rating').innerText = game.rating;
+                document.getElementById('current-game-howtoplay').innerHTML = game.howToPlay;
+                document.getElementById('current-game-controls').innerHTML = game.controls;
+                
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            }
+        }
+
+        // CATEGORY & SEARCH FILTERS
+        window.filterCategory = function(cat, element) {
+            document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            
+            // Games array is already sorted based on play count
+            if(cat === 'All') {
+                renderGamesGrid(games);
             } else {
-                aiBox.style.display = 'none';
-                hiddenMsg.style.display = 'block';
+                renderGamesGrid(games.filter(g => g.genre === cat));
             }
         }
 
-        window.openModal = function(modalId) { 
-            const m = document.getElementById(modalId);
-            if(m) {
-                m.style.display = 'flex';
-                setTimeout(() => m.classList.add('active'), 10);
-            }
-        }
-        
-        window.closeModals = function() { 
-            document.querySelectorAll('.modal-overlay').forEach(m => {
-                m.classList.remove('active');
-                setTimeout(() => m.style.display = 'none', 300);
-            });
+        window.filterGames = function() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const filtered = games.filter(g => g.title.toLowerCase().includes(query) || g.genre.toLowerCase().includes(query));
+            renderGamesGrid(filtered);
         }
 
-        window.toggleMute = function() {
-            const bgm = document.getElementById('portal-bgm');
-            const muteBtn = document.getElementById('mute-btn');
-            bgm.muted = !bgm.muted;
-            muteBtn.innerHTML = bgm.muted ? '🔇 Sound: OFF' : '🔊 Sound: ON';
+        window.scrollCat = function(amount) {
+            document.getElementById('top-cat-bar').scrollBy({ left: amount, behavior: 'smooth' });
         }
 
-        window.toggleFullscreen = function() {
-            const container = document.getElementById('game-container-element');
-            if (!document.fullscreenElement) {
-                if (container.requestFullscreen) container.requestFullscreen();
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-            }
+        // MODAL FUNCTIONS
+        window.openModal = function(id) {
+            document.getElementById(id).classList.add('active');
         }
-
-        window.inviteFriends = function() {
-            const shareData = { title: 'Pixel Gaunt', text: 'Check out this awesome game on Pixel Gaunt!', url: window.location.href };
-            if (navigator.share && window.isSecureContext) {
-                navigator.share(shareData).catch(err => console.error("Share failed:", err));
-            } else {
-                alert("Share link copied: " + window.location.href);
-            }
+        window.closeModals = function() {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
         }
-
         window.openPageModal = function(title, contentId) {
             document.getElementById('pg-info-title').innerText = title;
             document.getElementById('pg-info-body').innerHTML = document.getElementById(contentId).innerHTML;
             document.getElementById('pg-info-modal').classList.add('active-modal');
         }
-
         window.closePageModal = function() {
             document.getElementById('pg-info-modal').classList.remove('active-modal');
         }
-
-        /* 5-PLAYER AUTOMATIC BRACKET SIMULATION JS LOGIC */
-        window.registerSelectedTournament = function(tourneyTitle) {
-            alert(`Registration query received for "${tourneyTitle}"! 5 Players Bracket system will automatically seed your match.`);
-        }
-
-        window.generateAutoBracket = function() {
-            const coinVal = parseInt(document.getElementById('bracket-coin-select').value) || 100;
-            const totalPool = coinVal * 5;
-            document.getElementById('pool-coins-val').innerText = `${totalPool} Coins`;
-
-            const players = ["CyberPro_99", "PixelNinja", "ViperStrike", "ShadowRider", "GhostGamer"];
-            
-            // Random shuffle helper
-            const shuffled = [...players].sort(() => 0.5 - Math.random());
-            
-            // Round 1 (Play-In Match): Player 4 vs Player 5
-            const p4 = shuffled[3];
-            const p5 = shuffled[4];
-            const round1Winner = Math.random() > 0.5 ? p4 : p5;
-            const round1Loser = round1Winner === p4 ? p5 : p4;
-
-            // Round 2 (Semi Finals)
-            // Semi 1: Player 1 vs Player 2
-            const p1 = shuffled[0];
-            const p2 = shuffled[1];
-            const semi1Winner = Math.random() > 0.5 ? p1 : p2;
-            const semi1Loser = semi1Winner === p1 ? p2 : p1;
-
-            // Semi 2: Player 3 vs Round1Winner
-            const p3 = shuffled[2];
-            const semi2Winner = Math.random() > 0.5 ? p3 : round1Winner;
-            const semi2Loser = semi2Winner === p3 ? round1Winner : p3;
-
-            // Round 3 (Grand Finals)
-            const finalChampion = Math.random() > 0.5 ? semi1Winner : semi2Winner;
-            const finalRunnerUp = finalChampion === semi1Winner ? semi2Winner : semi1Winner;
-
-            const bracketWrapper = document.getElementById('bracket-chart-wrapper');
-            bracketWrapper.innerHTML = `
-                <!-- Round 1: Play-In Match -->
-                <div class="bracket-round-col">
-                    <div class="bracket-round-title">ROUND 1 (PLAY-IN)</div>
-                    <div class="bracket-match-node">
-                        <div style="font-size: 0.72rem; color: var(--neon-cyan);">Match #1 (Haar gya to Out)</div>
-                        <div class="bracket-player-row ${round1Winner === p4 ? 'winner' : 'eliminated'}">
-                            <span>${p4}</span> <span>${round1Winner === p4 ? 'ADVANCED' : 'OUT'}</span>
-                        </div>
-                        <div class="bracket-player-row ${round1Winner === p5 ? 'winner' : 'eliminated'}">
-                            <span>${p5}</span> <span>${round1Winner === p5 ? 'ADVANCED' : 'OUT'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Round 2: Semi-Finals -->
-                <div class="bracket-round-col">
-                    <div class="bracket-round-title">SEMI-FINALS (TOP 4)</div>
-                    <div class="bracket-match-node">
-                        <div style="font-size: 0.72rem; color: var(--neon-cyan);">Semi Final 1</div>
-                        <div class="bracket-player-row ${semi1Winner === p1 ? 'winner' : 'eliminated'}">
-                            <span>${p1}</span> <span>${semi1Winner === p1 ? 'WIN' : 'OUT'}</span>
-                        </div>
-                        <div class="bracket-player-row ${semi1Winner === p2 ? 'winner' : 'eliminated'}">
-                            <span>${p2}</span> <span>${semi1Winner === p2 ? 'WIN' : 'OUT'}</span>
-                        </div>
-                    </div>
-                    <div class="bracket-match-node">
-                        <div style="font-size: 0.72rem; color: var(--neon-cyan);">Semi Final 2</div>
-                        <div class="bracket-player-row ${semi2Winner === p3 ? 'winner' : 'eliminated'}">
-                            <span>${p3}</span> <span>${semi2Winner === p3 ? 'WIN' : 'OUT'}</span>
-                        </div>
-                        <div class="bracket-player-row ${semi2Winner === round1Winner ? 'winner' : 'eliminated'}">
-                            <span>${round1Winner}</span> <span>${semi2Winner === round1Winner ? 'WIN' : 'OUT'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Round 3: Grand Final -->
-                <div class="bracket-round-col">
-                    <div class="bracket-round-title" style="color:#fbbf24; border-color:#fbbf24; background:rgba(251, 191, 36, 0.1);">GRAND FINALS</div>
-                    <div class="bracket-match-node" style="border-color:#fbbf24; box-shadow:0 0 15px rgba(251, 191, 36, 0.2);">
-                        <div style="font-size: 0.72rem; color: #fbbf24;">Title Match for ${totalPool} Coins</div>
-                        <div class="bracket-player-row ${finalChampion === semi1Winner ? 'winner' : 'eliminated'}">
-                            <span>${semi1Winner}</span> <span>${finalChampion === semi1Winner ? 'CHAMPION' : 'OUT'}</span>
-                        </div>
-                        <div class="bracket-player-row ${finalChampion === semi2Winner ? 'winner' : 'eliminated'}">
-                            <span>${semi2Winner}</span> <span>${finalChampion === semi2Winner ? 'CHAMPION' : 'OUT'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Champion Card -->
-                <div class="bracket-round-col" style="align-items:center;">
-                    <div class="bracket-round-title" style="background:var(--neon-cyan); color:#000; font-weight:bold; width:100%;">ULTIMATE WINNER</div>
-                    <div style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(188, 19, 254, 0.2)); border:2px solid #fbbf24; padding:20px; border-radius:12px; text-align:center; width:100%;">
-                        <div style="font-size:2rem; margin-bottom:5px;">🏆</div>
-                        <div style="font-size:1.1rem; color:#fff; font-weight:bold; margin-bottom:5px;">${finalChampion}</div>
-                        <div class="bracket-coin-badge" style="font-size:0.9rem; padding:6px 12px;">Won ${totalPool} Coins!</div>
-                    </div>
-                </div>
-            `;
-        }
-
-        window.addEventListener('popstate', function(event) {
-            if (event.state && event.state.page === 'game') { window.launchViewport(event.state.id); } 
-            else if (event.state && event.state.page) { window.openPage(event.state.page); } 
-            else { window.goHome(); }
-        });
-
-        window.onload = () => {
-            window.renderGames(games);
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const playQuery = urlParams.get('play');
-            const pageQuery = urlParams.get('page');
-            
-            if (playQuery) {
-                const game = games.find(g => g.title.toLowerCase().replace(/ /g, '-') === playQuery);
-                if (game) setTimeout(() => window.launchViewport(game.id), 100);
-            } else if (pageQuery) {
-                 const targetPage = pageQuery + '-page';
-                 if(document.getElementById(targetPage)) window.openPage(targetPage);
-                 else window.goHome();
-            } else {
-                window.goHome();
-            }
-
-            setTimeout(() => {
-                const loader = document.getElementById('loader');
-                if(loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 300); }
-            }, 800); 
-        };
         
-        window.onclick = (e) => { 
-            if (e.target.classList.contains('modal-overlay')) window.closeModals(); 
-            if (e.target.id === 'pg-info-modal') window.closePageModal();
+        window.toggleFullscreen = function() {
+            const iframe = document.getElementById('game-canvas');
+            if (iframe.requestFullscreen) { iframe.requestFullscreen(); }
+            else if (iframe.webkitRequestFullscreen) { iframe.webkitRequestFullscreen(); }
+            else if (iframe.msRequestFullscreen) { iframe.msRequestFullscreen(); }
         }
-        
-        window.onscroll = () => { 
-            const btn = document.getElementById('scrollToTopBtn');
-            if(btn) btn.style.display = window.scrollY > 300 ? 'block' : 'none'; 
 
-            const header = document.getElementById('main-header');
-            if(window.scrollY > 50) { header.classList.add('scrolled'); } else { header.classList.remove('scrolled'); }
-
-            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-            const scrolled = (winScroll / height) * 100;
-            document.getElementById("scroll-progress").style.width = scrolled + "%";
+        // INITIALIZE ON LOAD
+        window.onload = function() {
+            sortGames(); // Sort initially based on history
+            updateFeaturedPanels();
+            renderGamesGrid(games);
         };
-    </script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
-            authDomain: "pixelgaunt-e5235.firebaseapp.com",
-            projectId: "pixelgaunt-e5235",
-            storageBucket: "pixelgaunt-e5235.firebasestorage.app",
-            messagingSenderId: "261213234973",
-            appId: "1:261213234973:web:e65879886c82be3aabe3f4",
-            measurementId: "G-CV52RVWHGY"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const googleProvider = new GoogleAuthProvider();
-
-        const mainLoginBtn = document.getElementById("main-login-btn");
-        const googleLoginBtn = document.getElementById("google-login-btn"); 
-
-        if (googleLoginBtn) {
-            googleLoginBtn.addEventListener("click", async () => {
-                try {
-                    const result = await signInWithPopup(auth, googleProvider);
-                    const user = result.user;
-                    await setDoc(doc(db, "users", user.uid), {
-                        uid: user.uid,
-                        displayName: user.displayName,
-                        email: user.email,
-                        photoURL: user.photoURL,
-                        lastLogin: new Date()
-                    }, { merge: true });
-                } catch (error) {
-                    console.error("Login Error:", error);
-                    alert("Login failed: " + error.message);
-                }
-            });
-        }
-
-        window.logoutUser = async () => {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                console.error("Logout Error:", error);
-            }
-        };
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                isLoggedIn = true; 
-                if(typeof window.updatePromptVisibility === 'function') window.updatePromptVisibility(); 
-                if(typeof window.closeModals === 'function') window.closeModals(); 
-                
-                if (mainLoginBtn) {
-                    mainLoginBtn.innerHTML = `<img src="${user.photoURL || 'https://via.placeholder.com/30'}" style="width:20px; height:20px; border-radius:50%; margin-right:8px; vertical-align:middle;"> Logout`;
-                    mainLoginBtn.onclick = window.logoutUser;
-                }
-            } else {
-                isLoggedIn = false;
-                if(typeof window.updatePromptVisibility === 'function') window.updatePromptVisibility(); 
-                if (mainLoginBtn) {
-                    mainLoginBtn.innerHTML = "Login";
-                    mainLoginBtn.onclick = () => window.openModal('login-modal');
-                }
-            }
-        });
-
-        const likeBtn = document.getElementById('like-btn');
-        if(likeBtn) {
-            likeBtn.addEventListener('click', async () => {
-                if (!isLoggedIn) return window.openModal('login-modal');
-                const gameTitle = document.getElementById('current-game-title').innerText;
-                try {
-                    await setDoc(doc(db, "games", gameTitle), { likes: increment(1) }, { merge: true });
-                    alert(`Thanks for liking ${gameTitle}! ❤️`);
-                } catch (error) {
-                    console.error("Error adding like: ", error);
-                    alert("Database connection error. Check your Firebase rules.");
-                }
-            });
-        }
-
-        const bugBtn = document.getElementById('bug-btn');
-        if(bugBtn) {
-            bugBtn.addEventListener('click', async () => {
-                if (!isLoggedIn) return window.openModal('login-modal');
-                const bugDetails = prompt("Describe the bug you found in this game:");
-                if (bugDetails && bugDetails.trim() !== "") {
-                    const gameTitle = document.getElementById('current-game-title').innerText;
-                    try {
-                        await addDoc(collection(db, "bug_reports"), {
-                            game: gameTitle,
-                            report: bugDetails,
-                            status: "open",
-                            date: new Date()
-                        });
-                        alert("Bug reported successfully! Our team will check it. 🐛");
-                    } catch (error) {
-                        console.error("Error reporting bug: ", error);
-                        alert("Database connection error. Check your Firebase rules.");
-                    }
-                }
-            });
-        }
     </script>
 </body>
 </html>
