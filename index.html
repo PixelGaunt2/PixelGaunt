@@ -1288,21 +1288,18 @@
         // so we can re-render it in the correct order after a ranking update without losing the active filter.
         let currentDisplayedList = games;
 
-        // Rotates automatically over time so that games tied on play count reshuffle their display
-        // order within a category, while category tab names/positions themselves stay fixed.
-        let categoryRotationOffset = 0;
+        // A game must reach this many total plays before it can appear in the "Top Plays" hero section.
+        const TOP_PLAYS_THRESHOLD = 100;
 
-        // Returns a NEW array of games sorted by play count (highest first).
-        // Ties are broken using a rotating offset so equally-popular games continuously reshuffle.
+        // Returns a NEW array of games sorted purely by play count (highest first, real data only).
+        // Ties are broken by a fixed, stable order (game id) - never by time or randomness - so the
+        // order only ever changes when an actual play count changes.
         window.getRankedGames = function(list) {
             const source = list || games;
-            const totalLen = games.length || 1;
             return [...source].sort((a, b) => {
                 const diff = (b.playCount || 0) - (a.playCount || 0);
                 if (diff !== 0) return diff;
-                const ra = (a.id + categoryRotationOffset) % totalLen;
-                const rb = (b.id + categoryRotationOffset) % totalLen;
-                return ra - rb;
+                return a.id - b.id;
             });
         }
 
@@ -1318,16 +1315,13 @@
             window.renderGames(currentDisplayedList);
         }
 
-        // ===== POPULARITY-BASED, CONTINUOUSLY AUTO-ROTATING FEATURED CAROUSELS =====
-        // "Top Plays" (hero panel) cycles through every game ranked by play count.
-        // "Top Categories" (spotlight panel) cycles through each genre's current top-played game.
-        let heroCarouselList = [];
-        let categoryCarouselList = [];
-        let heroCarouselIndex = 0;
-        let categoryCarouselIndex = 0;
-        let heroCarouselTimer = null;
-        let categoryCarouselTimer = null;
+        // ===== POPULARITY-BASED FEATURED PANELS (STATIC - NO AUTO ROTATION) =====
+        // "Top Plays" (hero panel) always shows the single most-played game that has
+        // reached the minimum play threshold. It only changes when play counts change.
+        // "Top Categories" (spotlight panel) always shows the most-played game within
+        // its category. It only changes when play counts change.
 
+        // Returns, for each genre, the single most-played game in that genre (ties broken by id).
         function buildTopCategoryList() {
             const byGenre = {};
             games.forEach(g => {
@@ -1341,7 +1335,14 @@
         }
 
         window.renderHeroSlide = function(game) {
-            if (!game) return;
+            const heroPanel = document.getElementById('hero-panel-bg');
+            if (!game) {
+                // No game has reached the Top Plays threshold yet - hide the panel entirely
+                // rather than showing an arbitrary/placeholder game.
+                if (heroPanel) heroPanel.style.display = 'none';
+                return;
+            }
+            if (heroPanel) heroPanel.style.display = '';
             const heroBg = document.getElementById('hero-panel-bg');
             if (heroBg) {
                 heroBg.style.backgroundImage = `linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(188, 19, 254, 0.45)), url('${encodeURI(game.image)}')`;
@@ -1366,37 +1367,18 @@
             }
         }
 
-        // Rebuilds the ranked lists (call after play counts change) and redraws the current slide of each carousel.
+        // Rebuilds the ranked lists from current play counts and redraws the featured panels.
+        // Call this after any play count change (or on page load) - it never runs on a timer.
         window.updateFeaturedPanels = function() {
             if (!games || games.length === 0) return;
 
-            heroCarouselList = window.getRankedGames();
-            categoryCarouselList = buildTopCategoryList();
+            const ranked = window.getRankedGames();
+            const topPlay = ranked.find(g => (g.playCount || 0) >= TOP_PLAYS_THRESHOLD) || null;
+            const topCategoryList = buildTopCategoryList();
 
-            if (heroCarouselIndex >= heroCarouselList.length) heroCarouselIndex = 0;
-            if (categoryCarouselIndex >= categoryCarouselList.length) categoryCarouselIndex = 0;
-
-            window.renderHeroSlide(heroCarouselList[heroCarouselIndex]);
-            window.renderCategorySlide(categoryCarouselList[categoryCarouselIndex]);
+            window.renderHeroSlide(topPlay);
+            window.renderCategorySlide(topCategoryList[0]);
         }
-
-        // Advances each carousel to its next slide, looping continuously back to the start.
-        window.advanceHeroCarousel = function() {
-            if (!heroCarouselList || heroCarouselList.length === 0) return;
-            heroCarouselIndex = (heroCarouselIndex + 1) % heroCarouselList.length;
-            window.renderHeroSlide(heroCarouselList[heroCarouselIndex]);
-        }
-
-        window.advanceCategoryCarousel = function() {
-            if (!categoryCarouselList || categoryCarouselList.length === 0) return;
-            categoryCarouselIndex = (categoryCarouselIndex + 1) % categoryCarouselList.length;
-            window.renderCategorySlide(categoryCarouselList[categoryCarouselIndex]);
-        }
-
-        if (heroCarouselTimer) clearInterval(heroCarouselTimer);
-        if (categoryCarouselTimer) clearInterval(categoryCarouselTimer);
-        heroCarouselTimer = setInterval(window.advanceHeroCarousel, 4000);
-        categoryCarouselTimer = setInterval(window.advanceCategoryCarousel, 5000);
 
         window.setGlobalTheme = function(themeName, element) {
             document.body.className = '';
@@ -1446,25 +1428,6 @@
         window.scrollCat = function(val) {
             document.getElementById('top-cat-bar').scrollLeft += val;
         }
-
-        /* ================= AUTOMATIC IN-CATEGORY GAME ROTATION ================= */
-        // Category tab names/positions stay completely fixed. Instead, the games displayed
-        // for the active category (or All Games) continuously reshuffle among themselves.
-        // Games with a higher play count always stay ranked above less-played ones; the
-        // automatic rotation only cycles the display order among games that are currently tied.
-        window.rotateGamesInCategory = function() {
-            if (!games || games.length === 0) return;
-            categoryRotationOffset = (categoryRotationOffset + 1) % games.length;
-
-            const gameGrid = document.getElementById('game-grid');
-            if (gameGrid) gameGrid.style.opacity = '0';
-            setTimeout(() => {
-                window.renderGames(currentDisplayedList);
-                if (gameGrid) gameGrid.style.opacity = '1';
-            }, 300);
-        }
-
-        setInterval(window.rotateGamesInCategory, 4000);
 
         window.renderGames = function(gameList) {
             currentDisplayedList = gameList;
