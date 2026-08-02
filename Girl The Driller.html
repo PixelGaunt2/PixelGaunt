@@ -6,6 +6,7 @@
     <title>Girl: The Driller</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        :root { --ui-scale: 1; }
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%; background-color: #050508;
@@ -14,31 +15,31 @@
         canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; background: transparent; }
 
         /* --- HUD --- */
-        #hud { position: absolute; top: 15px; left: 15px; z-index: 10; background: rgba(10, 10, 15, 0.9); border: 2px solid #00f3ff; border-radius: 10px; padding: 12px 20px; box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); pointer-events: auto; }
-        .resource-row { display: flex; align-items: center; margin: 6px 0; font-weight: bold; font-size: 15px; }
-        .res-icon { width: 22px; height: 22px; margin-right: 10px; border-radius: 4px; display: inline-block; }
+        #hud { position: absolute; top: calc(var(--ui-scale) * 15px); left: calc(var(--ui-scale) * 15px); z-index: 10; background: rgba(10, 10, 15, 0.9); border: 2px solid #00f3ff; border-radius: calc(var(--ui-scale) * 10px); padding: calc(var(--ui-scale) * 12px) calc(var(--ui-scale) * 20px); box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); pointer-events: auto; }
+        .resource-row { display: flex; align-items: center; margin: calc(var(--ui-scale) * 6px) 0; font-weight: bold; font-size: calc(var(--ui-scale) * 15px); }
+        .res-icon { width: calc(var(--ui-scale) * 22px); height: calc(var(--ui-scale) * 22px); margin-right: calc(var(--ui-scale) * 10px); border-radius: calc(var(--ui-scale) * 4px); display: inline-block; }
         .icon-iron { background: #8e8e93; border: 1px solid #aeaeae; }
         .icon-bronze { background: #cd7f32; border: 1px solid #e59866; }
         .icon-gold { background: #d4af37; border: 1px solid #f4d03f; }
         .icon-uranium { background: #39ff14; box-shadow: 0 0 8px #39ff14; }
 
         /* --- SCORE BOARD --- */
-        #score-hud { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(10, 10, 15, 0.95); border: 2px solid #ffcc00; border-radius: 10px; padding: 10px 30px; font-size: 22px; font-weight: bold; color: #ffcc00; text-shadow: 0 0 10px rgba(255, 204, 0, 0.8); box-shadow: 0 0 15px rgba(255, 204, 0, 0.3); pointer-events: none; }
+        #score-hud { position: absolute; top: calc(var(--ui-scale) * 15px); left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(10, 10, 15, 0.95); border: 2px solid #ffcc00; border-radius: calc(var(--ui-scale) * 10px); padding: calc(var(--ui-scale) * 10px) calc(var(--ui-scale) * 30px); font-size: calc(var(--ui-scale) * 22px); font-weight: bold; color: #ffcc00; text-shadow: 0 0 10px rgba(255, 204, 0, 0.8); box-shadow: 0 0 15px rgba(255, 204, 0, 0.3); pointer-events: none; white-space: nowrap; }
 
         /* --- TOOL STATUS HUD --- */
-        #tool-status-hud { position: absolute; right: 15px; top: 70px; z-index: 10; background: rgba(10, 10, 15, 0.9); border: 2px solid #555; border-radius: 10px; padding: 10px; pointer-events: none; width: 175px; }
-        .sys-row { font-size: 12px; margin: 6px 0; display: flex; align-items: center; justify-content: space-between; }
-        .sys-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 5px currentColor; }
+        #tool-status-hud { position: absolute; right: calc(var(--ui-scale) * 15px); top: calc(var(--ui-scale) * 70px); z-index: 10; background: rgba(10, 10, 15, 0.9); border: 2px solid #555; border-radius: calc(var(--ui-scale) * 10px); padding: calc(var(--ui-scale) * 10px); pointer-events: none; width: calc(var(--ui-scale) * 175px); }
+        .sys-row { font-size: calc(var(--ui-scale) * 12px); margin: calc(var(--ui-scale) * 6px) 0; display: flex; align-items: center; justify-content: space-between; }
+        .sys-dot { width: calc(var(--ui-scale) * 10px); height: calc(var(--ui-scale) * 10px); border-radius: 50%; display: inline-block; margin-right: calc(var(--ui-scale) * 8px); box-shadow: 0 0 5px currentColor; }
         .sys-name { flex-grow: 1; }
         .sys-val { font-weight: bold; }
 
         /* --- OVERLAYS & MENUS --- */
-        #pause-btn { position: absolute; top: 15px; right: 15px; z-index: 15; background: rgba(20, 20, 30, 0.9); border: 2px solid #00f3ff; color: #00f3ff; font-family: 'Orbitron'; padding: 10px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; display: none; }
+        #pause-btn { position: absolute; top: calc(var(--ui-scale) * 15px); right: calc(var(--ui-scale) * 15px); z-index: 15; background: rgba(20, 20, 30, 0.9); border: 2px solid #00f3ff; color: #00f3ff; font-family: 'Orbitron'; padding: calc(var(--ui-scale) * 10px) calc(var(--ui-scale) * 25px); border-radius: calc(var(--ui-scale) * 8px); font-weight: bold; cursor: pointer; font-size: calc(var(--ui-scale) * 16px); transition: 0.3s; display: none; }
         #pause-btn:hover { background: #00f3ff; color: #000; box-shadow: 0 0 15px #00f3ff; }
 
-        .overlay-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 10, 0.9); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: auto; }
-        .overlay-title { font-size: 50px; color: #00f3ff; margin-bottom: 40px; text-shadow: 0 0 20px #00f3ff; text-transform: uppercase; letter-spacing: 2px; }
-        .menu-btn { background: #1a1a24; border: 2px solid #00f3ff; color: #00f3ff; font-family: 'Orbitron'; font-size: 20px; font-weight: bold; padding: 15px 40px; border-radius: 8px; cursor: pointer; margin: 10px; width: 250px; transition: 0.3s; box-shadow: 0 0 10px rgba(0, 243, 255, 0.2); }
+        .overlay-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 10, 0.9); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: auto; overflow-y: auto; padding: calc(var(--ui-scale) * 20px) 0; }
+        .overlay-title { font-size: calc(var(--ui-scale) * 50px); color: #00f3ff; margin-bottom: calc(var(--ui-scale) * 40px); text-shadow: 0 0 20px #00f3ff; text-transform: uppercase; letter-spacing: 2px; }
+        .menu-btn { background: #1a1a24; border: 2px solid #00f3ff; color: #00f3ff; font-family: 'Orbitron'; font-size: calc(var(--ui-scale) * 20px); font-weight: bold; padding: calc(var(--ui-scale) * 15px) calc(var(--ui-scale) * 40px); border-radius: calc(var(--ui-scale) * 8px); cursor: pointer; margin: calc(var(--ui-scale) * 10px); width: calc(var(--ui-scale) * 250px); max-width: 80vw; transition: 0.3s; box-shadow: 0 0 10px rgba(0, 243, 255, 0.2); }
         .menu-btn:hover { background: #00f3ff; color: #000; box-shadow: 0 0 20px #00f3ff; transform: scale(1.05); }
 
         @keyframes alertGlow {
@@ -48,56 +49,64 @@
         }
         .glow-active { animation: alertGlow 1.5s infinite !important; }
 
+        /* --- README MODAL --- */
+        .readme-text { font-size: calc(var(--ui-scale) * 15px); line-height: 1.6; color: #e0e0e8; max-width: min(600px, 85vw); margin-bottom: calc(var(--ui-scale) * 30px); padding: 0 calc(var(--ui-scale) * 10px); }
+        .readme-email { color: #00f3ff; font-weight: bold; }
+
         /* --- NEW UPGRADE TREE MODAL --- */
-        #menu-upgrades { display: none; position: absolute; top: 5%; left: 5%; width: 90%; height: 85%; background: rgba(10, 15, 20, 0.98); border: 2px solid #00f3ff; border-radius: 15px; z-index: 100; box-shadow: 0 0 30px rgba(0, 243, 255, 0.4); flex-direction: column; pointer-events: auto; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 2px solid #00f3ff; background: rgba(0, 243, 255, 0.1); }
-        .modal-title { font-size: 22px; font-weight: bold; color: #00f3ff; text-transform: uppercase; }
-        .close-btn { background: transparent; color: #ff3333; border: 2px solid #ff3333; border-radius: 5px; padding: 5px 15px; cursor: pointer; font-family: 'Orbitron'; font-weight: bold; transition: 0.2s;}
+        #menu-upgrades { display: none; position: absolute; top: 5%; left: 5%; width: 90%; height: 85%; background: rgba(10, 15, 20, 0.98); border: 2px solid #00f3ff; border-radius: calc(var(--ui-scale) * 15px); z-index: 100; box-shadow: 0 0 30px rgba(0, 243, 255, 0.4); flex-direction: column; pointer-events: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: calc(var(--ui-scale) * 15px) calc(var(--ui-scale) * 20px); border-bottom: 2px solid #00f3ff; background: rgba(0, 243, 255, 0.1); }
+        .modal-title { font-size: calc(var(--ui-scale) * 22px); font-weight: bold; color: #00f3ff; text-transform: uppercase; }
+        .close-btn { background: transparent; color: #ff3333; border: 2px solid #ff3333; border-radius: calc(var(--ui-scale) * 5px); padding: calc(var(--ui-scale) * 5px) calc(var(--ui-scale) * 15px); cursor: pointer; font-family: 'Orbitron'; font-weight: bold; transition: 0.2s;}
         .close-btn:hover { background: #ff3333; color: white; box-shadow: 0 0 10px #ff3333; }
 
         /* --- TREE VISUALS --- */
-        #tree-container { flex: 1; overflow: auto; position: relative; background: #050508; }
+        #tree-container { flex: 1; overflow: auto; position: relative; background: #050508; -webkit-overflow-scrolling: touch; }
         #tree-svg { position: absolute; top: 0; left: 0; width: 2000px; height: 1200px; pointer-events: none; z-index: 1; }
         #tree-nodes { position: absolute; top: 0; left: 0; width: 2000px; height: 1200px; z-index: 2; }
         
         .tree-node {
-            width: 200px; background: #111; border: 2px solid #00f3ff; border-radius: 8px; padding: 12px;
+            width: calc(var(--ui-scale) * 200px); background: #111; border: 2px solid #00f3ff; border-radius: calc(var(--ui-scale) * 8px); padding: calc(var(--ui-scale) * 12px);
             display: flex; flex-direction: column; justify-content: space-between; text-align: center;
             box-shadow: 0 0 10px rgba(0, 243, 255, 0.3); transition: 0.3s;
         }
         .tree-node.locked { opacity: 0.4; filter: grayscale(100%); pointer-events: none; border-color: #444; box-shadow: none; }
-        .node-title { font-size: 14px; font-weight: bold; color: #00f3ff; margin-bottom: 5px; }
-        .node-desc { font-size: 11px; color: #aaa; margin-bottom: 8px; line-height: 1.2; }
-        .node-cost { font-size: 11px; margin-bottom: 8px; font-weight: bold; }
+        .node-title { font-size: calc(var(--ui-scale) * 14px); font-weight: bold; color: #00f3ff; margin-bottom: calc(var(--ui-scale) * 5px); }
+        .node-desc { font-size: calc(var(--ui-scale) * 11px); color: #aaa; margin-bottom: calc(var(--ui-scale) * 8px); line-height: 1.2; }
+        .node-cost { font-size: calc(var(--ui-scale) * 11px); margin-bottom: calc(var(--ui-scale) * 8px); font-weight: bold; }
         .node-action { display: flex; flex-direction: column; align-items: center; }
-        .node-level { font-size: 12px; margin-bottom: 5px; color: #fff; }
+        .node-level { font-size: calc(var(--ui-scale) * 12px); margin-bottom: calc(var(--ui-scale) * 5px); color: #fff; }
         
-        .action-btn { background: #00f3ff; color: #000; border: none; border-radius: 5px; padding: 6px 12px; font-family: 'Orbitron'; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; font-size: 12px; }
+        .action-btn { background: #00f3ff; color: #000; border: none; border-radius: calc(var(--ui-scale) * 5px); padding: calc(var(--ui-scale) * 6px) calc(var(--ui-scale) * 12px); font-family: 'Orbitron'; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; font-size: calc(var(--ui-scale) * 12px); }
         .action-btn:disabled { background: #444; color: #777; cursor: not-allowed; }
         .action-btn.maxed { background: #39ff14; color: #000; cursor: default; }
 
         /* --- MINIMAP INSTEAD OF BUTTONS --- */
         #minimap-container {
-            position: absolute; bottom: 25px; right: 25px; z-index: 10;
-            width: 130px; height: 130px; border-radius: 50%;
+            position: absolute; bottom: calc(var(--ui-scale) * 25px); right: calc(var(--ui-scale) * 25px); z-index: 10;
+            width: calc(var(--ui-scale) * 130px); height: calc(var(--ui-scale) * 130px); border-radius: 50%;
             border: 2px solid #00f3ff; background: rgba(5,5,10,0.8);
             overflow: hidden; box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
             pointer-events: none;
         }
+        #minimap-container canvas { width: 100%; height: 100%; display: block; }
 
-        #level-hud { position: absolute; bottom: 25px; left: 25px; z-index: 10; background: rgba(10, 10, 15, 0.9); border: 2px solid #444; padding: 10px 15px; border-radius: 8px; min-width: 200px; }
-        .bar-container { width: 100%; background: #222; height: 12px; border-radius: 6px; margin-top: 5px; border: 1px solid #555; }
+        #level-hud { position: absolute; bottom: calc(var(--ui-scale) * 25px); left: calc(var(--ui-scale) * 25px); z-index: 10; background: rgba(10, 10, 15, 0.9); border: 2px solid #444; padding: calc(var(--ui-scale) * 10px) calc(var(--ui-scale) * 15px); border-radius: calc(var(--ui-scale) * 8px); min-width: calc(var(--ui-scale) * 200px); }
+        .level-hud-row { font-size: calc(var(--ui-scale) * 12px); font-weight: bold; justify-content: space-between; display: flex; }
+        .level-hud-energy { font-size: calc(var(--ui-scale) * 12px); font-weight: bold; margin-top: calc(var(--ui-scale) * 8px); }
+        .bar-container { width: 100%; background: #222; height: calc(var(--ui-scale) * 12px); border-radius: calc(var(--ui-scale) * 6px); margin-top: calc(var(--ui-scale) * 5px); border: 1px solid #555; }
         .bar-fill { height: 100%; background: linear-gradient(90deg, #ff9900, #ffcc00); width: 40%; transition: width 0.2s; }
         .energy-fill { background: linear-gradient(90deg, #00bfff, #00f3ff); width: 100%; }
 
         /* --- 6 OVERDRIVES SYSTEM HUD --- */
-        #overdrives-container { position: absolute; top: 180px; left: 15px; z-index: 10; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; pointer-events: auto; }
-        .od-box { background: rgba(10, 10, 15, 0.9); border: 1px solid #555; padding: 6px; border-radius: 6px; width: 130px; text-align: center; }
-        .od-name { font-size: 10px; font-weight: bold; margin-bottom: 4px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #overdrives-container { position: absolute; top: calc(var(--ui-scale) * 180px); left: calc(var(--ui-scale) * 15px); z-index: 10; display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--ui-scale) * 8px); pointer-events: auto; }
+        .od-box { background: rgba(10, 10, 15, 0.9); border: 1px solid #555; padding: calc(var(--ui-scale) * 6px); border-radius: calc(var(--ui-scale) * 6px); width: calc(var(--ui-scale) * 130px); text-align: center; }
+        .od-name { font-size: calc(var(--ui-scale) * 10px); font-weight: bold; margin-bottom: calc(var(--ui-scale) * 4px); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .od-bar { height: calc(var(--ui-scale) * 6px); margin-bottom: calc(var(--ui-scale) * 2px); }
         .od-fill { width: 0%; transition: width 0.3s; }
-        .od-btn { margin-top: 5px; width: 100%; padding: 5px 2px; font-size: 9px; background: #333; color: gray; border: 1px solid #555; border-radius: 4px; font-family: 'Orbitron'; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .od-btn { margin-top: calc(var(--ui-scale) * 5px); width: 100%; padding: calc(var(--ui-scale) * 5px) calc(var(--ui-scale) * 2px); font-size: calc(var(--ui-scale) * 9px); background: #333; color: gray; border: 1px solid #555; border-radius: calc(var(--ui-scale) * 4px); font-family: 'Orbitron'; font-weight: bold; cursor: pointer; transition: 0.3s; }
         
-        #info-toast { position: absolute; top: 75px; left: 50%; transform: translateX(-50%); z-index: 15; background: rgba(0,0,0,0.8); border: 1px solid #00f3ff; padding: 8px 16px; border-radius: 20px; font-size: 12px; color: #00f3ff; pointer-events: none; animation: fadeOut 6s forwards; display: none; }
+        #info-toast { position: absolute; top: calc(var(--ui-scale) * 75px); left: 50%; transform: translateX(-50%); z-index: 15; background: rgba(0,0,0,0.8); border: 1px solid #00f3ff; padding: calc(var(--ui-scale) * 8px) calc(var(--ui-scale) * 16px); border-radius: calc(var(--ui-scale) * 20px); font-size: calc(var(--ui-scale) * 12px); color: #00f3ff; pointer-events: none; animation: fadeOut 6s forwards; display: none; white-space: nowrap; }
         @keyframes fadeOut { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
     </style>
 </head>
@@ -109,8 +118,15 @@
     <div id="main-menu" class="overlay-menu">
         <div class="overlay-title">Girl: The Driller</div>
         <button class="menu-btn" onclick="startGame()" style="background: #155f5f;">▶ PLAY NOW</button>
+        <button class="menu-btn" onclick="showReadme()">📄 README</button>
         <button class="menu-btn" onclick="openUpgradesFromMenu()">⚙️ SKILL TREE</button>
         <button class="menu-btn" id="btn-music-toggle" onclick="toggleMusic()">🎵 MUSIC: ON</button>
+    </div>
+
+    <div id="readme-menu" class="overlay-menu" style="display: none; z-index: 60;">
+        <div class="overlay-title" style="font-size: calc(var(--ui-scale) * 34px);">README</div>
+        <div class="readme-text">This game was created with AI assistance and may contain bugs. If you find any bugs or issues, please report them by contacting: <span class="readme-email">pixelgaunt@gmail.com</span></div>
+        <button class="menu-btn" onclick="closeReadme()">⬅ BACK</button>
     </div>
 
     <div id="pause-menu" class="overlay-menu" style="display: none; background: rgba(5, 5, 8, 0.85);">
@@ -144,32 +160,32 @@
     <div id="overdrives-container">
         <div class="od-box" id="od-box-suit">
             <div class="od-name" style="color:#d942ff;">Girl Power</div>
-            <div class="bar-container" style="height:6px; margin-bottom:2px;"><div class="bar-fill od-fill" id="od-fill-suit" style="background:#d942ff;"></div></div>
+            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-suit" style="background:#d942ff;"></div></div>
             <button class="od-btn" id="od-btn-suit" onclick="activateOverdrive('suit')">0/25</button>
         </div>
         <div class="od-box" id="od-box-drill">
             <div class="od-name" style="color:#aaa;">Drill Storm</div>
-            <div class="bar-container" style="height:6px; margin-bottom:2px;"><div class="bar-fill od-fill" id="od-fill-drill" style="background:#aaa;"></div></div>
+            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-drill" style="background:#aaa;"></div></div>
             <button class="od-btn" id="od-btn-drill" onclick="activateOverdrive('drill')">0/25</button>
         </div>
         <div class="od-box" id="od-box-pickaxe" style="display:none;">
             <div class="od-name" style="color:#ff9900;">Axe Fury</div>
-            <div class="bar-container" style="height:6px; margin-bottom:2px;"><div class="bar-fill od-fill" id="od-fill-pickaxe" style="background:#ff9900;"></div></div>
+            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-pickaxe" style="background:#ff9900;"></div></div>
             <button class="od-btn" id="od-btn-pickaxe" onclick="activateOverdrive('pickaxe')">0/25</button>
         </div>
         <div class="od-box" id="od-box-rocket" style="display:none;">
             <div class="od-name" style="color:#39ff14;">Missile Rain</div>
-            <div class="bar-container" style="height:6px; margin-bottom:2px;"><div class="bar-fill od-fill" id="od-fill-rocket" style="background:#39ff14;"></div></div>
+            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-rocket" style="background:#39ff14;"></div></div>
             <button class="od-btn" id="od-btn-rocket" onclick="activateOverdrive('rocket')">0/25</button>
         </div>
         <div class="od-box" id="od-box-laser" style="display:none;">
             <div class="od-name" style="color:#ff3366;">Laser Beam</div>
-            <div class="bar-container" style="height:6px; margin-bottom:2px;"><div class="bar-fill od-fill" id="od-fill-laser" style="background:#ff3366;"></div></div>
+            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-laser" style="background:#ff3366;"></div></div>
             <button class="od-btn" id="od-btn-laser" onclick="activateOverdrive('laser')">0/25</button>
         </div>
         <div class="od-box" id="od-box-fireball" style="display:none;">
             <div class="od-name" style="color:#00f3ff;">Inferno</div>
-            <div class="bar-container" style="height:6px; margin-bottom:2px;"><div class="bar-fill od-fill" id="od-fill-fireball" style="background:#00f3ff;"></div></div>
+            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-fireball" style="background:#00f3ff;"></div></div>
             <button class="od-btn" id="od-btn-fireball" onclick="activateOverdrive('fireball')">0/25</button>
         </div>
     </div>
@@ -179,12 +195,12 @@
     </div>
 
     <div id="level-hud">
-        <div style="font-size: 12px; font-weight: bold; justify-content: space-between; display: flex;">
+        <div class="level-hud-row">
             <span>Ship Level <span id="lbl-level">1</span></span>
             <span id="lbl-xp">0/100 XP</span>
         </div>
         <div class="bar-container"><div id="xp-bar" class="bar-fill"></div></div>
-        <div style="font-size: 12px; font-weight: bold; margin-top: 8px;">ENERGY: <span id="lbl-energy">100%</span></div>
+        <div class="level-hud-energy">ENERGY: <span id="lbl-energy">100%</span></div>
         <div class="bar-container"><div id="energy-bar" class="bar-fill energy-fill"></div></div>
     </div>
 
@@ -240,6 +256,16 @@
         gameState = "PLAYING";
         startBgMusic();
         refreshLiveUiDisplays();
+    }
+
+    function showReadme() {
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('readme-menu').style.display = 'flex';
+    }
+
+    function closeReadme() {
+        document.getElementById('readme-menu').style.display = 'none';
+        document.getElementById('main-menu').style.display = 'flex';
     }
 
     function pauseGame() {
@@ -333,7 +359,23 @@
     }
 
     const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
-    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+
+    // --- RESPONSIVE SCALING ---
+    // The game world/sprites were designed against a desktop-sized viewport. On a smaller
+    // (mobile) viewport we shrink the world-render scale so a comfortable amount of the
+    // world is visible (instead of fixed-pixel sprites eating up most of a small screen),
+    // and we shrink the UI (HUD/buttons/menus) via the --ui-scale CSS variable to match.
+    const DESIGN_WIDTH = 1366, DESIGN_HEIGHT = 768;
+    let gameScale = 1; // applied to world-space canvas rendering
+    let uiScale = 1;   // applied to DOM UI elements via CSS var
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        let rawScale = Math.min(canvas.width / DESIGN_WIDTH, canvas.height / DESIGN_HEIGHT);
+        gameScale = Math.max(0.45, Math.min(1.15, rawScale));
+        uiScale = Math.max(0.55, Math.min(1, rawScale));
+        document.documentElement.style.setProperty('--ui-scale', uiScale);
+    }
     window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
     const specialItemImages = [
@@ -456,8 +498,8 @@
 
             // Mouse / Touch Check
             if (isMouseThrusting && !moving && playerStats.energy > 0 && gameState === "PLAYING") {
-                let mDx = (mouseX + camera.x) - this.x;
-                let mDy = (mouseY + camera.y) - this.y;
+                let mDx = (mouseX / gameScale + camera.x) - this.x;
+                let mDy = (mouseY / gameScale + camera.y) - this.y;
                 let angle = Math.atan2(mDy, mDx);
                 if (Math.hypot(mDx, mDy) > 20) { // Don't thrust if cursor is exactly on ship
                     this.velocityX += Math.cos(angle) * activeSpeed * 0.04;
@@ -515,7 +557,8 @@
     function produceAsteroidNode() {
         let selectedConfig = nodeTypes[0]; let selectorRand = Math.random(); let cumulative = 0;
         for (let t of nodeTypes) { cumulative += t.weight; if (selectorRand <= cumulative) { selectedConfig = t; break; } }
-        let spawnX, spawnY; if (Math.random() < 0.5) { spawnX = (playerShip.x - canvas.width / 2) + Math.random() * canvas.width; spawnY = (playerShip.y - canvas.height / 2) + Math.random() * canvas.height; } else { let spawnAngle = Math.random() * Math.PI * 2; let spawnDist = Math.random() * 500 + 400; spawnX = playerShip.x + Math.cos(spawnAngle) * spawnDist; spawnY = playerShip.y + Math.sin(spawnAngle) * spawnDist; }
+        let viewW = canvas.width / gameScale, viewH = canvas.height / gameScale;
+        let spawnX, spawnY; if (Math.random() < 0.5) { spawnX = (playerShip.x - viewW / 2) + Math.random() * viewW; spawnY = (playerShip.y - viewH / 2) + Math.random() * viewH; } else { let spawnAngle = Math.random() * Math.PI * 2; let spawnDist = Math.random() * 500 + 400; spawnX = playerShip.x + Math.cos(spawnAngle) * spawnDist; spawnY = playerShip.y + Math.sin(spawnAngle) * spawnDist; }
         
         let scaledMaxHealth = selectedConfig.baseHealth * (1 + (playerStats.level * 0.15));
         asteroidsList.push({ x: spawnX, y: spawnY, vx: (Math.random() - 0.5) * 1.5, vy: (Math.random() - 0.5) * 1.5, radius: Math.random() * 25 + 30, health: scaledMaxHealth, maxHealth: scaledMaxHealth, typeInfo: selectedConfig, spinAngle: Math.random() * Math.PI, spinVelocity: (Math.random() - 0.5) * 0.02, img: astImages[Math.floor(Math.random() * astImages.length)] });
@@ -669,7 +712,7 @@
                 }
 
                 html += `
-                <div class="tree-node ${locked ? 'locked' : ''}" style="position:absolute; left:${x}px; top:${y}px; height: 130px;">
+                <div class="tree-node ${locked ? 'locked' : ''}" style="position:absolute; left:${x}px; top:${y}px; height: calc(var(--ui-scale) * 130px);">
                     <div class="node-title">${upg.name}</div>
                     <div class="node-desc">${upg.desc}</div>
                     <div class="node-cost">${maxed ? 'Max Level' : formatCostHTML(currentCost)}</div>
@@ -821,10 +864,10 @@
             }
         }
 
-        camera.x = playerShip.x - canvas.width / 2; camera.y = playerShip.y - canvas.height / 2;
+        camera.x = playerShip.x - (canvas.width / gameScale) / 2; camera.y = playerShip.y - (canvas.height / gameScale) / 2;
         let shakeOffsetX = 0; let shakeOffsetY = 0; if (cameraShake > 0.5) { shakeOffsetX = (Math.random() - 0.5) * cameraShake; shakeOffsetY = (Math.random() - 0.5) * cameraShake; cameraShake *= 0.85; }
 
-        ctx.save(); ctx.translate(-camera.x + shakeOffsetX, -camera.y + shakeOffsetY);
+        ctx.save(); ctx.translate(-camera.x * gameScale + shakeOffsetX, -camera.y * gameScale + shakeOffsetY); ctx.scale(gameScale, gameScale);
 
         ctx.fillStyle = '#ffffff';
         for (let i = 0; i < stars.length; i++) { let star = stars[i]; let drawX = ((star.x - camera.x * star.depth) % 2000 + 2000) % 2000 + camera.x - 1000; let drawY = ((star.y - camera.y * star.depth) % 2000 + 2000) % 2000 + camera.y - 1000; ctx.fillRect(drawX, drawY, star.size, star.size); }
@@ -845,7 +888,7 @@
 
         playerShip.update(); playerShip.draw(); let isMoving = playerShip.distanceMoved > 0.1;
 
-        let visibleAsts = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(canvas.width, canvas.height)*0.6);
+        let visibleAsts = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(canvas.width, canvas.height)/gameScale*0.6);
 
         if (playerStats.hasRocket && visibleAsts.length > 0) {
             let isRocketOd = overdrives.rocket.activeTimer > 0;
@@ -899,7 +942,7 @@
 
         magicCrystalEvent.update(playerShip); magicCrystalEvent.draw(ctx, playerShip);
 
-        let screenBoundTargets = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(canvas.width, canvas.height)*0.55);
+        let screenBoundTargets = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(canvas.width, canvas.height)/gameScale*0.55);
         if (screenBoundTargets.length === 0) drillsList = [];
 
         let isDrillOd = overdrives.drill.activeTimer > 0;
@@ -1041,7 +1084,7 @@
             let orbitSpeed = isAxeOd ? -timeNow / 50 : -timeNow / 250;
             let pRadius = isAxeOd ? 200 : 105;
 
-            let screenTargets = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(canvas.width, canvas.height)*0.7);
+            let screenTargets = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(canvas.width, canvas.height)/gameScale*0.7);
 
             for(let i=0; i<2; i++) {
                 let hm = handMines[i]; let targetAst = null; let minDist = 2500; 
