@@ -196,7 +196,7 @@
 
     <div id="tool-status-hud">
         <div style="color: #fff; font-size: 12px; text-align: center; margin-bottom: 8px; border-bottom: 1px solid #444; padding-bottom: 4px;">ACTIVE SYSTEMS</div>
-        <div id="sys-suit" class="sys-row" style="color: #d942ff;"><span class="sys-dot" style="background:#d942ff; color:#d942ff;"></span><span class="sys-name">Girl Suit</span><span class="sys-val" id="val-suit-sys">Normal</span></div>
+        <div id="sys-suit" class="sys-row" style="color: #d942ff; display: none;"><span class="sys-dot" style="background:#d942ff; color:#d942ff;"></span><span class="sys-name">Girl Suit</span><span class="sys-val" id="val-suit-sys">Normal</span></div>
         <div id="sys-drill" class="sys-row" style="color: #aaa;"><span class="sys-dot" style="background:#aaa; color:#aaa;"></span><span class="sys-name">Auto-Drill</span><span class="sys-val" id="val-drill-sys">ON</span></div>
         <div id="sys-pickaxe" class="sys-row" style="color: #ff9900; display: none;"><span class="sys-dot" style="background:#ff9900; color:#ff9900;"></span><span class="sys-name">Pickaxe</span><span class="sys-val" id="val-pickaxe-sys">Orbit</span></div>
         <div id="sys-rocket" class="sys-row" style="color: #39ff14; display: none;"><span class="sys-dot" style="background:#39ff14; color:#39ff14;"></span><span class="sys-name">Missiles</span><span class="sys-val" id="val-rocket-sys">Ready</span></div>
@@ -205,6 +205,8 @@
         <div id="sys-drone" class="sys-row" style="color: #00ffcc; display: none;"><span class="sys-dot" style="background:#00ffcc; color:#00ffcc;"></span><span class="sys-name">Attack Drone</span><span class="sys-val" id="val-drone-sys">Ready</span></div>
         <div id="sys-clone" class="sys-row" style="color: #ff5500; display: none;"><span class="sys-dot" style="background:#ff5500; color:#ff5500;"></span><span class="sys-name">Fire Clones</span><span class="sys-val" id="val-clone-sys">Ready</span></div>
         <div id="sys-pulse" class="sys-row" style="color: #ff00aa; display: none;"><span class="sys-dot" style="background:#ff00aa; color:#ff00aa;"></span><span class="sys-name">Pulse Core</span><span class="sys-val" id="val-pulse-sys">Ready</span></div>
+        <div id="sys-acid" class="sys-row" style="color: #7cfc00; display: none;"><span class="sys-dot" style="background:#7cfc00; color:#7cfc00;"></span><span class="sys-name">Acid Sisters</span><span class="sys-val" id="val-acid-sys">Ready</span></div>
+        <div id="sys-shock" class="sys-row" style="color: #66e0ff; display: none;"><span class="sys-dot" style="background:#66e0ff; color:#66e0ff;"></span><span class="sys-name">Electric Shock</span><span class="sys-val" id="val-shock-sys">Ready</span></div>
     </div>
 
     <div id="special-items-hud">
@@ -257,6 +259,16 @@
             <div class="od-name" style="color:#ff00aa;">Core Overload</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-pulse" style="background:#ff00aa;"></div></div>
             <button class="od-btn" id="od-btn-pulse" onclick="activateOverdrive('pulse')">0/25</button>
+        </div>
+        <div class="od-box" id="od-box-acid">
+            <div class="od-name" style="color:#7cfc00;">Acid Sisters</div>
+            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-acid" style="background:#7cfc00;"></div></div>
+            <button class="od-btn" id="od-btn-acid" onclick="activateOverdrive('acid')">0/25</button>
+        </div>
+        <div class="od-box" id="od-box-shock">
+            <div class="od-name" style="color:#66e0ff;">Electric Storm</div>
+            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-shock" style="background:#66e0ff;"></div></div>
+            <button class="od-btn" id="od-btn-shock" onclick="activateOverdrive('shock')">0/25</button>
         </div>
     </div>
 
@@ -505,6 +517,12 @@
         } else if (type === 'player_hurt') {
             osc.type = 'sawtooth'; osc.frequency.setValueAtTime(180, now); osc.frequency.exponentialRampToValueAtTime(60, now + 0.15);
             gainNode.gain.setValueAtTime(0.07, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15); osc.start(now); osc.stop(now + 0.15);
+        } else if (type === 'acid_throw') {
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+            gainNode.gain.setValueAtTime(0.04, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(now); osc.stop(now + 0.1);
+        } else if (type === 'acid_splash') {
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(30, now + 0.2);
+            gainNode.gain.setValueAtTime(0.06, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2); osc.start(now); osc.stop(now + 0.2);
         }
     }
 
@@ -555,9 +573,9 @@
     }
     const blackHole = { x: 0, y: -800, radius: 80, spinAngle: 0 };
 
-    const newAstSources = ['11111111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '111111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '11111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '1111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '11183d72ade-5738-4864-a2a8-dc9b5a183978-removebg-preview.png', '1183d72ade-5738-4864-a2a8-dc9b5a183978-removebg-preview.png', '183d72ade-5738-4864-a2a8-dc9b5a183978-removebg-preview.png', '11Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '1Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png'];
+    const newAstSources = ['1111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '1111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '1111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '1111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '11183d72ade-5738-4864-a2a8-dc9b5a183978-removebg-preview.png', '1183d72ade-5738-4864-a2a8-dc9b5a183978-removebg-preview.png', '183d72ade-5738-4864-a2a8-dc9b5a183978-removebg-preview.png', '11Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '1Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png'];
     const astImages = newAstSources.map(src => { const img = new Image(); img.src = src; return img; });
-    const mineralSources = ['11111111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '1111111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '111111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '11111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '1111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png'];
+    const mineralSources = ['1111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '1111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '1111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '1111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png', '1111Gemini_Generated_Image_pv5th8pv5th8pv5t-removebg-preview.png'];
     const mineralImages = mineralSources.map(src => { const img = new Image(); img.src = src; return img; });
 
     const girlFrames = []; const girlSources = ['111Gemini_Generated_Image_z4nhtrz4nhtrz4nh-removebg-preview-Photoroom-removebg-preview.png', '1Gemini_Generated_Image_z4nhtrz4nhtrz4nh-removebg-preview-Photoroom-removebg-preview.png'];
@@ -567,16 +585,26 @@
     const rocketImg = new Image(); rocketImg.src = '1Gemini_Generated_Image_kxwfrkxwfrkxwfrk-removebg-preview.png';
     const crystalImg = new Image(); crystalImg.src = "1Gemini_Generated_Image_794qhg794qhg794q-removebg-preview.png";
 
-    let inventory = { iron: 0, bronze: 0, silver: 0, gold: 0, uranium: 0 };
+    // --- TESTING/DEBUG: start with 100,000 of every mineral so testers don't have to grind
+    // for resources while checking new abilities and upgrades. This only changes the starting
+    // inventory values - it doesn't touch progression, costs, or any save/load behavior. ---
+    let inventory = { iron: 100000, bronze: 100000, silver: 100000, gold: 100000, uranium: 100000 };
     
-    // --- UPDATED: Fireball aur Rocket by default ACTIVE kar diye gaye hain ---
+    // --- ABILITY UNLOCK PROGRESSION: only the Drill is available at game start. Every other
+    // ability (Girl Power suit, Fireball, Rocket, Laser, Pickaxe, Drone, Clone, Pulse Core,
+    // Acid Sisters) begins locked (has___: false below) and must be individually unlocked via
+    // its first upgrade-tree node before it starts auto-attacking / becoming usable. ---
     let playerStats = { 
         level: 1, xp: 0, nextLevelXp: 100, score: 0, energy: 100, 
         damage: 1, speed: 2.5, drillFlySpeed: 4.0, maxEnergy: 100, energyRegen: 0.02, energyDrain: 0.2,
         defense: 1, magnetRadius: 20,
-        hasLaser: false, hasFireball: true, hasPickaxe: false, hasRocket: true,
+        hasGirlPower: false, hasLaser: false, hasFireball: false, hasPickaxe: false, hasRocket: false,
         hasDrone: false, droneDamage: 1, droneFireRateLevel: 0, droneSupportCount: 0,
         hasClone: false, cloneDamage: 1, cloneFireRateLevel: 0,
+        hasAcidSisters: false, acidDamage: 1, acidFireRateLevel: 0,
+        // --- ELECTRIC SHOCK: now its own independent ability (Task 3), fully separate from
+        // the Girl Power suit - has its own unlock flag and upgrade stats. ---
+        hasElectricShock: false, shockDamage: 1, shockFireRateLevel: 0, shockRange: 0,
         // --- NEW SEPARATE POWER: Pulse Core (its own ability, upgrade tree & overdrive - NOT
         // the same thing as the Girl Power / Electric Shock suit ability, which is untouched) ---
         hasPulseCore: false, pulseDamage: 1
@@ -584,16 +612,53 @@
 
     // --- UPDATED: 6 SEPARATE OVERDRIVES CONFIGURATION (Fireball & Rocket unlocked set to true) ---
     const overdrives = {
-        suit:     { name: 'Girl Power', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: true, color: '#d942ff' },
+        suit:     { name: 'Girl Power', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#d942ff' },
         drill:    { name: 'Drill Storm', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: true, color: '#aaa' },
         pickaxe:  { name: 'Axe Fury', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#ff9900' },
-        rocket:   { name: 'Missile Rain', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: true, color: '#39ff14' },
+        rocket:   { name: 'Missile Rain', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#39ff14' },
         laser:    { name: 'Laser Beam', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#ff3366' },
-        fireball: { name: 'Inferno', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: true, color: '#00f3ff' },
+        fireball: { name: 'Inferno', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#00f3ff' },
         drone:    { name: 'Drone Swarm', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#00ffcc' },
         clone:    { name: 'Fire Clones', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#ff5500' },
-        pulse:    { name: 'Core Overload', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#ff00aa' }
+        pulse:    { name: 'Core Overload', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#ff00aa' },
+        acid:     { name: 'Acid Sisters', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#7cfc00' },
+        shock:    { name: 'Electric Storm', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#66e0ff' }
     };
+
+    // --- GIRL POWER SUIT: COLOR TIER SYSTEM (Task 1) ---
+    // The suit's visual color evolves as the player invests in Girl-Power-related suit
+    // upgrades (Armor Upgrade, Magnetic Suit, Cosmic Suit, Girl Power Core). This is purely
+    // additive/visual - it does not touch any other ability's stats or behavior.
+    const SUIT_TIERS = [
+        { min: 0,   name: 'Standard',  color: null,      glow: 0 },   // no tint - stock suit
+        { min: 5,   name: 'Charged',   color: '#ff8fe0', glow: 10 },  // soft pink
+        { min: 20,  name: 'Amplified', color: '#a76bff', glow: 16 },  // violet
+        { min: 60,  name: 'Overclocked', color: '#00e5ff', glow: 22 }, // electric cyan
+        { min: 150, name: 'Radiant',   color: '#ffd700', glow: 30 }   // gold, max tier
+    ];
+    function getSuitUpgradeScore() {
+        return (upgradeLevels['suit_1'] || 0) + (upgradeLevels['suit_2'] || 0) +
+               (upgradeLevels['suit_4'] || 0) + (upgradeLevels['suit_od_dur'] || 0);
+    }
+    function getSuitTier() {
+        let score = getSuitUpgradeScore();
+        let tier = SUIT_TIERS[0];
+        for (let t of SUIT_TIERS) { if (score >= t.min) tier = t; }
+        return tier;
+    }
+
+    // --- GIRL POWER ACTIVE-DURATION RAMP (Task 1) ---
+    // While the Girl Power overdrive is active, thruster power and movement speed climb
+    // smoothly from the moment it activates instead of snapping instantly. The speed bonus
+    // is hard-capped at +10% over normal movement speed no matter how upgraded the suit is.
+    const GIRL_POWER_RAMP_FRAMES = 90; // ~1.5s to reach full effect
+    const GIRL_POWER_MAX_SPEED_BONUS = 0.10; // hard cap: +10% max, never more
+    function getGirlPowerRampT() {
+        if (overdrives.suit.activeTimer <= 0) return 0;
+        let duration = getOverdriveDuration('suit');
+        let elapsed = duration - overdrives.suit.activeTimer;
+        return Math.max(0, Math.min(1, elapsed / GIRL_POWER_RAMP_FRAMES));
+    }
 
     // --- UNIFIED OVERDRIVE DURATION UPGRADE SYSTEM ---
     // Every overdrive shares the same timing rules: a 5 second (300 frame) base active
@@ -604,7 +669,8 @@
     const OVERDRIVE_DURATION_PER_LEVEL = 60; // +1 second per upgrade level
     const overdriveDurationUpgradeId = {
         suit: 'suit_od_dur', drill: 'drill_od_dur', pickaxe: 'pickaxe_od_dur', rocket: 'rocket_od_dur',
-        laser: 'laser_od_dur', fireball: 'fireball_od_dur', drone: 'drone_od_dur', clone: 'clone_od_dur', pulse: 'pulse_od_dur'
+        laser: 'laser_od_dur', fireball: 'fireball_od_dur', drone: 'drone_od_dur', clone: 'clone_od_dur', 
+        pulse: 'pulse_od_dur', acid: 'acid_od_dur', shock: 'shock_od_dur'
     };
     function getOverdriveDuration(key) {
         let durId = overdriveDurationUpgradeId[key];
@@ -614,8 +680,8 @@
 
     window.activateOverdrive = function(key) {
         let od = overdrives[key];
-        // CHECK DUAL CONDITIONS: Charge Must Be Full AND Cooldown must be 0
-        if (od.charge >= od.maxCharge && od.cooldownTimer <= 0 && od.activeTimer <= 0) {
+        // CHECK CONDITIONS: Ability must be unlocked, charge must be full, cooldown must be 0
+        if (od.unlocked && od.charge >= od.maxCharge && od.cooldownTimer <= 0 && od.activeTimer <= 0) {
             
             // Base 5s active time, scaled up by this overdrive's duration upgrades (+1s/level)
             od.activeTimer = getOverdriveDuration(key); 
@@ -680,9 +746,12 @@
         return `rgb(${r}, ${g}, ${bl})`;
     }
 
-    // --- ELECTRIC SHOCK: RANDOM SKY LIGHTNING STRIKES (enhances the Girl Power / Suit overdrive) ---
+    // --- ELECTRIC SHOCK: independent unlockable ability (Task 3). No longer tied to Girl
+    // Power - has its own unlock, upgrade tree, and Overdrive (see overdrives.shock below).
+    // Passive Ability System: fires automatically once unlocked, weak/slow at first, scaling
+    // with its own damage/fire-rate/range upgrades, and hits harder + more often in Overdrive.
     let lightningBolts = []; let lastLightningStrike = 0;
-    function spawnLightningStrike(target) {
+    function spawnLightningStrike(target, odBoost = false) {
         const startX = target.x + (Math.random() - 0.5) * 60;
         const startY = target.y - (600 + Math.random() * 150);
         const points = [{ x: startX, y: startY }];
@@ -694,22 +763,31 @@
         }
         lightningBolts.push({ points, life: 1.0 });
 
-        const dmg = playerStats.damage * 6;
+        const dmg = playerStats.damage * 1.5 * playerStats.shockDamage * (odBoost ? 2 : 1);
         target.health -= dmg;
         applyHitImpact(target, startX, startY, 5, 9);
         cameraShake = Math.max(cameraShake, 10);
         shockwaves.push({ x: target.x, y: target.y, radius: 8, speed: 7, life: 1.0, color: '#aef9ff' });
-        for (let k = 0; k < 14; k++) createParticle(target.x, target.y, k % 2 === 0 ? '#aef9ff' : '#ffffff', (Math.random() - 0.5) * 16, (Math.random() - 0.5) * 16, 0.06, 2 + Math.random() * 3);
+        for (let k = 0; k < 14; k++) createParticle(target.x, target.y, k % 2 === 0 ? '#aef9ff' : '#ffff', (Math.random() - 0.5) * 16, (Math.random() - 0.5) * 16, 0.06, 2 + Math.random() * 3);
         spawnHitSparks(target.x, target.y, '#aef9ff', 5);
         addFloatingText(`-${Math.round(dmg)}`, target.x, target.y - 20, '#aef9ff', "13px");
         playSound('electric_zap');
     }
 
-    // --- UNLOCKABLE DRONE ABILITY ---
-    let mainDrone = null; let supportDrones = []; let droneProjectiles = []; let lastDroneFire = 0;
+    // --- UNLOCKABLE DRONE ABILITY (Task 4 redesign) ---
+    // A single large drone patrols 500-600px around the girl. When it spots destructible
+    // objects in that patrol range, it launches smaller attack drones that independently
+    // hunt down and attack anything within 500-600px of themselves.
+    let mainDrone = null; let miniDrones = []; let droneProjectiles = []; let lastDroneScan = 0;
+    const DRONE_PATROL_MIN = 500, DRONE_PATROL_MAX = 600;
 
     // --- UNLOCKABLE FIRE CLONE ABILITY ---
     let fireClones = [];
+
+    // --- UNLOCKABLE ACID SISTERS ABILITY ---
+    let acidClones = [];
+    let acidProjectiles = [];
+    let acidSplats = [];
 
     // --- NEW SEPARATE POWER: PULSE CORE ---
     // A completely different mechanic from every other ability: instead of throwing/orbiting
@@ -717,6 +795,7 @@
     // expanding damaging shockwave ring, hitting every asteroid the ring passes through once.
     let pulseCoreState = { lastPulse: 0 };
     let pulseRings = [];
+    let coreProjectiles = [];
     
     let stars = Array.from({length: 150}, () => ({ x: Math.random() * 2000 - 1000, y: Math.random() * 2000 - 1000, size: Math.random() * 2 + 1, depth: Math.random() * 0.8 + 0.2 }));
     const nodeTypes = [ { name: 'iron', color: '#8e8e93', baseHealth: 60, rewardMin: 4, rewardMax: 8, weight: 0.5 }, { name: 'bronze', color: '#cd7f32', baseHealth: 90, rewardMin: 3, rewardMax: 6, weight: 0.3 }, { name: 'gold', color: '#d4af37', baseHealth: 150, rewardMin: 2, rewardMax: 5, weight: 0.15 }, { name: 'uranium', color: '#39ff14', baseHealth: 250, rewardMin: 1, rewardMax: 3, weight: 0.05 } ];
@@ -736,7 +815,7 @@
         },
         draw(ctx, player) {
             if (!this.active) return;
-            if (["OPEN_PORTAL", "DRAG_IN", "CLOSE_PORTAL"].includes(this.stage)) { ctx.save(); ctx.translate(this.portal.x, this.portal.y); ctx.rotate(this.portal.spinAngle); let grad = ctx.createRadialGradient(0, 0, 2, 0, 0, this.portal.currentRadius); grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.3, '#d942ff'); grad.addColorStop(0.8, '#5900ff'); grad.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, this.portal.currentRadius, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#0a0012"; ctx.beginPath(); ctx.arc(0, 0, this.portal.currentRadius * 0.45, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+            if (["OPEN_PORTAL", "DRAG_IN", "CLOSE_PORTAL"].includes(this.stage)) { ctx.save(); ctx.translate(this.portal.x, this.portal.y); ctx.rotate(this.portal.spinAngle); let grad = ctx.createRadialGradient(0, 0, 2, 0, 0, this.portal.currentRadius); grad.addColorStop(0, '#ffff'); grad.addColorStop(0.3, '#d942ff'); grad.addColorStop(0.8, '#5900ff'); grad.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, this.portal.currentRadius, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#0a0012"; ctx.beginPath(); ctx.arc(0, 0, this.portal.currentRadius * 0.45, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
             if (this.stage !== "WAITING" && this.stage !== "DONE") { let crysCenterX = this.crystal.x + (this.crystal.w / 2); let crysCenterY = this.crystal.y + (this.crystal.h / 2); let currentTipX = player.x + (crysCenterX - player.x) * this.hunter.progress; let currentTipY = player.y + (crysCenterY - player.y) * this.hunter.progress; ctx.save(); ctx.lineWidth = 4; ctx.strokeStyle = "#d942ff"; ctx.shadowColor = "#5900ff"; ctx.shadowBlur = 12; ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.quadraticCurveTo((player.x + currentTipX) / 2, Math.min(player.y, currentTipY) - 40, currentTipX, currentTipY); ctx.stroke(); ctx.restore(); }
             if (this.crystal.scale > 0) { ctx.save(); ctx.translate(this.crystal.x + this.crystal.w / 2, this.crystal.y + this.crystal.h / 2); ctx.scale(this.crystal.scale, this.crystal.scale); let floatY = Math.sin(Date.now() * 0.006) * 4; if (crystalImg.complete && crystalImg.naturalWidth !== 0) { ctx.drawImage(crystalImg, -this.crystal.w / 2, (-this.crystal.h / 2) + floatY, this.crystal.w, this.crystal.h); } else { ctx.fillStyle = "#a32cc4"; ctx.fillRect(-this.crystal.w / 2, -this.crystal.h / 2, this.crystal.w, this.crystal.h); } ctx.restore(); }
         }
@@ -837,11 +916,40 @@
     const inputKeys = {};
     window.addEventListener('keydown', (e) => { inputKeys[e.code] = true; }); window.addEventListener('keyup', (e) => { inputKeys[e.code] = false; });
 
+    // --- ESCAPE / ENTER: dedicated menu-control keys, layered on top of the movement key
+    // listener above so all keyboard controls keep working simultaneously with mouse input. ---
+    window.addEventListener('keydown', (e) => {
+        if (e.repeat) return;
+        const isEscape = e.code === 'Escape';
+        const isEnter = e.code === 'Enter' || e.code === 'NumpadEnter';
+        if (!isEscape && !isEnter) return;
+        e.preventDefault();
+
+        const upgradesOpen = document.getElementById('menu-upgrades').style.display === 'flex';
+        const readmeOpen = document.getElementById('readme-menu').style.display === 'flex';
+
+        if (isEscape) {
+            if (upgradesOpen) closeUpgradesMenu();
+            else if (readmeOpen) closeReadme();
+            else if (gameState === 'PLAYING') pauseGame();
+            else if (gameState === 'PAUSED') resumeGame();
+        } else if (isEnter) {
+            if (upgradesOpen) closeUpgradesMenu();
+            else if (readmeOpen) closeReadme();
+            else if (gameState === 'MENU') startGame();
+            else if (gameState === 'PAUSED') resumeGame();
+            else if (gameState === 'WIN') restartGame();
+        }
+    });
+
     const playerShip = {
         x: 0, y: 0, lastX: 0, lastY: 0, distanceMoved: 0, radius: 30, drawWidth: 45, drawHeight: 75, drawAngle: 0, velocityX: 0, velocityY: 0, friction: 0.92, currentFrameIndex: 0, frameTimer: 0, isThrusting: false,
         update() {
             this.isThrusting = false; let moving = false; let dx = 0; let dy = 0;
-            let activeSpeed = playerStats.speed * (overdrives.suit.activeTimer > 0 ? 1.5 : 1.0); 
+            // Girl Power: speed ramps smoothly up to a hard-capped +10% while active (see
+            // getGirlPowerRampT / GIRL_POWER_MAX_SPEED_BONUS above) instead of an instant flat boost.
+            let girlPowerRampT = getGirlPowerRampT();
+            let activeSpeed = playerStats.speed * (1 + girlPowerRampT * GIRL_POWER_MAX_SPEED_BONUS);
 
             // Keyboard Checks
             if ((inputKeys['ArrowLeft'] || inputKeys['KeyA']) && playerStats.energy > 0) { this.velocityX -= activeSpeed * 0.04; dx = -1; moving = true; }
@@ -880,21 +988,48 @@
                 }
                 
                 let moveAngle = Math.atan2(dy, dx);
-                this.drawAngle = moveAngle + Math.PI / 2; 
+                if (isTouchDevice) this.drawAngle = moveAngle + Math.PI / 2;
                 
                 let thrustAngle = moveAngle + Math.PI;
                 let footDist = (this.drawHeight / 2) - 6;
                 let footX = this.x + Math.cos(thrustAngle) * footDist;
                 let footY = this.y + Math.sin(thrustAngle) * footDist;
                 
-                const fireColors = ['#ff2200', '#ff5500', '#ffcc00', '#ffffff'];
-                for (let i = 0; i < 5; i++) { 
-                    createParticle(footX + (Math.random() - 0.5) * 16, footY + (Math.random() - 0.5) * 16, fireColors[Math.floor(Math.random() * fireColors.length)], Math.cos(thrustAngle)*2 + (Math.random() - 0.5) * 2, Math.sin(thrustAngle)*2 + (Math.random() - 0.5) * 2, 0.05 + Math.random() * 0.03, 3 + Math.random() * 5); 
+                // Girl Power: thruster power/output visually ramps up while the ability is
+                // active (more, faster, larger flame particles), separate from the capped
+                // +10% movement speed bonus above - this is the "gradually increasing thruster
+                // power" feedback the suit gives without breaking the speed cap.
+                let thrusterPowerBoost = girlPowerRampT; // 0 -> 1 over the ramp window
+                let gpFireColors = ['#d942ff', '#ff8fe0', '#ffffff'];
+                const fireColors = thrusterPowerBoost > 0 ? gpFireColors : ['#ff2200', '#ff5500', '#ffcc00', '#ffff'];
+                let thrustParticleCount = 5 + Math.round(thrusterPowerBoost * 4); // up to +4 particles
+                let thrustParticleForce = 1 + thrusterPowerBoost * 0.6; // up to 60% punchier flame
+                for (let i = 0; i < thrustParticleCount; i++) { 
+                    createParticle(footX + (Math.random() - 0.5) * 16, footY + (Math.random() - 0.5) * 16, fireColors[Math.floor(Math.random() * fireColors.length)], Math.cos(thrustAngle)*2*thrustParticleForce + (Math.random() - 0.5) * 2, Math.sin(thrustAngle)*2*thrustParticleForce + (Math.random() - 0.5) * 2, 0.05 + Math.random() * 0.03, (3 + Math.random() * 5) * (1 + thrusterPowerBoost * 0.3)); 
                 }
                 if (this.frameTimer % 6 === 0) playSound('thrust'); 
             } else { 
                 if (overdrives.suit.activeTimer > 0) playerStats.energy = playerStats.maxEnergy;
                 else playerStats.energy = Math.min(playerStats.maxEnergy, playerStats.energy + playerStats.energyRegen); 
+            }
+
+            // --- PC MOUSE LOOK: on desktop, the girl always smoothly rotates to face the current
+            // mouse cursor position, independent of movement input. This runs every frame
+            // regardless of whether keyboard, joystick, or mouse-drag thrust is active, so
+            // keyboard movement and mouse-facing work together without interfering with each
+            // other (touch devices keep the original movement-direction facing, since there's
+            // no persistent cursor to look at between touches).
+            if (!isTouchDevice && gameState === "PLAYING") {
+                let mouseWorldX = mouseX / gameScale + camera.x;
+                let mouseWorldY = mouseY / gameScale + camera.y;
+                let faceDx = mouseWorldX - this.x, faceDy = mouseWorldY - this.y;
+                if (Math.hypot(faceDx, faceDy) > 4) {
+                    let targetAngle = Math.atan2(faceDy, faceDx) + Math.PI / 2;
+                    let diff = targetAngle - this.drawAngle;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    this.drawAngle += diff * 0.18; // smooth, responsive turn-rate (ease toward cursor)
+                }
             }
 
             this.velocityX *= this.friction; this.velocityY *= this.friction; this.x += this.velocityX; this.y += this.velocityY;
@@ -906,15 +1041,51 @@
             ctx.translate(this.x, this.y); 
             ctx.rotate(this.drawAngle);
             const activeFrame = girlFrames[this.currentFrameIndex]; 
+
+            // Girl Power (Task 1): suit color evolves through tiers as its upgrades are
+            // purchased (see SUIT_TIERS/getSuitTier above). While the ability is actively
+            // running, the tier glow intensifies with the same ramp used for thruster/speed.
+            let suitTier = playerStats.hasGirlPower ? getSuitTier() : SUIT_TIERS[0];
+            let gpActive = overdrives.suit.activeTimer > 0;
+            let gpRamp = gpActive ? getGirlPowerRampT() : 0;
+
+            if (suitTier.color && (suitTier.glow > 0)) {
+                ctx.shadowColor = suitTier.color;
+                ctx.shadowBlur = suitTier.glow + (gpActive ? gpRamp * 20 : 0);
+            }
+
             if (activeFrame && activeFrame.complete && activeFrame.naturalWidth !== 0) { 
-                ctx.drawImage(activeFrame, -this.drawWidth / 2, -this.drawHeight / 2, this.drawWidth, this.drawHeight); 
+                if (suitTier.color) {
+                    // Tint the sprite with the current suit-tier color on an isolated
+                    // offscreen buffer (source-atop there, not on the main canvas) so the
+                    // color-fill only ever affects the girl's own pixels and never bleeds
+                    // onto background stars/asteroids that happen to sit behind her.
+                    if (!this._suitBuffer) { this._suitBuffer = document.createElement('canvas'); }
+                    let buf = this._suitBuffer;
+                    if (buf.width !== this.drawWidth || buf.height !== this.drawHeight) { buf.width = this.drawWidth; buf.height = this.drawHeight; }
+                    let bctx = buf.getContext('2d');
+                    bctx.clearRect(0, 0, buf.width, buf.height);
+                    bctx.drawImage(activeFrame, 0, 0, buf.width, buf.height);
+                    let tintAlpha = 0.30 + (gpActive ? gpRamp * 0.25 : 0); // deeper tint while active
+                    bctx.globalCompositeOperation = 'source-atop';
+                    bctx.globalAlpha = tintAlpha;
+                    bctx.fillStyle = suitTier.color;
+                    bctx.fillRect(0, 0, buf.width, buf.height);
+                    bctx.globalCompositeOperation = 'source-over';
+                    bctx.globalAlpha = 1;
+
+                    ctx.drawImage(buf, -this.drawWidth / 2, -this.drawHeight / 2, this.drawWidth, this.drawHeight);
+                    ctx.shadowBlur = 0;
+                } else {
+                    ctx.drawImage(activeFrame, -this.drawWidth / 2, -this.drawHeight / 2, this.drawWidth, this.drawHeight); 
+                }
             } 
             ctx.restore(); 
         }
     };
 
     function createParticle(x, y, color, vx, vy, decay, size) { if (visualParticles.length > 180) return; visualParticles.push({ x: x, y: y, color: color, vx: vx, vy: vy, life: 1.0, decay: decay, size: size }); }
-    function spawnCollisionEffect(x, y, color='#ffffff') { for(let k=0; k<8; k++) createParticle(x, y, color, (Math.random()-0.5)*12, (Math.random()-0.5)*12, 0.08, 4); }
+    function spawnCollisionEffect(x, y, color='#ffff') { for(let k=0; k<8; k++) createParticle(x, y, color, (Math.random()-0.5)*12, (Math.random()-0.5)*12, 0.08, 4); }
 
     // --- JUICE SYSTEM: shared hit-feedback helpers used by every weapon/ability hit ---
     // Applies a small knockback impulse, a brief white damage-flash, and a "hit pop" scale
@@ -941,9 +1112,9 @@
     }
     // Bright, fast, short-lived spark particles fired backward along the impact normal -
     // distinct from the slower colored debris particles so hits read as sharp and punchy.
-    function spawnHitSparks(x, y, color = '#ffffff', count = 6) {
+    function spawnHitSparks(x, y, color = '#ffff', count = 6) {
         for (let k = 0; k < count; k++) {
-            let sparkColor = k % 2 === 0 ? '#ffffff' : color;
+            let sparkColor = k % 2 === 0 ? '#ffff' : color;
             createParticle(x, y, sparkColor, (Math.random() - 0.5) * 11, (Math.random() - 0.5) * 11, 0.14, 2 + Math.random() * 2.5);
         }
     }
@@ -1020,18 +1191,19 @@
             { id: "mov_4", name: "Quantum Mobility", desc: "Extreme movement speed", cost: { gold: 200, uranium: 1 }, effect: "speed", value: 0.01, maxLevel: 1000 }
         ],
         suit: [
+            { id: "suit_0", name: "Nano-Suit Activation", desc: "Unlock the Girl Power suit ability", cost: { bronze: 40, iron: 25 }, effect: "hasGirlPower", value: true, maxLevel: 1 },
             { id: "suit_1", name: "Armor Upgrade", desc: "Reduce space damage", cost: { iron: 50 }, effect: "defense", value: 0.1, maxLevel: 1000 },
             { id: "suit_2", name: "Magnetic Suit", desc: "Collect minerals from farther distance", cost: { bronze: 100 }, effect: "magnetRadius", value: 1.0, maxLevel: 1000 },
             { id: "suit_3", name: "Pickaxe Deploy", desc: "Unlock Impact Pickaxe", cost: { bronze: 30, iron: 30 }, effect: "hasPickaxe", value: true, maxLevel: 1 },
             { id: "suit_4", name: "Cosmic Suit", desc: "Maximum protection", cost: { gold: 250, uranium: 50 }, effect: "defense", value: 0.2, maxLevel: 1000 },
-            { id: "suit_od_dur", name: "Girl Power Core", desc: "+1s Girl Power (Electric Shock) overdrive duration", cost: { bronze: 60, gold: 20 }, effect: null, value: 0, maxLevel: 1000 },
+            { id: "suit_od_dur", name: "Girl Power Core", desc: "+1s Girl Power overdrive duration, deepens suit color tier", cost: { bronze: 60, gold: 20 }, effect: null, value: 0, maxLevel: 1000 },
             { id: "pickaxe_od_dur", name: "Axe Fury Core", desc: "+1s Axe Fury overdrive duration", cost: { bronze: 80, iron: 40 }, effect: null, value: 0, maxLevel: 1000 }
         ],
         drone: [
             { id: "drone_1", name: "Recon Drone", desc: "Unlock a small companion attack drone", cost: { gold: 60, uranium: 15 }, effect: "hasDrone", value: true, maxLevel: 1 },
             { id: "drone_2", name: "Twin Cannons", desc: "+ Drone projectile damage", cost: { gold: 90 }, effect: "droneDamage", value: 0.2, maxLevel: 1000 },
             { id: "drone_3", name: "Rapid Targeting", desc: "+ Drone fire rate", cost: { gold: 130, uranium: 10 }, effect: "droneFireRateLevel", value: 1, maxLevel: 20 },
-            { id: "drone_4", name: "Support Bay", desc: "+1 support drone spawned during Drone Swarm overdrive", cost: { gold: 180, uranium: 25 }, effect: "droneSupportCount", value: 1, maxLevel: 4 },
+            { id: "drone_4", name: "Support Bay", desc: "+1 max attack drone in the air at once (always active, more during Drone Swarm overdrive)", cost: { gold: 180, uranium: 25 }, effect: "droneSupportCount", value: 1, maxLevel: 4 },
             { id: "drone_od_dur", name: "Drone Overdrive Core", desc: "+1s Drone Swarm overdrive duration", cost: { gold: 90, uranium: 10 }, effect: null, value: 0, maxLevel: 1000 }
         ],
         clone: [
@@ -1049,6 +1221,23 @@
             { id: "pulse_3", name: "Amplified Emitter", desc: "+ Pulse shockwave radius", cost: { gold: 130, uranium: 15 }, effect: null, value: 0, maxLevel: 1000 },
             { id: "pulse_4", name: "Rapid Discharge", desc: "+ Pulse frequency (fires more often)", cost: { gold: 160, uranium: 20 }, effect: null, value: 0, maxLevel: 30 },
             { id: "pulse_od_dur", name: "Core Overload Matrix", desc: "+1s Core Overload overdrive duration", cost: { gold: 90, uranium: 12 }, effect: null, value: 0, maxLevel: 1000 }
+        ],
+        acidsisters: [
+            { id: "acid_1", name: "Acid Coven", desc: "Unlock the Acid Sisters ability", cost: { gold: 75, uranium: 22 }, effect: "hasAcidSisters", value: true, maxLevel: 1 },
+            { id: "acid_2", name: "Corrosive Mix", desc: "+ Acid Sisters damage", cost: { gold: 110 }, effect: "acidDamage", value: 0.2, maxLevel: 1000 },
+            { id: "acid_3", name: "Rapid Flasks", desc: "+ Acid throwing speed", cost: { gold: 150, uranium: 18 }, effect: "acidFireRateLevel", value: 1, maxLevel: 25 },
+            { id: "acid_od_dur", name: "Acid Overdrive Core", desc: "+1s Acid Sisters overdrive duration", cost: { gold: 90, uranium: 14 }, effect: null, value: 0, maxLevel: 1000 }
+        ],
+        // --- ELECTRIC SHOCK: now its own fully independent unlockable ability (Task 3),
+        // completely separate from the Girl Suit tree. Auto-attacks continuously once
+        // unlocked via the Passive Ability System, weak/slow at first, and scales with these
+        // upgrades (damage, attack speed, range) plus its own Overdrive (Electric Storm). ---
+        shock: [
+            { id: "shock_1", name: "Storm Cell", desc: "Unlock the Electric Shock ability", cost: { gold: 65, uranium: 16 }, effect: "hasElectricShock", value: true, maxLevel: 1 },
+            { id: "shock_2", name: "High Voltage", desc: "+ Electric Shock damage", cost: { gold: 100 }, effect: "shockDamage", value: 0.2, maxLevel: 1000 },
+            { id: "shock_3", name: "Capacitor Bank", desc: "+ Electric Shock attack speed", cost: { gold: 140, uranium: 14 }, effect: "shockFireRateLevel", value: 1, maxLevel: 25 },
+            { id: "shock_4", name: "Long Arc Coils", desc: "+ Electric Shock strike range", cost: { gold: 120, uranium: 10 }, effect: "shockRange", value: 15, maxLevel: 20 },
+            { id: "shock_od_dur", name: "Storm Core", desc: "+1s Electric Storm overdrive duration", cost: { gold: 90, uranium: 14 }, effect: null, value: 0, maxLevel: 1000 }
         ]
     };
 
@@ -1058,9 +1247,9 @@
             else { tree.laser.forEach(upg => { if(upgradeLevels[upg.id] === undefined) upgradeLevels[upg.id] = 0; }); tree.fireball.forEach(upg => { if(upgradeLevels[upg.id] === undefined) upgradeLevels[upg.id] = 0; }); }
         });
 
-        // --- UPDATED: Automatically set Rocket and Fireball level to 1 at start ---
-        upgradeLevels['wpn_fb1'] = 1;
-        upgradeLevels['rkt_1'] = 1;
+        // Ability unlock progression: only the Drill starts available. Every other ability
+        // (including Fireball and Rocket) begins at level 0 / locked until the player spends
+        // resources on its unlock node in the skill tree.
     }
     initLevels();
 
@@ -1119,7 +1308,9 @@
         { id: 'rocket',   title: 'Missiles',      icon: '🚀', color: '#39ff14', nodes: upgradeTrees.rocket,          tab: 'rocket',   subTree: null },
         { id: 'drone',    title: 'Attack Drone',  icon: '🤖', color: '#00ffcc', nodes: upgradeTrees.drone,           tab: 'drone',    subTree: null },
         { id: 'clone',    title: 'Fire Clones',   icon: '👥', color: '#ff5500', nodes: upgradeTrees.clone,           tab: 'clone',    subTree: null },
-        { id: 'pulse',    title: 'Pulse Core',    icon: '💥', color: '#ff00aa', nodes: upgradeTrees.pulse,           tab: 'pulse',    subTree: null }
+        { id: 'pulse',    title: 'Pulse Core',    icon: '💥', color: '#ff00aa', nodes: upgradeTrees.pulse,           tab: 'pulse',    subTree: null },
+        { id: 'acidsisters', title: 'Acid Sisters', icon: '🧪', color: '#7cfc00', nodes: upgradeTrees.acidsisters,  tab: 'acidsisters', subTree: null },
+        { id: 'shock',    title: 'Electric Shock', icon: '🌩️', color: '#66e0ff', nodes: upgradeTrees.shock,        tab: 'shock',    subTree: null }
     ];
 
     function isIconNode(upg) { return upg.maxLevel === 1; } // boolean unlocks get an icon; incremental levels get a dot
@@ -1313,6 +1504,7 @@
                 if(typeof upg.value === 'boolean') playerStats[upg.effect] = upg.value;
                 else playerStats[upg.effect] += upg.value;
             }
+            if(upg.effect === 'hasGirlPower') overdrives.suit.unlocked = true;
             if(upg.effect === 'hasPickaxe' && handMines.length === 0) { handMines = [{x: playerShip.x, y: playerShip.y}]; overdrives.pickaxe.unlocked = true; }
             if(upg.effect === 'hasRocket') overdrives.rocket.unlocked = true;
             if(upg.effect === 'hasLaser') overdrives.laser.unlocked = true;
@@ -1320,6 +1512,8 @@
             if(upg.effect === 'hasDrone' && !mainDrone) { mainDrone = { x: playerShip.x + 40, y: playerShip.y - 40 }; overdrives.drone.unlocked = true; }
             if(upg.effect === 'hasClone') overdrives.clone.unlocked = true;
             if(upg.effect === 'hasPulseCore') overdrives.pulse.unlocked = true;
+            if(upg.effect === 'hasAcidSisters') overdrives.acid.unlocked = true;
+            if(upg.effect === 'hasElectricShock') overdrives.shock.unlocked = true;
 
             playSound('upgrade_buy'); addFloatingText(`${upg.name} UPGRADED!`, playerShip.x, playerShip.y - 40, '#00f3ff', "16px");
             renderVisualTree(); refreshLiveUiDisplays();
@@ -1352,6 +1546,12 @@
         document.getElementById('xp-bar').style.width = `${Math.min(100, (playerStats.xp / playerStats.nextLevelXp) * 100)}%`; 
         document.getElementById('energy-bar').style.width = `${Math.min(100, (playerStats.energy / playerStats.maxEnergy) * 100)}%`;
         
+        if (playerStats.hasGirlPower) {
+            document.getElementById('sys-suit').style.display = 'flex';
+            let suitTier = getSuitTier();
+            let valEl = document.getElementById('val-suit-sys');
+            if (valEl) { valEl.innerText = suitTier.name; valEl.style.color = suitTier.color || '#d942ff'; }
+        }
         if (playerStats.hasPickaxe) document.getElementById('sys-pickaxe').style.display = 'flex';
         if (playerStats.hasRocket) document.getElementById('sys-rocket').style.display = 'flex';
         if (playerStats.hasLaser) document.getElementById('sys-laser').style.display = 'flex';
@@ -1359,6 +1559,8 @@
         if (playerStats.hasDrone) document.getElementById('sys-drone').style.display = 'flex';
         if (playerStats.hasClone) document.getElementById('sys-clone').style.display = 'flex';
         if (playerStats.hasPulseCore) document.getElementById('sys-pulse').style.display = 'flex';
+        if (playerStats.hasAcidSisters) document.getElementById('sys-acid').style.display = 'flex';
+        if (playerStats.hasElectricShock) document.getElementById('sys-shock').style.display = 'flex';
 
         for(let key in overdrives) {
             let od = overdrives[key];
@@ -1377,8 +1579,8 @@
                     btn.style.background = od.color; btn.style.color = '#000';
                     btn.style.boxShadow = `0 0 10px ${od.color}`; btn.style.pointerEvents = 'none';
                     if(document.getElementById(`val-${key}-sys`)) {
-                        document.getElementById(`val-${key}-sys`).innerText = "OVERDRIVE";
-                        document.getElementById(`val-${key}-sys`).style.color = od.color;
+                    document.getElementById(`val-${key}-sys`).innerText = "OVERDRIVE";
+                    document.getElementById(`val-${key}-sys`).style.color = od.color;
                     }
                 } else if (od.charge >= od.maxCharge && od.cooldownTimer <= 0) {
                     fill.style.width = `100%`;
@@ -1386,29 +1588,29 @@
                     btn.style.background = '#39ff14'; btn.style.color = '#000';
                     btn.style.boxShadow = '0 0 10px #39ff14'; btn.style.pointerEvents = 'auto';
                     if(document.getElementById(`val-${key}-sys`)) {
-                        document.getElementById(`val-${key}-sys`).innerText = "READY";
-                        document.getElementById(`val-${key}-sys`).style.color = "#39ff14";
+                    document.getElementById(`val-${key}-sys`).innerText = "READY";
+                    document.getElementById(`val-${key}-sys`).style.color = "#39ff14";
                     }
                 } else {
                     fill.style.width = `${pct}%`;
                     
                     if (od.cooldownTimer > 0 && od.charge >= od.maxCharge) {
-                        btn.innerText = `WAIT: ${Math.ceil(od.cooldownTimer/60)}s`;
-                        fill.style.width = '100%';
-                        fill.style.background = 'gray';
+                    btn.innerText = `WAIT: ${Math.ceil(od.cooldownTimer/60)}s`;
+                    fill.style.width = '100%';
+                    fill.style.background = 'gray';
                     } else if (od.cooldownTimer > 0 && od.charge < od.maxCharge) {
-                        btn.innerText = `C: ${od.charge}/${od.maxCharge} | W: ${Math.ceil(od.cooldownTimer/60)}s`;
-                        fill.style.background = od.color;
+                    btn.innerText = `C: ${od.charge}/${od.maxCharge} | W: ${Math.ceil(od.cooldownTimer/60)}s`;
+                    fill.style.background = od.color;
                     } else {
-                        btn.innerText = `CHARGE: ${od.charge}/${od.maxCharge}`;
-                        fill.style.background = od.color;
+                    btn.innerText = `CHARGE: ${od.charge}/${od.maxCharge}`;
+                    fill.style.background = od.color;
                     }
                     
                     btn.style.background = '#333'; btn.style.color = 'gray';
                     btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none';
                     if(document.getElementById(`val-${key}-sys`)) {
-                        document.getElementById(`val-${key}-sys`).innerText = "Standby";
-                        document.getElementById(`val-${key}-sys`).style.color = od.color;
+                    document.getElementById(`val-${key}-sys`).innerText = "Standby";
+                    document.getElementById(`val-${key}-sys`).style.color = od.color;
                     }
                 }
             } else {
@@ -1440,11 +1642,9 @@
 
         ctx.clearRect(0, 0, canvas.width, canvas.height); const timeNow = Date.now(); frameCount++;
 
-        // --- DYNAMIC BACKGROUND (screen-space, drawn first, never touches gameplay elements) ---
         ctx.fillStyle = getBackgroundColor(timeNow);
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // --- SCORE COUNT-UP: eases the visible number toward the real score every frame ---
         if (displayedScore < playerStats.score) {
             let diff = playerStats.score - displayedScore;
             displayedScore += Math.max(1, diff * 0.12);
@@ -1480,12 +1680,12 @@
 
         ctx.save(); ctx.translate(-camera.x * gameScale + shakeOffsetX, -camera.y * gameScale + shakeOffsetY); ctx.scale(gameScale, gameScale);
 
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#ffff';
         for (let i = 0; i < stars.length; i++) { let star = stars[i]; let drawX = ((star.x - camera.x * star.depth) % 2000 + 2000) % 2000 + camera.x - 1000; let drawY = ((star.y - camera.y * star.depth) % 2000 + 2000) % 2000 + camera.y - 1000; ctx.fillRect(drawX, drawY, star.size, star.size); }
 
         if (Math.hypot(blackHole.x - playerShip.x, blackHole.y - playerShip.y) > 3000) { let angle = Math.random() * Math.PI * 2; blackHole.x = playerShip.x + Math.cos(angle) * 1500; blackHole.y = playerShip.y + Math.sin(angle) * 1500; } else { blackHole.x += (playerShip.x - blackHole.x) * 0.0003; blackHole.y += (playerShip.y - blackHole.y) * 0.0003; }
 
-        blackHole.spinAngle += 0.01; ctx.save(); ctx.translate(blackHole.x, blackHole.y); ctx.rotate(blackHole.spinAngle); let bgGlow = ctx.createRadialGradient(0, 0, blackHole.radius * 0.8, 0, 0, blackHole.radius * 2); bgGlow.addColorStop(0, "rgba(89, 0, 255, 0.8)"); bgGlow.addColorStop(0.5, "rgba(217, 66, 255, 0.3)"); bgGlow.addColorStop(1, "rgba(0, 0, 0, 0)"); ctx.fillStyle = bgGlow; ctx.beginPath(); ctx.arc(0, 0, blackHole.radius * 2, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(0, 0, blackHole.radius, 0, Math.PI * 2); ctx.fillStyle = "#000000"; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "#d942ff"; ctx.stroke(); ctx.beginPath(); ctx.ellipse(0, 0, blackHole.radius * 1.8, blackHole.radius * 0.4, 0, 0, Math.PI * 2); ctx.strokeStyle = "#5900ff"; ctx.lineWidth = 4; ctx.stroke(); ctx.restore(); ctx.fillStyle = "#ff0000"; ctx.font = "bold 16px Orbitron"; ctx.fillText("DANGER: BLACK HOLE", blackHole.x - 95, blackHole.y - 100);
+        blackHole.spinAngle += 0.01; ctx.save(); ctx.translate(blackHole.x, blackHole.y); ctx.rotate(blackHole.spinAngle); let bgGlow = ctx.createRadialGradient(0, 0, blackHole.radius * 0.8, 0, 0, blackHole.radius * 2); bgGlow.addColorStop(0, "rgba(89, 0, 255, 0.8)"); bgGlow.addColorStop(0.5, "rgba(217, 66, 255, 0.3)"); bgGlow.addColorStop(1, "rgba(0, 0, 0, 0)"); ctx.fillStyle = bgGlow; ctx.beginPath(); ctx.arc(0, 0, blackHole.radius * 2, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(0, 0, blackHole.radius, 0, Math.PI * 2); ctx.fillStyle = "#0000"; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "#d942ff"; ctx.stroke(); ctx.beginPath(); ctx.ellipse(0, 0, blackHole.radius * 1.8, blackHole.radius * 0.4, 0, 0, Math.PI * 2); ctx.strokeStyle = "#5900ff"; ctx.lineWidth = 4; ctx.stroke(); ctx.restore(); ctx.fillStyle = "#ff0000"; ctx.font = "bold 16px Orbitron"; ctx.fillText("DANGER: BLACK HOLE", blackHole.x - 95, blackHole.y - 100);
 
         let bhDistX = blackHole.x - playerShip.x; let bhDistY = blackHole.y - playerShip.y; let bhDist = Math.hypot(bhDistX, bhDistY);
         if (bhDist < 1200) { let pull = (1200 - bhDist) / 1200 * 0.008; playerShip.velocityX += (bhDistX / bhDist) * pull; playerShip.velocityY += (bhDistY / bhDist) * pull; if (Math.random() < 0.2) createParticle(playerShip.x, playerShip.y, '#ff0000', -playerShip.velocityX, -playerShip.velocityY, 0.05, 4); }
@@ -1499,16 +1699,24 @@
 
         playerShip.update(); playerShip.draw(); let isMoving = playerShip.distanceMoved > 0.1;
 
-        // --- ELECTRIC SHOCK ENHANCEMENT: random sky lightning strikes during Girl Power overdrive ---
-        if (overdrives.suit.activeTimer > 0 && timeNow - lastLightningStrike > 180) {
-            lastLightningStrike = timeNow;
-            let strikeCandidates = asteroidsList.filter(a => Math.hypot(a.x - playerShip.x, a.y - playerShip.y) < Math.max(canvas.width, canvas.height) / gameScale * 0.65);
-            if (strikeCandidates.length > 0) {
-                let numStrikes = Math.min(3, 1 + Math.floor(Math.random() * 2));
-                for (let s = 0; s < numStrikes && strikeCandidates.length > 0; s++) {
-                    let idx = Math.floor(Math.random() * strikeCandidates.length);
-                    spawnLightningStrike(strikeCandidates[idx]);
-                    strikeCandidates.splice(idx, 1);
+        // --- ELECTRIC SHOCK (Task 3): its own independent passive ability - fires
+        // automatically once unlocked, weak/slow at first and scaling with its damage,
+        // attack-speed, and range upgrades, hitting harder and more often during its own
+        // Electric Storm Overdrive. No longer connected to Girl Power in any way. ---
+        if (playerStats.hasElectricShock) {
+            let isShockOd = overdrives.shock.activeTimer > 0;
+            let shockRange = 400 + playerStats.shockRange + (isShockOd ? 250 : 0);
+            let shockInterval = Math.max(220, 1100 - (playerStats.shockFireRateLevel * 35)) / (isShockOd ? 2.2 : 1);
+            if (timeNow - lastLightningStrike > shockInterval) {
+                lastLightningStrike = timeNow;
+                let strikeCandidates = asteroidsList.filter(a => Math.hypot(a.x - playerShip.x, a.y - playerShip.y) < shockRange);
+                if (strikeCandidates.length > 0) {
+                    let numStrikes = isShockOd ? Math.min(4, 2 + Math.floor(Math.random() * 2)) : 1;
+                    for (let s = 0; s < numStrikes && strikeCandidates.length > 0; s++) {
+                        let idx = Math.floor(Math.random() * strikeCandidates.length);
+                        spawnLightningStrike(strikeCandidates[idx], isShockOd);
+                        strikeCandidates.splice(idx, 1);
+                    }
                 }
             }
         }
@@ -1520,13 +1728,13 @@
             ctx.beginPath(); ctx.moveTo(lb.points[0].x, lb.points[0].y);
             for (let p of lb.points) ctx.lineTo(p.x, p.y);
             ctx.stroke();
-            ctx.strokeStyle = '#ffffff'; ctx.shadowBlur = 0; ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ffff'; ctx.shadowBlur = 0; ctx.lineWidth = 2;
             ctx.stroke();
             ctx.restore();
             let end = lb.points[lb.points.length - 1];
             ctx.save(); ctx.globalAlpha = Math.max(0, lb.life);
             let impactGlow = ctx.createRadialGradient(end.x, end.y, 2, end.x, end.y, 45);
-            impactGlow.addColorStop(0, '#ffffff'); impactGlow.addColorStop(0.5, '#66e0ff'); impactGlow.addColorStop(1, 'rgba(0,0,0,0)');
+            impactGlow.addColorStop(0, '#ffff'); impactGlow.addColorStop(0.5, '#66e0ff'); impactGlow.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = impactGlow; ctx.beginPath(); ctx.arc(end.x, end.y, 45, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
         }
@@ -1575,7 +1783,7 @@
                 if (item.img && item.img.complete && item.img.naturalWidth !== 0) { ctx.drawImage(item.img, item.x - item.width/2, (item.y - item.height/2) + Math.sin(timeNow*0.003+i)*10, item.width, item.height); } else { ctx.fillStyle = "#ff00ff"; ctx.fillRect(item.x - 10, item.y - 10, 20, 20); }
             } else {
                 item.portalRadius = Math.min(50, (item.portalRadius || 0) + 3);
-                ctx.save(); ctx.translate(item.targetPortalX, item.targetPortalY); ctx.rotate(timeNow * 0.005); let pGlow = ctx.createRadialGradient(0, 0, 5, 0, 0, item.portalRadius); pGlow.addColorStop(0, "#ffffff"); pGlow.addColorStop(0.3, "#00f3ff"); pGlow.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = pGlow; ctx.beginPath(); ctx.arc(0, 0, item.portalRadius, 0, Math.PI*2); ctx.fill(); ctx.restore();
+                ctx.save(); ctx.translate(item.targetPortalX, item.targetPortalY); ctx.rotate(timeNow * 0.005); let pGlow = ctx.createRadialGradient(0, 0, 5, 0, 0, item.portalRadius); pGlow.addColorStop(0, "#ffff"); pGlow.addColorStop(0.3, "#00f3ff"); pGlow.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = pGlow; ctx.beginPath(); ctx.arc(0, 0, item.portalRadius, 0, Math.PI*2); ctx.fill(); ctx.restore();
                 item.x += (item.targetPortalX - item.x) * 0.15; item.y += (item.targetPortalY - item.y) * 0.15;
                 let shrink = Math.max(0.1, Math.hypot(item.targetPortalX - item.x, item.targetPortalY - item.y) / 200);
                 if (item.img && item.img.complete && item.img.naturalWidth !== 0) { ctx.drawImage(item.img, item.x - (item.width*shrink)/2, item.y - (item.height*shrink)/2, item.width*shrink, item.height*shrink); }
@@ -1583,12 +1791,6 @@
             }
         }
 
-        // --- SPECIAL COLLECTIBLE SPAWN BALANCE ---
-        // Keeps "Earth cargo" collectibles trickling in near the girl as she explores, for the
-        // entire game (not just the initial batch placed at world start). New items spawn in a
-        // natural mix of on-screen/just-off-screen locations around her current position - the
-        // same approach already used for asteroids - and the list is capped and periodically
-        // culled of anything left far behind so it never grows unbounded.
         let maxSpecialItemsActive = 40;
         let specialSpawnChance = 0.01;
         if (isMoving && specialItemsList.length < maxSpecialItemsActive && Math.random() < specialSpawnChance) produceSpecialItem();
@@ -1596,19 +1798,12 @@
 
         magicCrystalEvent.update(playerShip); magicCrystalEvent.draw(ctx, playerShip);
 
-        // Only asteroids within WEAPON_ENGAGE_RANGE of the girl are valid drill targets - this
-        // keeps drills hidden/inactive until something actually enters detection range.
         let screenBoundTargets = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < WEAPON_ENGAGE_RANGE);
         if (screenBoundTargets.length === 0) drillsList = [];
 
-        // --- DRILL SPAWN BALANCE ---
-        // Early on, drills deploy slowly and only a few can be active at once, so the opening
-        // moments of the game don't get swarmed. Both the deploy speed and the on-screen cap
-        // ramp up smoothly as the player levels up (and drill damage upgrades already scale
-        // separately), so drill presence grows gradually and feels like a rewarded progression.
         let isDrillOd = overdrives.drill.activeTimer > 0;
-        let drillLevelProgress = Math.min(1, (playerStats.level - 1) / 20); // reaches full pace by level ~21
-        let normalDrillCooldown = Math.round(2600 - drillLevelProgress * 1700); // 2600ms at lvl1 -> 900ms at high level
+        let drillLevelProgress = Math.min(1, (playerStats.level - 1) / 20);
+        let normalDrillCooldown = Math.round(2600 - drillLevelProgress * 1700);
         let drillCooldown = isDrillOd ? 200 : normalDrillCooldown;
         let maxDrillsOnScreen = isDrillOd ? 25 : Math.min(14, 2 + Math.floor(playerStats.level / 2));
         if (timeNow - lastDrillDeploy > drillCooldown && document.getElementById('menu-upgrades').style.display !== 'flex' && screenBoundTargets.length > 0 && drillsList.length < maxDrillsOnScreen) {
@@ -1621,7 +1816,7 @@
             let orbitSpeed = timeNow / 300;
             let orbitRadius = Math.min(150, 75 + (upgradeLevels['wpn_fb3'] * 0.2));
 
-            for(let i=0; i<numOrbs; i++) { let angle = orbitSpeed + (i * (Math.PI*2/numOrbs)); let ox = playerShip.x + Math.cos(angle) * orbitRadius; let oy = playerShip.y + Math.sin(angle) * orbitRadius; createParticle(ox, oy, '#00aaff', 0, 0, 0.2, 8); ctx.beginPath(); ctx.arc(ox, oy, 18, 0, Math.PI*2); ctx.fillStyle = '#00f3ff'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#ffffff'; ctx.stroke(); }
+            for(let i=0; i<numOrbs; i++) { let angle = orbitSpeed + (i * (Math.PI*2/numOrbs)); let ox = playerShip.x + Math.cos(angle) * orbitRadius; let oy = playerShip.y + Math.sin(angle) * orbitRadius; createParticle(ox, oy, '#00aaff', 0, 0, 0.2, 8); ctx.beginPath(); ctx.arc(ox, oy, 18, 0, Math.PI*2); ctx.fillStyle = '#00f3ff'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#ffff'; ctx.stroke(); }
             
             let throwCooldown = isFbOd ? 300 : 1500;
             if (timeNow - lastFireballThrow > throwCooldown && asteroidsList.length > 0) {
@@ -1657,11 +1852,11 @@
                     let targetAst = null; let minDist = 1500; let targetIndex = -1;
                     for (let j = 0; j < unvisited.length; j++) { let d = Math.hypot(unvisited[j].x - currentSourceX, unvisited[j].y - currentSourceY); if (d < minDist) { minDist = d; targetAst = unvisited[j]; targetIndex = j; } }
                     if (targetAst) {
-                        const bX = targetAst.x - currentSourceX; const bY = targetAst.y - currentSourceY; const pAngle = Math.atan2(bY, bX) + Math.PI / 2;
-                        ['rgba(255, 50, 100, 0.8)', '#ffffff'].forEach((color, idx) => { ctx.beginPath(); ctx.lineWidth = idx === 0 ? baseLaserWidth : baseLaserWidth * 0.4; ctx.strokeStyle = color; ctx.moveTo(currentSourceX, currentSourceY); for (let i = 1; i <= 12; i++) { let offset = (i < 12) ? (Math.random() - 0.5) * 15 : 0; ctx.lineTo(currentSourceX + bX * (i/12) + Math.cos(pAngle) * offset, currentSourceY + bY * (i/12) + Math.sin(pAngle) * offset); } ctx.stroke(); });
-                        targetAst.health -= playerStats.damage * (isLaserOd ? 0.1 : 0.8);
-                        applyHitImpact(targetAst, currentSourceX, currentSourceY, 1.5, 5);
-                        if (Math.random() < 0.2) createParticle(targetAst.x, targetAst.y, '#ff3366', (Math.random()-0.5)*5, (Math.random()-0.5)*5, 0.1, 1.5); if (Math.random() < 0.35) spawnHitSparks(targetAst.x, targetAst.y, '#ff3366', 3); currentSourceX = targetAst.x; currentSourceY = targetAst.y; unvisited.splice(targetIndex, 1); chainCount++;
+                    const bX = targetAst.x - currentSourceX; const bY = targetAst.y - currentSourceY; const pAngle = Math.atan2(bY, bX) + Math.PI / 2;
+                    ['rgba(255, 50, 100, 0.8)', '#ffff'].forEach((color, idx) => { ctx.beginPath(); ctx.lineWidth = idx === 0 ? baseLaserWidth : baseLaserWidth * 0.4; ctx.strokeStyle = color; ctx.moveTo(currentSourceX, currentSourceY); for (let i = 1; i <= 12; i++) { let offset = (i < 12) ? (Math.random() - 0.5) * 15 : 0; ctx.lineTo(currentSourceX + bX * (i/12) + Math.cos(pAngle) * offset, currentSourceY + bY * (i/12) + Math.sin(pAngle) * offset); } ctx.stroke(); });
+                    targetAst.health -= playerStats.damage * (isLaserOd ? 0.1 : 0.8);
+                    applyHitImpact(targetAst, currentSourceX, currentSourceY, 1.5, 5);
+                    if (Math.random() < 0.2) createParticle(targetAst.x, targetAst.y, '#ff3366', (Math.random()-0.5)*5, (Math.random()-0.5)*5, 0.1, 1.5); if (Math.random() < 0.35) spawnHitSparks(targetAst.x, targetAst.y, '#ff3366', 3); currentSourceX = targetAst.x; currentSourceY = targetAst.y; unvisited.splice(targetIndex, 1); chainCount++;
                     } else break;
                 }
                 ctx.restore(); if (chainCount > 0 && Math.random() < 0.2) playSound('laser');
@@ -1681,14 +1876,14 @@
                 if (checkDist < playerShip.radius + playerStats.magnetRadius + (overdrives.suit.activeTimer > 0 ? 50 : 0)) {
                     if (hp.typeInfo.isCoin) { let scoreEarned = hp.value * 250; playerStats.score += scoreEarned; playSound('coin'); addFloatingText(`+$${scoreEarned}`, hp.x, hp.y, hp.typeInfo.color, "15px"); } 
                     else { 
-                        inventory[hp.typeInfo.name] += hp.value; let scoreEarned = hp.value * 1500; playerStats.score += scoreEarned; playSound('collect'); addFloatingText(`+${hp.value} ${hp.typeInfo.name.toUpperCase()}`, hp.x, hp.y, hp.typeInfo.color); 
-                        
-                        for(let key in overdrives) {
-                            if(overdrives[key].unlocked && overdrives[key].activeTimer <= 0 && overdrives[key].cooldownTimer <= 0) {
-                                overdrives[key].charge = Math.min(overdrives[key].maxCharge, overdrives[key].charge + 1);
-                                if(overdrives[key].charge === overdrives[key].maxCharge) refreshLiveUiDisplays();
-                            }
-                        }
+                    inventory[hp.typeInfo.name] += hp.value; let scoreEarned = hp.value * 1500; playerStats.score += scoreEarned; playSound('collect'); addFloatingText(`+${hp.value} ${hp.typeInfo.name.toUpperCase()}`, hp.x, hp.y, hp.typeInfo.color); 
+                    
+                    for(let key in overdrives) {
+                    if(overdrives[key].unlocked && overdrives[key].activeTimer <= 0 && overdrives[key].cooldownTimer <= 0) {
+                    overdrives[key].charge = Math.min(overdrives[key].maxCharge, overdrives[key].charge + 1);
+                    if(overdrives[key].charge === overdrives[key].maxCharge) refreshLiveUiDisplays();
+                    }
+                    }
                     }
                     homingParticles.splice(i, 1); continue;
                 } else { let angleToPlayer = Math.atan2(dy, dx); hp.x += Math.cos(angleToPlayer) * 12; hp.y += Math.sin(angleToPlayer) * 12; hp.spin += 0.2; }
@@ -1701,8 +1896,6 @@
             let drill = drillsList[i]; drill.life--;
             let targetLeftRange = drill.target && Math.hypot(drill.target.x - playerShip.x, drill.target.y - playerShip.y) > WEAPON_ENGAGE_RANGE;
             if (!drill.target || drill.target.health <= 0 || !asteroidsList.includes(drill.target) || targetLeftRange) {
-                // Only re-target asteroids that are still inside the detection range - if none
-                // remain in range, this drill has nothing left to attack and is hidden/despawned.
                 let closest = null; let minDist = 9999;
                 asteroidsList.forEach(ast => {
                     if (Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) > WEAPON_ENGAGE_RANGE) return;
@@ -1715,14 +1908,9 @@
 
             if (drill.target) {
                 let dx = drill.target.x - drill.x; let dy = drill.target.y - drill.y; let dist = Math.hypot(dx, dy); let activeTargetRadius = drill.target.radius * (1 + (1 - (drill.target.health / drill.target.maxHealth)) * 0.4);
-                if (dist > activeTargetRadius + 12) { drill.angle = Math.atan2(dy, dx); drill.x += Math.cos(drill.angle) * playerStats.drillFlySpeed; drill.y += Math.sin(drill.angle) * playerStats.drillFlySpeed; createParticle(drill.x - Math.cos(drill.angle)*16, drill.y - Math.sin(drill.angle)*16, '#ff9900', -Math.cos(drill.angle)*2, -Math.sin(drill.angle)*2, 0.1, 2.5); } else { drill.x = drill.target.x - Math.cos(drill.angle) * (activeTargetRadius + 10); drill.y = drill.target.y - Math.sin(drill.angle) * (activeTargetRadius + 10); drill.target.health -= playerStats.damage * 0.1; drawX += (Math.random() - 0.5) * 5; drawY += (Math.random() - 0.5) * 5; if (Math.random() < 0.1) playSound('drill_hit'); spawnCollisionEffect(drill.target.x, drill.target.y); applyHitImpact(drill.target, drill.x, drill.y, 1.2, 4); if (Math.random() < 0.3) spawnHitSparks(drill.x, drill.y, '#ffaa00', 3); createParticle(drill.x + Math.cos(drill.angle)*16, drill.y + Math.sin(drill.angle)*16, '#ffffff', (Math.random()-0.5)*5, (Math.random()-0.5)*5, 0.1, 1.5); }
+                if (dist > activeTargetRadius + 12) { drill.angle = Math.atan2(dy, dx); drill.x += Math.cos(drill.angle) * playerStats.drillFlySpeed; drill.y += Math.sin(drill.angle) * playerStats.drillFlySpeed; createParticle(drill.x - Math.cos(drill.angle)*16, drill.y - Math.sin(drill.angle)*16, '#ff9900', -Math.cos(drill.angle)*2, -Math.sin(drill.angle)*2, 0.1, 2.5); } else { drill.x = drill.target.x - Math.cos(drill.angle) * (activeTargetRadius + 10); drill.y = drill.target.y - Math.sin(drill.angle) * (activeTargetRadius + 10); drill.target.health -= playerStats.damage * 0.1; drawX += (Math.random() - 0.5) * 5; drawY += (Math.random() - 0.5) * 5; if (Math.random() < 0.1) playSound('drill_hit'); spawnCollisionEffect(drill.target.x, drill.target.y); applyHitImpact(drill.target, drill.x, drill.y, 1.2, 4); if (Math.random() < 0.3) spawnHitSparks(drill.x, drill.y, '#ffaa00', 3); createParticle(drill.x + Math.cos(drill.angle)*16, drill.y + Math.sin(drill.angle)*16, '#ffff', (Math.random()-0.5)*5, (Math.random()-0.5)*5, 0.1, 1.5); }
             } else { drill.x += Math.cos(drill.angle) * playerStats.drillFlySpeed; drill.y += Math.sin(drill.angle) * playerStats.drillFlySpeed; }
 
-            // --- DRILL BOUNDARY FIX: keep drills confined to the visible gameplay area at all times ---
-            // Instead of letting the drill chase asteroid positions off-screen, we clamp it to just
-            // inside the camera's viewport. If a target lies beyond that edge the drill still "reaches"
-            // toward it visually (via the jitter/particles above) and keeps applying damage while
-            // hovering, fully visible, near that edge - it just never actually leaves the screen.
             let clampMinX = camera.x + 24, clampMaxX = camera.x + (canvas.width / gameScale) - 24;
             let clampMinY = camera.y + 24, clampMaxY = camera.y + (canvas.height / gameScale) - 24;
             let preClampX = drill.x, preClampY = drill.y;
@@ -1743,47 +1931,35 @@
 
         for (let i = asteroidsList.length - 1; i >= 0; i--) {
             let ast = asteroidsList[i];
-            // Ambient drift + decaying knockback impulse (knockback fades on its own via friction
-            // so it never permanently changes the asteroid's normal drift speed).
             ast.knockVX = (ast.knockVX || 0) * 0.88; ast.knockVY = (ast.knockVY || 0) * 0.88;
             ast.x += ast.vx + ast.knockVX; ast.y += ast.vy + ast.knockVY;
             ast.spinAngle += ast.spinVelocity;
-            // Hit pulse intensity is now derived purely from elapsed time (see below at draw
-            // time) rather than a per-frame counter, so it stays accurate no matter how often
-            // applyHitImpact was called this frame.
 
             let astBhDistX = blackHole.x - ast.x; let astBhDistY = blackHole.y - ast.y; let astBhDist = Math.hypot(astBhDistX, astBhDistY);
             if (astBhDist < 1200) { let astPull = (1200 - astBhDist) / 1200 * 0.005; ast.vx += (astBhDistX / astBhDist) * astPull; ast.vy += (astBhDistY / astBhDist) * astPull; }
             if (astBhDist < blackHole.radius) { asteroidsList.splice(i, 1); continue; }
 
-            // --- AI AVOIDANCE BUBBLE + PLAYER COLLISION ---
-            // Objects that stray inside a soft "avoidance bubble" around the girl steer smoothly
-            // around her instead of overlapping. Objects that actually make contact deal a small
-            // amount of collision damage (unless the electric-shock Girl Power overdrive is active,
-            // which acts as a protective shield) with knockback on both sides.
             {
                 let toPX = playerShip.x - ast.x, toPY = playerShip.y - ast.y;
                 let pDist = Math.hypot(toPX, toPY);
                 let solidRadius = playerShip.radius * 0.65 + ast.radius * (1 + (1 - (ast.health / ast.maxHealth)) * 0.4);
                 const avoidRadius = playerShip.radius + 85;
                 if (pDist > 0.01 && pDist < solidRadius && overdrives.suit.activeTimer <= 0) {
-                    let nx = -toPX / pDist, ny = -toPY / pDist; // pointing from player toward asteroid
+                    let nx = -toPX / pDist, ny = -toPY / pDist;
                     let overlap = solidRadius - pDist;
                     ast.knockVX += nx * overlap * 0.06; ast.knockVY += ny * overlap * 0.06;
                     playerShip.velocityX -= nx * overlap * 0.012; playerShip.velocityY -= ny * overlap * 0.012;
                     if (timeNow - (ast.playerHitCooldown || 0) > 450) {
-                        ast.playerHitCooldown = timeNow;
-                        let dmg = Math.max(0.6, (ast.typeInfo.baseHealth / 45) - playerStats.defense * 0.12);
-                        playerStats.energy = Math.max(0, playerStats.energy - dmg);
-                        cameraShake = Math.max(cameraShake, 7);
-                        spawnHitSparks(ast.x - nx * ast.radius * 0.5, ast.y - ny * ast.radius * 0.5, '#ff5555');
-                        addFloatingText(`-${dmg.toFixed(1)}`, playerShip.x, playerShip.y - 40, '#ff5555', "13px");
-                        if (timeNow - lastPlayerHurtSound > 350) { playSound('player_hurt'); lastPlayerHurtSound = timeNow; }
-                        refreshLiveUiDisplays();
+                    ast.playerHitCooldown = timeNow;
+                    let dmg = Math.max(0.6, (ast.typeInfo.baseHealth / 45) - playerStats.defense * 0.12);
+                    playerStats.energy = Math.max(0, playerStats.energy - dmg);
+                    cameraShake = Math.max(cameraShake, 7);
+                    spawnHitSparks(ast.x - nx * ast.radius * 0.5, ast.y - ny * ast.radius * 0.5, '#ff5555');
+                    addFloatingText(`-${dmg.toFixed(1)}`, playerShip.x, playerShip.y - 40, '#ff5555', "13px");
+                    if (timeNow - lastPlayerHurtSound > 350) { playSound('player_hurt'); lastPlayerHurtSound = timeNow; }
+                    refreshLiveUiDisplays();
                     }
                 } else if (pDist > 0.01 && pDist < avoidRadius) {
-                    // Soft steering: nudge the object tangentially + outward so it curves around
-                    // the girl rather than colliding head-on or clipping through her.
                     let nx = -toPX / pDist, ny = -toPY / pDist;
                     let tx = -ny, ty = nx;
                     let strength = (avoidRadius - pDist) / avoidRadius * 0.05;
@@ -1794,9 +1970,6 @@
                 }
             }
 
-            // Quick, smooth "hit pulse": a bell curve (0 -> 1 -> 0) over pulseDuration ms, driving
-            // both a brief brightness flash and a fast scale-up/scale-down "pop" - satisfying on a
-            // single hit, and just as clean when re-triggered every frame by an attached drill/axe.
             let pulseElapsed = ast.pulseStart ? (timeNow - ast.pulseStart) : Infinity;
             let pulseT = ast.pulseDuration ? Math.min(1, pulseElapsed / ast.pulseDuration) : 1;
             let hitPulse = (pulseElapsed >= 0 && pulseT < 1) ? Math.sin(pulseT * Math.PI) : 0;
@@ -1826,10 +1999,6 @@
         }
 
         if (playerStats.hasPickaxe && handMines.length > 0) {
-            // --- AXE COUNT BALANCE ---
-            // Unlocking the pickaxe grants just one orbiting axe at first; a second (and,
-            // eventually, third) axe joins gradually as the player levels up, so the axe swarm
-            // grows as a rewarding progression instead of appearing all at once.
             let desiredAxeCount = Math.min(3, 1 + Math.floor(playerStats.level / 8));
             while (handMines.length < desiredAxeCount) {
                 handMines.push({ x: playerShip.x, y: playerShip.y });
@@ -1841,15 +2010,9 @@
             let orbitSpeed = isAxeOd ? -timeNow / 50 : -timeNow / 250;
             let pRadius = isAxeOd ? 200 : 105;
 
-            // Axes only detect/attack asteroids within WEAPON_ENGAGE_RANGE of the girl. When
-            // nothing is in range this list is empty and the whole axe block below is skipped,
-            // so the axes stay fully hidden instead of idly orbiting with nothing to hit.
             let screenTargets = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < WEAPON_ENGAGE_RANGE);
 
             if (screenTargets.length === 0) {
-                // No valid target in range - keep the axes anchored on the girl (hidden/inactive)
-                // so that when a target does enter range they reappear right next to her instead
-                // of flying in from a stale, possibly off-screen position.
                 handMines.forEach(hm => { hm.x = playerShip.x; hm.y = playerShip.y; });
             } else {
             for(let i=0; i<handMines.length; i++) {
@@ -1862,11 +2025,11 @@
                     hm.x += (targetAst.x - hm.x) * (isAxeOd ? 0.3 : 0.15); 
                     hm.y += (targetAst.y - hm.y) * (isAxeOd ? 0.3 : 0.15); 
                     if(minDist < targetAst.radius + 30) { 
-                        targetAst.health -= playerStats.damage * (isAxeOd ? 0.3 : 0.08); 
-                        createParticle(hm.x, hm.y, '#ff9900', (Math.random()-0.5)*8, (Math.random()-0.5)*8, 0.1, 4); 
-                        applyHitImpact(targetAst, hm.x, hm.y, isAxeOd ? 2.2 : 1, 6);
-                        if (Math.random() < 0.25) { spawnHitSparks(hm.x, hm.y, '#ff9900', 4); if (Math.random() < 0.5) playSound('axe_hit'); }
-                        isDigging = true; 
+                    targetAst.health -= playerStats.damage * (isAxeOd ? 0.3 : 0.08); 
+                    createParticle(hm.x, hm.y, '#ff9900', (Math.random()-0.5)*8, (Math.random()-0.5)*8, 0.1, 4); 
+                    applyHitImpact(targetAst, hm.x, hm.y, isAxeOd ? 2.2 : 1, 6);
+                    if (Math.random() < 0.25) { spawnHitSparks(hm.x, hm.y, '#ff9900', 4); if (Math.random() < 0.5) playSound('axe_hit'); }
+                    isDigging = true; 
                     } 
                 } else { 
                     let pAngle = orbitSpeed + (i * (Math.PI * 2 / handMines.length)); 
@@ -1875,10 +2038,6 @@
                     hm.x += (targetX - hm.x) * 0.15; hm.y += (targetY - hm.y) * 0.15; 
                 }
 
-                // --- AXE BOUNDARY FIX: axes must always stay fully inside the visible gameplay
-                // area, exactly like the drills. Clamp to just inside the camera viewport - if a
-                // target lies past the edge the axe still digs/tracks visually right at that edge
-                // instead of ever leaving the screen. ---
                 { 
                     let axeClampMinX = camera.x + 24, axeClampMaxX = camera.x + (canvas.width / gameScale) - 24;
                     let axeClampMinY = camera.y + 24, axeClampMaxY = camera.y + (canvas.height / gameScale) - 24;
@@ -1904,44 +2063,76 @@
             }
         }
 
-        // --- UNLOCKABLE DRONE ABILITY: main drone + overdrive-spawned support drones ---
         if (playerStats.hasDrone && mainDrone) {
             let isDroneOd = overdrives.drone.activeTimer > 0;
-            let orbitAngle = timeNow / 400;
-            let mainTargetX = playerShip.x + Math.cos(orbitAngle) * 70;
-            let mainTargetY = playerShip.y + Math.sin(orbitAngle) * 70 - 25;
-            mainDrone.x += (mainTargetX - mainDrone.x) * 0.1; mainDrone.y += (mainTargetY - mainDrone.y) * 0.1;
 
-            let desiredSupport = isDroneOd ? (2 + playerStats.droneSupportCount) : 0;
-            while (supportDrones.length < desiredSupport) supportDrones.push({ x: mainDrone.x, y: mainDrone.y });
-            while (supportDrones.length > desiredSupport) supportDrones.pop();
+            // --- MAIN DRONE: patrols in a slow wide loop 500-600px from the girl. ---
+            let patrolAngle = timeNow / 900;
+            let patrolRadius = ((DRONE_PATROL_MIN + DRONE_PATROL_MAX) / 2) + Math.sin(timeNow / 1600) * ((DRONE_PATROL_MAX - DRONE_PATROL_MIN) / 2);
+            let mainTargetX = playerShip.x + Math.cos(patrolAngle) * patrolRadius;
+            let mainTargetY = playerShip.y + Math.sin(patrolAngle) * patrolRadius;
+            mainDrone.x += (mainTargetX - mainDrone.x) * 0.03; mainDrone.y += (mainTargetY - mainDrone.y) * 0.03;
 
-            let allDrones = [mainDrone, ...supportDrones];
-            allDrones.forEach((d, idx) => {
-                if (idx > 0) {
-                    let sAngle = orbitAngle * 1.6 + idx * (Math.PI * 2 / Math.max(1, supportDrones.length));
-                    let sx = mainDrone.x + Math.cos(sAngle) * 45; let sy = mainDrone.y + Math.sin(sAngle) * 45;
-                    d.x += (sx - d.x) * 0.15; d.y += (sy - d.y) * 0.15;
-                }
-                // Small triangular drone body (same silhouette family as the main ship, scaled down)
-                ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(orbitAngle * 2 + idx);
-                ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(7, 6); ctx.lineTo(0, 3); ctx.lineTo(-7, 6); ctx.closePath();
-                ctx.fillStyle = idx === 0 ? '#00ffcc' : '#33d9ff'; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 10; ctx.fill();
-                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
-            });
+            // Draw the main drone - noticeably larger than the mini attack drones it launches.
+            ctx.save(); ctx.translate(mainDrone.x, mainDrone.y); ctx.rotate(patrolAngle * 1.2);
+            ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(15, 13); ctx.lineTo(0, 6); ctx.lineTo(-15, 13); ctx.closePath();
+            ctx.fillStyle = '#00ffcc'; ctx.shadowColor = '#00ffcc'; ctx.shadowBlur = 16; ctx.fill();
+            ctx.strokeStyle = '#ffff'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
 
-            let droneFireInterval = Math.max(180, 900 - (playerStats.droneFireRateLevel * 35)) / (isDroneOd ? 2 : 1);
-            if (timeNow - lastDroneFire > droneFireInterval && asteroidsList.length > 0) {
-                lastDroneFire = timeNow;
-                allDrones.forEach(d => {
-                    let candidates = asteroidsList.filter(a => Math.hypot(a.x - d.x, a.y - d.y) < 750);
-                    if (candidates.length > 0) {
-                        let target = candidates[Math.floor(Math.random() * candidates.length)];
-                        let ang = Math.atan2(target.y - d.y, target.x - d.x);
-                        droneProjectiles.push({ x: d.x, y: d.y, vx: Math.cos(ang) * 9, vy: Math.sin(ang) * 9, target, life: 90 });
+            // --- DETECTION: whenever the main drone spots destructible objects within its
+            // patrol range, it launches a smaller attack drone toward them (throttled so it
+            // doesn't spawn more than the currently-allowed mini drone count). ---
+            let desiredMiniDrones = Math.min(5, 1 + playerStats.droneSupportCount + (isDroneOd ? 3 : 0));
+            let droneScanInterval = isDroneOd ? 150 : 400;
+            if (timeNow - lastDroneScan > droneScanInterval) {
+                lastDroneScan = timeNow;
+                if (miniDrones.length < desiredMiniDrones) {
+                    let detected = asteroidsList.filter(a => Math.hypot(a.x - mainDrone.x, a.y - mainDrone.y) < DRONE_PATROL_MAX);
+                    if (detected.length > 0) {
+                        let target = detected[Math.floor(Math.random() * detected.length)];
+                        miniDrones.push({ x: mainDrone.x, y: mainDrone.y, target, life: 900, lastFire: 0, spawnPhase: Math.random() * Math.PI * 2 });
+                        if (Math.random() < 0.6) playSound('drone_shoot');
                     }
-                });
-                if (Math.random() < 0.6) playSound('drone_shoot');
+                }
+            }
+
+            // --- MINI ATTACK DRONES: once launched, each independently searches for and
+            // attacks any target within 500-600px of itself, weak/slow at first and scaling
+            // with the same damage/fire-rate upgrades as the main drone, stronger in Overdrive. ---
+            for (let i = miniDrones.length - 1; i >= 0; i--) {
+                let d = miniDrones[i]; d.life--;
+
+                if (!d.target || d.target.health <= 0 || !asteroidsList.includes(d.target) || Math.hypot(d.target.x - d.x, d.target.y - d.y) > DRONE_PATROL_MAX) {
+                    let candidates = asteroidsList.filter(a => Math.hypot(a.x - d.x, a.y - d.y) < DRONE_PATROL_MAX);
+                    d.target = candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+                }
+
+                if (d.target) {
+                    let dist = Math.hypot(d.target.x - d.x, d.target.y - d.y);
+                    let standoff = 90;
+                    if (dist > standoff) {
+                        let ang = Math.atan2(d.target.y - d.y, d.target.x - d.x);
+                        d.x += Math.cos(ang) * (isDroneOd ? 9 : 6); d.y += Math.sin(ang) * (isDroneOd ? 9 : 6);
+                    }
+                    let droneFireInterval = Math.max(150, 700 - (playerStats.droneFireRateLevel * 30)) / (isDroneOd ? 2 : 1);
+                    if (timeNow - d.lastFire > droneFireInterval) {
+                        d.lastFire = timeNow;
+                        let ang = Math.atan2(d.target.y - d.y, d.target.x - d.x);
+                        droneProjectiles.push({ x: d.x, y: d.y, vx: Math.cos(ang) * 9, vy: Math.sin(ang) * 9, target: d.target, life: 90 });
+                    }
+                } else {
+                    // Nothing left to hunt nearby - hover near the main drone until it detects a new target.
+                    let hoverAngle = timeNow / 500 + d.spawnPhase;
+                    let hx = mainDrone.x + Math.cos(hoverAngle) * 55, hy = mainDrone.y + Math.sin(hoverAngle) * 55;
+                    d.x += (hx - d.x) * 0.06; d.y += (hy - d.y) * 0.06;
+                }
+
+                ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(timeNow / 250 + d.spawnPhase);
+                ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(7, 6); ctx.lineTo(0, 3); ctx.lineTo(-7, 6); ctx.closePath();
+                ctx.fillStyle = '#33d9ff'; ctx.shadowColor = '#33d9ff'; ctx.shadowBlur = 10; ctx.fill();
+                ctx.strokeStyle = '#ffff'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
+
+                if (d.life <= 0) miniDrones.splice(i, 1);
             }
         }
         for (let i = droneProjectiles.length - 1; i >= 0; i--) {
@@ -1957,12 +2148,16 @@
             if (hit || p.life <= 0) droneProjectiles.splice(i, 1);
         }
 
-        // --- NEW GIRL ABILITY: FIRE CLONES (5 clones that stay visible and short-range flame-attack) ---
-        if (overdrives.clone.activeTimer > 0) {
-            if (fireClones.length < 5) {
-                fireClones = [];
-                for (let i = 0; i < 5; i++) fireClones.push({ angle: (i / 5) * Math.PI * 2, lastFire: 0 });
-            }
+        // --- UNLOCKABLE FIRE CLONES ---
+        // Passive Ability System (Task 2): once unlocked, Fire Clones are always active -
+        // weak and slow at first, scaling up with upgrades (damage/fire rate) and player
+        // level (clone count), and significantly stronger/more numerous during Overdrive.
+        if (playerStats.hasClone) {
+            let isCloneOd = overdrives.clone.activeTimer > 0;
+            let desiredCloneCount = isCloneOd ? 5 : Math.min(5, 1 + Math.floor(playerStats.level / 10));
+            while (fireClones.length < desiredCloneCount) { let idx = fireClones.length; fireClones.push({ angle: (idx / desiredCloneCount) * Math.PI * 2, lastFire: 0 }); }
+            while (fireClones.length > desiredCloneCount) fireClones.pop();
+
             fireClones.forEach(c => {
                 let cx = playerShip.x + Math.cos(c.angle + timeNow / 1800) * 65;
                 let cy = playerShip.y + Math.sin(c.angle + timeNow / 1800) * 65;
@@ -1974,17 +2169,18 @@
                 else { ctx.fillStyle = '#ff5500'; ctx.fillRect(-13, -22, 26, 44); }
                 ctx.globalAlpha = 1; ctx.restore();
 
-                let cloneFireInterval = Math.max(140, 480 - (playerStats.cloneFireRateLevel * 15));
+                let cloneFireInterval = Math.max(140, 480 - (playerStats.cloneFireRateLevel * 15)) / (isCloneOd ? 1.8 : 1);
                 if (timeNow - c.lastFire > cloneFireInterval) {
                     c.lastFire = timeNow;
                     let throwAngle = c.angle + timeNow / 1800 + Math.PI / 2;
                     for (let k = 0; k < 7; k++) createParticle(cx, cy, k % 2 === 0 ? '#ff6600' : '#ffcc00', Math.cos(throwAngle) * 3 + (Math.random() - 0.5) * 1.5, Math.sin(throwAngle) * 3 + (Math.random() - 0.5) * 1.5, 0.06, 3 + Math.random() * 3);
                     asteroidsList.forEach(ast => {
-                        if (Math.hypot(ast.x - cx, ast.y - cy) < 50) {
-                            ast.health -= playerStats.damage * 0.3 * playerStats.cloneDamage;
-                            spawnCollisionEffect(ast.x, ast.y, '#ff6600');
-                            applyHitImpact(ast, cx, cy, 1.8, 6); spawnHitSparks(cx, cy, '#ff6600', 4);
-                        }
+                    if (Math.hypot(ast.x - cx, ast.y - cy) < 50) {
+                    let dmg = playerStats.damage * 0.3 * playerStats.cloneDamage * (isCloneOd ? 1.8 : 1);
+                    ast.health -= dmg;
+                    spawnCollisionEffect(ast.x, ast.y, '#ff6600');
+                    applyHitImpact(ast, cx, cy, 1.8, 6); spawnHitSparks(cx, cy, '#ff6600', 4);
+                    }
                     });
                     if (Math.random() < 0.3) playSound('fire_hit');
                 }
@@ -1993,7 +2189,121 @@
             fireClones = [];
         }
 
-        // --- NEW SEPARATE POWER: PULSE CORE (own ability, own upgrade tree, own overdrive) ---
+        // --- NEW UNLOCKABLE ABILITY: ACID SISTERS (5 clone girls throwing green acid, ~550px range) ---
+        // Passive Ability System (Task 2): always active once unlocked - weak/slow baseline
+        // that scales up with upgrades and player level, significantly stronger during Overdrive.
+        if (playerStats.hasAcidSisters) {
+            let isAcidOd = overdrives.acid.activeTimer > 0;
+            let desiredAcidCount = isAcidOd ? 5 : Math.min(5, 1 + Math.floor(playerStats.level / 10));
+            while (acidClones.length < desiredAcidCount) { let idx = acidClones.length; acidClones.push({ angle: (idx / desiredAcidCount) * Math.PI * 2, x: playerShip.x, y: playerShip.y, lastThrow: 0 }); }
+            while (acidClones.length > desiredAcidCount) acidClones.pop();
+            const ACID_RANGE = 550;
+            let viewMinX = camera.x + 30, viewMaxX = camera.x + (canvas.width / gameScale) - 30;
+            let viewMinY = camera.y + 30, viewMaxY = camera.y + (canvas.height / gameScale) - 30;
+
+            acidClones.forEach((c, idx) => {
+                // Find nearest valid on-screen target within range.
+                let target = null, minDist = ACID_RANGE;
+                asteroidsList.forEach(ast => {
+                    if (ast.x < viewMinX || ast.x > viewMaxX || ast.y < viewMinY || ast.y > viewMaxY) return;
+                    let d = Math.hypot(ast.x - c.x, ast.y - c.y);
+                    if (d < minDist) { minDist = d; target = ast; }
+                });
+
+                // Movement: chase target (stopping at a comfortable stand-off) or orbit the player.
+                let destX, destY;
+                if (target) {
+                    let ang = Math.atan2(target.y - c.y, target.x - c.x);
+                    let standoff = Math.max(0, minDist - 190);
+                    destX = c.x + Math.cos(ang) * standoff;
+                    destY = c.y + Math.sin(ang) * standoff;
+                } else {
+                    let oAng = c.angle + timeNow / 1400;
+                    destX = playerShip.x + Math.cos(oAng) * 80;
+                    destY = playerShip.y + Math.sin(oAng) * 80;
+                }
+                c.x += (destX - c.x) * 0.12; c.y += (destY - c.y) * 0.12;
+
+                // Never leave the visible gameplay area.
+                c.x = Math.min(viewMaxX, Math.max(viewMinX, c.x));
+                c.y = Math.min(viewMaxY, Math.max(viewMinY, c.y));
+
+                // Draw the acid sister (green-tinted girl clone with a glow).
+                ctx.save(); ctx.translate(c.x, c.y); ctx.globalAlpha = 0.9;
+                ctx.shadowColor = '#7cfc00'; ctx.shadowBlur = 14;
+                const frame = girlFrames[playerShip.currentFrameIndex];
+                if (frame && frame.complete && frame.naturalWidth !== 0) { ctx.drawImage(frame, -16, -27, 32, 54); }
+                else { ctx.fillStyle = '#7cfc00'; ctx.fillRect(-13, -22, 26, 44); }
+                ctx.shadowBlur = 0;
+                ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fillStyle = 'rgba(124,252,0,0.25)'; ctx.fill();
+                ctx.globalAlpha = 1; ctx.restore();
+
+                // Throw green acid projectiles at short intervals when a target is in range.
+                let throwInterval = Math.max(220, 620 - (playerStats.acidFireRateLevel * 16)) / (isAcidOd ? 1.8 : 1);
+                if (target && timeNow - c.lastThrow > throwInterval) {
+                    c.lastThrow = timeNow;
+                    let ang = Math.atan2(target.y - c.y, target.x - c.x);
+                    acidProjectiles.push({ x: c.x, y: c.y, vx: Math.cos(ang) * 8, vy: Math.sin(ang) * 8, target, life: 90, spin: 0, odBoost: isAcidOd });
+                    for (let k = 0; k < 4; k++) createParticle(c.x, c.y, '#7cfc00', Math.cos(ang) * 2 + (Math.random() - 0.5), Math.sin(ang) * 2 + (Math.random() - 0.5), 0.1, 2 + Math.random() * 2);
+                    playSound('acid_throw');
+                }
+            });
+        } else if (acidClones.length > 0) {
+            acidClones = [];
+        }
+
+        // Acid projectiles: travel, light homing, pulse, splash on impact.
+        for (let i = acidProjectiles.length - 1; i >= 0; i--) {
+            let ap = acidProjectiles[i]; ap.life--; ap.spin += 0.3;
+            if (ap.target && ap.target.health > 0 && asteroidsList.includes(ap.target)) {
+                let ang = Math.atan2(ap.target.y - ap.y, ap.target.x - ap.x);
+                ap.vx += Math.cos(ang) * 0.5; ap.vy += Math.sin(ang) * 0.5;
+                let sp = Math.hypot(ap.vx, ap.vy); if (sp > 10) { ap.vx = (ap.vx / sp) * 10; ap.vy = (ap.vy / sp) * 10; }
+            }
+            ap.x += ap.vx; ap.y += ap.vy;
+            createParticle(ap.x, ap.y, '#5fbf00', -ap.vx * 0.2, -ap.vy * 0.2, 0.12, 4);
+            let blobPulse = 6 + Math.sin(ap.spin) * 1.5;
+            ctx.save(); ctx.translate(ap.x, ap.y);
+            ctx.beginPath(); ctx.arc(0, 0, blobPulse, 0, Math.PI * 2); ctx.fillStyle = '#7cfc00'; ctx.shadowColor = '#7cfc00'; ctx.shadowBlur = 12; ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 0, blobPulse * 0.5, 0, Math.PI * 2); ctx.fillStyle = '#d6ff9e'; ctx.shadowBlur = 0; ctx.fill();
+            ctx.restore();
+
+            let hit = false;
+            for (let j = 0; j < asteroidsList.length; j++) {
+                let ast = asteroidsList[j];
+                if (Math.hypot(ast.x - ap.x, ast.y - ap.y) < ast.radius + blobPulse) {
+                    let splashR = 80;
+                    asteroidsList.forEach(other => {
+                    if (Math.hypot(other.x - ap.x, other.y - ap.y) < splashR + other.radius) {
+                    let dmg = playerStats.damage * 0.5 * playerStats.acidDamage * (ap.odBoost ? 1.8 : 1);
+                    other.health -= dmg;
+                    applyHitImpact(other, ap.x, ap.y, 2.5, 7); spawnHitSparks(other.x, other.y, '#7cfc00', 4);
+                    addFloatingText(`-${Math.round(dmg)}`, other.x, other.y - 15, '#7cfc00', "12px");
+                    }
+                    });
+                    acidSplats.push({ x: ap.x, y: ap.y, radius: splashR, life: 1.0 });
+                    for (let k = 0; k < 14; k++) createParticle(ap.x, ap.y, k % 2 === 0 ? '#7cfc00' : '#c8ff7a', (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14, 0.05, 2 + Math.random() * 4);
+                    shockwaves.push({ x: ap.x, y: ap.y, radius: 8, speed: 6, life: 1.0, color: '#7cfc00' });
+                    cameraShake = Math.max(cameraShake, 4);
+                    playSound('acid_splash');
+                    hit = true; break;
+                }
+            }
+            if (hit || ap.life <= 0) acidProjectiles.splice(i, 1);
+        }
+
+        // Lingering acid splat pools (visual damage feedback).
+        for (let i = acidSplats.length - 1; i >= 0; i--) {
+            let s = acidSplats[i]; s.life -= 0.03;
+            if (s.life <= 0) { acidSplats.splice(i, 1); continue; }
+            ctx.save(); ctx.globalAlpha = s.life * 0.5;
+            let g = ctx.createRadialGradient(s.x, s.y, 4, s.x, s.y, s.radius);
+            g.addColorStop(0, 'rgba(124,252,0,0.6)'); g.addColorStop(1, 'rgba(124,252,0,0)');
+            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+
+        // --- SEPARATE POWER: PULSE CORE (shockwave rings + NEW homing circular energy projectiles) ---
         if (playerStats.hasPulseCore) {
             let isPulseOd = overdrives.pulse.activeTimer > 0;
             let coreBob = Math.sin(timeNow / 260) * 6;
@@ -2002,10 +2312,10 @@
             ctx.save(); ctx.translate(coreX, coreY);
             let pulsePhase = 0.6 + Math.sin(timeNow / 150) * 0.4;
             let coreGlow = ctx.createRadialGradient(0, 0, 2, 0, 0, 22);
-            coreGlow.addColorStop(0, '#ffffff'); coreGlow.addColorStop(0.4, '#ff00aa'); coreGlow.addColorStop(1, 'rgba(255,0,170,0)');
+            coreGlow.addColorStop(0, '#ffff'); coreGlow.addColorStop(0.4, '#ff00aa'); coreGlow.addColorStop(1, 'rgba(255,0,170,0)');
             ctx.globalAlpha = 0.5 + pulsePhase * 0.4; ctx.fillStyle = coreGlow; ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI * 2); ctx.fill();
             ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(0, 0, 7 + pulsePhase * 2, 0, Math.PI * 2); ctx.fillStyle = '#ff00aa'; ctx.shadowColor = '#ff00aa'; ctx.shadowBlur = 15; ctx.fill();
-            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.shadowBlur = 0; ctx.stroke();
+            ctx.strokeStyle = '#ffff'; ctx.lineWidth = 1.5; ctx.shadowBlur = 0; ctx.stroke();
             ctx.restore();
 
             let pulseInterval = Math.max(350, 1700 - (upgradeLevels['pulse_4'] * 45)) / (isPulseOd ? 2.4 : 1);
@@ -2014,9 +2324,20 @@
                 let maxR = (110 + upgradeLevels['pulse_3'] * 2.5) * (isPulseOd ? 1.7 : 1);
                 pulseRings.push({ x: playerShip.x, y: playerShip.y, radius: 12, maxRadius: maxR, life: 1.0, hitSet: new Set() });
                 playSound('power_new_activate');
+
+                // NEW: fire homing circular energy projectiles at visible on-screen targets.
+                let viMinX = camera.x + 20, viMaxX = camera.x + (canvas.width / gameScale) - 20;
+                let viMinY = camera.y + 20, viMaxY = camera.y + (canvas.height / gameScale) - 20;
+                let onScreen = asteroidsList.filter(a => a.x >= viMinX && a.x <= viMaxX && a.y >= viMinY && a.y <= viMaxY);
+                if (onScreen.length > 0) {
+                    let shots = isPulseOd ? 3 : 1;
+                    for (let s = 0; s < shots; s++) {
+                    let t = onScreen[Math.floor(Math.random() * onScreen.length)];
+                    let ang = Math.atan2(t.y - coreY, t.x - coreX);
+                    coreProjectiles.push({ x: coreX, y: coreY, vx: Math.cos(ang) * 6, vy: Math.sin(ang) * 6, target: t, life: 140, spin: 0 });
+                    }
+                }
             }
-        } else if (pulseRings.length > 0 && !overdrives.pulse.activeTimer) {
-            // let any in-flight rings finish naturally rather than yanking them away
         }
 
         for (let i = pulseRings.length - 1; i >= 0; i--) {
@@ -2024,7 +2345,7 @@
             pr.radius += 6.5; pr.life -= 0.028;
             ctx.save(); ctx.globalAlpha = Math.max(0, pr.life); ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.radius, 0, Math.PI * 2);
             ctx.strokeStyle = '#ff00aa'; ctx.lineWidth = 4 * Math.max(0.2, pr.life); ctx.shadowColor = '#ff00aa'; ctx.shadowBlur = 22; ctx.stroke();
-            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.2; ctx.shadowBlur = 0; ctx.stroke();
+            ctx.strokeStyle = '#ffff'; ctx.lineWidth = 1.2; ctx.shadowBlur = 0; ctx.stroke();
             ctx.restore();
 
             asteroidsList.forEach(ast => {
@@ -2040,6 +2361,58 @@
             });
 
             if (pr.radius > pr.maxRadius || pr.life <= 0) pulseRings.splice(i, 1);
+        }
+
+        // NEW: Core Overlord homing circular energy projectiles.
+        for (let i = coreProjectiles.length - 1; i >= 0; i--) {
+            let cp = coreProjectiles[i]; cp.life--; cp.spin += 0.15;
+            let viMinX = camera.x, viMaxX = camera.x + (canvas.width / gameScale);
+            let viMinY = camera.y, viMaxY = camera.y + (canvas.height / gameScale);
+            // Drop target if it dies or leaves the visible screen; if none, expire gracefully.
+            let targetValid = cp.target && cp.target.health > 0 && asteroidsList.includes(cp.target) &&
+                cp.target.x >= viMinX && cp.target.x <= viMaxX && cp.target.y >= viMinY && cp.target.y <= viMaxY;
+            if (!targetValid) {
+                let best = null, md = 99999;
+                asteroidsList.forEach(a => {
+                    if (a.x < viMinX || a.x > viMaxX || a.y < viMinY || a.y > viMaxY) return;
+                    let d = Math.hypot(a.x - cp.x, a.y - cp.y); if (d < md) { md = d; best = a; }
+                });
+                cp.target = best;
+                if (!best) cp.life -= 4; // no valid target: fade out gracefully
+            }
+            if (cp.target) {
+                let ang = Math.atan2(cp.target.y - cp.y, cp.target.x - cp.x);
+                // Smooth, capped steering (no sudden flips).
+                let curAng = Math.atan2(cp.vy, cp.vx);
+                let diff = Math.atan2(Math.sin(ang - curAng), Math.cos(ang - curAng));
+                let newAng = curAng + Math.max(-0.12, Math.min(0.12, diff));
+                let sp = Math.min(9, Math.hypot(cp.vx, cp.vy) + 0.2);
+                cp.vx = Math.cos(newAng) * sp; cp.vy = Math.sin(newAng) * sp;
+            }
+            cp.x += cp.vx; cp.y += cp.vy;
+
+            let r = 9 + Math.sin(cp.spin) * 3; // pulsing size
+            ctx.save(); ctx.translate(cp.x, cp.y);
+            let g = ctx.createRadialGradient(0, 0, 1, 0, 0, r + 6);
+            g.addColorStop(0, '#ffffff'); g.addColorStop(0.4, '#ff00aa'); g.addColorStop(1, 'rgba(255,0,170,0)');
+            ctx.globalAlpha = Math.min(1, cp.life / 20); ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(0, 0, r + 6, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(0, 0, r * 0.55, 0, Math.PI * 2); ctx.fillStyle = '#ffd9f0'; ctx.fill();
+            ctx.restore();
+
+            let hit = false;
+            if (cp.target && Math.hypot(cp.target.x - cp.x, cp.target.y - cp.y) < cp.target.radius + r) {
+                let dmg = playerStats.damage * 0.8 * playerStats.pulseDamage;
+                cp.target.health -= dmg;
+                applyHitImpact(cp.target, cp.x, cp.y, 4, 8); spawnHitSparks(cp.x, cp.y, '#ff00aa', 7);
+                shockwaves.push({ x: cp.x, y: cp.y, radius: 6, speed: 6, life: 1.0, color: '#ff00aa' });
+                for (let k = 0; k < 10; k++) createParticle(cp.x, cp.y, k % 2 === 0 ? '#ff00aa' : '#ffffff', (Math.random() - 0.5) * 12, (Math.random() - 0.5) * 12, 0.06, 2 + Math.random() * 3);
+                addFloatingText(`-${Math.round(dmg)}`, cp.target.x, cp.target.y - 15, '#ff00aa', "12px");
+                cameraShake = Math.max(cameraShake, 5);
+                playSound('power_new_hit');
+                hit = true;
+            }
+            if (hit || cp.life <= 0) coreProjectiles.splice(i, 1);
         }
 
         for (let i = textParticles.length - 1; i >= 0; i--) { let tp = textParticles[i]; tp.y -= 0.6; tp.life--; ctx.globalAlpha = Math.min(1, tp.life / 20); ctx.fillStyle = tp.color; ctx.font = `bold ${tp.size} 'Orbitron'`; ctx.fillText(tp.text, tp.x, tp.y); ctx.globalAlpha = 1.0; if (tp.life <= 0) textParticles.splice(i, 1); }
