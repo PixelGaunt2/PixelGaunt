@@ -122,8 +122,36 @@
 
         /* --- OVERDRIVES SYSTEM HUD --- */
         #overdrives-container { position: absolute; top: calc(var(--ui-scale) * 180px); left: calc(var(--ui-scale) * 15px); z-index: 10; display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--ui-scale) * 8px); pointer-events: auto; max-height: calc(100vh - var(--ui-scale) * 200px); overflow-y: auto; overflow-x: hidden; }
-        .od-box { background: rgba(10, 10, 15, 0.9); border: 1px solid #555; padding: calc(var(--ui-scale) * 6px); border-radius: calc(var(--ui-scale) * 6px); width: calc(var(--ui-scale) * 130px); text-align: center; transition: opacity 0.3s, filter 0.3s; }
+        .od-box { background: rgba(10, 10, 15, 0.9); border: 1px solid #555; padding: calc(var(--ui-scale) * 6px); border-radius: calc(var(--ui-scale) * 6px); width: calc(var(--ui-scale) * 130px); text-align: center; transition: opacity 0.3s, filter 0.3s; position: relative; overflow: hidden; }
         .od-box.locked { opacity: 0.45; filter: grayscale(0.75); }
+        .od-icon { font-size: calc(var(--ui-scale) * 16px); line-height: 1; margin-bottom: calc(var(--ui-scale) * 2px); transition: transform 0.25s ease, filter 0.25s ease; }
+        .od-icon.icon-locked { filter: grayscale(100%) brightness(0.8); opacity: 0.6; }
+        /* --- Unlock animation: fired once, the moment a power-up's `unlocked` flag flips true.
+           A quick icon flip/pop (lock -> ability icon) plus a bright radial flash sweeping the
+           box, so the transition reads as a distinct "power-up granted" beat rather than the
+           icon just silently changing on the next HUD refresh. --- */
+        .od-box.just-unlocked { animation: odBoxUnlockPop 0.6s ease-out; }
+        .od-box.just-unlocked .od-icon { animation: odIconUnlockSpin 0.5s ease-out; }
+        .od-box.just-unlocked::after {
+            content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+            background: radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 70%);
+            animation: odBoxUnlockFlash 0.6s ease-out forwards;
+        }
+        @keyframes odBoxUnlockPop {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.12); }
+            60% { transform: scale(0.97); }
+            100% { transform: scale(1); }
+        }
+        @keyframes odIconUnlockSpin {
+            0% { transform: scale(0.3) rotate(-25deg); filter: brightness(2.5); }
+            60% { transform: scale(1.35) rotate(8deg); filter: brightness(1.6); }
+            100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+        }
+        @keyframes odBoxUnlockFlash {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
         .od-name { font-size: calc(var(--ui-scale) * 10px); font-weight: bold; margin-bottom: calc(var(--ui-scale) * 4px); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .od-bar { height: calc(var(--ui-scale) * 6px); margin-bottom: calc(var(--ui-scale) * 2px); }
         .od-fill { width: 0%; transition: width 0.3s; }
@@ -203,7 +231,7 @@
         <div id="sys-laser" class="sys-row" style="color: #ff3366; display: none;"><span class="sys-dot" style="background:#ff3366; color:#ff3366;"></span><span class="sys-name">Plasma L.</span><span class="sys-val" id="val-laser-sys">Ready</span></div>
         <div id="sys-fireball" class="sys-row" style="color: #00f3ff; display: none;"><span class="sys-dot" style="background:#00f3ff; color:#00f3ff;"></span><span class="sys-name">Fireballs</span><span class="sys-val" id="val-fireball-sys">Ready</span></div>
         <div id="sys-drone" class="sys-row" style="color: #00ffcc; display: none;"><span class="sys-dot" style="background:#00ffcc; color:#00ffcc;"></span><span class="sys-name">Attack Drone</span><span class="sys-val" id="val-drone-sys">Ready</span></div>
-        <div id="sys-clone" class="sys-row" style="color: #ff5500; display: none;"><span class="sys-dot" style="background:#ff5500; color:#ff5500;"></span><span class="sys-name">Fire Clones</span><span class="sys-val" id="val-clone-sys">Ready</span></div>
+        <div id="sys-clone" class="sys-row" style="color: #ff5500; display: none;"><span class="sys-dot" style="background:#ff5500; color:#ff5500;"></span><span class="sys-name">Girl Clones</span><span class="sys-val" id="val-clone-sys">Ready</span></div>
         <div id="sys-pulse" class="sys-row" style="color: #ff00aa; display: none;"><span class="sys-dot" style="background:#ff00aa; color:#ff00aa;"></span><span class="sys-name">Pulse Core</span><span class="sys-val" id="val-pulse-sys">Ready</span></div>
         <div id="sys-acid" class="sys-row" style="color: #7cfc00; display: none;"><span class="sys-dot" style="background:#7cfc00; color:#7cfc00;"></span><span class="sys-name">Acid Sisters</span><span class="sys-val" id="val-acid-sys">Ready</span></div>
         <div id="sys-shock" class="sys-row" style="color: #66e0ff; display: none;"><span class="sys-dot" style="background:#66e0ff; color:#66e0ff;"></span><span class="sys-name">Electric Shock</span><span class="sys-val" id="val-shock-sys">Ready</span></div>
@@ -216,56 +244,67 @@
 
     <div id="overdrives-container">
         <div class="od-box" id="od-box-suit">
+            <div class="od-icon" id="od-icon-suit">🔒</div>
             <div class="od-name" style="color:#d942ff;">Girl Power</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-suit" style="background:#d942ff;"></div></div>
             <button class="od-btn" id="od-btn-suit" onclick="activateOverdrive('suit')">0/25</button>
         </div>
         <div class="od-box" id="od-box-drill">
+            <div class="od-icon" id="od-icon-drill">🔒</div>
             <div class="od-name" style="color:#aaa;">Drill Storm</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-drill" style="background:#aaa;"></div></div>
             <button class="od-btn" id="od-btn-drill" onclick="activateOverdrive('drill')">0/25</button>
         </div>
         <div class="od-box" id="od-box-pickaxe">
+            <div class="od-icon" id="od-icon-pickaxe">🔒</div>
             <div class="od-name" style="color:#ff9900;">Axe Fury</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-pickaxe" style="background:#ff9900;"></div></div>
             <button class="od-btn" id="od-btn-pickaxe" onclick="activateOverdrive('pickaxe')">0/25</button>
         </div>
         <div class="od-box" id="od-box-rocket">
+            <div class="od-icon" id="od-icon-rocket">🔒</div>
             <div class="od-name" style="color:#39ff14;">Missile Rain</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-rocket" style="background:#39ff14;"></div></div>
             <button class="od-btn" id="od-btn-rocket" onclick="activateOverdrive('rocket')">0/25</button>
         </div>
         <div class="od-box" id="od-box-laser">
+            <div class="od-icon" id="od-icon-laser">🔒</div>
             <div class="od-name" style="color:#ff3366;">Laser Beam</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-laser" style="background:#ff3366;"></div></div>
             <button class="od-btn" id="od-btn-laser" onclick="activateOverdrive('laser')">0/25</button>
         </div>
         <div class="od-box" id="od-box-fireball">
+            <div class="od-icon" id="od-icon-fireball">🔒</div>
             <div class="od-name" style="color:#00f3ff;">Inferno</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-fireball" style="background:#00f3ff;"></div></div>
             <button class="od-btn" id="od-btn-fireball" onclick="activateOverdrive('fireball')">0/25</button>
         </div>
         <div class="od-box" id="od-box-drone">
+            <div class="od-icon" id="od-icon-drone">🔒</div>
             <div class="od-name" style="color:#00ffcc;">Drone Swarm</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-drone" style="background:#00ffcc;"></div></div>
             <button class="od-btn" id="od-btn-drone" onclick="activateOverdrive('drone')">0/25</button>
         </div>
         <div class="od-box" id="od-box-clone">
-            <div class="od-name" style="color:#ff5500;">Fire Clones</div>
+            <div class="od-icon" id="od-icon-clone">🔒</div>
+            <div class="od-name" style="color:#ff5500;">Girl Clones</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-clone" style="background:#ff5500;"></div></div>
             <button class="od-btn" id="od-btn-clone" onclick="activateOverdrive('clone')">0/25</button>
         </div>
         <div class="od-box" id="od-box-pulse">
+            <div class="od-icon" id="od-icon-pulse">🔒</div>
             <div class="od-name" style="color:#ff00aa;">Core Overload</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-pulse" style="background:#ff00aa;"></div></div>
             <button class="od-btn" id="od-btn-pulse" onclick="activateOverdrive('pulse')">0/25</button>
         </div>
         <div class="od-box" id="od-box-acid">
+            <div class="od-icon" id="od-icon-acid">🔒</div>
             <div class="od-name" style="color:#7cfc00;">Acid Sisters</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-acid" style="background:#7cfc00;"></div></div>
             <button class="od-btn" id="od-btn-acid" onclick="activateOverdrive('acid')">0/25</button>
         </div>
         <div class="od-box" id="od-box-shock">
+            <div class="od-icon" id="od-icon-shock">🔒</div>
             <div class="od-name" style="color:#66e0ff;">Electric Storm</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-shock" style="background:#66e0ff;"></div></div>
             <button class="od-btn" id="od-btn-shock" onclick="activateOverdrive('shock')">0/25</button>
@@ -329,24 +368,41 @@
     window.addEventListener('mousedown', initAudio, { once: true });
 
     const bgMusicElement = document.getElementById('bgMusic');
-    bgMusicElement.volume = 0.05;
+    // Task 7: background music sits at just 1% volume throughout the game - it should be a
+    // faint backdrop, never competing with sound effects (which stay at their normal, much
+    // louder levels - see playSound below).
+    bgMusicElement.volume = 0.01;
+
+    // --- MUSIC TOGGLE (Task 7 bugfix) ---
+    // Previously this inferred on/off purely from bgMusicElement.paused and matched the
+    // button's text string. Before the game was ever started, the element is paused (nothing
+    // has played yet) even though the button already read "ON" - so the very first click
+    // would silently start playback without changing the label at all, which read as the
+    // button "not working". musicEnabled is now the single source of truth: every click
+    // flips it and the label always updates to match exactly what was just chosen, regardless
+    // of the audio element's own (sometimes delayed/async) playback state.
+    let musicEnabled = true;
+
+    function updateMusicButtonLabel() {
+        let btn = document.getElementById('btn-music-toggle');
+        if (btn) btn.innerText = musicEnabled ? "🎵 MUSIC: ON" : "🎵 MUSIC: OFF";
+    }
 
     function startBgMusic() {
-        if (bgMusicElement.paused && document.getElementById('btn-music-toggle').innerText.includes("ON")) {
+        if (musicEnabled && bgMusicElement.paused) {
             bgMusicElement.play().catch(err => console.log("BGM Play prevented by browser auto-play policies.", err));
         }
     }
-    
+
     function toggleMusic() {
         playSound('click');
-        let btn = document.getElementById('btn-music-toggle');
-        if (bgMusicElement.paused) {
-            bgMusicElement.play();
-            btn.innerText = "🎵 MUSIC: ON";
+        musicEnabled = !musicEnabled;
+        if (musicEnabled) {
+            bgMusicElement.play().catch(err => console.log("BGM Play prevented by browser auto-play policies.", err));
         } else {
             bgMusicElement.pause();
-            btn.innerText = "🎵 MUSIC: OFF";
         }
+        updateMusicButtonLabel();
     }
 
     function startGame() {
@@ -446,7 +502,7 @@
 
         if (type === 'laser') {
             osc.type = 'sawtooth'; osc.frequency.setValueAtTime(440, now); osc.frequency.exponentialRampToValueAtTime(220, now + 0.1);
-            gainNode.gain.setValueAtTime(0.01, now); gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1); osc.start(now); osc.stop(now + 0.1);
+            gainNode.gain.setValueAtTime(0.05, now); gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1); osc.start(now); osc.stop(now + 0.1);
         } else if (type === 'collect') {
             osc.type = 'sine'; osc.frequency.setValueAtTime(1200, now); osc.frequency.exponentialRampToValueAtTime(1800, now + 0.1);
             gainNode.gain.setValueAtTime(0.05, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(now); osc.stop(now + 0.1);
@@ -460,7 +516,7 @@
             osc.type = 'square'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
             gainNode.gain.setValueAtTime(0.05, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(now); osc.stop(now + 0.1);
         } else if (type === 'thrust') {
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(60, now); gainNode.gain.setValueAtTime(0.02, now);
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(60, now); gainNode.gain.setValueAtTime(0.035, now);
             gainNode.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(now); osc.stop(now + 0.1);
         } else if (type === 'drill_deploy') {
             osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(150, now + 0.2);
@@ -523,6 +579,30 @@
         } else if (type === 'acid_splash') {
             osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(30, now + 0.2);
             gainNode.gain.setValueAtTime(0.06, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2); osc.start(now); osc.stop(now + 0.2);
+        } else if (type === 'rocket_launch') {
+            // Task 7: distinct weapon sound - a deep rising whoosh, instead of reusing 'laser'.
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(80, now); osc.frequency.exponentialRampToValueAtTime(260, now + 0.18);
+            gainNode.gain.setValueAtTime(0.07, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.22); osc.start(now); osc.stop(now + 0.22);
+        } else if (type === 'fireball_throw') {
+            // Task 7: distinct weapon sound - a warm crackling whoosh, instead of reusing 'laser'.
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(500, now); osc.frequency.exponentialRampToValueAtTime(180, now + 0.12);
+            gainNode.gain.setValueAtTime(0.06, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.14); osc.start(now); osc.stop(now + 0.14);
+        } else if (type === 'portal_open') {
+            // Task 7: previously missing - the grappling rope's dramatic portal-opening beat
+            // now has its own rising/swirling cue, separate from the 'collect' pickup chime.
+            osc.type = 'sine'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(1400, now + 0.35);
+            gainNode.gain.setValueAtTime(0.06, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4); osc.start(now); osc.stop(now + 0.4);
+            let osc2 = audioCtx.createOscillator(); let g2 = audioCtx.createGain(); osc2.connect(g2); g2.connect(audioCtx.destination);
+            osc2.type = 'sine'; osc2.frequency.setValueAtTime(600, now); osc2.frequency.exponentialRampToValueAtTime(1800, now + 0.35);
+            g2.gain.setValueAtTime(0.03, now); g2.gain.exponentialRampToValueAtTime(0.005, now + 0.4); osc2.start(now); osc2.stop(now + 0.4);
+        } else if (type === 'clone_explode') {
+            // Distinct punchy detonation for the Girl Clone bombers - separate from 'explode'
+            // (asteroid destruction) and 'fire_hit' (the old fire-breath clone attack).
+            osc.type = 'square'; osc.frequency.setValueAtTime(220, now); osc.frequency.exponentialRampToValueAtTime(35, now + 0.22);
+            gainNode.gain.setValueAtTime(0.12, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.25); osc.start(now); osc.stop(now + 0.25);
+            let osc2 = audioCtx.createOscillator(); let g2 = audioCtx.createGain(); osc2.connect(g2); g2.connect(audioCtx.destination);
+            osc2.type = 'sawtooth'; osc2.frequency.setValueAtTime(900, now); osc2.frequency.exponentialRampToValueAtTime(60, now + 0.12);
+            g2.gain.setValueAtTime(0.06, now); g2.gain.exponentialRampToValueAtTime(0.005, now + 0.14); osc2.start(now); osc2.stop(now + 0.14);
         }
     }
 
@@ -600,7 +680,7 @@
         defense: 1, magnetRadius: 20,
         hasGirlPower: false, hasLaser: false, hasFireball: false, hasPickaxe: false, hasRocket: false,
         hasDrone: false, droneDamage: 1, droneFireRateLevel: 0, droneSupportCount: 0,
-        hasClone: false, cloneDamage: 1, cloneFireRateLevel: 0,
+        hasClone: false, cloneDamage: 1, cloneFireRateLevel: 0, cloneCount: 0, cloneRange: 0, cloneBlastRadius: 0, cloneEncoreChance: 0,
         hasAcidSisters: false, acidDamage: 1, acidFireRateLevel: 0,
         // --- ELECTRIC SHOCK: now its own independent ability (Task 3), fully separate from
         // the Girl Power suit - has its own unlock flag and upgrade stats. ---
@@ -619,11 +699,20 @@
         laser:    { name: 'Laser Beam', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#ff3366' },
         fireball: { name: 'Inferno', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#00f3ff' },
         drone:    { name: 'Drone Swarm', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#00ffcc' },
-        clone:    { name: 'Fire Clones', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#ff5500' },
+        clone:    { name: 'Girl Clones', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#ff5500' },
         pulse:    { name: 'Core Overload', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#ff00aa' },
         acid:     { name: 'Acid Sisters', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#7cfc00' },
         shock:    { name: 'Electric Storm', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#66e0ff' }
     };
+
+    // --- POWER-UP UI ICONS: one emoji per overdrive-capable ability, shown in its od-box.
+    // Locked boxes always show the padlock; the moment `unlocked` flips true the box swaps to
+    // this icon and plays a one-shot pop/flash animation (see odPrevUnlocked tracking below).
+    // NOTE: 'drill' previously reused the mining-PICK glyph (⛏️), which reads as a pickaxe/axe
+    // rather than a drill and was easy to confuse with the Axe ability's icon - fixed to a
+    // proper tool glyph (🛠️) below so the two are visually distinct. ---
+    const odIconMap = { suit: '🛡️', drill: '🛠️', pickaxe: '🪓', rocket: '🚀', laser: '⚡', fireball: '🔥', drone: '🤖', clone: '👥', pulse: '💥', acid: '🧪', shock: '🌩️' };
+    let odPrevUnlocked = {};
 
     // --- GIRL POWER SUIT: COLOR TIER SYSTEM (Task 1) ---
     // The suit's visual color evolves as the player invests in Girl-Power-related suit
@@ -707,6 +796,34 @@
     let homingParticles = []; let shockwaves = [];   
     let camera = { x: 0, y: 0 }; let cameraShake = 0; let lastDrillDeploy = 0;
 
+    // --- SLOW MOTION POWER (fixed/rewritten) ---
+    // Previously this worked by inserting real-world delays between animation frames
+    // (throttling the whole render loop). That approach barely read as "slow motion" (just a
+    // few choppy frames) and also risked dragging down UI/input responsiveness since input
+    // sampling and player movement live in the same loop that was being throttled.
+    //
+    // Now the game keeps rendering at full, smooth framerate at all times - nothing about the
+    // loop's cadence changes, so the UI (HUD, buttons, menus) is never affected. Instead, a
+    // single slowMoFactor (0-1) is computed each frame from a real wall-clock end time and is
+    // multiplied directly into the per-frame movement of world objects - asteroids,
+    // projectiles, drones/clones, and the player - so everything visibly moves in slow motion
+    // together, then eases back up to full speed over the last moments instead of snapping.
+    let slowMoEndTime = 0;
+    let slowMoFactor = 1; // 1 = normal speed, <1 while slow motion is active (updated every frame)
+    const SLOW_MO_STRENGTH = 0.28;   // world moves at ~28% speed while fully active
+    const SLOW_MO_EASE_MS = 220;     // ease back to full speed over this final window
+    function triggerSlowMo(durationMs) {
+        const now = Date.now();
+        // Extend/refresh rather than stack - guarantees at least durationMs of effect from now.
+        slowMoEndTime = Math.max(slowMoEndTime, now + durationMs);
+    }
+    function getSlowMoFactor(now) {
+        if (now >= slowMoEndTime) return 1;
+        let remaining = slowMoEndTime - now;
+        if (remaining < SLOW_MO_EASE_MS) return SLOW_MO_STRENGTH + (1 - SLOW_MO_STRENGTH) * (1 - remaining / SLOW_MO_EASE_MS);
+        return SLOW_MO_STRENGTH;
+    }
+
     // --- WEAPON DETECTION RANGE (drills + axes) ---
     // Drills and axes are only allowed to detect, target, and attack an asteroid once it is
     // within this many pixels of the girl. Outside this range they simply stay hidden/inactive
@@ -781,8 +898,14 @@
     let mainDrone = null; let miniDrones = []; let droneProjectiles = []; let lastDroneScan = 0;
     const DRONE_PATROL_MIN = 500, DRONE_PATROL_MAX = 600;
 
-    // --- UNLOCKABLE FIRE CLONE ABILITY ---
+    // --- UNLOCKABLE GIRL CLONE ABILITY (kamikaze bombers) ---
+    // Completely separate system from Acid Sisters below - own array, own state, own
+    // spawn/respawn pacing, own visuals/sounds/upgrades. A clone seeks out the nearest
+    // asteroid, and detonates the instant she touches it (or is destroyed on detonation -
+    // no ranged attack of any kind, unlike the old fire-breathing version of this ability).
     let fireClones = [];
+    let cloneBlasts = []; // persistent scorch-mark/shockwave visuals left behind by detonations
+    let cloneNextSpawnAt = 0; // throttles how fast a fresh clone replaces one that just exploded
 
     // --- UNLOCKABLE ACID SISTERS ABILITY ---
     let acidClones = [];
@@ -1032,7 +1155,7 @@
                 }
             }
 
-            this.velocityX *= this.friction; this.velocityY *= this.friction; this.x += this.velocityX; this.y += this.velocityY;
+            this.velocityX *= this.friction; this.velocityY *= this.friction; this.x += this.velocityX * slowMoFactor; this.y += this.velocityY * slowMoFactor;
             this.distanceMoved = Math.hypot(this.x - this.lastX, this.y - this.lastY); this.lastX = this.x; this.lastY = this.y;
             this.frameTimer++; if (this.frameTimer >= (this.isThrusting ? 10 : (Math.hypot(this.velocityX, this.velocityY) > 0.5 ? 16 : 28))) { this.currentFrameIndex = (this.currentFrameIndex + 1) % girlFrames.length; this.frameTimer = 0; }
         },
@@ -1118,6 +1241,20 @@
             createParticle(x, y, sparkColor, (Math.random() - 0.5) * 11, (Math.random() - 0.5) * 11, 0.14, 2 + Math.random() * 2.5);
         }
     }
+
+    // --- DESTRUCTION EFFECTS (Task 6) ---
+    // Shared "high quality" destruction burst used whenever the girl fully destroys an
+    // object: a bright white core flash ring + a colored shockwave ring, a wide spread of
+    // colored debris particles, a tight cluster of bright sparks, and a brief slow-motion
+    // beat so every kill reads as satisfying and impactful.
+    function spawnDestructionBurst(x, y, radius, color) {
+        shockwaves.push({ x, y, radius: Math.max(10, radius * 0.4), speed: 10, life: 1.0, color: '#ffffff' });
+        shockwaves.push({ x, y, radius: Math.max(10, radius * 0.6), speed: 6.5, life: 1.0, color: color });
+        for (let k = 0; k < 26; k++) createParticle(x, y, color, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, 0.032, Math.random() * 4 + 2);
+        for (let k = 0; k < 8; k++) createParticle(x, y, '#ffffff', (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8, 0.05, Math.random() * 2 + 1);
+        spawnHitSparks(x, y, color, 12);
+        triggerSlowMo(350); // ms - was a near-imperceptible few frames before; now a genuine beat
+    }
     let lastPlayerHurtSound = 0;
 
     function produceAsteroidNode() {
@@ -1146,98 +1283,105 @@
 
     let upgradeLevels = {};
 
+    // --- UPGRADE ECONOMY (Money-only): every cost below is a single { money: N } value spent
+    // straight out of playerStats.score ($). Minerals no longer factor into any cost anywhere
+    // in this tree - see canAfford()/purchaseUpgrade() above. ---
     const upgradeTrees = {
         drill: [
             { id: "drill_base", name: "Base Drill", desc: "Standard mining equipment", cost: {}, effect: null, value: 0, maxLevel: 1, baseUnlock: true },
-            { id: "drill_tungsten", name: "Tungsten Drill", desc: "+ Drill damage", cost: { iron: 40 }, effect: "damage", value: 0.1, maxLevel: 1000 },
-            { id: "drill_diamond", name: "Diamond Drill", desc: "+ Higher asteroid damage", cost: { iron: 80, bronze: 20 }, effect: "damage", value: 0.25, maxLevel: 1000 },
-            { id: "drill_plasma", name: "Plasma Drill", desc: "Adds energy damage", cost: { gold: 100, uranium: 10 }, effect: "damage", value: 0.5, maxLevel: 1000 },
-            { id: "drill_void", name: "Void Drill", desc: "Massively increases mining power", cost: { gold: 200, uranium: 50 }, effect: "damage", value: 1.0, maxLevel: 1000 },
-            { id: "drill_od_dur", name: "Drill Storm Core", desc: "+1s Drill Storm overdrive duration", cost: { iron: 60, bronze: 15 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "drill_tungsten", name: "Tungsten Drill", desc: "+ Drill damage", cost: { money: 320 }, effect: "damage", value: 0.1, maxLevel: 1000 },
+            { id: "drill_diamond", name: "Diamond Drill", desc: "+ Higher asteroid damage", cost: { money: 840 }, effect: "damage", value: 0.25, maxLevel: 1000 },
+            { id: "drill_plasma", name: "Plasma Drill", desc: "Adds energy damage", cost: { money: 2100 }, effect: "damage", value: 0.5, maxLevel: 1000 },
+            { id: "drill_void", name: "Void Drill", desc: "Massively increases mining power", cost: { money: 6000 }, effect: "damage", value: 1.0, maxLevel: 1000 },
+            { id: "drill_od_dur", name: "Drill Storm Core", desc: "+1s Drill Storm overdrive duration", cost: { money: 630 }, effect: null, value: 0, maxLevel: 1000 }
         ],
         weapon: { 
             laser: [
-                { id: "wpn_laser1", name: "Plasma Laser Cannon", desc: "Unlock Laser Weapon", cost: { gold: 50, uranium: 10 }, effect: "hasLaser", value: true, maxLevel: 1 },
-                { id: "wpn_laser2", name: "Laser Level 2", desc: "+ Laser damage & fire rate", cost: { gold: 80 }, effect: "damage", value: 0.2, maxLevel: 1000 },
-                { id: "wpn_laser3", name: "Laser Level 3", desc: "+ Bigger laser beam", cost: { gold: 120, uranium: 20 }, effect: "damage", value: 0.3, maxLevel: 1000 },
-                { id: "wpn_laser4", name: "Quantum Laser", desc: "Extreme Laser Power", cost: { gold: 200, uranium: 50 }, effect: "damage", value: 0.5, maxLevel: 1000 },
-                { id: "laser_od_dur", name: "Laser Overdrive Core", desc: "+1s Laser Beam overdrive duration", cost: { gold: 90, uranium: 10 }, effect: null, value: 0, maxLevel: 1000 }
+                { id: "wpn_laser1", name: "Plasma Laser Cannon", desc: "Unlock Laser Weapon", cost: { money: 1350 }, effect: "hasLaser", value: true, maxLevel: 1 },
+                { id: "wpn_laser2", name: "Laser Level 2", desc: "+ Laser damage & fire rate", cost: { money: 1200 }, effect: "damage", value: 0.2, maxLevel: 1000 },
+                { id: "wpn_laser3", name: "Laser Level 3", desc: "+ Bigger laser beam", cost: { money: 3000 }, effect: "damage", value: 0.3, maxLevel: 1000 },
+                { id: "wpn_laser4", name: "Quantum Laser", desc: "Extreme Laser Power", cost: { money: 6000 }, effect: "damage", value: 0.5, maxLevel: 1000 },
+                { id: "laser_od_dur", name: "Laser Overdrive Core", desc: "+1s Laser Beam overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000 }
             ],
             fireball: [
-                { id: "wpn_fb1", name: "Massive Fireballs", desc: "Unlock Fireballs", cost: { gold: 40, uranium: 5 }, effect: "hasFireball", value: true, maxLevel: 1 },
-                { id: "wpn_fb2", name: "Fireball Level 2", desc: "More damage", cost: { gold: 80 }, effect: "damage", value: 0.2, maxLevel: 1000 },
-                { id: "wpn_fb3", name: "Solar Flame", desc: "Bigger explosion radius", cost: { gold: 120, uranium: 20 }, effect: "damage", value: 0.3, maxLevel: 1000 },
-                { id: "wpn_fb4", name: "Supernova Fireball", desc: "Huge destruction", cost: { gold: 200, uranium: 50 }, effect: "damage", value: 0.5, maxLevel: 1000 },
-                { id: "fireball_od_dur", name: "Inferno Overdrive Core", desc: "+1s Inferno overdrive duration", cost: { gold: 90, uranium: 10 }, effect: null, value: 0, maxLevel: 1000 }
+                { id: "wpn_fb1", name: "Massive Fireballs", desc: "Unlock Fireballs", cost: { money: 900 }, effect: "hasFireball", value: true, maxLevel: 1 },
+                { id: "wpn_fb2", name: "Fireball Level 2", desc: "More damage", cost: { money: 1200 }, effect: "damage", value: 0.2, maxLevel: 1000 },
+                { id: "wpn_fb3", name: "Solar Flame", desc: "Bigger explosion radius", cost: { money: 3000 }, effect: "damage", value: 0.3, maxLevel: 1000 },
+                { id: "wpn_fb4", name: "Supernova Fireball", desc: "Huge destruction", cost: { money: 6000 }, effect: "damage", value: 0.5, maxLevel: 1000 },
+                { id: "fireball_od_dur", name: "Inferno Overdrive Core", desc: "+1s Inferno overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000 }
             ]
         },
         rocket: [
-            { id: "rkt_1", name: "Mining Rocket", desc: "Unlock Rocket Launcher", cost: { gold: 40, uranium: 10 }, effect: "hasRocket", value: true, maxLevel: 1 },
-            { id: "rkt_2", name: "Rocket Engine II", desc: "Faster reloading", cost: { gold: 80 }, effect: null, value: 0, maxLevel: 1000 },
-            { id: "rkt_3", name: "Multi Rocket", desc: "Launch multiple rockets", cost: { gold: 150, uranium: 20 }, effect: null, value: 0, maxLevel: 1000 },
-            { id: "rkt_4", name: "Nuclear Mining Rocket", desc: "Large explosion damage", cost: { gold: 250, uranium: 50 }, effect: "damage", value: 0.5, maxLevel: 1000 },
-            { id: "rocket_od_dur", name: "Missile Overdrive Core", desc: "+1s Missile Rain overdrive duration", cost: { gold: 90, uranium: 10 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "rkt_1", name: "Mining Rocket", desc: "Unlock Rocket Launcher", cost: { money: 1200 }, effect: "hasRocket", value: true, maxLevel: 1 },
+            { id: "rkt_2", name: "Rocket Engine II", desc: "Faster reloading", cost: { money: 1200 }, effect: null, value: 0, maxLevel: 1000 },
+            { id: "rkt_3", name: "Multi Rocket", desc: "Launch multiple rockets", cost: { money: 3450 }, effect: null, value: 0, maxLevel: 1000 },
+            { id: "rkt_4", name: "Nuclear Mining Rocket", desc: "Large explosion damage", cost: { money: 6750 }, effect: "damage", value: 0.5, maxLevel: 1000 },
+            { id: "rocket_od_dur", name: "Missile Overdrive Core", desc: "+1s Missile Rain overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000 }
         ],
         energy: [
-            { id: "en_1", name: "Solar Pack", desc: "Energy regeneration increase", cost: { gold: 15 }, effect: "energyRegen", value: 0.005, maxLevel: 1000 },
-            { id: "en_2", name: "Energy Tank", desc: "Increase maximum energy", cost: { gold: 50, bronze: 10 }, effect: "maxEnergy", value: 2, maxLevel: 1000 },
-            { id: "en_3", name: "Advanced Reactor", desc: "Energy drains slower", cost: { gold: 100 }, effect: "energyDrain", value: -0.001, maxLevel: 1000 },
-            { id: "en_4", name: "Fusion Core", desc: "Massive power increase", cost: { gold: 200, uranium: 30 }, effect: "energyRegen", value: 0.01, maxLevel: 1000 }
+            { id: "en_1", name: "Solar Pack", desc: "Energy regeneration increase", cost: { money: 225 }, effect: "energyRegen", value: 0.005, maxLevel: 1000 },
+            { id: "en_2", name: "Energy Tank", desc: "Increase maximum energy", cost: { money: 850 }, effect: "maxEnergy", value: 2, maxLevel: 1000 },
+            { id: "en_3", name: "Advanced Reactor", desc: "Energy drains slower", cost: { money: 1500 }, effect: "energyDrain", value: -0.001, maxLevel: 1000 },
+            { id: "en_4", name: "Fusion Core", desc: "Massive power increase", cost: { money: 4800 }, effect: "energyRegen", value: 0.01, maxLevel: 1000 }
         ],
         movement: [
-            { id: "mov_1", name: "Thruster Boost", desc: "Increase movement speed", cost: { bronze: 25 }, effect: "speed", value: 0.005, maxLevel: 1000 },
-            { id: "mov_2", name: "Jet Engine Backpack", desc: "Higher flying acceleration", cost: { bronze: 60, gold: 20 }, effect: "speed", value: 0.005, maxLevel: 1000 },
-            { id: "mov_3", name: "Extended Grapple Wire", desc: "Increase auto-collect distance", cost: { gold: 80 }, effect: "magnetRadius", value: 0.5, maxLevel: 1000 },
-            { id: "mov_4", name: "Quantum Mobility", desc: "Extreme movement speed", cost: { gold: 200, uranium: 1 }, effect: "speed", value: 0.01, maxLevel: 1000 }
+            { id: "mov_1", name: "Thruster Boost", desc: "Increase movement speed", cost: { money: 250 }, effect: "speed", value: 0.005, maxLevel: 1000 },
+            { id: "mov_2", name: "Jet Engine Backpack", desc: "Higher flying acceleration", cost: { money: 900 }, effect: "speed", value: 0.005, maxLevel: 1000 },
+            { id: "mov_3", name: "Extended Grapple Wire", desc: "Increase auto-collect distance", cost: { money: 1200 }, effect: "magnetRadius", value: 0.5, maxLevel: 1000 },
+            { id: "mov_4", name: "Quantum Mobility", desc: "Extreme movement speed", cost: { money: 3060 }, effect: "speed", value: 0.01, maxLevel: 1000 }
         ],
         suit: [
-            { id: "suit_0", name: "Nano-Suit Activation", desc: "Unlock the Girl Power suit ability", cost: { bronze: 40, iron: 25 }, effect: "hasGirlPower", value: true, maxLevel: 1 },
-            { id: "suit_1", name: "Armor Upgrade", desc: "Reduce space damage", cost: { iron: 50 }, effect: "defense", value: 0.1, maxLevel: 1000 },
-            { id: "suit_2", name: "Magnetic Suit", desc: "Collect minerals from farther distance", cost: { bronze: 100 }, effect: "magnetRadius", value: 1.0, maxLevel: 1000 },
-            { id: "suit_3", name: "Pickaxe Deploy", desc: "Unlock Impact Pickaxe", cost: { bronze: 30, iron: 30 }, effect: "hasPickaxe", value: true, maxLevel: 1 },
-            { id: "suit_4", name: "Cosmic Suit", desc: "Maximum protection", cost: { gold: 250, uranium: 50 }, effect: "defense", value: 0.2, maxLevel: 1000 },
-            { id: "suit_od_dur", name: "Girl Power Core", desc: "+1s Girl Power overdrive duration, deepens suit color tier", cost: { bronze: 60, gold: 20 }, effect: null, value: 0, maxLevel: 1000 },
-            { id: "pickaxe_od_dur", name: "Axe Fury Core", desc: "+1s Axe Fury overdrive duration", cost: { bronze: 80, iron: 40 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "suit_0", name: "Nano-Suit Activation", desc: "Unlock the Girl Power suit ability", cost: { money: 600 }, effect: "hasGirlPower", value: true, maxLevel: 1 },
+            { id: "suit_1", name: "Armor Upgrade", desc: "Reduce space damage", cost: { money: 400 }, effect: "defense", value: 0.1, maxLevel: 1000 },
+            { id: "suit_2", name: "Magnetic Suit", desc: "Collect minerals from farther distance", cost: { money: 1000 }, effect: "magnetRadius", value: 1.0, maxLevel: 1000 },
+            { id: "suit_3", name: "Pickaxe Deploy", desc: "Unlock Impact Pickaxe", cost: { money: 540 }, effect: "hasPickaxe", value: true, maxLevel: 1 },
+            { id: "suit_4", name: "Cosmic Suit", desc: "Maximum protection", cost: { money: 6750 }, effect: "defense", value: 0.2, maxLevel: 1000 },
+            { id: "suit_od_dur", name: "Girl Power Core", desc: "+1s Girl Power overdrive duration, deepens suit color tier", cost: { money: 900 }, effect: null, value: 0, maxLevel: 1000 },
+            { id: "pickaxe_od_dur", name: "Axe Fury Core", desc: "+1s Axe Fury overdrive duration", cost: { money: 1120 }, effect: null, value: 0, maxLevel: 1000 }
         ],
         drone: [
-            { id: "drone_1", name: "Recon Drone", desc: "Unlock a small companion attack drone", cost: { gold: 60, uranium: 15 }, effect: "hasDrone", value: true, maxLevel: 1 },
-            { id: "drone_2", name: "Twin Cannons", desc: "+ Drone projectile damage", cost: { gold: 90 }, effect: "droneDamage", value: 0.2, maxLevel: 1000 },
-            { id: "drone_3", name: "Rapid Targeting", desc: "+ Drone fire rate", cost: { gold: 130, uranium: 10 }, effect: "droneFireRateLevel", value: 1, maxLevel: 20 },
-            { id: "drone_4", name: "Support Bay", desc: "+1 max attack drone in the air at once (always active, more during Drone Swarm overdrive)", cost: { gold: 180, uranium: 25 }, effect: "droneSupportCount", value: 1, maxLevel: 4 },
-            { id: "drone_od_dur", name: "Drone Overdrive Core", desc: "+1s Drone Swarm overdrive duration", cost: { gold: 90, uranium: 10 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "drone_1", name: "Recon Drone", desc: "Unlock a small companion attack drone", cost: { money: 1800 }, effect: "hasDrone", value: true, maxLevel: 1 },
+            { id: "drone_2", name: "Twin Cannons", desc: "+ Drone projectile damage", cost: { money: 1350 }, effect: "droneDamage", value: 0.2, maxLevel: 1000 },
+            { id: "drone_3", name: "Rapid Targeting", desc: "+ Drone fire rate", cost: { money: 2550 }, effect: "droneFireRateLevel", value: 1, maxLevel: 20 },
+            { id: "drone_4", name: "Support Bay", desc: "+1 max attack drone in the air at once (always active, more during Drone Swarm overdrive)", cost: { money: 4200 }, effect: "droneSupportCount", value: 1, maxLevel: 4 },
+            { id: "drone_od_dur", name: "Drone Overdrive Core", desc: "+1s Drone Swarm overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000 }
         ],
         clone: [
-            { id: "clone_1", name: "Mirror Matrix", desc: "Unlock the Fire Clones ability", cost: { gold: 70, uranium: 20 }, effect: "hasClone", value: true, maxLevel: 1 },
-            { id: "clone_2", name: "Ember Infusion", desc: "+ Clone fire damage", cost: { gold: 100 }, effect: "cloneDamage", value: 0.2, maxLevel: 1000 },
-            { id: "clone_3", name: "Rapid Ignition", desc: "+ Clone attack speed", cost: { gold: 140, uranium: 15 }, effect: "cloneFireRateLevel", value: 1, maxLevel: 20 },
-            { id: "clone_od_dur", name: "Clone Overdrive Core", desc: "+1s Fire Clones overdrive duration", cost: { gold: 90, uranium: 10 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "clone_1", name: "Mirror Matrix", desc: "Unlock the Girl Clones ability - kamikaze clones that detonate on contact", cost: { money: 2250 }, effect: "hasClone", value: true, maxLevel: 1 },
+            { id: "clone_2", name: "Ember Infusion", desc: "+ Clone explosion damage", cost: { money: 1500 }, effect: "cloneDamage", value: 0.2, maxLevel: 1000 },
+            { id: "clone_3", name: "Rapid Ignition", desc: "+ Faster clone respawn after detonating", cost: { money: 3000 }, effect: "cloneFireRateLevel", value: 1, maxLevel: 20 },
+            { id: "clone_4", name: "Sisterhood", desc: "+1 Girl Clone (always active, all 5 during Overdrive)", cost: { money: 5100 }, effect: "cloneCount", value: 1, maxLevel: 4 },
+            { id: "clone_5", name: "Extended Reach", desc: "+ Clone target-seeking range", cost: { money: 2520 }, effect: "cloneRange", value: 10, maxLevel: 15 },
+            { id: "clone_6", name: "Volatile Payload", desc: "+ Explosion blast radius", cost: { money: 3030 }, effect: "cloneBlastRadius", value: 4, maxLevel: 25 },
+            { id: "clone_7", name: "Encore Charges", desc: "+ Chance for a bonus Encore Blast dealing extra damage on detonation", cost: { money: 3200 }, effect: "cloneEncoreChance", value: 0.04, maxLevel: 15 },
+            { id: "clone_od_dur", name: "Clone Overdrive Core", desc: "+1s Girl Clones overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000 }
         ],
         // --- NEW SEPARATE POWER: PULSE CORE - its own unlock, progression and overdrive.
         // Completely independent from the Girl Suit tree / Girl Power (Electric Shock), which
         // is left exactly as it was. ---
         pulse: [
-            { id: "pulse_1", name: "Pulse Core", desc: "Unlock the Pulse Core - emits damaging energy shockwaves", cost: { gold: 65, uranium: 18 }, effect: "hasPulseCore", value: true, maxLevel: 1 },
-            { id: "pulse_2", name: "Overcharged Core", desc: "+ Pulse damage", cost: { gold: 95 }, effect: "pulseDamage", value: 0.2, maxLevel: 1000 },
-            { id: "pulse_3", name: "Amplified Emitter", desc: "+ Pulse shockwave radius", cost: { gold: 130, uranium: 15 }, effect: null, value: 0, maxLevel: 1000 },
-            { id: "pulse_4", name: "Rapid Discharge", desc: "+ Pulse frequency (fires more often)", cost: { gold: 160, uranium: 20 }, effect: null, value: 0, maxLevel: 30 },
-            { id: "pulse_od_dur", name: "Core Overload Matrix", desc: "+1s Core Overload overdrive duration", cost: { gold: 90, uranium: 12 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "pulse_1", name: "Pulse Core", desc: "Unlock the Pulse Core - emits damaging energy shockwaves", cost: { money: 2055 }, effect: "hasPulseCore", value: true, maxLevel: 1 },
+            { id: "pulse_2", name: "Overcharged Core", desc: "+ Pulse damage", cost: { money: 1425 }, effect: "pulseDamage", value: 0.2, maxLevel: 1000 },
+            { id: "pulse_3", name: "Amplified Emitter", desc: "+ Pulse shockwave radius", cost: { money: 2850 }, effect: null, value: 0, maxLevel: 1000 },
+            { id: "pulse_4", name: "Rapid Discharge", desc: "+ Pulse frequency (fires more often)", cost: { money: 3600 }, effect: null, value: 0, maxLevel: 30 },
+            { id: "pulse_od_dur", name: "Core Overload Matrix", desc: "+1s Core Overload overdrive duration", cost: { money: 2070 }, effect: null, value: 0, maxLevel: 1000 }
         ],
         acidsisters: [
-            { id: "acid_1", name: "Acid Coven", desc: "Unlock the Acid Sisters ability", cost: { gold: 75, uranium: 22 }, effect: "hasAcidSisters", value: true, maxLevel: 1 },
-            { id: "acid_2", name: "Corrosive Mix", desc: "+ Acid Sisters damage", cost: { gold: 110 }, effect: "acidDamage", value: 0.2, maxLevel: 1000 },
-            { id: "acid_3", name: "Rapid Flasks", desc: "+ Acid throwing speed", cost: { gold: 150, uranium: 18 }, effect: "acidFireRateLevel", value: 1, maxLevel: 25 },
-            { id: "acid_od_dur", name: "Acid Overdrive Core", desc: "+1s Acid Sisters overdrive duration", cost: { gold: 90, uranium: 14 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "acid_1", name: "Acid Coven", desc: "Unlock the Acid Sisters ability", cost: { money: 2445 }, effect: "hasAcidSisters", value: true, maxLevel: 1 },
+            { id: "acid_2", name: "Corrosive Mix", desc: "+ Acid Sisters damage", cost: { money: 1650 }, effect: "acidDamage", value: 0.2, maxLevel: 1000 },
+            { id: "acid_3", name: "Rapid Flasks", desc: "+ Acid throwing speed", cost: { money: 3330 }, effect: "acidFireRateLevel", value: 1, maxLevel: 25 },
+            { id: "acid_od_dur", name: "Acid Overdrive Core", desc: "+1s Acid Sisters overdrive duration", cost: { money: 2190 }, effect: null, value: 0, maxLevel: 1000 }
         ],
         // --- ELECTRIC SHOCK: now its own fully independent unlockable ability (Task 3),
         // completely separate from the Girl Suit tree. Auto-attacks continuously once
         // unlocked via the Passive Ability System, weak/slow at first, and scales with these
         // upgrades (damage, attack speed, range) plus its own Overdrive (Electric Storm). ---
         shock: [
-            { id: "shock_1", name: "Storm Cell", desc: "Unlock the Electric Shock ability", cost: { gold: 65, uranium: 16 }, effect: "hasElectricShock", value: true, maxLevel: 1 },
-            { id: "shock_2", name: "High Voltage", desc: "+ Electric Shock damage", cost: { gold: 100 }, effect: "shockDamage", value: 0.2, maxLevel: 1000 },
-            { id: "shock_3", name: "Capacitor Bank", desc: "+ Electric Shock attack speed", cost: { gold: 140, uranium: 14 }, effect: "shockFireRateLevel", value: 1, maxLevel: 25 },
-            { id: "shock_4", name: "Long Arc Coils", desc: "+ Electric Shock strike range", cost: { gold: 120, uranium: 10 }, effect: "shockRange", value: 15, maxLevel: 20 },
-            { id: "shock_od_dur", name: "Storm Core", desc: "+1s Electric Storm overdrive duration", cost: { gold: 90, uranium: 14 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "shock_1", name: "Storm Cell", desc: "Unlock the Electric Shock ability", cost: { money: 1935 }, effect: "hasElectricShock", value: true, maxLevel: 1 },
+            { id: "shock_2", name: "High Voltage", desc: "+ Electric Shock damage", cost: { money: 1500 }, effect: "shockDamage", value: 0.2, maxLevel: 1000 },
+            { id: "shock_3", name: "Capacitor Bank", desc: "+ Electric Shock attack speed", cost: { money: 2940 }, effect: "shockFireRateLevel", value: 1, maxLevel: 25 },
+            { id: "shock_4", name: "Long Arc Coils", desc: "+ Electric Shock strike range", cost: { money: 2400 }, effect: "shockRange", value: 15, maxLevel: 20 },
+            { id: "shock_od_dur", name: "Storm Core", desc: "+1s Electric Storm overdrive duration", cost: { money: 2190 }, effect: null, value: 0, maxLevel: 1000 }
         ]
     };
 
@@ -1273,17 +1417,17 @@
     }
 
     function formatCostHTML(costObj) {
-        if(Object.keys(costObj).length === 0) return "<span style='color:#00f3ff'>Acquired</span>";
-        let html = "";
-        for(let res in costObj) {
-            let color = res === 'iron' ? '#a19d94' : res === 'bronze' ? '#cd7f32' : res === 'silver' ? '#c0c0c0' : res === 'gold' ? '#ffd700' : '#39ff14';
-            html += `<span style="color:${color}; margin-right:4px; display:inline-block;">${res.toUpperCase()}: ${formatNumber(costObj[res])}</span>`;
-        } return html;
+        if(Object.keys(costObj).length === 0 || !costObj.money) return "<span style='color:#00f3ff'>Acquired</span>";
+        return `<span style="color:#ffcc00; margin-right:4px; display:inline-block;">$${formatNumber(costObj.money)}</span>`;
     }
 
+    // --- UPGRADE ECONOMY: Money ($ / playerStats.score) is now the ONLY currency for every
+    // unlock, activation, and purchase in the game. Minerals (iron/bronze/silver/gold/uranium)
+    // are still mined and tallied in `inventory` purely as a collectible/flavor stat - they no
+    // longer gate or pay for anything in the upgrade system. ---
     function canAfford(costObj) {
-        for(let res in costObj) { if(inventory[res] < costObj[res]) return false; }
-        return true;
+        if (!costObj.money) return true;
+        return playerStats.score >= costObj.money;
     }
 
     // --- NODE-GRAPH SKILL TREE (pannable branching circuit, "Feeding the Black Hole" style) ---
@@ -1302,16 +1446,24 @@
         { id: 'suit',     title: 'Girl Suit',    icon: '🛡️', color: '#d942ff', nodes: upgradeTrees.suit,            tab: 'suit',     subTree: null },
         { id: 'movement', title: 'Mobility',      icon: '💨', color: '#00bfff', nodes: upgradeTrees.movement,        tab: 'movement', subTree: null },
         { id: 'energy',   title: 'Energy Sys',    icon: '🔋', color: '#ffd700', nodes: upgradeTrees.energy,          tab: 'energy',   subTree: null },
-        { id: 'drill',    title: 'Drilling',      icon: '⛏️', color: '#c0c0c8', nodes: upgradeTrees.drill,           tab: 'drill',    subTree: null },
+        { id: 'drill',    title: 'Drilling',      icon: '🛠️', color: '#c0c0c8', nodes: upgradeTrees.drill,           tab: 'drill',    subTree: null },
         { id: 'laser',    title: 'Laser Weapon',  icon: '⚡', color: '#ff3366', nodes: upgradeTrees.weapon.laser,    tab: 'weapon',   subTree: 'laser' },
         { id: 'fireball', title: 'Fireball',      icon: '🔥', color: '#00f3ff', nodes: upgradeTrees.weapon.fireball, tab: 'weapon',   subTree: 'fireball' },
         { id: 'rocket',   title: 'Missiles',      icon: '🚀', color: '#39ff14', nodes: upgradeTrees.rocket,          tab: 'rocket',   subTree: null },
         { id: 'drone',    title: 'Attack Drone',  icon: '🤖', color: '#00ffcc', nodes: upgradeTrees.drone,           tab: 'drone',    subTree: null },
-        { id: 'clone',    title: 'Fire Clones',   icon: '👥', color: '#ff5500', nodes: upgradeTrees.clone,           tab: 'clone',    subTree: null },
+        { id: 'clone',    title: 'Girl Clones',   icon: '👥', color: '#ff5500', nodes: upgradeTrees.clone,           tab: 'clone',    subTree: null },
         { id: 'pulse',    title: 'Pulse Core',    icon: '💥', color: '#ff00aa', nodes: upgradeTrees.pulse,           tab: 'pulse',    subTree: null },
         { id: 'acidsisters', title: 'Acid Sisters', icon: '🧪', color: '#7cfc00', nodes: upgradeTrees.acidsisters,  tab: 'acidsisters', subTree: null },
         { id: 'shock',    title: 'Electric Shock', icon: '🌩️', color: '#66e0ff', nodes: upgradeTrees.shock,        tab: 'shock',    subTree: null }
     ];
+
+    // --- PER-NODE ICON OVERRIDES ---
+    // Icon-nodes normally just inherit their category's shared icon (see buildTreeDOM below),
+    // which is correct for every unlock node EXCEPT "Pickaxe Deploy" (suit_3): it unlocks the
+    // Axe/Pickaxe ability but lives inside the "Girl Suit" branch, so without an override it
+    // rendered the suit's shield icon instead of an axe. Add any future off-category unlock
+    // nodes here rather than giving them their own branch, to avoid reshaping the tree layout.
+    const nodeIconOverride = { suit_3: '🪓' };
 
     function isIconNode(upg) { return upg.maxLevel === 1; } // boolean unlocks get an icon; incremental levels get a dot
 
@@ -1349,7 +1501,7 @@
             cat.nodes.forEach((upg, i) => {
                 let p = points[i];
                 nodesHTML += isIconNode(upg)
-                    ? `<div class="tree-icon-node" data-node-id="${upg.id}" style="left:${p.x}px; top:${p.y}px; --nc:${cat.color};">${cat.icon}</div>`
+                    ? `<div class="tree-icon-node" data-node-id="${upg.id}" style="left:${p.x}px; top:${p.y}px; --nc:${cat.color};">${nodeIconOverride[upg.id] || cat.icon}</div>`
                     : `<div class="tree-dot" data-node-id="${upg.id}" style="left:${p.x}px; top:${p.y}px; --nc:${cat.color};"></div>`;
             });
         });
@@ -1452,8 +1604,7 @@
     function updateTreeCurrencyRow() {
         const row = document.getElementById('tree-currency-row');
         if (!row) return;
-        const resColors = { iron: '#a19d94', bronze: '#cd7f32', gold: '#ffd700', uranium: '#39ff14' };
-        row.innerHTML = Object.keys(resColors).map(res => `<span style="color:${resColors[res]}">${res.toUpperCase()}: ${formatNumber(inventory[res])}</span>`).join('');
+        row.innerHTML = `<span style="color:#ffcc00">$ ${formatNumber(playerStats.score)}</span>`;
     }
 
     function updateTreeNodeStates() {
@@ -1497,7 +1648,7 @@
         let currentCost = getCost(upg.cost, upgradeLevels[id]);
 
         if(canAfford(currentCost) && upgradeLevels[id] < upg.maxLevel) {
-            for(let res in currentCost) { inventory[res] -= currentCost[res]; }
+            playerStats.score -= (currentCost.money || 0);
             upgradeLevels[id]++;
             
             if(upg.effect) {
@@ -1567,8 +1718,21 @@
             let box = document.getElementById(`od-box-${key}`);
             if (!box) continue;
 
+            let icon = document.getElementById(`od-icon-${key}`);
+            // First time we ever see this key, just record its state - don't play the unlock
+            // animation for abilities (like the Drill) that start already unlocked at boot.
+            if (odPrevUnlocked[key] === undefined) odPrevUnlocked[key] = od.unlocked;
+            let justUnlocked = od.unlocked && !odPrevUnlocked[key];
+
             if (od.unlocked) {
                 box.classList.remove('locked');
+                if (icon) { icon.textContent = odIconMap[key] || '⭐'; icon.classList.remove('icon-locked'); }
+                if (justUnlocked) {
+                    // Smooth unlock animation: icon pop/flip + a bright radial flash across the
+                    // box, auto-removed once the CSS animation finishes so it only plays once.
+                    box.classList.add('just-unlocked');
+                    setTimeout(() => box.classList.remove('just-unlocked'), 650);
+                }
                 let btn = document.getElementById(`od-btn-${key}`);
                 let fill = document.getElementById(`od-fill-${key}`);
                 let pct = Math.min(100, (od.charge / od.maxCharge) * 100);
@@ -1616,13 +1780,16 @@
             } else {
                 // Still shown (per design: every overdrive-capable power-up gets a permanent,
                 // visible slot on the left) but dimmed/grayed and non-interactive until the
-                // player actually unlocks the underlying power-up.
+                // player actually unlocks the underlying power-up - and shows a padlock icon
+                // instead of the ability icon so it never reads as already-available.
                 box.classList.add('locked');
+                if (icon) { icon.textContent = '🔒'; icon.classList.add('icon-locked'); }
                 let btn = document.getElementById(`od-btn-${key}`);
                 let fill = document.getElementById(`od-fill-${key}`);
                 if (fill) { fill.style.width = '0%'; }
                 if (btn) { btn.innerText = 'LOCKED'; btn.style.background = '#222'; btn.style.color = '#666'; btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none'; }
             }
+            odPrevUnlocked[key] = od.unlocked;
         }
         checkUpgradeGlow();
     }
@@ -1641,6 +1808,7 @@
         }
 
         ctx.clearRect(0, 0, canvas.width, canvas.height); const timeNow = Date.now(); frameCount++;
+        slowMoFactor = getSlowMoFactor(timeNow); // 1 = normal speed, <1 while slow motion is active
 
         ctx.fillStyle = getBackgroundColor(timeNow);
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1687,8 +1855,10 @@
 
         blackHole.spinAngle += 0.01; ctx.save(); ctx.translate(blackHole.x, blackHole.y); ctx.rotate(blackHole.spinAngle); let bgGlow = ctx.createRadialGradient(0, 0, blackHole.radius * 0.8, 0, 0, blackHole.radius * 2); bgGlow.addColorStop(0, "rgba(89, 0, 255, 0.8)"); bgGlow.addColorStop(0.5, "rgba(217, 66, 255, 0.3)"); bgGlow.addColorStop(1, "rgba(0, 0, 0, 0)"); ctx.fillStyle = bgGlow; ctx.beginPath(); ctx.arc(0, 0, blackHole.radius * 2, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(0, 0, blackHole.radius, 0, Math.PI * 2); ctx.fillStyle = "#0000"; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "#d942ff"; ctx.stroke(); ctx.beginPath(); ctx.ellipse(0, 0, blackHole.radius * 1.8, blackHole.radius * 0.4, 0, 0, Math.PI * 2); ctx.strokeStyle = "#5900ff"; ctx.lineWidth = 4; ctx.stroke(); ctx.restore(); ctx.fillStyle = "#ff0000"; ctx.font = "bold 16px Orbitron"; ctx.fillText("DANGER: BLACK HOLE", blackHole.x - 95, blackHole.y - 100);
 
+        // --- BLACK HOLE GRAVITY (Task 9: pulling strength reduced further - both the player
+        // and nearby asteroids now drift toward it much more gently than before). ---
         let bhDistX = blackHole.x - playerShip.x; let bhDistY = blackHole.y - playerShip.y; let bhDist = Math.hypot(bhDistX, bhDistY);
-        if (bhDist < 1200) { let pull = (1200 - bhDist) / 1200 * 0.008; playerShip.velocityX += (bhDistX / bhDist) * pull; playerShip.velocityY += (bhDistY / bhDist) * pull; if (Math.random() < 0.2) createParticle(playerShip.x, playerShip.y, '#ff0000', -playerShip.velocityX, -playerShip.velocityY, 0.05, 4); }
+        if (bhDist < 1200) { let pull = (1200 - bhDist) / 1200 * 0.003; playerShip.velocityX += (bhDistX / bhDist) * pull; playerShip.velocityY += (bhDistY / bhDist) * pull; if (Math.random() < 0.2) createParticle(playerShip.x, playerShip.y, '#ff0000', -playerShip.velocityX, -playerShip.velocityY, 0.05, 4); }
         if (bhDist < blackHole.radius) { 
             if (overdrives.suit.activeTimer > 0) {
                 createParticle(playerShip.x, playerShip.y, '#d942ff', (Math.random()-0.5)*5, (Math.random()-0.5)*5, 0.05, 4);
@@ -1748,14 +1918,14 @@
                 let numRockets = Math.min(10, 1 + Math.floor(playerStats.level / 10) + Math.floor(upgradeLevels['rkt_3']/20)); 
                 if (isRocketOd) numRockets += 5;
                 for(let r=0; r<numRockets; r++) { let target = visibleAsts[Math.floor(Math.random() * visibleAsts.length)]; let rAngle = Math.atan2(target.y - playerShip.y, target.x - playerShip.x) + ((Math.random()-0.5)*0.6); rocketsList.push({ x: playerShip.x, y: playerShip.y, vx: Math.cos(rAngle)*5, vy: Math.sin(rAngle)*5, target: target, angle: rAngle, life: 250 }); }
-                playSound('laser'); lastRocketLaunch = timeNow; refreshLiveUiDisplays();
+                playSound('rocket_launch'); lastRocketLaunch = timeNow; refreshLiveUiDisplays();
             }
         }
 
         for (let i = rocketsList.length - 1; i >= 0; i--) {
             let rk = rocketsList[i]; rk.life--;
             if (rk.target && rk.target.health > 0) { let targetAngle = Math.atan2(rk.target.y - rk.y, rk.target.x - rk.x); rk.vx += Math.cos(targetAngle) * 0.5; rk.vy += Math.sin(targetAngle) * 0.5; let spd = Math.hypot(rk.vx, rk.vy); if (spd > 12) { rk.vx = (rk.vx/spd)*12; rk.vy = (rk.vy/spd)*12; } rk.angle = Math.atan2(rk.vy, rk.vx); }
-            rk.x += rk.vx; rk.y += rk.vy; createParticle(rk.x - Math.cos(rk.angle)*15, rk.y - Math.sin(rk.angle)*15, '#ff3300', -rk.vx*0.3, -rk.vy*0.3, 0.1, 6);
+            rk.x += rk.vx * slowMoFactor; rk.y += rk.vy * slowMoFactor; createParticle(rk.x - Math.cos(rk.angle)*15, rk.y - Math.sin(rk.angle)*15, '#ff3300', -rk.vx*0.3, -rk.vy*0.3, 0.1, 6);
             ctx.save(); ctx.translate(rk.x, rk.y); ctx.rotate(rk.angle); if (rocketImg.complete && rocketImg.naturalWidth !== 0) { ctx.drawImage(rocketImg, -25, -15, 50, 30); } else { ctx.fillStyle = '#39ff14'; ctx.fillRect(-15,-8,30,16); } ctx.restore();
 
             let hit = false;
@@ -1768,17 +1938,56 @@
             if (hit || rk.life <= 0) rocketsList.splice(i, 1);
         }
 
-        let activeMagnetRadius = playerStats.magnetRadius * 10;
-        if (overdrives.suit.activeTimer > 0) activeMagnetRadius += 1000;
-        
+        // --- GRAPPLING ROPE ENGAGE RANGE (Task 5) ---
+        // The rope only locks onto collectible "Earth Cargo" specials within roughly
+        // 500-600px of the girl (550 sits in the middle of that window - same convention as
+        // WEAPON_ENGAGE_RANGE / DRONE_PATROL_MIN/MAX elsewhere in this file). This is now a
+        // fixed engage window, decoupled from the magnetRadius stat (which still governs the
+        // separate ordinary-mineral auto-collect magnet untouched below).
+        const ROPE_ENGAGE_RANGE = 550;
+
         for (let i = specialItemsList.length - 1; i >= 0; i--) {
             let item = specialItemsList[i];
             if (!item.isCollected) {
-                if (Math.hypot(playerShip.x - item.x, playerShip.y - item.y) < 400 + activeMagnetRadius) { item.isBeingCaught = true; }
+                if (!item.isBeingCaught && Math.hypot(playerShip.x - item.x, playerShip.y - item.y) < ROPE_ENGAGE_RANGE) {
+                    item.isBeingCaught = true;
+                    // Remember the direction the item was pulled in from, so the portal can
+                    // later open on the opposite side of the screen for a dramatic payoff.
+                    item.approachAngle = Math.atan2(item.y - playerShip.y, item.x - playerShip.x);
+                }
                 if (item.isBeingCaught) {
-                    ctx.save(); ctx.beginPath(); ctx.moveTo(playerShip.x, playerShip.y); ctx.lineTo(item.x, item.y); ctx.strokeStyle = "#00f3ff"; ctx.lineWidth = 3; ctx.shadowColor = "#00f3ff"; ctx.shadowBlur = 15; ctx.stroke(); ctx.restore();
+                    // Rope render: a gentle quadratic curve instead of a perfectly straight
+                    // line, swaying slightly like a real cable under tension.
+                    let rdx = item.x - playerShip.x, rdy = item.y - playerShip.y;
+                    let rDist = Math.max(1, Math.hypot(rdx, rdy));
+                    let rMidX = (playerShip.x + item.x) / 2, rMidY = (playerShip.y + item.y) / 2;
+                    let rPerpX = -rdy / rDist, rPerpY = rdx / rDist;
+                    let sag = Math.min(35, rDist * 0.18) * Math.sin(timeNow / 220 + i);
+                    ctx.save(); ctx.beginPath(); ctx.moveTo(playerShip.x, playerShip.y);
+                    ctx.quadraticCurveTo(rMidX + rPerpX * sag, rMidY + rPerpY * sag, item.x, item.y);
+                    ctx.strokeStyle = "#00f3ff"; ctx.lineWidth = 3; ctx.shadowColor = "#00f3ff"; ctx.shadowBlur = 15; ctx.stroke(); ctx.restore();
                     item.x += (playerShip.x - item.x) * 0.08; item.y += (playerShip.y - item.y) * 0.08;
-                    if (Math.hypot(playerShip.x - item.x, playerShip.y - item.y) < 50) { item.isCollected = true; item.isBeingCaught = false; addFloatingText("ITEM CAUGHT!", item.x, item.y, '#00ffff', "16px"); playSound('collect'); item.targetPortalX = playerShip.x + (Math.random() > 0.5 ? 250 : -250); item.targetPortalY = playerShip.y - 150; item.portalRadius = 0; }
+                    if (Math.hypot(playerShip.x - item.x, playerShip.y - item.y) < 50) {
+                        item.isCollected = true; item.isBeingCaught = false;
+                        addFloatingText("ITEM CAUGHT!", item.x, item.y, '#00ffff', "16px"); playSound('collect');
+
+                        // --- PORTAL: opens on the opposite side of the screen from the
+                        // direction the item was reeled in from, so the capture reads as a
+                        // clear, satisfying, highly visible payoff (Task 5). ---
+                        let portalAngle = (item.approachAngle || 0) + Math.PI;
+                        let viewHalfW = (canvas.width / gameScale) / 2, viewHalfH = (canvas.height / gameScale) / 2;
+                        let portalDist = Math.min(viewHalfW, viewHalfH) * 0.85;
+                        item.targetPortalX = playerShip.x + Math.cos(portalAngle) * portalDist;
+                        item.targetPortalY = playerShip.y + Math.sin(portalAngle) * portalDist;
+                        item.portalRadius = 0;
+
+                        // Slow-motion beat right as the portal opens, for extra drama - lasts
+                        // significantly longer than the destruction burst's since this is the
+                        // rarer, more cinematic moment.
+                        triggerSlowMo(900);
+                        cameraShake = Math.max(cameraShake, 8);
+                        playSound('portal_open');
+                    }
                 }
                 if (item.img && item.img.complete && item.img.naturalWidth !== 0) { ctx.drawImage(item.img, item.x - item.width/2, (item.y - item.height/2) + Math.sin(timeNow*0.003+i)*10, item.width, item.height); } else { ctx.fillStyle = "#ff00ff"; ctx.fillRect(item.x - 10, item.y - 10, 20, 20); }
             } else {
@@ -1822,12 +2031,12 @@
             if (timeNow - lastFireballThrow > throwCooldown && asteroidsList.length > 0) {
                 let targetAst = null; let minDist = 1200; 
                 for(let j=0; j < asteroidsList.length; j++) { let d = Math.hypot(asteroidsList[j].x - playerShip.x, asteroidsList[j].y - playerShip.y); if(d < minDist) { minDist = d; targetAst = asteroidsList[j]; } }
-                if (targetAst) { let fAngle = Math.atan2(targetAst.y - playerShip.y, targetAst.x - playerShip.x); thrownFireballs.push({x: playerShip.x, y: playerShip.y, vx: Math.cos(fAngle)*9, vy: Math.sin(fAngle)*9, target: targetAst, life: 150}); lastFireballThrow = timeNow; playSound('laser'); }
+                if (targetAst) { let fAngle = Math.atan2(targetAst.y - playerShip.y, targetAst.x - playerShip.x); thrownFireballs.push({x: playerShip.x, y: playerShip.y, vx: Math.cos(fAngle)*9, vy: Math.sin(fAngle)*9, target: targetAst, life: 150}); lastFireballThrow = timeNow; playSound('fireball_throw'); }
             }
         }
 
         for(let i = thrownFireballs.length - 1; i >= 0; i--) {
-            let fb = thrownFireballs[i]; fb.x += fb.vx; fb.y += fb.vy; fb.life--;
+            let fb = thrownFireballs[i]; fb.x += fb.vx * slowMoFactor; fb.y += fb.vy * slowMoFactor; fb.life--;
             if (fb.target && fb.target.health > 0) { let angle = Math.atan2(fb.target.y - fb.y, fb.target.x - fb.x); fb.vx += Math.cos(angle) * 0.4; fb.vy += Math.sin(angle) * 0.4; let speed = Math.hypot(fb.vx, fb.vy); if (speed > 10) { fb.vx = (fb.vx/speed)*10; fb.vy = (fb.vy/speed)*10; } }
             createParticle(fb.x, fb.y, '#00aaff', -fb.vx*0.2, -fb.vy*0.2, 0.1, 7); ctx.beginPath(); ctx.arc(fb.x, fb.y, 22, 0, Math.PI*2); ctx.fillStyle='#00f3ff'; ctx.fill();
 
@@ -1863,7 +2072,7 @@
             }
         }
 
-        for(let i=visualParticles.length-1; i>=0; i--) { let p = visualParticles[i]; p.x += p.vx; p.y += p.vy; p.life -= p.decay; if(p.life <= 0) visualParticles.splice(i, 1); else { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size); } } ctx.globalAlpha = 1.0; 
+        for(let i=visualParticles.length-1; i>=0; i--) { let p = visualParticles[i]; p.x += p.vx * slowMoFactor; p.y += p.vy * slowMoFactor; p.life -= p.decay; if(p.life <= 0) visualParticles.splice(i, 1); else { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size); } } ctx.globalAlpha = 1.0; 
         for(let i = shockwaves.length - 1; i >= 0; i--) { let sw = shockwaves[i]; sw.radius += sw.speed; sw.life -= 0.04; if(sw.life <= 0) shockwaves.splice(i, 1); else { ctx.save(); ctx.beginPath(); ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2); ctx.strokeStyle = sw.color; ctx.lineWidth = 3 * sw.life; ctx.globalAlpha = sw.life; ctx.stroke(); ctx.restore(); } }
 
         for (let i = homingParticles.length - 1; i >= 0; i--) {
@@ -1932,11 +2141,11 @@
         for (let i = asteroidsList.length - 1; i >= 0; i--) {
             let ast = asteroidsList[i];
             ast.knockVX = (ast.knockVX || 0) * 0.88; ast.knockVY = (ast.knockVY || 0) * 0.88;
-            ast.x += ast.vx + ast.knockVX; ast.y += ast.vy + ast.knockVY;
-            ast.spinAngle += ast.spinVelocity;
+            ast.x += (ast.vx + ast.knockVX) * slowMoFactor; ast.y += (ast.vy + ast.knockVY) * slowMoFactor;
+            ast.spinAngle += ast.spinVelocity * slowMoFactor;
 
             let astBhDistX = blackHole.x - ast.x; let astBhDistY = blackHole.y - ast.y; let astBhDist = Math.hypot(astBhDistX, astBhDistY);
-            if (astBhDist < 1200) { let astPull = (1200 - astBhDist) / 1200 * 0.005; ast.vx += (astBhDistX / astBhDist) * astPull; ast.vy += (astBhDistY / astBhDist) * astPull; }
+            if (astBhDist < 1200) { let astPull = (1200 - astBhDist) / 1200 * 0.002; ast.vx += (astBhDistX / astBhDist) * astPull; ast.vy += (astBhDistY / astBhDist) * astPull; }
             if (astBhDist < blackHole.radius) { asteroidsList.splice(i, 1); continue; }
 
             {
@@ -1983,7 +2192,7 @@
             ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(ast.x - 20, ast.y - (ast.radius * bloatScale) - 15, 40, 5); ctx.fillStyle = ast.typeInfo.color; ctx.fillRect(ast.x - 20, ast.y - (ast.radius * bloatScale) - 15, 40 * healthPercent, 5);
 
             if (ast.health <= 0) {
-                cameraShake = 15; playSound('explode'); shockwaves.push({x: ast.x, y: ast.y, radius: ast.radius * bloatScale, speed: 6, life: 1.0, color: ast.typeInfo.color}); for(let k=0; k<20; k++) createParticle(ast.x, ast.y, ast.typeInfo.color, (Math.random()-0.5)*18, (Math.random()-0.5)*18, 0.03, Math.random()*4 + 2); 
+                cameraShake = 18; playSound('explode'); spawnDestructionBurst(ast.x, ast.y, ast.radius * bloatScale, ast.typeInfo.color);
                 
                 let levelRewardMultiplier = 1 + Math.floor(playerStats.level / 5);
                 let rewardAmount = Math.floor(Math.random() * (ast.typeInfo.rewardMax - ast.typeInfo.rewardMin + 1)) + ast.typeInfo.rewardMin;
@@ -2136,7 +2345,7 @@
             }
         }
         for (let i = droneProjectiles.length - 1; i >= 0; i--) {
-            let p = droneProjectiles[i]; p.x += p.vx; p.y += p.vy; p.life--;
+            let p = droneProjectiles[i]; p.x += p.vx * slowMoFactor; p.y += p.vy * slowMoFactor; p.life--;
             ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fillStyle = '#33ffea'; ctx.shadowColor = '#33ffea'; ctx.shadowBlur = 10; ctx.fill(); ctx.shadowBlur = 0;
             let hit = false;
             if (p.target && p.target.health > 0 && asteroidsList.includes(p.target) && Math.hypot(p.target.x - p.x, p.target.y - p.y) < p.target.radius + 16) {
@@ -2148,45 +2357,131 @@
             if (hit || p.life <= 0) droneProjectiles.splice(i, 1);
         }
 
-        // --- UNLOCKABLE FIRE CLONES ---
-        // Passive Ability System (Task 2): once unlocked, Fire Clones are always active -
-        // weak and slow at first, scaling up with upgrades (damage/fire rate) and player
-        // level (clone count), and significantly stronger/more numerous during Overdrive.
+        // --- UNLOCKABLE GIRL CLONES: kamikaze bombers (own ability, separate from Acid Sisters
+        // below - own array, own visuals/sound, own upgrade progression, never touched here) ---
+        // Each clone patrols near the player until an asteroid enters her seek range, then
+        // charges straight at it. The instant she touches an asteroid or other destructible
+        // object she detonates immediately: unique explosion visuals, AoE blast damage in a
+        // proper radius, then she's gone. A fresh clone only replaces her after a short
+        // respawn delay (shortened by the "Rapid Ignition" upgrade) so the ability can't be
+        // spammed - it scales via clone count, damage, blast radius and seek range instead.
+        const CLONE_SEEK_RANGE_BASE = 320;
+        const CLONE_TOUCH_BUFFER = 18;
+        const CLONE_BLAST_RADIUS_BASE = 85;
         if (playerStats.hasClone) {
             let isCloneOd = overdrives.clone.activeTimer > 0;
-            let desiredCloneCount = isCloneOd ? 5 : Math.min(5, 1 + Math.floor(playerStats.level / 10));
-            while (fireClones.length < desiredCloneCount) { let idx = fireClones.length; fireClones.push({ angle: (idx / desiredCloneCount) * Math.PI * 2, lastFire: 0 }); }
+            let cloneSeekRange = CLONE_SEEK_RANGE_BASE + playerStats.cloneRange;
+            let cloneBlastRadius = CLONE_BLAST_RADIUS_BASE + playerStats.cloneBlastRadius;
+            let desiredCloneCount = isCloneOd ? 5 : Math.min(5, 1 + playerStats.cloneCount);
+
             while (fireClones.length > desiredCloneCount) fireClones.pop();
+            // Overdrive fields a full squad instantly (the charge already paid for that burst);
+            // outside Overdrive, replacements trickle in one at a time on a respawn timer.
+            if (fireClones.length < desiredCloneCount && (isCloneOd || timeNow >= cloneNextSpawnAt)) {
+                fireClones.push({ x: playerShip.x, y: playerShip.y, wanderAngle: Math.random() * Math.PI * 2, spawnPhase: Math.random() * Math.PI * 2 });
+                // Small materialize burst so a fresh clone doesn't just pop into existence.
+                shockwaves.push({ x: playerShip.x, y: playerShip.y, radius: 8, speed: 4, life: 1.0, color: '#ff5500' });
+                for (let k = 0; k < 8; k++) { let pa = Math.random() * Math.PI * 2; let sp = 1 + Math.random() * 2.5; createParticle(playerShip.x, playerShip.y, '#ff8800', Math.cos(pa) * sp, Math.sin(pa) * sp, 0.09, 2 + Math.random() * 3); }
+                if (!isCloneOd) {
+                    let respawnDelay = Math.max(350, 1400 - playerStats.cloneFireRateLevel * 40);
+                    cloneNextSpawnAt = timeNow + respawnDelay;
+                }
+            }
 
-            fireClones.forEach(c => {
-                let cx = playerShip.x + Math.cos(c.angle + timeNow / 1800) * 65;
-                let cy = playerShip.y + Math.sin(c.angle + timeNow / 1800) * 65;
-                c.x = cx; c.y = cy;
+            for (let ci = fireClones.length - 1; ci >= 0; ci--) {
+                let c = fireClones[ci];
+                c.wanderAngle += (Math.random() - 0.5) * 0.15;
 
-                ctx.save(); ctx.translate(cx, cy); ctx.globalAlpha = 0.88;
+                let nearest = null, nearestDist = Infinity;
+                for (let j = 0; j < asteroidsList.length; j++) {
+                    let a = asteroidsList[j];
+                    let d = Math.hypot(a.x - c.x, a.y - c.y);
+                    if (d < cloneSeekRange && d < nearestDist) { nearestDist = d; nearest = a; }
+                }
+
+                if (nearest) {
+                    // Committed charge straight at the target once she's locked on.
+                    let chaseSpeed = isCloneOd ? 6.6 : 4.3;
+                    let ang = Math.atan2(nearest.y - c.y, nearest.x - c.x);
+                    c.x += Math.cos(ang) * chaseSpeed; c.y += Math.sin(ang) * chaseSpeed;
+                    // Faint fire trail while charging in, so the run-up reads as a committed
+                    // attack run rather than a silent teleport toward the target.
+                    if (Math.random() < 0.4) createParticle(c.x - Math.cos(ang) * 6, c.y - Math.sin(ang) * 6, '#ff7700', -Math.cos(ang) * 0.4, -Math.sin(ang) * 0.4, 0.07, 2 + Math.random() * 2);
+                } else {
+                    // No target in range - patrol near the player, same feel as before.
+                    let patrolRadius = 150 + Math.sin(timeNow / 900 + c.spawnPhase) * 60;
+                    let followAngle = timeNow / 1300 + c.spawnPhase;
+                    let tx = playerShip.x + Math.cos(followAngle) * patrolRadius + Math.cos(c.wanderAngle) * 40;
+                    let ty = playerShip.y + Math.sin(followAngle) * patrolRadius + Math.sin(c.wanderAngle) * 40;
+                    c.x += (tx - c.x) * 0.05; c.y += (ty - c.y) * 0.05;
+                }
+
+                let armed = nearest && nearestDist < cloneSeekRange * 0.5;
+
+                ctx.save(); ctx.translate(c.x, c.y); ctx.globalAlpha = 0.9;
+                if (armed) {
+                    // Telegraph the incoming detonation with a pulsing red danger glow that
+                    // intensifies the closer she gets - distinct from Acid's steady green glow.
+                    let pulse = 0.5 + Math.sin(timeNow / 90) * 0.3;
+                    ctx.shadowColor = '#ff2200'; ctx.shadowBlur = 10 + pulse * 10;
+                }
                 const frame = girlFrames[playerShip.currentFrameIndex];
                 if (frame && frame.complete && frame.naturalWidth !== 0) { ctx.drawImage(frame, -16, -27, 32, 54); }
                 else { ctx.fillStyle = '#ff5500'; ctx.fillRect(-13, -22, 26, 44); }
-                ctx.globalAlpha = 1; ctx.restore();
+                ctx.shadowBlur = 0; ctx.globalAlpha = 1; ctx.restore();
+                if (armed) { for (let k = 0; k < 2; k++) createParticle(c.x, c.y, '#ff5500', (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, 0.1, 2 + Math.random() * 2); }
 
-                let cloneFireInterval = Math.max(140, 480 - (playerStats.cloneFireRateLevel * 15)) / (isCloneOd ? 1.8 : 1);
-                if (timeNow - c.lastFire > cloneFireInterval) {
-                    c.lastFire = timeNow;
-                    let throwAngle = c.angle + timeNow / 1800 + Math.PI / 2;
-                    for (let k = 0; k < 7; k++) createParticle(cx, cy, k % 2 === 0 ? '#ff6600' : '#ffcc00', Math.cos(throwAngle) * 3 + (Math.random() - 0.5) * 1.5, Math.sin(throwAngle) * 3 + (Math.random() - 0.5) * 1.5, 0.06, 3 + Math.random() * 3);
+                // Detonate the instant she touches the asteroid.
+                if (nearest && nearestDist < nearest.radius + CLONE_TOUCH_BUFFER) {
+                    let dmg = playerStats.damage * 1.3 * playerStats.cloneDamage * (isCloneOd ? 1.8 : 1);
+                    // Encore Charges upgrade: a chance for a bonus detonation pulse layered on
+                    // top of the normal blast - extra damage plus a distinct golden flash so it
+                    // reads as a rewarding crit, not just a bigger version of the same explosion.
+                    let isEncore = Math.random() < playerStats.cloneEncoreChance;
+                    if (isEncore) dmg *= 1.75;
+                    let blastX = c.x, blastY = c.y;
                     asteroidsList.forEach(ast => {
-                    if (Math.hypot(ast.x - cx, ast.y - cy) < 50) {
-                    let dmg = playerStats.damage * 0.3 * playerStats.cloneDamage * (isCloneOd ? 1.8 : 1);
-                    ast.health -= dmg;
-                    spawnCollisionEffect(ast.x, ast.y, '#ff6600');
-                    applyHitImpact(ast, cx, cy, 1.8, 6); spawnHitSparks(cx, cy, '#ff6600', 4);
-                    }
+                        if (Math.hypot(ast.x - blastX, ast.y - blastY) < cloneBlastRadius + ast.radius) {
+                            ast.health -= dmg;
+                            applyHitImpact(ast, blastX, blastY, 5, 9); spawnHitSparks(ast.x, ast.y, isEncore ? '#ffee00' : '#ff5500', 5);
+                            addFloatingText(isEncore ? `-${Math.round(dmg)} ENCORE!` : `-${Math.round(dmg)}`, ast.x, ast.y - 15, isEncore ? '#ffee00' : '#ff5500', "13px");
+                        }
                     });
-                    if (Math.random() < 0.3) playSound('fire_hit');
+                    // Unique explosion visual: bright white core flash, a punchy orange/red
+                    // double shockwave ring, radiating fire particles, and a fading scorch mark -
+                    // visually distinct from Acid's green splash and the old fire-breath clones.
+                    shockwaves.push({ x: blastX, y: blastY, radius: Math.max(10, cloneBlastRadius * 0.25), speed: 9, life: 1.0, color: '#ffffff' });
+                    shockwaves.push({ x: blastX, y: blastY, radius: Math.max(10, cloneBlastRadius * 0.45), speed: 6, life: 1.0, color: '#ff5500' });
+                    for (let k = 0; k < 24; k++) { let pa = Math.random() * Math.PI * 2; let sp = 3 + Math.random() * 8; createParticle(blastX, blastY, k % 3 === 0 ? '#fff2c8' : (k % 3 === 1 ? '#ff6600' : '#ffcc00'), Math.cos(pa) * sp, Math.sin(pa) * sp, 0.045, 3 + Math.random() * 5); }
+                    if (isEncore) {
+                        // A slightly delayed-reading secondary golden ring makes the encore feel
+                        // like a follow-up hit rather than a palette-swapped normal explosion.
+                        shockwaves.push({ x: blastX, y: blastY, radius: Math.max(14, cloneBlastRadius * 0.6), speed: 7.5, life: 1.0, color: '#ffee00' });
+                        for (let k = 0; k < 16; k++) { let pa = Math.random() * Math.PI * 2; let sp = 4 + Math.random() * 7; createParticle(blastX, blastY, '#ffee00', Math.cos(pa) * sp, Math.sin(pa) * sp, 0.05, 3 + Math.random() * 4); }
+                        cameraShake = Math.max(cameraShake, 13);
+                    } else {
+                        cameraShake = Math.max(cameraShake, 9);
+                    }
+                    cloneBlasts.push({ x: blastX, y: blastY, radius: cloneBlastRadius, life: 1.0, encore: isEncore });
+                    playSound('clone_explode');
+                    fireClones.splice(ci, 1);
                 }
-            });
+            }
         } else if (fireClones.length > 0) {
             fireClones = [];
+            cloneBlasts = [];
+        }
+
+        // Fading scorch-mark visuals left behind by Girl Clone detonations.
+        for (let i = cloneBlasts.length - 1; i >= 0; i--) {
+            let b = cloneBlasts[i]; b.life -= 0.035;
+            if (b.life <= 0) { cloneBlasts.splice(i, 1); continue; }
+            ctx.save(); ctx.globalAlpha = b.life * 0.45;
+            let g = ctx.createRadialGradient(b.x, b.y, 4, b.x, b.y, b.radius);
+            if (b.encore) { g.addColorStop(0, 'rgba(255,238,0,0.55)'); g.addColorStop(0.6, 'rgba(255,150,0,0.25)'); g.addColorStop(1, 'rgba(255,150,0,0)'); }
+            else { g.addColorStop(0, 'rgba(255,102,0,0.55)'); g.addColorStop(0.6, 'rgba(255,60,0,0.25)'); g.addColorStop(1, 'rgba(255,60,0,0)'); }
+            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
         }
 
         // --- NEW UNLOCKABLE ABILITY: ACID SISTERS (5 clone girls throwing green acid, ~550px range) ---
@@ -2260,7 +2555,7 @@
                 ap.vx += Math.cos(ang) * 0.5; ap.vy += Math.sin(ang) * 0.5;
                 let sp = Math.hypot(ap.vx, ap.vy); if (sp > 10) { ap.vx = (ap.vx / sp) * 10; ap.vy = (ap.vy / sp) * 10; }
             }
-            ap.x += ap.vx; ap.y += ap.vy;
+            ap.x += ap.vx * slowMoFactor; ap.y += ap.vy * slowMoFactor;
             createParticle(ap.x, ap.y, '#5fbf00', -ap.vx * 0.2, -ap.vy * 0.2, 0.12, 4);
             let blobPulse = 6 + Math.sin(ap.spin) * 1.5;
             ctx.save(); ctx.translate(ap.x, ap.y);
@@ -2389,7 +2684,7 @@
                 let sp = Math.min(9, Math.hypot(cp.vx, cp.vy) + 0.2);
                 cp.vx = Math.cos(newAng) * sp; cp.vy = Math.sin(newAng) * sp;
             }
-            cp.x += cp.vx; cp.y += cp.vy;
+            cp.x += cp.vx * slowMoFactor; cp.y += cp.vy * slowMoFactor;
 
             let r = 9 + Math.sin(cp.spin) * 3; // pulsing size
             ctx.save(); ctx.translate(cp.x, cp.y);
@@ -2441,7 +2736,22 @@
             mCtx.restore();
         }
 
-        ctx.restore(); requestAnimationFrame(renderFrame);
+        ctx.restore();
+
+        // --- SLOW MOTION VIGNETTE (screen-space, drawn after the world-transform restore so
+        // it isn't affected by camera/gameScale) - a soft blue-tinted edge glow while slow
+        // motion is active, so the effect is unmistakably visible rather than a subtle change
+        // in speed alone. Fades in/out smoothly with the same slowMoFactor used for movement. ---
+        if (slowMoFactor < 1) {
+            let vignetteStrength = Math.min(1, (1 - slowMoFactor) / (1 - SLOW_MO_STRENGTH));
+            ctx.save();
+            let vg = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) * 0.35, canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.7);
+            vg.addColorStop(0, 'rgba(0,180,255,0)'); vg.addColorStop(1, `rgba(0,120,255,${0.32 * vignetteStrength})`);
+            ctx.fillStyle = vg; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        }
+
+        requestAnimationFrame(renderFrame);
     }
     
     refreshLiveUiDisplays(); updateSpecialItemsHud(); requestAnimationFrame(renderFrame);
