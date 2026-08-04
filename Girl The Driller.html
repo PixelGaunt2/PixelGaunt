@@ -120,9 +120,15 @@
         .bar-fill { height: 100%; background: linear-gradient(90deg, #ff9900, #ffcc00); width: 40%; transition: width 0.2s; }
         .energy-fill { background: linear-gradient(90deg, #00bfff, #00f3ff); width: 100%; }
 
-        /* --- OVERDRIVES SYSTEM HUD --- */
-        #overdrives-container { position: absolute; top: calc(var(--ui-scale) * 180px); left: calc(var(--ui-scale) * 15px); z-index: 10; display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--ui-scale) * 8px); pointer-events: auto; max-height: calc(100vh - var(--ui-scale) * 200px); overflow-y: auto; overflow-x: hidden; }
-        .od-box { background: rgba(10, 10, 15, 0.9); border: 1px solid #555; padding: calc(var(--ui-scale) * 6px); border-radius: calc(var(--ui-scale) * 6px); width: calc(var(--ui-scale) * 130px); text-align: center; transition: opacity 0.3s, filter 0.3s; position: relative; overflow: hidden; }
+        /* --- OVERDRIVES SYSTEM HUD ---
+           Fixed-width columns used to be able to exceed narrow phone viewports; since the page
+           itself has overflow:hidden, that excess just got silently clipped off-screen instead
+           of wrapping or scrolling into view - some Overdrive boxes were effectively invisible
+           on small screens. `width: min(...)` caps the panel to whatever viewport room is
+           actually available, and minmax(0, 1fr) columns let the boxes shrink to fit instead of
+           overflowing. Vertical overflow (many unlocked abilities) still scrolls. */
+        #overdrives-container { position: absolute; top: calc(var(--ui-scale) * 180px); left: calc(var(--ui-scale) * 15px); z-index: 10; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(var(--ui-scale) * 8px); pointer-events: auto; width: min(calc(var(--ui-scale) * 268px), calc(100vw - var(--ui-scale) * 30px)); max-height: calc(100vh - var(--ui-scale) * 200px); overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+        .od-box { background: rgba(10, 10, 15, 0.9); border: 1px solid #555; padding: calc(var(--ui-scale) * 6px); border-radius: calc(var(--ui-scale) * 6px); width: 100%; min-width: 0; text-align: center; transition: opacity 0.3s, filter 0.3s; position: relative; overflow: hidden; }
         .od-box.locked { opacity: 0.45; filter: grayscale(0.75); }
         .od-icon { font-size: calc(var(--ui-scale) * 16px); line-height: 1; margin-bottom: calc(var(--ui-scale) * 2px); transition: transform 0.25s ease, filter 0.25s ease; }
         .od-icon.icon-locked { filter: grayscale(100%) brightness(0.8); opacity: 0.6; }
@@ -158,6 +164,9 @@
         .od-btn { margin-top: calc(var(--ui-scale) * 5px); width: 100%; padding: calc(var(--ui-scale) * 5px) calc(var(--ui-scale) * 2px); font-size: calc(var(--ui-scale) * 9px); background: #333; color: gray; border: 1px solid #555; border-radius: calc(var(--ui-scale) * 4px); font-family: 'Orbitron'; font-weight: bold; cursor: pointer; transition: 0.3s; }
         
         /* --- EARTH CARGO HUD: collected special-item icons + counts --- */
+        /* top is a fallback only - positionSidePanels() in JS overrides it with the Active
+           Systems panel's real measured height so the two panels never collide, since the
+           Active Systems panel's height varies with how many abilities are unlocked. */
         #special-items-hud { position: absolute; right: calc(var(--ui-scale) * 15px); top: calc(var(--ui-scale) * 380px); z-index: 10; background: rgba(10, 10, 15, 0.9); border: 2px solid #00f3ff; border-radius: calc(var(--ui-scale) * 10px); padding: calc(var(--ui-scale) * 10px); pointer-events: none; width: calc(var(--ui-scale) * 175px); box-shadow: 0 0 12px rgba(0, 243, 255, 0.25); }
         .special-items-title { font-size: calc(var(--ui-scale) * 11px); font-weight: bold; text-align: center; color: #00f3ff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: calc(var(--ui-scale) * 8px); text-shadow: 0 0 6px rgba(0, 243, 255, 0.6); }
         #special-items-grid { display: flex; flex-wrap: wrap; gap: calc(var(--ui-scale) * 6px); justify-content: center; }
@@ -624,8 +633,26 @@
         uiScale = Math.max(0.55, Math.min(1, rawScale));
         document.documentElement.style.setProperty('--ui-scale', uiScale);
         if (joystickReady) positionJoystick();
+        positionSidePanels();
     }
     let joystickReady = false; // flips true once the joystick DOM/logic below has initialized
+
+    // --- SIDE PANEL SPACING (PC layout fix) ---
+    // The "Active Systems" panel (top-right) grows taller as more abilities get unlocked
+    // (up to 11 rows), and the "Earth Cargo" panel used to sit at a hardcoded distance below
+    // it. Once enough systems were active, Active Systems would grow tall enough to overlap
+    // Earth Cargo. Instead, measure Active Systems' real rendered height every time its
+    // contents can change (row added, resize, ui-scale change) and place Earth Cargo a fixed
+    // gap below that measured bottom edge, so the two panels can never merge at any resolution.
+    function positionSidePanels() {
+        const toolHud = document.getElementById('tool-status-hud');
+        const cargoHud = document.getElementById('special-items-hud');
+        if (!toolHud || !cargoHud) return;
+        const gap = 15 * uiScale;
+        const toolRect = toolHud.getBoundingClientRect();
+        cargoHud.style.top = Math.round(toolRect.bottom + gap) + 'px';
+    }
+
     window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
     const specialItemImages = [
@@ -665,10 +692,9 @@
     const rocketImg = new Image(); rocketImg.src = '1Gemini_Generated_Image_kxwfrkxwfrkxwfrk-removebg-preview.png';
     const crystalImg = new Image(); crystalImg.src = "1Gemini_Generated_Image_794qhg794qhg794q-removebg-preview.png";
 
-    // --- TESTING/DEBUG: start with 100,000 of every mineral so testers don't have to grind
-    // for resources while checking new abilities and upgrades. This only changes the starting
-    // inventory values - it doesn't touch progression, costs, or any save/load behavior. ---
-    let inventory = { iron: 100000, bronze: 100000, silver: 100000, gold: 100000, uranium: 100000 };
+    // --- STARTING INVENTORY: the player begins with nothing and must earn every mineral by
+    // destroying asteroids/objects during gameplay, as intended for an incremental mining game. ---
+    let inventory = { iron: 0, bronze: 0, silver: 0, gold: 0, uranium: 0 };
     
     // --- ABILITY UNLOCK PROGRESSION: only the Drill is available at game start. Every other
     // ability (Girl Power suit, Fireball, Rocket, Laser, Pickaxe, Drone, Clone, Pulse Core,
@@ -793,6 +819,15 @@
     let lastFireballThrow = 0; let thrownFireballs = [];
     let rocketsList = []; let lastRocketLaunch = 0; let handMines = [];
     let asteroidsList = []; let textParticles = []; let visualParticles = []; let drillsList = [];
+    // --- DEDICATED THRUST PARTICLE POOL (Missile + Drill exhaust) ---
+    // The main `visualParticles` pool is shared with explosions, hit sparks, and impact
+    // flashes, and is capped at 180 to keep performance stable. During heavy combat
+    // (many drills/missiles hitting asteroids at once) that shared budget fills up fast,
+    // which silently drops newly requested particles - including missile/drill thrust -
+    // causing the exhaust trail to flicker or vanish. Thrust exhaust is now tracked in its
+    // own pool with its own (larger) budget so it never has to compete with combat FX for
+    // particle slots, guaranteeing a continuous, stable trail on both PC and mobile.
+    let thrustParticles = [];
     let homingParticles = []; let shockwaves = [];   
     let camera = { x: 0, y: 0 }; let cameraShake = 0; let lastDrillDeploy = 0;
 
@@ -952,11 +987,15 @@
     window.addEventListener('touchstart', e => {
         // Ignore touches that started on the joystick itself - those are handled separately
         // below and shouldn't also trigger tap-to-move thrust toward the joystick's screen position.
+        // Also ignore touches on the Overdrive panel so scrolling/tapping it on mobile doesn't
+        // simultaneously fling the ship toward the touch point.
         if (joystickTouchId !== null) return;
+        if (e.target.closest && e.target.closest('#overdrives-container')) return;
         isMouseThrusting = true; mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; initAudio();
     });
     window.addEventListener('touchmove', e => {
         if (joystickTouchId !== null) return;
+        if (e.target.closest && e.target.closest('#overdrives-container')) return;
         mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY;
     });
     window.addEventListener('touchend', e => {
@@ -1208,6 +1247,11 @@
     };
 
     function createParticle(x, y, color, vx, vy, decay, size) { if (visualParticles.length > 180) return; visualParticles.push({ x: x, y: y, color: color, vx: vx, vy: vy, life: 1.0, decay: decay, size: size }); }
+    // Dedicated spawner for Missile/Drill thrust exhaust - see `thrustParticles` note above.
+    // Higher cap because this pool is never shared with explosion/hit-spark bursts, so it
+    // comfortably covers max simultaneous drills/missiles (including Overdrive) without ever
+    // silently dropping a frame of exhaust.
+    function createThrustParticle(x, y, color, vx, vy, decay, size) { if (thrustParticles.length > 400) return; thrustParticles.push({ x: x, y: y, color: color, vx: vx, vy: vy, life: 1.0, decay: decay, size: size }); }
     function spawnCollisionEffect(x, y, color='#ffff') { for(let k=0; k<8; k++) createParticle(x, y, color, (Math.random()-0.5)*12, (Math.random()-0.5)*12, 0.08, 4); }
 
     // --- JUICE SYSTEM: shared hit-feedback helpers used by every weapon/ability hit ---
@@ -1287,6 +1331,15 @@
     // straight out of playerStats.score ($). Minerals no longer factor into any cost anywhere
     // in this tree - see canAfford()/purchaseUpgrade() above. ---
     const upgradeTrees = {
+        // --- ABILITY UNLOCK COSTS (tiered for a long-term incremental game) ---
+        // Every `hasX` unlock node below (Girl Suit, Fireball, Rocket, Laser, Pickaxe, Drone,
+        // Clone, Pulse Core, Acid Sisters, Electric Shock) is priced in four rough tiers so each
+        // new ability feels like a real progression milestone rather than a similarly-priced
+        // grab-bag: ~500-1100 for the earliest no-prerequisite choices, ~2600-2900 for the next
+        // step up, ~6500-7200 for mid-game abilities, and 15000-18000 for the two latest, most
+        // powerful abilities (Girl Clones, Acid Sisters). These base costs then also pass through
+        // the same BASE_COST_MULTIPLIER/COST_GROWTH_RATE scaling as every other upgrade (see
+        // getCost() below), so the actual in-game prices are these numbers scaled further up.
         drill: [
             { id: "drill_base", name: "Base Drill", desc: "Standard mining equipment", cost: {}, effect: null, value: 0, maxLevel: 1, baseUnlock: true },
             { id: "drill_tungsten", name: "Tungsten Drill", desc: "+ Drill damage", cost: { money: 320 }, effect: "damage", value: 0.1, maxLevel: 1000 },
@@ -1297,14 +1350,14 @@
         ],
         weapon: { 
             laser: [
-                { id: "wpn_laser1", name: "Plasma Laser Cannon", desc: "Unlock Laser Weapon", cost: { money: 1350 }, effect: "hasLaser", value: true, maxLevel: 1 },
+                { id: "wpn_laser1", name: "Plasma Laser Cannon", desc: "Unlock Laser Weapon", cost: { money: 2600 }, effect: "hasLaser", value: true, maxLevel: 1 },
                 { id: "wpn_laser2", name: "Laser Level 2", desc: "+ Laser damage & fire rate", cost: { money: 1200 }, effect: "damage", value: 0.2, maxLevel: 1000 },
                 { id: "wpn_laser3", name: "Laser Level 3", desc: "+ Bigger laser beam", cost: { money: 3000 }, effect: "damage", value: 0.3, maxLevel: 1000 },
                 { id: "wpn_laser4", name: "Quantum Laser", desc: "Extreme Laser Power", cost: { money: 6000 }, effect: "damage", value: 0.5, maxLevel: 1000 },
                 { id: "laser_od_dur", name: "Laser Overdrive Core", desc: "+1s Laser Beam overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000 }
             ],
             fireball: [
-                { id: "wpn_fb1", name: "Massive Fireballs", desc: "Unlock Fireballs", cost: { money: 900 }, effect: "hasFireball", value: true, maxLevel: 1 },
+                { id: "wpn_fb1", name: "Massive Fireballs", desc: "Unlock Fireballs", cost: { money: 800 }, effect: "hasFireball", value: true, maxLevel: 1 },
                 { id: "wpn_fb2", name: "Fireball Level 2", desc: "More damage", cost: { money: 1200 }, effect: "damage", value: 0.2, maxLevel: 1000 },
                 { id: "wpn_fb3", name: "Solar Flame", desc: "Bigger explosion radius", cost: { money: 3000 }, effect: "damage", value: 0.3, maxLevel: 1000 },
                 { id: "wpn_fb4", name: "Supernova Fireball", desc: "Huge destruction", cost: { money: 6000 }, effect: "damage", value: 0.5, maxLevel: 1000 },
@@ -1312,7 +1365,7 @@
             ]
         },
         rocket: [
-            { id: "rkt_1", name: "Mining Rocket", desc: "Unlock Rocket Launcher", cost: { money: 1200 }, effect: "hasRocket", value: true, maxLevel: 1 },
+            { id: "rkt_1", name: "Mining Rocket", desc: "Unlock Rocket Launcher", cost: { money: 1100 }, effect: "hasRocket", value: true, maxLevel: 1 },
             { id: "rkt_2", name: "Rocket Engine II", desc: "Faster reloading", cost: { money: 1200 }, effect: null, value: 0, maxLevel: 1000 },
             { id: "rkt_3", name: "Multi Rocket", desc: "Launch multiple rockets", cost: { money: 3450 }, effect: null, value: 0, maxLevel: 1000 },
             { id: "rkt_4", name: "Nuclear Mining Rocket", desc: "Large explosion damage", cost: { money: 6750 }, effect: "damage", value: 0.5, maxLevel: 1000 },
@@ -1331,23 +1384,23 @@
             { id: "mov_4", name: "Quantum Mobility", desc: "Extreme movement speed", cost: { money: 3060 }, effect: "speed", value: 0.01, maxLevel: 1000 }
         ],
         suit: [
-            { id: "suit_0", name: "Nano-Suit Activation", desc: "Unlock the Girl Power suit ability", cost: { money: 600 }, effect: "hasGirlPower", value: true, maxLevel: 1 },
+            { id: "suit_0", name: "Nano-Suit Activation", desc: "Unlock the Girl Power suit ability", cost: { money: 500 }, effect: "hasGirlPower", value: true, maxLevel: 1 },
             { id: "suit_1", name: "Armor Upgrade", desc: "Reduce space damage", cost: { money: 400 }, effect: "defense", value: 0.1, maxLevel: 1000 },
             { id: "suit_2", name: "Magnetic Suit", desc: "Collect minerals from farther distance", cost: { money: 1000 }, effect: "magnetRadius", value: 1.0, maxLevel: 1000 },
-            { id: "suit_3", name: "Pickaxe Deploy", desc: "Unlock Impact Pickaxe", cost: { money: 540 }, effect: "hasPickaxe", value: true, maxLevel: 1 },
+            { id: "suit_3", name: "Pickaxe Deploy", desc: "Unlock Impact Pickaxe", cost: { money: 2900 }, effect: "hasPickaxe", value: true, maxLevel: 1 },
             { id: "suit_4", name: "Cosmic Suit", desc: "Maximum protection", cost: { money: 6750 }, effect: "defense", value: 0.2, maxLevel: 1000 },
             { id: "suit_od_dur", name: "Girl Power Core", desc: "+1s Girl Power overdrive duration, deepens suit color tier", cost: { money: 900 }, effect: null, value: 0, maxLevel: 1000 },
             { id: "pickaxe_od_dur", name: "Axe Fury Core", desc: "+1s Axe Fury overdrive duration", cost: { money: 1120 }, effect: null, value: 0, maxLevel: 1000 }
         ],
         drone: [
-            { id: "drone_1", name: "Recon Drone", desc: "Unlock a small companion attack drone", cost: { money: 1800 }, effect: "hasDrone", value: true, maxLevel: 1 },
+            { id: "drone_1", name: "Recon Drone", desc: "Unlock a small companion attack drone", cost: { money: 6500 }, effect: "hasDrone", value: true, maxLevel: 1 },
             { id: "drone_2", name: "Twin Cannons", desc: "+ Drone projectile damage", cost: { money: 1350 }, effect: "droneDamage", value: 0.2, maxLevel: 1000 },
             { id: "drone_3", name: "Rapid Targeting", desc: "+ Drone fire rate", cost: { money: 2550 }, effect: "droneFireRateLevel", value: 1, maxLevel: 20 },
             { id: "drone_4", name: "Support Bay", desc: "+1 max attack drone in the air at once (always active, more during Drone Swarm overdrive)", cost: { money: 4200 }, effect: "droneSupportCount", value: 1, maxLevel: 4 },
             { id: "drone_od_dur", name: "Drone Overdrive Core", desc: "+1s Drone Swarm overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000 }
         ],
         clone: [
-            { id: "clone_1", name: "Mirror Matrix", desc: "Unlock the Girl Clones ability - kamikaze clones that detonate on contact", cost: { money: 2250 }, effect: "hasClone", value: true, maxLevel: 1 },
+            { id: "clone_1", name: "Mirror Matrix", desc: "Unlock the Girl Clones ability - kamikaze clones that detonate on contact", cost: { money: 15000 }, effect: "hasClone", value: true, maxLevel: 1 },
             { id: "clone_2", name: "Ember Infusion", desc: "+ Clone explosion damage", cost: { money: 1500 }, effect: "cloneDamage", value: 0.2, maxLevel: 1000 },
             { id: "clone_3", name: "Rapid Ignition", desc: "+ Faster clone respawn after detonating", cost: { money: 3000 }, effect: "cloneFireRateLevel", value: 1, maxLevel: 20 },
             { id: "clone_4", name: "Sisterhood", desc: "+1 Girl Clone (always active, all 5 during Overdrive)", cost: { money: 5100 }, effect: "cloneCount", value: 1, maxLevel: 4 },
@@ -1360,14 +1413,14 @@
         // Completely independent from the Girl Suit tree / Girl Power (Electric Shock), which
         // is left exactly as it was. ---
         pulse: [
-            { id: "pulse_1", name: "Pulse Core", desc: "Unlock the Pulse Core - emits damaging energy shockwaves", cost: { money: 2055 }, effect: "hasPulseCore", value: true, maxLevel: 1 },
+            { id: "pulse_1", name: "Pulse Core", desc: "Unlock the Pulse Core - emits damaging energy shockwaves", cost: { money: 7200 }, effect: "hasPulseCore", value: true, maxLevel: 1 },
             { id: "pulse_2", name: "Overcharged Core", desc: "+ Pulse damage", cost: { money: 1425 }, effect: "pulseDamage", value: 0.2, maxLevel: 1000 },
             { id: "pulse_3", name: "Amplified Emitter", desc: "+ Pulse shockwave radius", cost: { money: 2850 }, effect: null, value: 0, maxLevel: 1000 },
             { id: "pulse_4", name: "Rapid Discharge", desc: "+ Pulse frequency (fires more often)", cost: { money: 3600 }, effect: null, value: 0, maxLevel: 30 },
             { id: "pulse_od_dur", name: "Core Overload Matrix", desc: "+1s Core Overload overdrive duration", cost: { money: 2070 }, effect: null, value: 0, maxLevel: 1000 }
         ],
         acidsisters: [
-            { id: "acid_1", name: "Acid Coven", desc: "Unlock the Acid Sisters ability", cost: { money: 2445 }, effect: "hasAcidSisters", value: true, maxLevel: 1 },
+            { id: "acid_1", name: "Acid Coven", desc: "Unlock the Acid Sisters ability", cost: { money: 18000 }, effect: "hasAcidSisters", value: true, maxLevel: 1 },
             { id: "acid_2", name: "Corrosive Mix", desc: "+ Acid Sisters damage", cost: { money: 1650 }, effect: "acidDamage", value: 0.2, maxLevel: 1000 },
             { id: "acid_3", name: "Rapid Flasks", desc: "+ Acid throwing speed", cost: { money: 3330 }, effect: "acidFireRateLevel", value: 1, maxLevel: 25 },
             { id: "acid_od_dur", name: "Acid Overdrive Core", desc: "+1s Acid Sisters overdrive duration", cost: { money: 2190 }, effect: null, value: 0, maxLevel: 1000 }
@@ -1377,7 +1430,7 @@
         // unlocked via the Passive Ability System, weak/slow at first, and scales with these
         // upgrades (damage, attack speed, range) plus its own Overdrive (Electric Storm). ---
         shock: [
-            { id: "shock_1", name: "Storm Cell", desc: "Unlock the Electric Shock ability", cost: { money: 1935 }, effect: "hasElectricShock", value: true, maxLevel: 1 },
+            { id: "shock_1", name: "Storm Cell", desc: "Unlock the Electric Shock ability", cost: { money: 6800 }, effect: "hasElectricShock", value: true, maxLevel: 1 },
             { id: "shock_2", name: "High Voltage", desc: "+ Electric Shock damage", cost: { money: 1500 }, effect: "shockDamage", value: 0.2, maxLevel: 1000 },
             { id: "shock_3", name: "Capacitor Bank", desc: "+ Electric Shock attack speed", cost: { money: 2940 }, effect: "shockFireRateLevel", value: 1, maxLevel: 25 },
             { id: "shock_4", name: "Long Arc Coils", desc: "+ Electric Shock strike range", cost: { money: 2400 }, effect: "shockRange", value: 15, maxLevel: 20 },
@@ -1398,10 +1451,19 @@
     initLevels();
 
     // EXPONENTIAL COST FOR HARDER GRIND
+    // Both "increase the cost of upgrades" and "each level costs substantially more than the
+    // last" are applied here rather than editing every individual base cost across every tree:
+    //  - BASE_COST_MULTIPLIER raises the starting price of every upgrade node uniformly (still
+    //    preserves each node's relative cost vs. its neighbors, just scales the whole economy up).
+    //  - COST_GROWTH_RATE (was 1.35) makes each successive level noticeably pricier than the one
+    //    before it, so grinding to max level on any single upgrade is a real long-term investment
+    //    instead of something reachable early, while early levels stay reasonably approachable.
+    const BASE_COST_MULTIPLIER = 1.6;
+    const COST_GROWTH_RATE = 1.45;
     function getCost(baseCostObj, level) {
         let scaledCost = {};
         for(let res in baseCostObj) {
-            scaledCost[res] = Math.floor(baseCostObj[res] * Math.pow(1.35, level));
+            scaledCost[res] = Math.floor(baseCostObj[res] * BASE_COST_MULTIPLIER * Math.pow(COST_GROWTH_RATE, level));
         }
         return scaledCost;
     }
@@ -1712,6 +1774,7 @@
         if (playerStats.hasPulseCore) document.getElementById('sys-pulse').style.display = 'flex';
         if (playerStats.hasAcidSisters) document.getElementById('sys-acid').style.display = 'flex';
         if (playerStats.hasElectricShock) document.getElementById('sys-shock').style.display = 'flex';
+        positionSidePanels();
 
         for(let key in overdrives) {
             let od = overdrives[key];
@@ -1915,8 +1978,17 @@
             let isRocketOd = overdrives.rocket.activeTimer > 0;
             let actualCooldown = isRocketOd ? 150 : Math.max(400, 2500 - (upgradeLevels['rkt_2']*2));
             if (timeNow - lastRocketLaunch >= actualCooldown) {
-                let numRockets = Math.min(10, 1 + Math.floor(playerStats.level / 10) + Math.floor(upgradeLevels['rkt_3']/20)); 
-                if (isRocketOd) numRockets += 5;
+                // Base missile count scales from 1 (early) up to 10 (late) with level/upgrades.
+                let numRockets = Math.min(10, 1 + Math.floor(playerStats.level / 10) + Math.floor(upgradeLevels['rkt_3']/20));
+                if (isRocketOd) {
+                    // Overdrive used to just add a flat +5 missiles from the very first activation,
+                    // which combined with its fast 150ms cooldown flooded the screen immediately at
+                    // level 1. Instead, the Overdrive bonus itself scales gradually with level/rkt_3
+                    // (same progression knobs as the base count) - starting at a small +1 (2-3 total
+                    // missiles early game) and growing toward a large late-game burst.
+                    let odBonus = 1 + Math.floor(playerStats.level / 12) + Math.floor(upgradeLevels['rkt_3'] / 15);
+                    numRockets = Math.min(20, numRockets + Math.min(12, odBonus));
+                }
                 for(let r=0; r<numRockets; r++) { let target = visibleAsts[Math.floor(Math.random() * visibleAsts.length)]; let rAngle = Math.atan2(target.y - playerShip.y, target.x - playerShip.x) + ((Math.random()-0.5)*0.6); rocketsList.push({ x: playerShip.x, y: playerShip.y, vx: Math.cos(rAngle)*5, vy: Math.sin(rAngle)*5, target: target, angle: rAngle, life: 250 }); }
                 playSound('rocket_launch'); lastRocketLaunch = timeNow; refreshLiveUiDisplays();
             }
@@ -1925,13 +1997,16 @@
         for (let i = rocketsList.length - 1; i >= 0; i--) {
             let rk = rocketsList[i]; rk.life--;
             if (rk.target && rk.target.health > 0) { let targetAngle = Math.atan2(rk.target.y - rk.y, rk.target.x - rk.x); rk.vx += Math.cos(targetAngle) * 0.5; rk.vy += Math.sin(targetAngle) * 0.5; let spd = Math.hypot(rk.vx, rk.vy); if (spd > 12) { rk.vx = (rk.vx/spd)*12; rk.vy = (rk.vy/spd)*12; } rk.angle = Math.atan2(rk.vy, rk.vx); }
-            rk.x += rk.vx * slowMoFactor; rk.y += rk.vy * slowMoFactor; createParticle(rk.x - Math.cos(rk.angle)*15, rk.y - Math.sin(rk.angle)*15, '#ff3300', -rk.vx*0.3, -rk.vy*0.3, 0.1, 6);
-            ctx.save(); ctx.translate(rk.x, rk.y); ctx.rotate(rk.angle); if (rocketImg.complete && rocketImg.naturalWidth !== 0) { ctx.drawImage(rocketImg, -25, -15, 50, 30); } else { ctx.fillStyle = '#39ff14'; ctx.fillRect(-15,-8,30,16); } ctx.restore();
+            rk.x += rk.vx * slowMoFactor; rk.y += rk.vy * slowMoFactor; createThrustParticle(rk.x - Math.cos(rk.angle)*11, rk.y - Math.sin(rk.angle)*11, '#ff3300', -rk.vx*0.3, -rk.vy*0.3, 0.1, 6);
+            // Missile sprite drawn ~30% smaller than before (was 50x30) - the old size read as
+            // oversized relative to the player/asteroids; hit-radius and thrust offset above are
+            // scaled down to match so collisions still feel like they line up with the sprite.
+            ctx.save(); ctx.translate(rk.x, rk.y); ctx.rotate(rk.angle); if (rocketImg.complete && rocketImg.naturalWidth !== 0) { ctx.drawImage(rocketImg, -18, -10, 36, 20); } else { ctx.fillStyle = '#39ff14'; ctx.fillRect(-11,-6,22,11); } ctx.restore();
 
             let hit = false;
             for (let j = 0; j < asteroidsList.length; j++) {
                 let ast = asteroidsList[j];
-                if (Math.hypot(ast.x - rk.x, ast.y - rk.y) < ast.radius + 20) {
+                if (Math.hypot(ast.x - rk.x, ast.y - rk.y) < ast.radius + 14) {
                     ast.health -= playerStats.damage * 1.5; playSound('explode'); spawnCollisionEffect(ast.x, ast.y); applyHitImpact(ast, rk.x, rk.y, 7, 10); spawnHitSparks(rk.x, rk.y, '#ffaa00', 8); shockwaves.push({x: rk.x, y: rk.y, radius: 10, speed: 8, life: 1.0, color: '#ff3300'}); for(let k=0; k<15; k++) createParticle(rk.x, rk.y, '#ffaa00', (Math.random()-0.5)*15, (Math.random()-0.5)*15, 0.05, 5); cameraShake = Math.max(cameraShake, 6); hit = true; break;
                 }
             }
@@ -2073,6 +2148,8 @@
         }
 
         for(let i=visualParticles.length-1; i>=0; i--) { let p = visualParticles[i]; p.x += p.vx * slowMoFactor; p.y += p.vy * slowMoFactor; p.life -= p.decay; if(p.life <= 0) visualParticles.splice(i, 1); else { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size); } } ctx.globalAlpha = 1.0; 
+        // Update + draw Missile/Drill thrust exhaust from its own dedicated pool (never starved by combat FX above).
+        for(let i=thrustParticles.length-1; i>=0; i--) { let p = thrustParticles[i]; p.x += p.vx * slowMoFactor; p.y += p.vy * slowMoFactor; p.life -= p.decay; if(p.life <= 0) thrustParticles.splice(i, 1); else { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size); } } ctx.globalAlpha = 1.0; 
         for(let i = shockwaves.length - 1; i >= 0; i--) { let sw = shockwaves[i]; sw.radius += sw.speed; sw.life -= 0.04; if(sw.life <= 0) shockwaves.splice(i, 1); else { ctx.save(); ctx.beginPath(); ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2); ctx.strokeStyle = sw.color; ctx.lineWidth = 3 * sw.life; ctx.globalAlpha = sw.life; ctx.stroke(); ctx.restore(); } }
 
         for (let i = homingParticles.length - 1; i >= 0; i--) {
@@ -2113,11 +2190,11 @@
                 if (!closest) { drillsList.splice(i, 1); continue; }
                 drill.target = closest;
             }
-            let drawX = drill.x; let drawY = drill.y; createParticle(drill.x - Math.cos(drill.angle)*15, drill.y - Math.sin(drill.angle)*15, '#ffaa00', -Math.cos(drill.angle)*2, -Math.sin(drill.angle)*2, 0.1, 4);
+            let drawX = drill.x; let drawY = drill.y; createThrustParticle(drill.x - Math.cos(drill.angle)*15, drill.y - Math.sin(drill.angle)*15, '#ffaa00', -Math.cos(drill.angle)*2, -Math.sin(drill.angle)*2, 0.1, 4);
 
             if (drill.target) {
                 let dx = drill.target.x - drill.x; let dy = drill.target.y - drill.y; let dist = Math.hypot(dx, dy); let activeTargetRadius = drill.target.radius * (1 + (1 - (drill.target.health / drill.target.maxHealth)) * 0.4);
-                if (dist > activeTargetRadius + 12) { drill.angle = Math.atan2(dy, dx); drill.x += Math.cos(drill.angle) * playerStats.drillFlySpeed; drill.y += Math.sin(drill.angle) * playerStats.drillFlySpeed; createParticle(drill.x - Math.cos(drill.angle)*16, drill.y - Math.sin(drill.angle)*16, '#ff9900', -Math.cos(drill.angle)*2, -Math.sin(drill.angle)*2, 0.1, 2.5); } else { drill.x = drill.target.x - Math.cos(drill.angle) * (activeTargetRadius + 10); drill.y = drill.target.y - Math.sin(drill.angle) * (activeTargetRadius + 10); drill.target.health -= playerStats.damage * 0.1; drawX += (Math.random() - 0.5) * 5; drawY += (Math.random() - 0.5) * 5; if (Math.random() < 0.1) playSound('drill_hit'); spawnCollisionEffect(drill.target.x, drill.target.y); applyHitImpact(drill.target, drill.x, drill.y, 1.2, 4); if (Math.random() < 0.3) spawnHitSparks(drill.x, drill.y, '#ffaa00', 3); createParticle(drill.x + Math.cos(drill.angle)*16, drill.y + Math.sin(drill.angle)*16, '#ffff', (Math.random()-0.5)*5, (Math.random()-0.5)*5, 0.1, 1.5); }
+                if (dist > activeTargetRadius + 12) { drill.angle = Math.atan2(dy, dx); drill.x += Math.cos(drill.angle) * playerStats.drillFlySpeed; drill.y += Math.sin(drill.angle) * playerStats.drillFlySpeed; createThrustParticle(drill.x - Math.cos(drill.angle)*16, drill.y - Math.sin(drill.angle)*16, '#ff9900', -Math.cos(drill.angle)*2, -Math.sin(drill.angle)*2, 0.1, 2.5); } else { drill.x = drill.target.x - Math.cos(drill.angle) * (activeTargetRadius + 10); drill.y = drill.target.y - Math.sin(drill.angle) * (activeTargetRadius + 10); drill.target.health -= playerStats.damage * 0.1; drawX += (Math.random() - 0.5) * 5; drawY += (Math.random() - 0.5) * 5; if (Math.random() < 0.1) playSound('drill_hit'); spawnCollisionEffect(drill.target.x, drill.target.y); applyHitImpact(drill.target, drill.x, drill.y, 1.2, 4); if (Math.random() < 0.3) spawnHitSparks(drill.x, drill.y, '#ffaa00', 3); createParticle(drill.x + Math.cos(drill.angle)*16, drill.y + Math.sin(drill.angle)*16, '#ffff', (Math.random()-0.5)*5, (Math.random()-0.5)*5, 0.1, 1.5); }
             } else { drill.x += Math.cos(drill.angle) * playerStats.drillFlySpeed; drill.y += Math.sin(drill.angle) * playerStats.drillFlySpeed; }
 
             let clampMinX = camera.x + 24, clampMaxX = camera.x + (canvas.width / gameScale) - 24;
@@ -2275,15 +2352,35 @@
         if (playerStats.hasDrone && mainDrone) {
             let isDroneOd = overdrives.drone.activeTimer > 0;
 
-            // --- MAIN DRONE: patrols in a slow wide loop 500-600px from the girl. ---
-            let patrolAngle = timeNow / 900;
-            let patrolRadius = ((DRONE_PATROL_MIN + DRONE_PATROL_MAX) / 2) + Math.sin(timeNow / 1600) * ((DRONE_PATROL_MAX - DRONE_PATROL_MIN) / 2);
-            let mainTargetX = playerShip.x + Math.cos(patrolAngle) * patrolRadius;
-            let mainTargetY = playerShip.y + Math.sin(patrolAngle) * patrolRadius;
+            // --- MAIN DRONE: flies a wide loop around the girl, 500-600px out, with a slowly
+            // drifting random offset layered on top of the orbit so the path reads as organic
+            // wandering rather than a perfectly repeating circle. ---
+            if (mainDrone.wanderAngle === undefined) mainDrone.wanderAngle = 0;
+            mainDrone.wanderAngle += (Math.random() - 0.5) * 0.04;
+            let orbitAngle = timeNow / 900 + mainDrone.wanderAngle;
+            let patrolRadius = ((DRONE_PATROL_MIN + DRONE_PATROL_MAX) / 2) + Math.sin(timeNow / 1600 + mainDrone.wanderAngle) * ((DRONE_PATROL_MAX - DRONE_PATROL_MIN) / 2);
+            let mainTargetX = playerShip.x + Math.cos(orbitAngle) * patrolRadius;
+            let mainTargetY = playerShip.y + Math.sin(orbitAngle) * patrolRadius;
             mainDrone.x += (mainTargetX - mainDrone.x) * 0.03; mainDrone.y += (mainTargetY - mainDrone.y) * 0.03;
 
+            // Facing: always point at the nearest target within patrol range; with no target,
+            // face the direction it's currently flying instead. Turn rate is capped so it
+            // smoothly sweeps onto a target rather than snapping the instant one appears.
+            let droneFaceTarget = null, droneFaceDist = Infinity;
+            for (let j = 0; j < asteroidsList.length; j++) {
+                let a = asteroidsList[j];
+                let d = Math.hypot(a.x - mainDrone.x, a.y - mainDrone.y);
+                if (d < DRONE_PATROL_MAX && d < droneFaceDist) { droneFaceDist = d; droneFaceTarget = a; }
+            }
+            let droneDesiredAngle = droneFaceTarget
+                ? Math.atan2(droneFaceTarget.y - mainDrone.y, droneFaceTarget.x - mainDrone.x)
+                : Math.atan2(mainTargetY - mainDrone.y, mainTargetX - mainDrone.x);
+            if (mainDrone.facingAngle === undefined) mainDrone.facingAngle = droneDesiredAngle;
+            let droneAngDiff = Math.atan2(Math.sin(droneDesiredAngle - mainDrone.facingAngle), Math.cos(droneDesiredAngle - mainDrone.facingAngle));
+            mainDrone.facingAngle += Math.max(-0.12, Math.min(0.12, droneAngDiff));
+
             // Draw the main drone - noticeably larger than the mini attack drones it launches.
-            ctx.save(); ctx.translate(mainDrone.x, mainDrone.y); ctx.rotate(patrolAngle * 1.2);
+            ctx.save(); ctx.translate(mainDrone.x, mainDrone.y); ctx.rotate(mainDrone.facingAngle + Math.PI / 2);
             ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(15, 13); ctx.lineTo(0, 6); ctx.lineTo(-15, 13); ctx.closePath();
             ctx.fillStyle = '#00ffcc'; ctx.shadowColor = '#00ffcc'; ctx.shadowBlur = 16; ctx.fill();
             ctx.strokeStyle = '#ffff'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
@@ -2316,27 +2413,40 @@
                     d.target = candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : null;
                 }
 
+                let droneCloneDesiredAngle;
                 if (d.target) {
                     let dist = Math.hypot(d.target.x - d.x, d.target.y - d.y);
                     let standoff = 90;
+                    let ang = Math.atan2(d.target.y - d.y, d.target.x - d.x);
+                    // Face the target whether it's actively closing in or holding standoff to fire -
+                    // "attacks or moves toward" both point the same direction: at the target.
+                    droneCloneDesiredAngle = ang;
                     if (dist > standoff) {
-                        let ang = Math.atan2(d.target.y - d.y, d.target.x - d.x);
                         d.x += Math.cos(ang) * (isDroneOd ? 9 : 6); d.y += Math.sin(ang) * (isDroneOd ? 9 : 6);
                     }
                     let droneFireInterval = Math.max(150, 700 - (playerStats.droneFireRateLevel * 30)) / (isDroneOd ? 2 : 1);
                     if (timeNow - d.lastFire > droneFireInterval) {
                         d.lastFire = timeNow;
-                        let ang = Math.atan2(d.target.y - d.y, d.target.x - d.x);
                         droneProjectiles.push({ x: d.x, y: d.y, vx: Math.cos(ang) * 9, vy: Math.sin(ang) * 9, target: d.target, life: 90 });
                     }
                 } else {
                     // Nothing left to hunt nearby - hover near the main drone until it detects a new target.
                     let hoverAngle = timeNow / 500 + d.spawnPhase;
                     let hx = mainDrone.x + Math.cos(hoverAngle) * 55, hy = mainDrone.y + Math.sin(hoverAngle) * 55;
-                    d.x += (hx - d.x) * 0.06; d.y += (hy - d.y) * 0.06;
+                    let hdx = (hx - d.x) * 0.06, hdy = (hy - d.y) * 0.06;
+                    if (Math.hypot(hdx, hdy) > 0.05) droneCloneDesiredAngle = Math.atan2(hdy, hdx);
+                    d.x += hdx; d.y += hdy;
                 }
 
-                ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(timeNow / 250 + d.spawnPhase);
+                // Same smooth-turn convention as the main drone: movement and facing always stay
+                // synchronized, and it sweeps onto a newly-acquired target instead of snapping.
+                if (d.facingAngle === undefined) d.facingAngle = droneCloneDesiredAngle !== undefined ? droneCloneDesiredAngle : -Math.PI / 2;
+                if (droneCloneDesiredAngle !== undefined) {
+                    let cloneDroneAngDiff = Math.atan2(Math.sin(droneCloneDesiredAngle - d.facingAngle), Math.cos(droneCloneDesiredAngle - d.facingAngle));
+                    d.facingAngle += Math.max(-0.16, Math.min(0.16, cloneDroneAngDiff));
+                }
+
+                ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.facingAngle + Math.PI / 2);
                 ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(7, 6); ctx.lineTo(0, 3); ctx.lineTo(-7, 6); ctx.closePath();
                 ctx.fillStyle = '#33d9ff'; ctx.shadowColor = '#33d9ff'; ctx.shadowBlur = 10; ctx.fill();
                 ctx.strokeStyle = '#ffff'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
@@ -2378,7 +2488,7 @@
             // Overdrive fields a full squad instantly (the charge already paid for that burst);
             // outside Overdrive, replacements trickle in one at a time on a respawn timer.
             if (fireClones.length < desiredCloneCount && (isCloneOd || timeNow >= cloneNextSpawnAt)) {
-                fireClones.push({ x: playerShip.x, y: playerShip.y, wanderAngle: Math.random() * Math.PI * 2, spawnPhase: Math.random() * Math.PI * 2 });
+                fireClones.push({ x: playerShip.x, y: playerShip.y, wanderAngle: Math.random() * Math.PI * 2, spawnPhase: Math.random() * Math.PI * 2, facingAngle: -Math.PI / 2 });
                 // Small materialize burst so a fresh clone doesn't just pop into existence.
                 shockwaves.push({ x: playerShip.x, y: playerShip.y, radius: 8, speed: 4, life: 1.0, color: '#ff5500' });
                 for (let k = 0; k < 8; k++) { let pa = Math.random() * Math.PI * 2; let sp = 1 + Math.random() * 2.5; createParticle(playerShip.x, playerShip.y, '#ff8800', Math.cos(pa) * sp, Math.sin(pa) * sp, 0.09, 2 + Math.random() * 3); }
@@ -2403,6 +2513,7 @@
                     // Committed charge straight at the target once she's locked on.
                     let chaseSpeed = isCloneOd ? 6.6 : 4.3;
                     let ang = Math.atan2(nearest.y - c.y, nearest.x - c.x);
+                    c.facingAngle = ang; // face the target she's charging at, updated every frame
                     c.x += Math.cos(ang) * chaseSpeed; c.y += Math.sin(ang) * chaseSpeed;
                     // Faint fire trail while charging in, so the run-up reads as a committed
                     // attack run rather than a silent teleport toward the target.
@@ -2413,12 +2524,18 @@
                     let followAngle = timeNow / 1300 + c.spawnPhase;
                     let tx = playerShip.x + Math.cos(followAngle) * patrolRadius + Math.cos(c.wanderAngle) * 40;
                     let ty = playerShip.y + Math.sin(followAngle) * patrolRadius + Math.sin(c.wanderAngle) * 40;
-                    c.x += (tx - c.x) * 0.05; c.y += (ty - c.y) * 0.05;
+                    let dx = (tx - c.x) * 0.05, dy = (ty - c.y) * 0.05;
+                    // Face the direction she's actually stepping this frame (not just "toward the
+                    // patrol point"), so she never visibly slides sideways while facing elsewhere.
+                    // Only update facing when the patrol step is large enough to have a meaningful
+                    // direction - avoids jittery spins from near-zero movement near the patrol point.
+                    if (Math.hypot(dx, dy) > 0.05) c.facingAngle = Math.atan2(dy, dx);
+                    c.x += dx; c.y += dy;
                 }
 
                 let armed = nearest && nearestDist < cloneSeekRange * 0.5;
 
-                ctx.save(); ctx.translate(c.x, c.y); ctx.globalAlpha = 0.9;
+                ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.facingAngle + Math.PI / 2); ctx.globalAlpha = 0.9;
                 if (armed) {
                     // Telegraph the incoming detonation with a pulsing red danger glow that
                     // intensifies the closer she gets - distinct from Acid's steady green glow.
