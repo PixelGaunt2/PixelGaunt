@@ -172,6 +172,25 @@
         .od-bar { height: calc(var(--ui-scale) * 6px); margin-bottom: calc(var(--ui-scale) * 2px); }
         .od-fill { width: 0%; transition: width 0.3s; }
         .od-btn { margin-top: calc(var(--ui-scale) * 5px); width: 100%; padding: calc(var(--ui-scale) * 5px) calc(var(--ui-scale) * 2px); font-size: calc(var(--ui-scale) * 9px); background: #333; color: gray; border: 1px solid #555; border-radius: calc(var(--ui-scale) * 4px); font-family: 'Orbitron'; font-weight: bold; cursor: pointer; transition: 0.3s; }
+
+        /* --- OVERDRIVE SELECTION CARD SYSTEM ---
+           When 2+ overdrives are simultaneously ready, pressing any overdrive button opens
+           this overlay instead of instantly activating one. Reuses the .overlay-menu look
+           (same dim backdrop/z-index family as pause/readme/zones) so it feels native to
+           the game's existing menu language rather than a bolted-on popup. */
+        #od-select-menu { z-index: 70; background: rgba(5, 5, 12, 0.95); }
+        .od-select-sub { font-size: calc(var(--ui-scale) * 14px); color: #aaa; margin-top: calc(var(--ui-scale) * -25px); margin-bottom: calc(var(--ui-scale) * 20px); max-width: 90vw; }
+        #od-select-timer-wrap { width: min(calc(var(--ui-scale) * 320px), 80vw); margin-bottom: calc(var(--ui-scale) * 25px); }
+        #od-select-timer-bar { width: 100%; background: #1a1a24; height: calc(var(--ui-scale) * 10px); border-radius: calc(var(--ui-scale) * 6px); border: 1px solid #555; overflow: hidden; }
+        #od-select-timer-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ffea00, #ff3333); transition: width 0.1s linear; }
+        #od-select-countdown { font-size: calc(var(--ui-scale) * 13px); color: #ffea00; font-weight: bold; margin-top: calc(var(--ui-scale) * 6px); text-shadow: 0 0 8px rgba(255,234,0,0.6); }
+        #od-select-cards-container { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(var(--ui-scale) * 16px); max-width: 90vw; padding: 0 calc(var(--ui-scale) * 10px); }
+        .od-select-card { background: #12121a; border: 2px solid #555; border-radius: calc(var(--ui-scale) * 12px); padding: calc(var(--ui-scale) * 16px) calc(var(--ui-scale) * 14px); width: calc(var(--ui-scale) * 130px); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; animation: odCardIn 0.35s ease-out; }
+        .od-select-card:hover { transform: translateY(-6px) scale(1.05); }
+        .od-select-card-icon { font-size: calc(var(--ui-scale) * 34px); line-height: 1; margin-bottom: calc(var(--ui-scale) * 10px); }
+        .od-select-card-name { font-size: calc(var(--ui-scale) * 13px); font-weight: bold; text-transform: uppercase; margin-bottom: calc(var(--ui-scale) * 12px); line-height: 1.3; min-height: calc(var(--ui-scale) * 34px); display: flex; align-items: center; justify-content: center; }
+        .od-select-card-btn { font-family: 'Orbitron'; font-weight: bold; font-size: calc(var(--ui-scale) * 11px); color: #000; border-radius: calc(var(--ui-scale) * 6px); padding: calc(var(--ui-scale) * 7px) 0; letter-spacing: 0.5px; }
+        @keyframes odCardIn { from { opacity: 0; transform: translateY(14px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
         
         /* --- EARTH CARGO HUD: collected special-item icons + counts --- */
         /* top is a fallback only - positionSidePanels() in JS overrides it with the Active
@@ -201,6 +220,7 @@
 
     <audio id="bgMusic" src="Titan_Ore_Runner.mp3" loop></audio>
     <canvas id="gameCanvas"></canvas>
+    <div id="info-toast"></div>
 
     <div id="main-menu" class="overlay-menu">
         <div class="overlay-title">Girl: The Driller</div>
@@ -223,6 +243,7 @@
         <button class="menu-btn" onclick="resumeGame()" style="background: #155f5f; border-color: #ffea00; color: #ffea00;">▶ RESUME</button>
         <button class="menu-btn" onclick="openUpgradesFromPause()">⚙️ SKILL TREE</button>
         <button class="menu-btn" onclick="openZonesMenu()">🗺️ MINING ZONES</button>
+        <button class="menu-btn" onclick="saveGameManual()" style="border-color: #39ff14; color: #39ff14;">💾 SAVE GAME</button>
         <button class="menu-btn" onclick="goToMainMenu()" style="border-color: #ff3333; color: #ff3333;">🏠 MAIN MENU</button>
     </div>
 
@@ -231,6 +252,16 @@
         <div id="zones-depth-readout" class="readme-text" style="font-size: calc(var(--ui-scale) * 14px); margin-bottom: calc(var(--ui-scale) * 4px);">Depth: 0m</div>
         <div id="zones-list" style="display:flex; flex-direction:column; gap: calc(var(--ui-scale) * 10px); max-height: 55vh; overflow-y:auto; width: min(520px, 85vw); padding: calc(var(--ui-scale) * 4px);"></div>
         <button class="menu-btn" onclick="closeZonesMenu()">⬅ BACK</button>
+    </div>
+
+    <div id="od-select-menu" class="overlay-menu" style="display: none;">
+        <div class="overlay-title" style="color: #ffea00; text-shadow: 0 0 15px #ffea00; font-size: calc(var(--ui-scale) * 32px);">⚡ OVERDRIVE READY</div>
+        <div class="od-select-sub">Multiple systems are charged - choose one to activate!</div>
+        <div id="od-select-timer-wrap">
+            <div id="od-select-timer-bar"><div id="od-select-timer-fill"></div></div>
+            <div id="od-select-countdown">5.0s</div>
+        </div>
+        <div id="od-select-cards-container"></div>
     </div>
 
     <div id="win-menu" class="overlay-menu" style="display: none; background: rgba(4, 10, 6, 0.93); z-index: 55;">
@@ -482,7 +513,8 @@
     }
 
     function goToMainMenu() {
-        if (sessionActive) saveGame();
+        // Manual-save only: leaving to the main menu no longer auto-saves. Anything not
+        // explicitly saved via the Save Game button is lost, per the manual save system.
         document.getElementById('pause-menu').style.display = 'none';
         document.getElementById('main-menu').style.display = 'flex';
         updateMainMenuButtons();
@@ -571,7 +603,7 @@
         asteroidsList = [];
         for (let i = 0; i < 15; i++) produceAsteroidNode();
         addFloatingText(`🗺️ ENTERED ${zone.name.toUpperCase()}`, playerShip.x, playerShip.y - 60, '#00f3ff', "20px");
-        playSound('levelup'); saveGame();
+        playSound('levelup');
         closeZonesMenu(); resumeGame(); refreshLiveUiDisplays();
     }
 
@@ -837,7 +869,10 @@
     // Acid Sisters) begins locked (has___: false below) and must be individually unlocked via
     // its first upgrade-tree node before it starts auto-attacking / becoming usable. ---
     let playerStats = { 
-        level: 1, xp: 0, nextLevelXp: 100, score: 0, energy: 100, 
+        // TEMP TESTING GRANT: score starts at 1,000,000 (instead of 0) purely so you have $ to
+        // test purchase/upgrade UI with right now. This is separate from the New Game requirement
+        // that a fresh game start at $0 - tell me once you're done testing and I'll remove this.
+        level: 1, xp: 0, nextLevelXp: 100, score: 1000000, energy: 100, 
         damage: 1, speed: 2.5, drillFlySpeed: 4.0, maxEnergy: 100, energyRegen: 0.02, energyDrain: 0.2,
         defense: 1, magnetRadius: 20,
         hasGirlPower: false, hasLaser: false, hasFireball: false, hasPickaxe: false, hasRocket: false,
@@ -936,27 +971,143 @@
         return OVERDRIVE_BASE_DURATION + (levels * OVERDRIVE_DURATION_PER_LEVEL);
     }
 
+    // --- OVERDRIVE SELECTION CARD SYSTEM ---
+    // Each overdrive still charges/cools down completely independently (unchanged). The only
+    // new behavior lives at the moment of ACTIVATION: if more than one overdrive happens to be
+    // fully charged and ready at the same time, pressing any ready overdrive's button no longer
+    // instantly activates it. Instead it opens a selection screen listing every ready overdrive
+    // as a card; the player picks exactly one. The others stay fully charged/ready untouched -
+    // they'll either be chosen next time, or auto-activate solo the moment only one remains.
+    let odSelectReadyKeys = [];
+    let odSelectDeadline = 0;
+    let odSelectCountdownInterval = null;
+    const OD_SELECT_DURATION_MS = 5000; // 5-second selection window
+
+    function getReadyOverdriveKeys() {
+        return Object.keys(overdrives).filter(k => {
+            let od = overdrives[k];
+            return od.unlocked && od.charge >= od.maxCharge && od.cooldownTimer <= 0 && od.activeTimer <= 0;
+        });
+    }
+
+    // --- GLOBAL "ONE OVERDRIVE AT A TIME" LOCK ---
+    // Returns true the instant any Overdrive (regardless of which one) is currently active.
+    // While this is true, every OTHER Overdrive - even ones fully charged and otherwise
+    // ready - must be treated as locked/unavailable: no activation, no selection screen,
+    // buttons show a locked state. The moment the active Overdrive's activeTimer reaches 0
+    // (see the countdown loop below), this flips back to false and everything unlocks again.
+    function isAnyOverdriveActive() {
+        for (let k in overdrives) { if (overdrives[k].activeTimer > 0) return true; }
+        return false;
+    }
+
+    // The actual activation logic (previously the entire body of activateOverdrive) - now a
+    // standalone step so it can be invoked either immediately (only one ready) or after the
+    // player/CPU makes a selection on the card screen (multiple ready).
+    function performOverdriveActivation(key) {
+        let od = overdrives[key];
+
+        // Base 5s active time, scaled up by this overdrive's duration upgrades (+1s/level)
+        od.activeTimer = getOverdriveDuration(key);
+
+        // RESET CHARGE
+        od.charge = 0;
+
+        // DYNAMIC TIMING INCREMENT: Start cooldown wait for the NEXT usage
+        od.cooldownTimer = od.maxCooldown;
+        od.maxCooldown += 600; // Adds 10 seconds every time (25s -> 35s -> 45s...)
+
+        playSound('overdrive_ready');
+        addFloatingText(`${od.name.toUpperCase()} ACTIVATED!`, playerShip.x, playerShip.y - 60, od.color, "20px");
+        refreshLiveUiDisplays();
+    }
+
     window.activateOverdrive = function(key) {
         let od = overdrives[key];
+        // GLOBAL LOCK: if any Overdrive (this one or another) is already active, every
+        // Overdrive button is locked until it finishes - no activation, no selection screen.
+        if (isAnyOverdriveActive()) {
+            playSound('click'); // Error sound/feedback - locked while another Overdrive is active
+            return;
+        }
         // CHECK CONDITIONS: Ability must be unlocked, charge must be full, cooldown must be 0
         if (od.unlocked && od.charge >= od.maxCharge && od.cooldownTimer <= 0 && od.activeTimer <= 0) {
-            
-            // Base 5s active time, scaled up by this overdrive's duration upgrades (+1s/level)
-            od.activeTimer = getOverdriveDuration(key); 
-            
-            // RESET CHARGE
-            od.charge = 0;
-            
-            // DYNAMIC TIMING INCREMENT: Start cooldown wait for the NEXT usage
-            od.cooldownTimer = od.maxCooldown;
-            od.maxCooldown += 600; // Adds 10 seconds every time (25s -> 35s -> 45s...)
-            
-            playSound('overdrive_ready');
-            addFloatingText(`${od.name.toUpperCase()} ACTIVATED!`, playerShip.x, playerShip.y - 60, od.color, "20px");
-            refreshLiveUiDisplays();
+            let readyKeys = getReadyOverdriveKeys();
+            if (readyKeys.length > 1) {
+                openOverdriveSelection(readyKeys);
+            } else {
+                performOverdriveActivation(key);
+            }
         } else {
             playSound('click'); // Error sound/feedback if they try to click early
         }
+    };
+
+    function openOverdriveSelection(readyKeys) {
+        if (gameState !== "PLAYING") return; // safety - only ever opened mid-gameplay
+        odSelectReadyKeys = readyKeys.slice();
+        gameState = "OD_SELECT"; // freezes the main update/render loop, same as PAUSED does
+        playSound('ui_open');
+        document.getElementById('pause-btn').style.display = 'none';
+
+        let container = document.getElementById('od-select-cards-container');
+        container.innerHTML = '';
+        odSelectReadyKeys.forEach(key => {
+            let od = overdrives[key];
+            let icon = odIconMap[key] || '⭐';
+            let card = document.createElement('div');
+            card.className = 'od-select-card';
+            card.style.borderColor = od.color;
+            card.onmouseenter = () => { card.style.boxShadow = `0 0 20px ${od.color}`; };
+            card.onmouseleave = () => { card.style.boxShadow = 'none'; };
+            card.onclick = () => chooseOverdrive(key, false);
+            card.innerHTML = `
+                <div class="od-select-card-icon">${icon}</div>
+                <div class="od-select-card-name" style="color:${od.color};">${od.name}</div>
+                <div class="od-select-card-btn" style="background:${od.color};">SELECT</div>
+            `;
+            container.appendChild(card);
+        });
+
+        document.getElementById('od-select-menu').style.display = 'flex';
+
+        odSelectDeadline = Date.now() + OD_SELECT_DURATION_MS;
+        updateOdSelectCountdown();
+        if (odSelectCountdownInterval) clearInterval(odSelectCountdownInterval);
+        odSelectCountdownInterval = setInterval(updateOdSelectCountdown, 100);
+    }
+
+    function updateOdSelectCountdown() {
+        let remaining = Math.max(0, odSelectDeadline - Date.now());
+        let countdownEl = document.getElementById('od-select-countdown');
+        if (countdownEl) countdownEl.innerText = `${(remaining / 1000).toFixed(1)}s`;
+        let fillEl = document.getElementById('od-select-timer-fill');
+        if (fillEl) fillEl.style.width = `${(remaining / OD_SELECT_DURATION_MS) * 100}%`;
+
+        if (remaining <= 0) {
+            clearInterval(odSelectCountdownInterval);
+            odSelectCountdownInterval = null;
+            // Timer expired without a player choice - the CPU auto-picks one of the ready
+            // overdrives on the player's behalf so gameplay never stalls waiting on input.
+            let autoKey = odSelectReadyKeys[Math.floor(Math.random() * odSelectReadyKeys.length)];
+            chooseOverdrive(autoKey, true);
+        }
+    }
+
+    window.chooseOverdrive = function(key, isAuto) {
+        if (gameState !== "OD_SELECT") return; // ignore stray clicks after resolution
+        if (odSelectCountdownInterval) { clearInterval(odSelectCountdownInterval); odSelectCountdownInterval = null; }
+
+        document.getElementById('od-select-menu').style.display = 'none';
+        document.getElementById('pause-btn').style.display = 'block';
+        gameState = "PLAYING";
+        odSelectReadyKeys = [];
+
+        if (isAuto) {
+            playSound('click');
+            addFloatingText(`AUTO-SELECTED!`, playerShip.x, playerShip.y - 90, '#ffea00', "16px");
+        }
+        performOverdriveActivation(key);
     };
 
     let lastFireballThrow = 0; let thrownFireballs = [];
@@ -1006,8 +1157,9 @@
     // --- WEAPON DETECTION RANGE (drills + axes) ---
     // Drills and axes are only allowed to detect, target, and attack an asteroid once it is
     // within this many pixels of the girl. Outside this range they simply stay hidden/inactive
-    // instead of spawning or orbiting. 450 sits in the middle of the requested 400-500px window.
-    const WEAPON_ENGAGE_RANGE = 450;
+    // instead of spawning or orbiting. Widened from 450 -> 600 so drills/axes engage targets
+    // noticeably further out, giving the player more breathing room before threats close in.
+    const WEAPON_ENGAGE_RANGE = 600;
 
     // --- WIN CONDITION ---
     // The game runs until the girl has mined $1 Quadrillion for Earth.
@@ -1068,7 +1220,9 @@
     // objects in that patrol range, it launches smaller attack drones that independently
     // hunt down and attack anything within 500-600px of themselves.
     let mainDrone = null; let miniDrones = []; let droneProjectiles = []; let lastDroneScan = 0;
-    const DRONE_PATROL_MIN = 500, DRONE_PATROL_MAX = 600;
+    // Widened from 500-600 -> 650-800 so both the main drone's patrol loop and each mini
+    // attack drone's target-acquisition radius reach noticeably further out.
+    const DRONE_PATROL_MIN = 650, DRONE_PATROL_MAX = 800;
 
     // --- UNLOCKABLE GIRL CLONE ABILITY (kamikaze bombers) ---
     // Completely separate system from Acid Sisters below - own array, own state, own
@@ -1779,13 +1933,21 @@
         newGameFromMenu();
     }
 
+    // BUGFIX: New Game previously reloaded the page WITHOUT deleting the existing save, so the
+    // reload just landed back on the main menu with the old save still intact (Continue/Reset
+    // still showing, Play Now still relabeled New Game) - nothing was ever actually reset, and
+    // clicking it again just repeated the same no-op. Fixed by deleting the save FIRST, then
+    // reloading (still the simplest reliable way to guarantee every in-memory value - playerStats,
+    // inventory, upgradeLevels, overdrives, gameStats, currentZoneId, mainDrone/handMines, etc. -
+    // snaps back to its true code-default state, same pattern restartGame() already relies on),
+    // and finally flagging via sessionStorage that the reload should drop straight into a fresh
+    // PLAYING session instead of sitting on the main menu waiting for another click.
     function newGameFromMenu() {
-        // Reloading the page is the simplest reliable way to guarantee truly fresh in-memory
-        // defaults (matches the existing restartGame() pattern below) - the save file itself is
-        // untouched until the player actually plays and an autosave/milestone-save overwrites it.
         if (hasSaveData()) {
-            if (!confirm("Starting a new game won't delete your existing save immediately, but it WILL be overwritten the next time the game auto-saves. Continue?")) return;
+            if (!confirm("Starting a new game will permanently delete your current save and ALL progress (currency, minerals, upgrades, unlocks, score). This cannot be undone. Continue?")) return;
         }
+        deleteSaveData();
+        try { sessionStorage.setItem('gtdPendingNewGame', '1'); } catch (e) {}
         window.location.reload();
     }
 
@@ -1795,16 +1957,46 @@
         window.location.reload();
     }
 
-    // Auto-save every 45s, but only once the player has actually started/continued a session -
-    // never while still sitting on the main menu, or a blank autosave could clobber a real save.
-    setInterval(() => { if (sessionActive) saveGame(); }, 45000);
+    // ============================================================
+    // MANUAL SAVE ONLY - no autosave of any kind. Progress is only ever written to localStorage
+    // when the player explicitly presses the Save Game button (saveGameManual below). Closing the
+    // tab, navigating to the main menu, leveling up, buying an upgrade, traveling zones, etc. no
+    // longer trigger a save - if it wasn't manually saved, it's gone on next load, by design.
+    // ============================================================
     // Lifetime play-time counter, only ticking while actually playing (not paused/menus).
     setInterval(() => { if (gameState === "PLAYING") gameStats.playTimeSeconds++; }, 1000);
-    // Save on exit/tab-close. 'beforeunload' covers most desktop cases; 'visibilitychange' is the
-    // reliable one on mobile, where backgrounding the tab often skips beforeunload entirely.
-    window.addEventListener('beforeunload', () => { if (sessionActive) saveGame(); });
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && sessionActive) saveGame(); });
+
+    // Player-facing manual save action (wired to the Save Game button). Shows a brief toast so
+    // there's clear feedback that a save actually happened, since nothing saves silently anymore.
+    function saveGameManual() {
+        saveGame();
+        playSound('click');
+        showToast('💾 Game Saved');
+        updateMainMenuButtons();
+    }
+
+    function showToast(msg) {
+        let toast = document.getElementById('info-toast');
+        if (!toast) return;
+        toast.innerText = msg;
+        toast.style.display = 'block';
+        toast.style.animation = 'none';
+        void toast.offsetWidth; // restart the fadeOut animation each time
+        toast.style.animation = 'fadeOut 2.2s forwards';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { toast.style.display = 'none'; }, 2200);
+    }
+
     updateMainMenuButtons();
+    // If New Game was just requested, skip the main menu entirely and drop straight into a
+    // fresh session (the reload above already guaranteed clean in-memory defaults, and the old
+    // save was already deleted before reloading).
+    try {
+        if (sessionStorage.getItem('gtdPendingNewGame') === '1') {
+            sessionStorage.removeItem('gtdPendingNewGame');
+            startGame();
+        }
+    } catch (e) {}
 
     // EXPONENTIAL COST FOR HARDER GRIND
     // Both "increase the cost of upgrades" and "each level costs substantially more than the
@@ -2112,7 +2304,7 @@
             } else {
                 playSound('upgrade_buy'); addFloatingText(`${upg.name} UPGRADED!`, playerShip.x, playerShip.y - 40, '#00f3ff', "16px");
             }
-            renderVisualTree(); refreshLiveUiDisplays(); saveGame();
+            renderVisualTree(); refreshLiveUiDisplays();
         } else { playSound('click'); }
     }
 
@@ -2195,6 +2387,18 @@
                     if(document.getElementById(`val-${key}-sys`)) {
                     document.getElementById(`val-${key}-sys`).innerText = "OVERDRIVE";
                     document.getElementById(`val-${key}-sys`).style.color = od.color;
+                    }
+                } else if (od.charge >= od.maxCharge && od.cooldownTimer <= 0 && isAnyOverdriveActive()) {
+                    // Fully charged and otherwise ready, but another Overdrive is currently
+                    // active - locked out until that one finishes (see isAnyOverdriveActive).
+                    fill.style.width = `100%`;
+                    fill.style.background = 'gray';
+                    btn.innerText = "LOCKED";
+                    btn.style.background = '#222'; btn.style.color = '#777';
+                    btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none';
+                    if(document.getElementById(`val-${key}-sys`)) {
+                    document.getElementById(`val-${key}-sys`).innerText = "LOCKED";
+                    document.getElementById(`val-${key}-sys`).style.color = "#777";
                     }
                 } else if (od.charge >= od.maxCharge && od.cooldownTimer <= 0) {
                     fill.style.width = `100%`;
@@ -2340,7 +2544,7 @@
         // Electric Storm Overdrive. No longer connected to Girl Power in any way. ---
         if (playerStats.hasElectricShock) {
             let isShockOd = overdrives.shock.activeTimer > 0;
-            let shockRange = 400 + playerStats.shockRange + (isShockOd ? 250 : 0);
+            let shockRange = 550 + playerStats.shockRange + (isShockOd ? 250 : 0);
             let shockInterval = Math.max(220, 1100 - (playerStats.shockFireRateLevel * 35)) / (isShockOd ? 2.2 : 1);
             if (timeNow - lastLightningStrike > shockInterval) {
                 lastLightningStrike = timeNow;
@@ -2391,7 +2595,23 @@
                     let odBonus = 1 + Math.floor(playerStats.level / 12) + Math.floor(upgradeLevels['rkt_3'] / 15);
                     numRockets = Math.min(20, numRockets + Math.min(12, odBonus));
                 }
-                for(let r=0; r<numRockets; r++) { if (rocketsList.length > 150) break; let target = visibleAsts[Math.floor(Math.random() * visibleAsts.length)]; let rAngle = Math.atan2(target.y - playerShip.y, target.x - playerShip.x) + ((Math.random()-0.5)*0.6); rocketsList.push({ x: playerShip.x, y: playerShip.y, vx: Math.cos(rAngle)*5, vy: Math.sin(rAngle)*5, target: target, angle: rAngle, life: 250 }); }
+                // --- LAUNCH SPACING: previously every missile in the burst spawned at the exact
+                // same point (playerShip.x/y), so a big Overdrive volley (up to 20 at once) read
+                // as one overlapping blob for the first few frames. Now each missile launches from
+                // its own point around a small ring centered on the ship, evenly distributed by
+                // index, so the whole volley fans out in an organized ring formation from the
+                // instant it fires instead of all stacking on top of each other. Each missile still
+                // homes toward its own target exactly as before - only the spawn position changed.
+                for(let r=0; r<numRockets; r++) {
+                    if (rocketsList.length > 150) break;
+                    let target = visibleAsts[Math.floor(Math.random() * visibleAsts.length)];
+                    let rAngle = Math.atan2(target.y - playerShip.y, target.x - playerShip.x) + ((Math.random()-0.5)*0.6);
+                    let launchFormationAngle = (r / numRockets) * Math.PI * 2;
+                    let launchRingRadius = 22 + (r % 3) * 8; // slight radius stagger avoids a perfect flat ring
+                    let spawnX = playerShip.x + Math.cos(launchFormationAngle) * launchRingRadius;
+                    let spawnY = playerShip.y + Math.sin(launchFormationAngle) * launchRingRadius;
+                    rocketsList.push({ x: spawnX, y: spawnY, vx: Math.cos(rAngle)*5, vy: Math.sin(rAngle)*5, target: target, angle: rAngle, life: 250 });
+                }
                 playSound('rocket_launch'); lastRocketLaunch = timeNow; refreshLiveUiDisplays();
             }
         }
@@ -2762,7 +2982,7 @@
                 let coinAmount = Math.floor(Math.random() * 3) + 2; for(let k = 0; k < coinAmount && homingParticles.length < 300; k++) homingParticles.push({ x: ast.x, y: ast.y, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, typeInfo: { name: 'coin', color: '#ffd700', isCoin: true }, img: null, value: levelRewardMultiplier, timer: 60, spin: Math.random() * Math.PI * 2 });
 
                 playerStats.xp += Math.floor(ast.typeInfo.baseHealth / 5);
-                if (playerStats.xp >= playerStats.nextLevelXp) { playerStats.xp -= playerStats.nextLevelXp; playerStats.level++; playerStats.nextLevelXp = Math.floor(playerStats.nextLevelXp * 1.4); addFloatingText("LEVEL UP! 🌟", playerShip.x, playerShip.y - 45, '#ffcc00', "18px"); playSound('levelup'); saveGame(); }
+                if (playerStats.xp >= playerStats.nextLevelXp) { playerStats.xp -= playerStats.nextLevelXp; playerStats.level++; playerStats.nextLevelXp = Math.floor(playerStats.nextLevelXp * 1.4); addFloatingText("LEVEL UP! 🌟", playerShip.x, playerShip.y - 45, '#ffcc00', "18px"); playSound('levelup'); }
                 gameStats.blocksDestroyed++;
                 asteroidsList.splice(i, 1); refreshLiveUiDisplays();
             }
@@ -2975,7 +3195,7 @@
         // proper radius, then she's gone. A fresh clone only replaces her after a short
         // respawn delay (shortened by the "Rapid Ignition" upgrade) so the ability can't be
         // spammed - it scales via clone count, damage, blast radius and seek range instead.
-        const CLONE_SEEK_RANGE_BASE = 320;
+        const CLONE_SEEK_RANGE_BASE = 420;
         const CLONE_TOUCH_BUFFER = 18;
         const CLONE_BLAST_RADIUS_BASE = 85;
         if (playerStats.hasClone) {
@@ -3109,7 +3329,7 @@
             let desiredAcidCount = isAcidOd ? 5 : Math.min(5, 1 + Math.floor(playerStats.level / 10));
             while (acidClones.length < desiredAcidCount) { let idx = acidClones.length; acidClones.push({ angle: (idx / desiredAcidCount) * Math.PI * 2, x: playerShip.x, y: playerShip.y, lastThrow: 0 }); }
             while (acidClones.length > desiredAcidCount) acidClones.pop();
-            const ACID_RANGE = 550;
+            const ACID_RANGE = 700;
             let viewMinX = camera.x + 30, viewMaxX = camera.x + (viewportW / gameScale) - 30;
             let viewMinY = camera.y + 30, viewMaxY = camera.y + (viewportH / gameScale) - 30;
 
@@ -3257,10 +3477,17 @@
                 let onScreen = asteroidsList.filter(a => a.x >= viMinX && a.x <= viMaxX && a.y >= viMinY && a.y <= viMaxY);
                 if (onScreen.length > 0) {
                     let shots = isPulseOd ? 3 : 1;
+                    // Same launch-spacing idea as the missile volley: fan multi-shot bursts out
+                    // from a small ring around the core instead of stacking every shot on the
+                    // exact same pixel, so Overdrive's 3-shot burst reads as organized, not clumped.
                     for (let s = 0; s < shots; s++) {
                     let t = onScreen[Math.floor(Math.random() * onScreen.length)];
                     let ang = Math.atan2(t.y - coreY, t.x - coreX);
-                    if (coreProjectiles.length < 150) coreProjectiles.push({ x: coreX, y: coreY, vx: Math.cos(ang) * 6, vy: Math.sin(ang) * 6, target: t, life: 140, spin: 0 });
+                    let shotFormationAngle = shots > 1 ? (s / shots) * Math.PI * 2 : 0;
+                    let shotRingRadius = shots > 1 ? 10 : 0;
+                    let cpSpawnX = coreX + Math.cos(shotFormationAngle) * shotRingRadius;
+                    let cpSpawnY = coreY + Math.sin(shotFormationAngle) * shotRingRadius;
+                    if (coreProjectiles.length < 150) coreProjectiles.push({ x: cpSpawnX, y: cpSpawnY, vx: Math.cos(ang) * 6, vy: Math.sin(ang) * 6, target: t, life: 140, spin: 0 });
                     }
                 }
             }
