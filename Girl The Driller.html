@@ -159,6 +159,7 @@
             100% { opacity: 0; }
         }
         .od-name { font-size: calc(var(--ui-scale) * 10px); font-weight: bold; margin-bottom: calc(var(--ui-scale) * 4px); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .od-tier { font-size: calc(var(--ui-scale) * 8px); background: rgba(255,255,255,0.14); border-radius: 3px; padding: 1px calc(var(--ui-scale) * 4px); margin-right: calc(var(--ui-scale) * 4px); color: #bbb; letter-spacing: 0.5px; font-weight: bold; }
         .od-bar { height: calc(var(--ui-scale) * 6px); margin-bottom: calc(var(--ui-scale) * 2px); }
         .od-fill { width: 0%; transition: width 0.3s; }
         .od-btn { margin-top: calc(var(--ui-scale) * 5px); width: 100%; padding: calc(var(--ui-scale) * 5px) calc(var(--ui-scale) * 2px); font-size: calc(var(--ui-scale) * 9px); background: #333; color: gray; border: 1px solid #555; border-radius: calc(var(--ui-scale) * 4px); font-family: 'Orbitron'; font-weight: bold; cursor: pointer; transition: 0.3s; }
@@ -194,10 +195,12 @@
 
     <div id="main-menu" class="overlay-menu">
         <div class="overlay-title">Girl: The Driller</div>
-        <button class="menu-btn" onclick="startGame()" style="background: #155f5f;">▶ PLAY NOW</button>
+        <button class="menu-btn" id="btn-continue" onclick="continueGame()" style="display:none; background: #1f7a3d; border-color: #39ff14; color: #39ff14;">▶ CONTINUE</button>
+        <button class="menu-btn" id="btn-play-now" onclick="newGameFromMenuOrStart()" style="background: #155f5f;">▶ PLAY NOW</button>
         <button class="menu-btn" onclick="showReadme()">📄 README</button>
         <button class="menu-btn" onclick="openUpgradesFromMenu()">⚙️ SKILL TREE</button>
         <button class="menu-btn" id="btn-music-toggle" onclick="toggleMusic()">🎵 MUSIC: ON</button>
+        <button class="menu-btn" id="btn-reset-progress" onclick="resetProgressFromMenu()" style="display:none; border-color: #ff3333; color: #ff3333;">🗑️ RESET PROGRESS</button>
     </div>
 
     <div id="readme-menu" class="overlay-menu" style="display: none; z-index: 60;">
@@ -244,6 +247,7 @@
         <div id="sys-pulse" class="sys-row" style="color: #ff00aa; display: none;"><span class="sys-dot" style="background:#ff00aa; color:#ff00aa;"></span><span class="sys-name">Pulse Core</span><span class="sys-val" id="val-pulse-sys">Ready</span></div>
         <div id="sys-acid" class="sys-row" style="color: #7cfc00; display: none;"><span class="sys-dot" style="background:#7cfc00; color:#7cfc00;"></span><span class="sys-name">Acid Sisters</span><span class="sys-val" id="val-acid-sys">Ready</span></div>
         <div id="sys-shock" class="sys-row" style="color: #66e0ff; display: none;"><span class="sys-dot" style="background:#66e0ff; color:#66e0ff;"></span><span class="sys-name">Electric Shock</span><span class="sys-val" id="val-shock-sys">Ready</span></div>
+        <div id="sys-firesplit" class="sys-row" style="color: #ff3300; display: none;"><span class="sys-dot" style="background:#ff3300; color:#ff3300;"></span><span class="sys-name">Fire Split</span><span class="sys-val" id="val-firesplit-sys">Ready</span></div>
     </div>
 
     <div id="special-items-hud">
@@ -254,69 +258,75 @@
     <div id="overdrives-container">
         <div class="od-box" id="od-box-suit">
             <div class="od-icon" id="od-icon-suit">🔒</div>
-            <div class="od-name" style="color:#d942ff;">Girl Power</div>
+            <div class="od-name" style="color:#d942ff;"><span class="od-tier">T1</span>Girl Power</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-suit" style="background:#d942ff;"></div></div>
             <button class="od-btn" id="od-btn-suit" onclick="activateOverdrive('suit')">0/25</button>
         </div>
         <div class="od-box" id="od-box-drill">
             <div class="od-icon" id="od-icon-drill">🔒</div>
-            <div class="od-name" style="color:#aaa;">Drill Storm</div>
+            <div class="od-name" style="color:#aaa;"><span class="od-tier">START</span>Drill Storm</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-drill" style="background:#aaa;"></div></div>
             <button class="od-btn" id="od-btn-drill" onclick="activateOverdrive('drill')">0/25</button>
         </div>
         <div class="od-box" id="od-box-pickaxe">
             <div class="od-icon" id="od-icon-pickaxe">🔒</div>
-            <div class="od-name" style="color:#ff9900;">Axe Fury</div>
+            <div class="od-name" style="color:#ff9900;"><span class="od-tier">T2</span>Axe Fury</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-pickaxe" style="background:#ff9900;"></div></div>
             <button class="od-btn" id="od-btn-pickaxe" onclick="activateOverdrive('pickaxe')">0/25</button>
         </div>
         <div class="od-box" id="od-box-rocket">
             <div class="od-icon" id="od-icon-rocket">🔒</div>
-            <div class="od-name" style="color:#39ff14;">Missile Rain</div>
+            <div class="od-name" style="color:#39ff14;"><span class="od-tier">T1</span>Missile Rain</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-rocket" style="background:#39ff14;"></div></div>
             <button class="od-btn" id="od-btn-rocket" onclick="activateOverdrive('rocket')">0/25</button>
         </div>
         <div class="od-box" id="od-box-laser">
             <div class="od-icon" id="od-icon-laser">🔒</div>
-            <div class="od-name" style="color:#ff3366;">Laser Beam</div>
+            <div class="od-name" style="color:#ff3366;"><span class="od-tier">T2</span>Laser Beam</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-laser" style="background:#ff3366;"></div></div>
             <button class="od-btn" id="od-btn-laser" onclick="activateOverdrive('laser')">0/25</button>
         </div>
         <div class="od-box" id="od-box-fireball">
             <div class="od-icon" id="od-icon-fireball">🔒</div>
-            <div class="od-name" style="color:#00f3ff;">Inferno</div>
+            <div class="od-name" style="color:#00f3ff;"><span class="od-tier">T1</span>Inferno</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-fireball" style="background:#00f3ff;"></div></div>
             <button class="od-btn" id="od-btn-fireball" onclick="activateOverdrive('fireball')">0/25</button>
         </div>
         <div class="od-box" id="od-box-drone">
             <div class="od-icon" id="od-icon-drone">🔒</div>
-            <div class="od-name" style="color:#00ffcc;">Drone Swarm</div>
+            <div class="od-name" style="color:#00ffcc;"><span class="od-tier">T3</span>Drone Swarm</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-drone" style="background:#00ffcc;"></div></div>
             <button class="od-btn" id="od-btn-drone" onclick="activateOverdrive('drone')">0/25</button>
         </div>
         <div class="od-box" id="od-box-clone">
             <div class="od-icon" id="od-icon-clone">🔒</div>
-            <div class="od-name" style="color:#ff5500;">Girl Clones</div>
+            <div class="od-name" style="color:#ff5500;"><span class="od-tier">T4</span>Girl Clones</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-clone" style="background:#ff5500;"></div></div>
             <button class="od-btn" id="od-btn-clone" onclick="activateOverdrive('clone')">0/25</button>
         </div>
         <div class="od-box" id="od-box-pulse">
             <div class="od-icon" id="od-icon-pulse">🔒</div>
-            <div class="od-name" style="color:#ff00aa;">Core Overload</div>
+            <div class="od-name" style="color:#ff00aa;"><span class="od-tier">T3</span>Core Overload</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-pulse" style="background:#ff00aa;"></div></div>
             <button class="od-btn" id="od-btn-pulse" onclick="activateOverdrive('pulse')">0/25</button>
         </div>
         <div class="od-box" id="od-box-acid">
             <div class="od-icon" id="od-icon-acid">🔒</div>
-            <div class="od-name" style="color:#7cfc00;">Acid Sisters</div>
+            <div class="od-name" style="color:#7cfc00;"><span class="od-tier">T4</span>Acid Sisters</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-acid" style="background:#7cfc00;"></div></div>
             <button class="od-btn" id="od-btn-acid" onclick="activateOverdrive('acid')">0/25</button>
         </div>
         <div class="od-box" id="od-box-shock">
             <div class="od-icon" id="od-icon-shock">🔒</div>
-            <div class="od-name" style="color:#66e0ff;">Electric Storm</div>
+            <div class="od-name" style="color:#66e0ff;"><span class="od-tier">T3</span>Electric Storm</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-shock" style="background:#66e0ff;"></div></div>
             <button class="od-btn" id="od-btn-shock" onclick="activateOverdrive('shock')">0/25</button>
+        </div>
+        <div class="od-box" id="od-box-firesplit">
+            <div class="od-icon" id="od-icon-firesplit">🔒</div>
+            <div class="od-name" style="color:#ff3300;"><span class="od-tier">T2</span>Firestorm Split</div>
+            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-firesplit" style="background:#ff3300;"></div></div>
+            <button class="od-btn" id="od-btn-firesplit" onclick="activateOverdrive('firesplit')">0/25</button>
         </div>
     </div>
 
@@ -419,6 +429,7 @@
         document.getElementById('main-menu').style.display = 'none';
         document.getElementById('pause-btn').style.display = 'block';
         gameState = "PLAYING";
+        sessionActive = true;
         startBgMusic();
         refreshLiveUiDisplays();
     }
@@ -452,8 +463,10 @@
     }
 
     function goToMainMenu() {
+        if (sessionActive) saveGame();
         document.getElementById('pause-menu').style.display = 'none';
         document.getElementById('main-menu').style.display = 'flex';
+        updateMainMenuButtons();
         gameState = "MENU";
     }
 
@@ -695,6 +708,11 @@
     // --- STARTING INVENTORY: the player begins with nothing and must earn every mineral by
     // destroying asteroids/objects during gameplay, as intended for an incremental mining game. ---
     let inventory = { iron: 0, bronze: 0, silver: 0, gold: 0, uranium: 0 };
+
+    // --- LIFETIME STATS (persisted by the save system below). Unlike playerStats.score/inventory,
+    // which go up AND down as the player earns and spends, these only ever count up - they're
+    // the actual "how much have you accomplished in total" numbers for save data. ---
+    let gameStats = { totalMoneyEarned: 0, totalMineralsCollected: 0, blocksDestroyed: 0, playTimeSeconds: 0 };
     
     // --- ABILITY UNLOCK PROGRESSION: only the Drill is available at game start. Every other
     // ability (Girl Power suit, Fireball, Rocket, Laser, Pickaxe, Drone, Clone, Pulse Core,
@@ -713,7 +731,13 @@
         hasElectricShock: false, shockDamage: 1, shockFireRateLevel: 0, shockRange: 0,
         // --- NEW SEPARATE POWER: Pulse Core (its own ability, upgrade tree & overdrive - NOT
         // the same thing as the Girl Power / Electric Shock suit ability, which is untouched) ---
-        hasPulseCore: false, pulseDamage: 1
+        hasPulseCore: false, pulseDamage: 1,
+        // --- NEW SEPARATE POWER: Fire Split - a brand-new ability, fully independent of the
+        // existing Fireball ("Inferno") orbiting-orb weapon above. Fires a single fire bolt that,
+        // on impact, splits into 3 smaller fire bolts in a V formation. Its own damage, fire
+        // rate, projectile speed, burn duration, projectile lifetime, and split-chance stats. ---
+        hasFireSplit: false, fireSplitDamage: 1, fireSplitFireRateLevel: 0, fireSplitSpeedLevel: 0,
+        fireSplitBurnLevel: 0, fireSplitLifetimeLevel: 0, fireSplitExtraSplitChance: 0
     };
 
     // --- UPDATED: 6 SEPARATE OVERDRIVES CONFIGURATION (Fireball & Rocket unlocked set to true) ---
@@ -728,7 +752,8 @@
         clone:    { name: 'Girl Clones', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#ff5500' },
         pulse:    { name: 'Core Overload', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#ff00aa' },
         acid:     { name: 'Acid Sisters', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#7cfc00' },
-        shock:    { name: 'Electric Storm', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#66e0ff' }
+        shock:    { name: 'Electric Storm', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#66e0ff' },
+        firesplit:{ name: 'Firestorm Split', charge: 0, maxCharge: 25, activeTimer: 0, cooldownTimer: 0, maxCooldown: 1500, unlocked: false, color: '#ff3300' }
     };
 
     // --- POWER-UP UI ICONS: one emoji per overdrive-capable ability, shown in its od-box.
@@ -737,7 +762,7 @@
     // NOTE: 'drill' previously reused the mining-PICK glyph (⛏️), which reads as a pickaxe/axe
     // rather than a drill and was easy to confuse with the Axe ability's icon - fixed to a
     // proper tool glyph (🛠️) below so the two are visually distinct. ---
-    const odIconMap = { suit: '🛡️', drill: '🛠️', pickaxe: '🪓', rocket: '🚀', laser: '⚡', fireball: '🔥', drone: '🤖', clone: '👥', pulse: '💥', acid: '🧪', shock: '🌩️' };
+    const odIconMap = { suit: '🛡️', drill: '🛠️', pickaxe: '🪓', rocket: '🚀', laser: '⚡', fireball: '🔥', drone: '🤖', clone: '👥', pulse: '💥', acid: '🧪', shock: '🌩️', firesplit: '🧨' };
     let odPrevUnlocked = {};
 
     // --- GIRL POWER SUIT: COLOR TIER SYSTEM (Task 1) ---
@@ -785,7 +810,7 @@
     const overdriveDurationUpgradeId = {
         suit: 'suit_od_dur', drill: 'drill_od_dur', pickaxe: 'pickaxe_od_dur', rocket: 'rocket_od_dur',
         laser: 'laser_od_dur', fireball: 'fireball_od_dur', drone: 'drone_od_dur', clone: 'clone_od_dur', 
-        pulse: 'pulse_od_dur', acid: 'acid_od_dur', shock: 'shock_od_dur'
+        pulse: 'pulse_od_dur', acid: 'acid_od_dur', shock: 'shock_od_dur', firesplit: 'firesplit_od_dur'
     };
     function getOverdriveDuration(key) {
         let durId = overdriveDurationUpgradeId[key];
@@ -817,6 +842,7 @@
     };
 
     let lastFireballThrow = 0; let thrownFireballs = [];
+    let lastFireSplitThrow = 0; let fireSplitList = []; // independent from thrownFireballs above
     let rocketsList = []; let lastRocketLaunch = 0; let handMines = [];
     let asteroidsList = []; let textParticles = []; let visualParticles = []; let drillsList = [];
     // --- DEDICATED THRUST PARTICLE POOL (Missile + Drill exhaust) ---
@@ -968,7 +994,7 @@
                 case "THROW_HUNTER": this.hunter.progress += 0.08; if (this.hunter.progress >= 1) { this.hunter.progress = 1; this.stage = "OPEN_PORTAL"; this.portal.x = this.crystal.x + 110; this.portal.y = this.crystal.y - 80; this.portal.currentRadius = 0; playSound('laser'); } break;
                 case "OPEN_PORTAL": this.portal.currentRadius += 3; if (this.portal.currentRadius >= this.portal.maxRadius) { this.portal.currentRadius = this.portal.maxRadius; this.stage = "DRAG_IN"; playSound('drill_deploy'); } break;
                 case "DRAG_IN": this.crystal.x += (this.portal.x - this.crystal.x) * 0.12; this.crystal.y += (this.portal.y - this.crystal.y) * 0.12; if (Math.abs(this.crystal.x - this.portal.x) < 15 && Math.abs(this.crystal.y - this.portal.y) < 15) { this.crystal.scale -= 0.1; if (this.crystal.scale <= 0) { this.crystal.scale = 0; this.stage = "CLOSE_PORTAL"; } } break;
-                case "CLOSE_PORTAL": this.portal.currentRadius -= 3.5; this.hunter.progress -= 0.1; if (this.portal.currentRadius <= 0) { this.portal.currentRadius = 0; this.stage = "DONE"; this.active = false; playerStats.score += 15000; addFloatingText(`+15000 EPIC CRYSTAL!`, player.x, player.y - 60, '#d942ff', "20px"); playSound('levelup'); refreshLiveUiDisplays(); } break;
+                case "CLOSE_PORTAL": this.portal.currentRadius -= 3.5; this.hunter.progress -= 0.1; if (this.portal.currentRadius <= 0) { this.portal.currentRadius = 0; this.stage = "DONE"; this.active = false; playerStats.score += 15000; gameStats.totalMoneyEarned += 15000; addFloatingText(`+15000 EPIC CRYSTAL!`, player.x, player.y - 60, '#d942ff', "20px"); playSound('levelup'); refreshLiveUiDisplays(); } break;
             } this.portal.spinAngle += 0.05;
         },
         draw(ctx, player) {
@@ -1098,7 +1124,7 @@
         } else if (isEnter) {
             if (upgradesOpen) closeUpgradesMenu();
             else if (readmeOpen) closeReadme();
-            else if (gameState === 'MENU') startGame();
+            else if (gameState === 'MENU') newGameFromMenuOrStart();
             else if (gameState === 'PAUSED') resumeGame();
             else if (gameState === 'WIN') restartGame();
         }
@@ -1310,7 +1336,10 @@
         let scaledMaxHealth = selectedConfig.baseHealth * (1 + (playerStats.level * 0.15));
         asteroidsList.push({ x: spawnX, y: spawnY, vx: (Math.random() - 0.5) * 1.5, vy: (Math.random() - 0.5) * 1.5, radius: Math.random() * 25 + 30, health: scaledMaxHealth, maxHealth: scaledMaxHealth, typeInfo: selectedConfig, spinAngle: Math.random() * Math.PI, spinVelocity: (Math.random() - 0.5) * 0.02, img: astImages[Math.floor(Math.random() * astImages.length)], pulseStart: 0, pulseDuration: 0, playerHitCooldown: 0, knockVX: 0, knockVY: 0 });
     }
-    function addFloatingText(text, x, y, color, size="14px") { textParticles.push({ text, x, y, color, life: 50, size }); }
+    // Capped defensively (like every other particle/projectile list below) so a burst of
+    // simultaneous events (e.g. a multi-kill moment) can't pile up an unbounded number of
+    // on-screen text objects and cost extra fillText() calls every frame.
+    function addFloatingText(text, x, y, color, size="14px") { if (textParticles.length > 90) return; textParticles.push({ text, x, y, color, life: 50, size }); }
     function populateWorldWithSpecials() { for(let i = 0; i < 150; i++) { let typeIndex = Math.floor(Math.random()*specialItemImages.length); specialItemsList.push({ x: Math.random()*8000-4000, y: Math.random()*8000-4000, typeIndex, img: specialItemImages[typeIndex], isCollected: false, isBeingCaught: false, width: 40, height: 40 }); } }
     // Spawns a single new special collectible near wherever the girl currently is (mix of just
     // on-screen and just off-screen, like asteroid spawning) so collectibles keep turning up
@@ -1435,6 +1464,21 @@
             { id: "shock_3", name: "Capacitor Bank", desc: "+ Electric Shock attack speed", cost: { money: 2940 }, effect: "shockFireRateLevel", value: 1, maxLevel: 25 },
             { id: "shock_4", name: "Long Arc Coils", desc: "+ Electric Shock strike range", cost: { money: 2400 }, effect: "shockRange", value: 15, maxLevel: 20 },
             { id: "shock_od_dur", name: "Storm Core", desc: "+1s Electric Storm overdrive duration", cost: { money: 2190 }, effect: null, value: 0, maxLevel: 1000 }
+        ],
+        // --- NEW SEPARATE POWER: FIRE SPLIT - a brand-new ability, completely independent of
+        // every existing weapon (including the unrelated "Fireball"/Inferno orbiting orbs above).
+        // Fires a single bright-red fire bolt that splits into 3 smaller bolts in a V formation
+        // on its first impact. Its own unlock, damage, fire rate, projectile speed, burn,
+        // lifetime, extra-split-chance upgrades, and its own Overdrive (Firestorm Split). ---
+        firesplit: [
+            { id: "firesplit_1", name: "Firestorm Split", desc: "Unlock Fire Split - a bolt that splits into 3 fire projectiles on impact", cost: { money: 2700 }, effect: "hasFireSplit", value: true, maxLevel: 1 },
+            { id: "firesplit_2", name: "Molten Core", desc: "+ Fire Split damage", cost: { money: 1600 }, effect: "fireSplitDamage", value: 0.22, maxLevel: 1000 },
+            { id: "firesplit_3", name: "Rapid Ignition", desc: "+ Fire Split throwing speed (fires more often)", cost: { money: 2000 }, effect: "fireSplitFireRateLevel", value: 1, maxLevel: 25 },
+            { id: "firesplit_4", name: "Accelerant", desc: "+ Fire Split projectile speed", cost: { money: 1800 }, effect: "fireSplitSpeedLevel", value: 1, maxLevel: 20 },
+            { id: "firesplit_5", name: "Smoldering Burn", desc: "+ Burn damage and duration on anything hit", cost: { money: 2200 }, effect: "fireSplitBurnLevel", value: 1, maxLevel: 20 },
+            { id: "firesplit_6", name: "Extended Fuse", desc: "+ Fire Split projectile lifetime/range", cost: { money: 1500 }, effect: "fireSplitLifetimeLevel", value: 1, maxLevel: 15 },
+            { id: "firesplit_7", name: "Chain Combustion", desc: "+ Chance for split projectiles to split again on their next hit", cost: { money: 3500 }, effect: "fireSplitExtraSplitChance", value: 0.03, maxLevel: 15 },
+            { id: "firesplit_od_dur", name: "Firestorm Core", desc: "+1s Firestorm Split overdrive duration", cost: { money: 2100 }, effect: null, value: 0, maxLevel: 1000 }
         ]
     };
 
@@ -1449,6 +1493,116 @@
         // resources on its unlock node in the skill tree.
     }
     initLevels();
+
+    // ============================================================
+    // SAVE & LOAD SYSTEM
+    // ============================================================
+    // Everything that defines the player's progress lives in a handful of top-level objects
+    // (playerStats, inventory, upgradeLevels, overdrives[].unlocked, gameStats) - saving is just
+    // snapshotting those into localStorage as JSON, and loading is restoring them back onto the
+    // same objects the rest of the game already reads from every frame. Combat-only runtime state
+    // (positions, active projectiles, overdrive charge/cooldown timers, current camera, etc.) is
+    // intentionally NOT saved - like most incremental games, a reload/continue drops you back into
+    // a calm moment with all your permanent progress intact, not mid-explosion.
+    const SAVE_KEY = 'girlTheDrillerSave_v1';
+    let sessionActive = false; // true once the player has actually pressed Play/Continue this page-load
+
+    function getSaveData() {
+        return {
+            version: 1,
+            savedAt: Date.now(),
+            playerStats: playerStats,
+            inventory: inventory,
+            upgradeLevels: upgradeLevels,
+            gameStats: gameStats,
+            overdriveUnlocked: Object.fromEntries(Object.entries(overdrives).map(([k, o]) => [k, o.unlocked]))
+        };
+    }
+
+    function applySaveData(data) {
+        if (!data) return false;
+        // Object.assign only overwrites keys present in the save file - any newer fields added
+        // to playerStats/gameStats etc. in future updates that an old save doesn't have simply
+        // keep their fresh default value, so old saves stay compatible going forward.
+        if (data.playerStats) Object.assign(playerStats, data.playerStats);
+        if (data.inventory) Object.assign(inventory, data.inventory);
+        if (data.upgradeLevels) Object.assign(upgradeLevels, data.upgradeLevels);
+        if (data.gameStats) Object.assign(gameStats, data.gameStats);
+        if (data.overdriveUnlocked) {
+            for (let k in data.overdriveUnlocked) { if (overdrives[k]) overdrives[k].unlocked = !!data.overdriveUnlocked[k]; }
+        }
+        return true;
+    }
+
+    function hasSaveData() {
+        try { return localStorage.getItem(SAVE_KEY) !== null; } catch (e) { return false; }
+    }
+
+    function saveGame() {
+        try { localStorage.setItem(SAVE_KEY, JSON.stringify(getSaveData())); } catch (e) { console.warn('Save failed:', e); }
+    }
+
+    function loadGame() {
+        try {
+            let raw = localStorage.getItem(SAVE_KEY);
+            if (!raw) return false;
+            return applySaveData(JSON.parse(raw));
+        } catch (e) { console.warn('Load failed - save may be corrupted:', e); return false; }
+    }
+
+    function deleteSaveData() {
+        try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+    }
+
+    // Reflects whether a save exists in the main menu: shows/hides the Continue and Reset
+    // Progress buttons, and relabels the primary button to New Game once a save exists.
+    function updateMainMenuButtons() {
+        let hasSave = hasSaveData();
+        let continueBtn = document.getElementById('btn-continue');
+        let resetBtn = document.getElementById('btn-reset-progress');
+        let playBtn = document.getElementById('btn-play-now');
+        if (continueBtn) continueBtn.style.display = hasSave ? 'block' : 'none';
+        if (resetBtn) resetBtn.style.display = hasSave ? 'block' : 'none';
+        if (playBtn) playBtn.innerText = hasSave ? '🆕 NEW GAME' : '▶ PLAY NOW';
+    }
+
+    function continueGame() {
+        loadGame();
+        startGame();
+    }
+
+    function newGameFromMenuOrStart() {
+        // No save yet - this is just the normal "first ever play" button, no need to confirm/reload.
+        if (!hasSaveData()) { startGame(); return; }
+        newGameFromMenu();
+    }
+
+    function newGameFromMenu() {
+        // Reloading the page is the simplest reliable way to guarantee truly fresh in-memory
+        // defaults (matches the existing restartGame() pattern below) - the save file itself is
+        // untouched until the player actually plays and an autosave/milestone-save overwrites it.
+        if (hasSaveData()) {
+            if (!confirm("Starting a new game won't delete your existing save immediately, but it WILL be overwritten the next time the game auto-saves. Continue?")) return;
+        }
+        window.location.reload();
+    }
+
+    function resetProgressFromMenu() {
+        if (!confirm("This will permanently delete your saved progress. This cannot be undone. Are you sure?")) return;
+        deleteSaveData();
+        window.location.reload();
+    }
+
+    // Auto-save every 45s, but only once the player has actually started/continued a session -
+    // never while still sitting on the main menu, or a blank autosave could clobber a real save.
+    setInterval(() => { if (sessionActive) saveGame(); }, 45000);
+    // Lifetime play-time counter, only ticking while actually playing (not paused/menus).
+    setInterval(() => { if (gameState === "PLAYING") gameStats.playTimeSeconds++; }, 1000);
+    // Save on exit/tab-close. 'beforeunload' covers most desktop cases; 'visibilitychange' is the
+    // reliable one on mobile, where backgrounding the tab often skips beforeunload entirely.
+    window.addEventListener('beforeunload', () => { if (sessionActive) saveGame(); });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && sessionActive) saveGame(); });
+    updateMainMenuButtons();
 
     // EXPONENTIAL COST FOR HARDER GRIND
     // Both "increase the cost of upgrades" and "each level costs substantially more than the
@@ -1467,6 +1621,23 @@
         }
         return scaledCost;
     }
+
+    // Maps each Overdrive-panel key to the upgrade-tree node that unlocks it, so the locked
+    // state of that box can show a live tooltip and progress-toward-unlock bar without having
+    // to hardcode costs in two places.
+    const abilityUnlockNode = {
+        suit: { id: 'suit_0', list: upgradeTrees.suit },
+        pickaxe: { id: 'suit_3', list: upgradeTrees.suit },
+        rocket: { id: 'rkt_1', list: upgradeTrees.rocket },
+        laser: { id: 'wpn_laser1', list: upgradeTrees.weapon.laser },
+        fireball: { id: 'wpn_fb1', list: upgradeTrees.weapon.fireball },
+        drone: { id: 'drone_1', list: upgradeTrees.drone },
+        clone: { id: 'clone_1', list: upgradeTrees.clone },
+        pulse: { id: 'pulse_1', list: upgradeTrees.pulse },
+        acid: { id: 'acid_1', list: upgradeTrees.acidsisters },
+        shock: { id: 'shock_1', list: upgradeTrees.shock },
+        firesplit: { id: 'firesplit_1', list: upgradeTrees.firesplit }
+    };
 
     function formatNumber(num) {
         if(num >= 1e18) return (num/1e18).toFixed(2) + " Qt";
@@ -1516,7 +1687,8 @@
         { id: 'clone',    title: 'Girl Clones',   icon: '👥', color: '#ff5500', nodes: upgradeTrees.clone,           tab: 'clone',    subTree: null },
         { id: 'pulse',    title: 'Pulse Core',    icon: '💥', color: '#ff00aa', nodes: upgradeTrees.pulse,           tab: 'pulse',    subTree: null },
         { id: 'acidsisters', title: 'Acid Sisters', icon: '🧪', color: '#7cfc00', nodes: upgradeTrees.acidsisters,  tab: 'acidsisters', subTree: null },
-        { id: 'shock',    title: 'Electric Shock', icon: '🌩️', color: '#66e0ff', nodes: upgradeTrees.shock,        tab: 'shock',    subTree: null }
+        { id: 'shock',    title: 'Electric Shock', icon: '🌩️', color: '#66e0ff', nodes: upgradeTrees.shock,        tab: 'shock',    subTree: null },
+        { id: 'firesplit', title: 'Fire Split',   icon: '🧨', color: '#ff3300', nodes: upgradeTrees.firesplit,    tab: 'firesplit', subTree: null }
     ];
 
     // --- PER-NODE ICON OVERRIDES ---
@@ -1727,9 +1899,18 @@
             if(upg.effect === 'hasPulseCore') overdrives.pulse.unlocked = true;
             if(upg.effect === 'hasAcidSisters') overdrives.acid.unlocked = true;
             if(upg.effect === 'hasElectricShock') overdrives.shock.unlocked = true;
+            if(upg.effect === 'hasFireSplit') overdrives.firesplit.unlocked = true;
 
-            playSound('upgrade_buy'); addFloatingText(`${upg.name} UPGRADED!`, playerShip.x, playerShip.y - 40, '#00f3ff', "16px");
-            renderVisualTree(); refreshLiveUiDisplays();
+            // Brand-new abilities get a distinct celebratory sound/notification instead of the
+            // regular numeric-upgrade one, so unlocking a whole new power-up feels like a bigger
+            // moment than bumping a damage level.
+            let isAbilityUnlock = typeof upg.value === 'boolean' && upg.value === true && upg.effect && upg.effect.indexOf('has') === 0;
+            if (isAbilityUnlock) {
+                playSound('levelup'); addFloatingText(`🔓 ${upg.name.toUpperCase()} UNLOCKED!`, playerShip.x, playerShip.y - 50, '#ffee00', "20px");
+            } else {
+                playSound('upgrade_buy'); addFloatingText(`${upg.name} UPGRADED!`, playerShip.x, playerShip.y - 40, '#00f3ff', "16px");
+            }
+            renderVisualTree(); refreshLiveUiDisplays(); saveGame();
         } else { playSound('click'); }
     }
 
@@ -1774,6 +1955,7 @@
         if (playerStats.hasPulseCore) document.getElementById('sys-pulse').style.display = 'flex';
         if (playerStats.hasAcidSisters) document.getElementById('sys-acid').style.display = 'flex';
         if (playerStats.hasElectricShock) document.getElementById('sys-shock').style.display = 'flex';
+        if (playerStats.hasFireSplit) document.getElementById('sys-firesplit').style.display = 'flex';
         positionSidePanels();
 
         for(let key in overdrives) {
@@ -1849,8 +2031,18 @@
                 if (icon) { icon.textContent = '🔒'; icon.classList.add('icon-locked'); }
                 let btn = document.getElementById(`od-btn-${key}`);
                 let fill = document.getElementById(`od-fill-${key}`);
-                if (fill) { fill.style.width = '0%'; }
-                if (btn) { btn.innerText = 'LOCKED'; btn.style.background = '#222'; btn.style.color = '#666'; btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none'; }
+                let unlockInfo = abilityUnlockNode[key];
+                if (unlockInfo) {
+                    let unlockCost = getCost(unlockInfo.list.find(u => u.id === unlockInfo.id).cost, 0).money;
+                    let pct = Math.max(0, Math.min(100, (playerStats.score / unlockCost) * 100));
+                    if (fill) { fill.style.width = `${pct}%`; fill.style.background = '#555'; }
+                    if (btn) { btn.innerText = `🔒 $${formatNumber(unlockCost)}`; btn.style.background = '#222'; btn.style.color = '#888'; btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none'; }
+                    box.title = `Locked - unlock "${od.name}" for $${formatNumber(unlockCost)} in the skill tree (${Math.floor(pct)}% there).`;
+                } else {
+                    if (fill) { fill.style.width = '0%'; }
+                    if (btn) { btn.innerText = 'LOCKED'; btn.style.background = '#222'; btn.style.color = '#666'; btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none'; }
+                    box.title = `Locked - unlock "${od.name}" in the skill tree.`;
+                }
             }
             odPrevUnlocked[key] = od.unlocked;
         }
@@ -1989,7 +2181,7 @@
                     let odBonus = 1 + Math.floor(playerStats.level / 12) + Math.floor(upgradeLevels['rkt_3'] / 15);
                     numRockets = Math.min(20, numRockets + Math.min(12, odBonus));
                 }
-                for(let r=0; r<numRockets; r++) { let target = visibleAsts[Math.floor(Math.random() * visibleAsts.length)]; let rAngle = Math.atan2(target.y - playerShip.y, target.x - playerShip.x) + ((Math.random()-0.5)*0.6); rocketsList.push({ x: playerShip.x, y: playerShip.y, vx: Math.cos(rAngle)*5, vy: Math.sin(rAngle)*5, target: target, angle: rAngle, life: 250 }); }
+                for(let r=0; r<numRockets; r++) { if (rocketsList.length > 150) break; let target = visibleAsts[Math.floor(Math.random() * visibleAsts.length)]; let rAngle = Math.atan2(target.y - playerShip.y, target.x - playerShip.x) + ((Math.random()-0.5)*0.6); rocketsList.push({ x: playerShip.x, y: playerShip.y, vx: Math.cos(rAngle)*5, vy: Math.sin(rAngle)*5, target: target, angle: rAngle, life: 250 }); }
                 playSound('rocket_launch'); lastRocketLaunch = timeNow; refreshLiveUiDisplays();
             }
         }
@@ -2071,7 +2263,7 @@
                 item.x += (item.targetPortalX - item.x) * 0.15; item.y += (item.targetPortalY - item.y) * 0.15;
                 let shrink = Math.max(0.1, Math.hypot(item.targetPortalX - item.x, item.targetPortalY - item.y) / 200);
                 if (item.img && item.img.complete && item.img.naturalWidth !== 0) { ctx.drawImage(item.img, item.x - (item.width*shrink)/2, item.y - (item.height*shrink)/2, item.width*shrink, item.height*shrink); }
-                if (Math.hypot(item.targetPortalX - item.x, item.targetPortalY - item.y) < 15) { specialScore += 1000; playerStats.score += 1000; specialItemCounts[item.typeIndex] = (specialItemCounts[item.typeIndex] || 0) + 1; updateSpecialItemsHud(); addFloatingText("+1000 GALAXY POINTS!", item.targetPortalX, item.targetPortalY, '#00f3ff', "20px"); playSound('levelup'); refreshLiveUiDisplays(); specialItemsList.splice(i, 1); }
+                if (Math.hypot(item.targetPortalX - item.x, item.targetPortalY - item.y) < 15) { specialScore += 1000; playerStats.score += 1000; gameStats.totalMoneyEarned += 1000; specialItemCounts[item.typeIndex] = (specialItemCounts[item.typeIndex] || 0) + 1; updateSpecialItemsHud(); addFloatingText("+1000 GALAXY POINTS!", item.targetPortalX, item.targetPortalY, '#00f3ff', "20px"); playSound('levelup'); refreshLiveUiDisplays(); specialItemsList.splice(i, 1); }
             }
         }
 
@@ -2106,7 +2298,7 @@
             if (timeNow - lastFireballThrow > throwCooldown && asteroidsList.length > 0) {
                 let targetAst = null; let minDist = 1200; 
                 for(let j=0; j < asteroidsList.length; j++) { let d = Math.hypot(asteroidsList[j].x - playerShip.x, asteroidsList[j].y - playerShip.y); if(d < minDist) { minDist = d; targetAst = asteroidsList[j]; } }
-                if (targetAst) { let fAngle = Math.atan2(targetAst.y - playerShip.y, targetAst.x - playerShip.x); thrownFireballs.push({x: playerShip.x, y: playerShip.y, vx: Math.cos(fAngle)*9, vy: Math.sin(fAngle)*9, target: targetAst, life: 150}); lastFireballThrow = timeNow; playSound('fireball_throw'); }
+                if (targetAst && thrownFireballs.length < 120) { let fAngle = Math.atan2(targetAst.y - playerShip.y, targetAst.x - playerShip.x); thrownFireballs.push({x: playerShip.x, y: playerShip.y, vx: Math.cos(fAngle)*9, vy: Math.sin(fAngle)*9, target: targetAst, life: 150}); lastFireballThrow = timeNow; playSound('fireball_throw'); }
             }
         }
 
@@ -2121,6 +2313,84 @@
                 if (Math.hypot(ast.x - fb.x, ast.y - fb.y) < (ast.radius * bloatScale) + 25) { ast.health -= playerStats.damage * 0.5; createParticle(fb.x, fb.y, '#00f3ff', (Math.random()-0.5)*12, (Math.random()-0.5)*12, 0.05, 6); applyHitImpact(ast, fb.x, fb.y, 4, 8); spawnHitSparks(fb.x, fb.y, '#00d4ff'); if (Math.random() < 0.4) playSound('fire_hit'); hit = true; break; }
             }
             if (hit || fb.life <= 0) thrownFireballs.splice(i, 1);
+        }
+
+        // --- FIRE SPLIT: a brand-new, fully independent power-up (not a modification of the
+        // Fireball/Inferno weapon above). Auto-fires a single bright-red fire bolt at the
+        // nearest target; on its first impact it splits into 3 smaller bolts in a V formation
+        // (straight ahead / diagonal-left / diagonal-right), each capable of hitting more
+        // targets, and - with the Chain Combustion upgrade - a chance to split again. ---
+        if (playerStats.hasFireSplit) {
+            let isFsOd = overdrives.firesplit.activeTimer > 0;
+            let throwCooldown = Math.max(180, 1100 - (playerStats.fireSplitFireRateLevel * 30)) / (isFsOd ? 2.5 : 1);
+            if (timeNow - lastFireSplitThrow > throwCooldown && asteroidsList.length > 0) {
+                let targetAst = null; let minDist = 1200;
+                for (let j = 0; j < asteroidsList.length; j++) { let d = Math.hypot(asteroidsList[j].x - playerShip.x, asteroidsList[j].y - playerShip.y); if (d < minDist) { minDist = d; targetAst = asteroidsList[j]; } }
+                if (targetAst) {
+                    let fsAngle = Math.atan2(targetAst.y - playerShip.y, targetAst.x - playerShip.x);
+                    let fsSpeed = 8 + playerStats.fireSplitSpeedLevel * 0.25;
+                    let fsLife = 90 + playerStats.fireSplitLifetimeLevel * 6;
+                    if (fireSplitList.length < 150) fireSplitList.push({ x: playerShip.x, y: playerShip.y, vx: Math.cos(fsAngle) * fsSpeed, vy: Math.sin(fsAngle) * fsSpeed, angle: fsAngle, life: fsLife, canSplit: true });
+                    lastFireSplitThrow = timeNow; playSound('fireball_throw');
+                }
+            }
+        }
+
+        for (let i = fireSplitList.length - 1; i >= 0; i--) {
+            let fs = fireSplitList[i];
+            fs.x += fs.vx * slowMoFactor; fs.y += fs.vy * slowMoFactor; fs.life--; fs.angle = Math.atan2(fs.vy, fs.vx);
+
+            // Bright red / light-red flame trail + glowing bolt - visually distinct from every
+            // other projectile in the game (which lean blue/green/purple).
+            createParticle(fs.x - fs.vx * 0.15, fs.y - fs.vy * 0.15, Math.random() < 0.5 ? '#ff2200' : '#ff8866', (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5, 0.09, 5 + Math.random() * 3);
+            ctx.save(); ctx.translate(fs.x, fs.y); ctx.rotate(fs.angle); ctx.shadowColor = '#ff3300'; ctx.shadowBlur = 14;
+            ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-6, 5); ctx.lineTo(-3, 0); ctx.lineTo(-6, -5); ctx.closePath();
+            ctx.fillStyle = '#ff8866'; ctx.fill();
+            ctx.beginPath(); ctx.arc(3, 0, 4, 0, Math.PI * 2); ctx.fillStyle = '#fff3cc'; ctx.fill();
+            ctx.shadowBlur = 0; ctx.restore();
+
+            let hit = false;
+            for (let j = 0; j < asteroidsList.length; j++) {
+                let ast = asteroidsList[j]; let astHealthPercent = ast.health / ast.maxHealth; let bloatScale = 1 + (1 - astHealthPercent) * 0.4;
+                if (Math.hypot(ast.x - fs.x, ast.y - fs.y) < (ast.radius * bloatScale) + 22) {
+                    ast.health -= playerStats.fireSplitDamage;
+                    // Burn: (re)tag this asteroid with a short damage-over-time tick, rather than
+                    // stacking unbounded ticks if it's hit by several bolts in a row.
+                    ast._burnDmgPerTick = 0.4 + playerStats.fireSplitBurnLevel * 0.08;
+                    ast._burnTicksLeft = 4 + Math.floor(playerStats.fireSplitBurnLevel / 3);
+                    ast._burnNextTickAt = timeNow + 250;
+
+                    spawnHitSparks(fs.x, fs.y, '#ff5500'); applyHitImpact(ast, fs.x, fs.y, 4, 9);
+                    for (let s = 0; s < 10; s++) createParticle(fs.x, fs.y, Math.random() < 0.5 ? '#ff2200' : '#ffaa66', (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8, 0.06, 4 + Math.random() * 4);
+                    if (Math.random() < 0.5) playSound('fire_hit');
+
+                    if (fs.canSplit) {
+                        // V formation: center bolt continues straight ahead, one peels off left,
+                        // one peels off right - each can go on to hit further targets.
+                        let spread = 0.5; // ~28.6 degrees either side of the original heading
+                        let speed = Math.hypot(fs.vx, fs.vy) * 0.85;
+                        if (fireSplitList.length < 150) {
+                            [0, -spread, spread].forEach(offset => {
+                                let a = fs.angle + offset;
+                                let childCanSplit = Math.random() < playerStats.fireSplitExtraSplitChance;
+                                fireSplitList.push({ x: fs.x, y: fs.y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, angle: a, life: Math.max(30, Math.floor(fs.life * 0.7)), canSplit: childCanSplit });
+                            });
+                        }
+                    }
+                    hit = true; break;
+                }
+            }
+            if (hit || fs.life <= 0) fireSplitList.splice(i, 1);
+        }
+
+        // Burn DOT ticks for anything Fire Split has set alight - a lightweight periodic check
+        // rather than a full separate timer/effect subsystem.
+        for (let j = 0; j < asteroidsList.length; j++) {
+            let ast = asteroidsList[j];
+            if (ast._burnTicksLeft > 0 && timeNow >= ast._burnNextTickAt) {
+                ast.health -= ast._burnDmgPerTick; ast._burnTicksLeft--; ast._burnNextTickAt = timeNow + 250;
+                createParticle(ast.x + (Math.random() - 0.5) * ast.radius, ast.y + (Math.random() - 0.5) * ast.radius, '#ff6600', 0, -0.8, 0.08, 3);
+            }
         }
 
         if (playerStats.hasLaser && asteroidsList.length > 0) {
@@ -2150,6 +2420,9 @@
         for(let i=visualParticles.length-1; i>=0; i--) { let p = visualParticles[i]; p.x += p.vx * slowMoFactor; p.y += p.vy * slowMoFactor; p.life -= p.decay; if(p.life <= 0) visualParticles.splice(i, 1); else { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size); } } ctx.globalAlpha = 1.0; 
         // Update + draw Missile/Drill thrust exhaust from its own dedicated pool (never starved by combat FX above).
         for(let i=thrustParticles.length-1; i>=0; i--) { let p = thrustParticles[i]; p.x += p.vx * slowMoFactor; p.y += p.vy * slowMoFactor; p.life -= p.decay; if(p.life <= 0) thrustParticles.splice(i, 1); else { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size); } } ctx.globalAlpha = 1.0; 
+        // Defensive cap (covers every shockwave-creation site above at once) - keeps a burst of
+        // simultaneous kills/blasts from piling up more rings than are ever visually useful.
+        if (shockwaves.length > 120) shockwaves.splice(0, shockwaves.length - 120);
         for(let i = shockwaves.length - 1; i >= 0; i--) { let sw = shockwaves[i]; sw.radius += sw.speed; sw.life -= 0.04; if(sw.life <= 0) shockwaves.splice(i, 1); else { ctx.save(); ctx.beginPath(); ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2); ctx.strokeStyle = sw.color; ctx.lineWidth = 3 * sw.life; ctx.globalAlpha = sw.life; ctx.stroke(); ctx.restore(); } }
 
         for (let i = homingParticles.length - 1; i >= 0; i--) {
@@ -2160,9 +2433,9 @@
             if (hp.timer > 0 && checkDist > magnetCheckArea) { hp.timer--; hp.x += hp.vx; hp.y += hp.vy; hp.vx *= 0.92; hp.vy *= 0.92; hp.spin += 0.1; } else {
                 let dx = playerShip.x - hp.x; let dy = playerShip.y - hp.y;
                 if (checkDist < playerShip.radius + playerStats.magnetRadius + (overdrives.suit.activeTimer > 0 ? 50 : 0)) {
-                    if (hp.typeInfo.isCoin) { let scoreEarned = hp.value * 250; playerStats.score += scoreEarned; playSound('coin'); addFloatingText(`+$${scoreEarned}`, hp.x, hp.y, hp.typeInfo.color, "15px"); } 
+                    if (hp.typeInfo.isCoin) { let scoreEarned = hp.value * 250; playerStats.score += scoreEarned; gameStats.totalMoneyEarned += scoreEarned; playSound('coin'); addFloatingText(`+$${scoreEarned}`, hp.x, hp.y, hp.typeInfo.color, "15px"); } 
                     else { 
-                    inventory[hp.typeInfo.name] += hp.value; let scoreEarned = hp.value * 1500; playerStats.score += scoreEarned; playSound('collect'); addFloatingText(`+${hp.value} ${hp.typeInfo.name.toUpperCase()}`, hp.x, hp.y, hp.typeInfo.color); 
+                    inventory[hp.typeInfo.name] += hp.value; gameStats.totalMineralsCollected += hp.value; let scoreEarned = hp.value * 1500; playerStats.score += scoreEarned; gameStats.totalMoneyEarned += scoreEarned; playSound('collect'); addFloatingText(`+${hp.value} ${hp.typeInfo.name.toUpperCase()}`, hp.x, hp.y, hp.typeInfo.color); 
                     
                     for(let key in overdrives) {
                     if(overdrives[key].unlocked && overdrives[key].activeTimer <= 0 && overdrives[key].cooldownTimer <= 0) {
@@ -2274,12 +2547,13 @@
                 let levelRewardMultiplier = 1 + Math.floor(playerStats.level / 5);
                 let rewardAmount = Math.floor(Math.random() * (ast.typeInfo.rewardMax - ast.typeInfo.rewardMin + 1)) + ast.typeInfo.rewardMin;
                 
-                for(let k = 0; k < rewardAmount; k++) homingParticles.push({ x: ast.x, y: ast.y, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, typeInfo: ast.typeInfo, img: mineralImages[Math.floor(Math.random() * mineralImages.length)], value: levelRewardMultiplier, timer: 60, spin: Math.random() * Math.PI * 2 });
+                for(let k = 0; k < rewardAmount && homingParticles.length < 300; k++) homingParticles.push({ x: ast.x, y: ast.y, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, typeInfo: ast.typeInfo, img: mineralImages[Math.floor(Math.random() * mineralImages.length)], value: levelRewardMultiplier, timer: 60, spin: Math.random() * Math.PI * 2 });
                 
-                let coinAmount = Math.floor(Math.random() * 3) + 2; for(let k = 0; k < coinAmount; k++) homingParticles.push({ x: ast.x, y: ast.y, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, typeInfo: { name: 'coin', color: '#ffd700', isCoin: true }, img: null, value: levelRewardMultiplier, timer: 60, spin: Math.random() * Math.PI * 2 });
+                let coinAmount = Math.floor(Math.random() * 3) + 2; for(let k = 0; k < coinAmount && homingParticles.length < 300; k++) homingParticles.push({ x: ast.x, y: ast.y, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, typeInfo: { name: 'coin', color: '#ffd700', isCoin: true }, img: null, value: levelRewardMultiplier, timer: 60, spin: Math.random() * Math.PI * 2 });
 
                 playerStats.xp += Math.floor(ast.typeInfo.baseHealth / 5);
-                if (playerStats.xp >= playerStats.nextLevelXp) { playerStats.xp -= playerStats.nextLevelXp; playerStats.level++; playerStats.nextLevelXp = Math.floor(playerStats.nextLevelXp * 1.4); addFloatingText("LEVEL UP! 🌟", playerShip.x, playerShip.y - 45, '#ffcc00', "18px"); playSound('levelup'); }
+                if (playerStats.xp >= playerStats.nextLevelXp) { playerStats.xp -= playerStats.nextLevelXp; playerStats.level++; playerStats.nextLevelXp = Math.floor(playerStats.nextLevelXp * 1.4); addFloatingText("LEVEL UP! 🌟", playerShip.x, playerShip.y - 45, '#ffcc00', "18px"); playSound('levelup'); saveGame(); }
+                gameStats.blocksDestroyed++;
                 asteroidsList.splice(i, 1); refreshLiveUiDisplays();
             }
         }
@@ -2427,7 +2701,7 @@
                     let droneFireInterval = Math.max(150, 700 - (playerStats.droneFireRateLevel * 30)) / (isDroneOd ? 2 : 1);
                     if (timeNow - d.lastFire > droneFireInterval) {
                         d.lastFire = timeNow;
-                        droneProjectiles.push({ x: d.x, y: d.y, vx: Math.cos(ang) * 9, vy: Math.sin(ang) * 9, target: d.target, life: 90 });
+                        if (droneProjectiles.length < 150) droneProjectiles.push({ x: d.x, y: d.y, vx: Math.cos(ang) * 9, vy: Math.sin(ang) * 9, target: d.target, life: 90 });
                     }
                 } else {
                     // Nothing left to hunt nearby - hover near the main drone until it detects a new target.
@@ -2655,7 +2929,7 @@
                 if (target && timeNow - c.lastThrow > throwInterval) {
                     c.lastThrow = timeNow;
                     let ang = Math.atan2(target.y - c.y, target.x - c.x);
-                    acidProjectiles.push({ x: c.x, y: c.y, vx: Math.cos(ang) * 8, vy: Math.sin(ang) * 8, target, life: 90, spin: 0, odBoost: isAcidOd });
+                    if (acidProjectiles.length < 150) acidProjectiles.push({ x: c.x, y: c.y, vx: Math.cos(ang) * 8, vy: Math.sin(ang) * 8, target, life: 90, spin: 0, odBoost: isAcidOd });
                     for (let k = 0; k < 4; k++) createParticle(c.x, c.y, '#7cfc00', Math.cos(ang) * 2 + (Math.random() - 0.5), Math.sin(ang) * 2 + (Math.random() - 0.5), 0.1, 2 + Math.random() * 2);
                     playSound('acid_throw');
                 }
@@ -2746,7 +3020,7 @@
                     for (let s = 0; s < shots; s++) {
                     let t = onScreen[Math.floor(Math.random() * onScreen.length)];
                     let ang = Math.atan2(t.y - coreY, t.x - coreX);
-                    coreProjectiles.push({ x: coreX, y: coreY, vx: Math.cos(ang) * 6, vy: Math.sin(ang) * 6, target: t, life: 140, spin: 0 });
+                    if (coreProjectiles.length < 150) coreProjectiles.push({ x: coreX, y: coreY, vx: Math.cos(ang) * 6, vy: Math.sin(ang) * 6, target: t, life: 140, spin: 0 });
                     }
                 }
             }
