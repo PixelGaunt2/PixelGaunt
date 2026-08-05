@@ -25,6 +25,11 @@
 
         /* --- SCORE BOARD --- */
         #score-hud { position: absolute; top: calc(var(--ui-scale) * 15px); left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(10, 10, 15, 0.95); border: 2px solid #ffcc00; border-radius: calc(var(--ui-scale) * 10px); padding: calc(var(--ui-scale) * 10px) calc(var(--ui-scale) * 30px); font-size: calc(var(--ui-scale) * 22px); font-weight: bold; color: #ffcc00; text-shadow: 0 0 10px rgba(255, 204, 0, 0.8); box-shadow: 0 0 15px rgba(255, 204, 0, 0.3); pointer-events: none; white-space: nowrap; }
+        #zone-hud { position: absolute; top: calc(var(--ui-scale) * 62px); left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(10, 10, 15, 0.85); border: 1px solid #66e0ff; border-radius: calc(var(--ui-scale) * 8px); padding: calc(var(--ui-scale) * 4px) calc(var(--ui-scale) * 14px); font-size: calc(var(--ui-scale) * 12px); font-weight: bold; color: #66e0ff; pointer-events: none; white-space: nowrap; }
+        /* Distance HUD: stacked directly below the Score/Zone readout. Top offset is set at
+           runtime by positionSidePanels() (measured from zone-hud's real bottom edge) so it can
+           never overlap the panels above it at any resolution or ui-scale. */
+        #distance-hud { position: absolute; left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(10, 10, 15, 0.85); border: 1px solid #39ff9d; border-radius: calc(var(--ui-scale) * 8px); padding: calc(var(--ui-scale) * 4px) calc(var(--ui-scale) * 14px); font-size: calc(var(--ui-scale) * 12px); font-weight: bold; color: #39ff9d; pointer-events: none; white-space: nowrap; }
 
         /* --- TOOL STATUS HUD --- */
         #tool-status-hud { position: absolute; right: calc(var(--ui-scale) * 15px); top: calc(var(--ui-scale) * 70px); z-index: 10; background: rgba(10, 10, 15, 0.9); border: 2px solid #555; border-radius: calc(var(--ui-scale) * 10px); padding: calc(var(--ui-scale) * 10px); pointer-events: none; width: calc(var(--ui-scale) * 175px); }
@@ -126,7 +131,11 @@
            of wrapping or scrolling into view - some Overdrive boxes were effectively invisible
            on small screens. `width: min(...)` caps the panel to whatever viewport room is
            actually available, and minmax(0, 1fr) columns let the boxes shrink to fit instead of
-           overflowing. Vertical overflow (many unlocked abilities) still scrolls. */
+           overflowing. Vertical overflow (many unlocked abilities) still scrolls.
+           max-height below is a fallback only - positionSidePanels() in JS overrides it every
+           frame the layout can change with the panel's real measured distance above the Ship
+           Level/Energy HUD, so the two can never overlap regardless of resolution or how many
+           Overdrives are unlocked. */
         #overdrives-container { position: absolute; top: calc(var(--ui-scale) * 180px); left: calc(var(--ui-scale) * 15px); z-index: 10; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(var(--ui-scale) * 8px); pointer-events: auto; width: min(calc(var(--ui-scale) * 268px), calc(100vw - var(--ui-scale) * 30px)); max-height: calc(100vh - var(--ui-scale) * 200px); overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
         .od-box { background: rgba(10, 10, 15, 0.9); border: 1px solid #555; padding: calc(var(--ui-scale) * 6px); border-radius: calc(var(--ui-scale) * 6px); width: 100%; min-width: 0; text-align: center; transition: opacity 0.3s, filter 0.3s; position: relative; overflow: hidden; }
         .od-box.locked { opacity: 0.45; filter: grayscale(0.75); }
@@ -213,7 +222,15 @@
         <div class="overlay-title" style="color: #ffea00; text-shadow: 0 0 15px #ffea00;">PAUSED</div>
         <button class="menu-btn" onclick="resumeGame()" style="background: #155f5f; border-color: #ffea00; color: #ffea00;">▶ RESUME</button>
         <button class="menu-btn" onclick="openUpgradesFromPause()">⚙️ SKILL TREE</button>
+        <button class="menu-btn" onclick="openZonesMenu()">🗺️ MINING ZONES</button>
         <button class="menu-btn" onclick="goToMainMenu()" style="border-color: #ff3333; color: #ff3333;">🏠 MAIN MENU</button>
+    </div>
+
+    <div id="zones-menu" class="overlay-menu" style="display: none; z-index: 60; background: rgba(5, 5, 8, 0.93);">
+        <div class="overlay-title" style="font-size: calc(var(--ui-scale) * 30px);">🗺️ MINING ZONES</div>
+        <div id="zones-depth-readout" class="readme-text" style="font-size: calc(var(--ui-scale) * 14px); margin-bottom: calc(var(--ui-scale) * 4px);">Depth: 0m</div>
+        <div id="zones-list" style="display:flex; flex-direction:column; gap: calc(var(--ui-scale) * 10px); max-height: 55vh; overflow-y:auto; width: min(520px, 85vw); padding: calc(var(--ui-scale) * 4px);"></div>
+        <button class="menu-btn" onclick="closeZonesMenu()">⬅ BACK</button>
     </div>
 
     <div id="win-menu" class="overlay-menu" style="display: none; background: rgba(4, 10, 6, 0.93); z-index: 55;">
@@ -226,6 +243,8 @@
     <button id="pause-btn" onclick="pauseGame()">⏸ PAUSE</button>
 
     <div id="score-hud">SCORE: $<span id="val-score">0</span> <span id="val-score-abbr" style="font-size:0.6em; color:#fff3b0; margin-left:8px; opacity:0.85;">(0)</span></div>
+    <div id="zone-hud">🌑 Asteroid Belt · Depth <span id="val-zone-depth">0</span>m</div>
+    <div id="distance-hud">📏 DISTANCE: <span id="val-distance">0</span>m</div>
 
     <div id="hud">
         <div class="resource-row"><div class="res-icon icon-iron"></div> Iron: <span id="val-iron">0</span></div>
@@ -503,6 +522,59 @@
         renderVisualTree(); 
     }
 
+    // --- MINING ZONES MENU ---
+    function openZonesMenu() {
+        playSound('ui_open');
+        document.getElementById('pause-menu').style.display = 'none';
+        document.getElementById('zones-menu').style.display = 'flex';
+        renderZonesList();
+    }
+
+    function closeZonesMenu() {
+        playSound('ui_close');
+        document.getElementById('zones-menu').style.display = 'none';
+        document.getElementById('pause-menu').style.display = 'flex';
+    }
+
+    function renderZonesList() {
+        let depth = getMiningDepth();
+        let cur = getCurrentZone();
+        document.getElementById('zones-depth-readout').innerText = `Current: ${cur.icon} ${cur.name}  ·  Mining Depth: ${depth}m  ·  Lifetime Earned: $${formatNumber(gameStats.totalMoneyEarned)}`;
+        let container = document.getElementById('zones-list');
+        container.innerHTML = '';
+        worldZones.forEach(zone => {
+            let unlocked = isZoneUnlocked(zone);
+            let isCurrent = zone.id === currentZoneId;
+            let pct = zone.unlockDepth === 0 && zone.unlockMoney === 0 ? 100 : Math.floor(Math.min(100, Math.min(depth / Math.max(1, zone.unlockDepth), gameStats.totalMoneyEarned / Math.max(1, zone.unlockMoney)) * 100));
+            let row = document.createElement('div');
+            row.style.cssText = `border: 2px solid ${unlocked ? '#39ff14' : '#444'}; border-radius: 8px; padding: calc(var(--ui-scale) * 10px); display: flex; justify-content: space-between; align-items: center; gap: 10px; background: rgba(255,255,255,0.03);`;
+            let reqLine = unlocked ? `✅ Unlocked` : `🔒 Needs ${zone.unlockDepth}m depth &amp; $${formatNumber(zone.unlockMoney)} lifetime earned (${pct}% there)`;
+            row.innerHTML = `<div style="text-align:left;">
+                <div style="font-weight:bold; font-size: calc(var(--ui-scale) * 15px);">${zone.icon} ${zone.name}${isCurrent ? ' <span style=\"color:#39ff14;\">(current)</span>' : ''}</div>
+                <div style="font-size: calc(var(--ui-scale) * 11px); color: #aaa;">${reqLine}</div>
+            </div>`;
+            let btn = document.createElement('button');
+            btn.className = 'menu-btn'; btn.style.cssText = 'width:auto; min-width:0; padding: 8px 14px; margin:0; font-size: calc(var(--ui-scale) * 12px);';
+            if (isCurrent) { btn.innerText = 'HERE'; btn.disabled = true; btn.style.opacity = 0.5; }
+            else if (!unlocked) { btn.innerText = '🔒'; btn.disabled = true; btn.style.opacity = 0.5; }
+            else { btn.innerText = 'TRAVEL'; btn.onclick = () => travelToZone(zone.id); }
+            row.appendChild(btn);
+            container.appendChild(row);
+        });
+    }
+
+    function travelToZone(zoneId) {
+        if (zoneId === currentZoneId) return;
+        currentZoneId = zoneId;
+        let zone = getCurrentZone();
+        // Clear the old zone's field and immediately populate the new one with its own layout/mix.
+        asteroidsList = [];
+        for (let i = 0; i < 15; i++) produceAsteroidNode();
+        addFloatingText(`🗺️ ENTERED ${zone.name.toUpperCase()}`, playerShip.x, playerShip.y - 60, '#00f3ff', "20px");
+        playSound('levelup'); saveGame();
+        closeZonesMenu(); resumeGame(); refreshLiveUiDisplays();
+    }
+
     function closeUpgradesMenu() {
         playSound('ui_close');
         document.getElementById('menu-upgrades').style.display = 'none';
@@ -639,9 +711,29 @@
     let gameScale = 1; // applied to world-space canvas rendering
     let uiScale = 1;   // applied to DOM UI elements via CSS var
 
+    // --- PIXEL RENDERING FIX ---
+    // Previously canvas.width/height were set to window.innerWidth/innerHeight directly (CSS
+    // pixels), so on any HiDPI/Retina screen (devicePixelRatio > 1) the canvas backing store
+    // was lower-resolution than the screen, and the browser upscaled it to fill the CSS box -
+    // this is what caused sprites/text/lines to look soft, blurry, or distorted. Fix: size the
+    // actual canvas bitmap to CSS-size * devicePixelRatio (a real, sharp pixel grid), keep the
+    // CSS box at the original logical size via canvas.style.width/height, and apply a single
+    // ctx.setTransform(dpr,...) each frame (see renderFrame) so every existing draw call below
+    // can keep using the same logical/CSS-pixel coordinates as before - no other game logic
+    // needs to change. All gameplay code that used to read canvas.width/canvas.height for
+    // world-space view size now reads viewportW/viewportH (the logical CSS size) instead, since
+    // canvas.width/canvas.height are now physical (dpr-scaled) pixel counts.
+    let dpr = 1;
+    let viewportW = window.innerWidth, viewportH = window.innerHeight;
+
     function resizeCanvas() {
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        let rawScale = Math.min(canvas.width / DESIGN_WIDTH, canvas.height / DESIGN_HEIGHT);
+        dpr = window.devicePixelRatio || 1;
+        viewportW = window.innerWidth; viewportH = window.innerHeight;
+        canvas.width = Math.round(viewportW * dpr);
+        canvas.height = Math.round(viewportH * dpr);
+        canvas.style.width = viewportW + 'px';
+        canvas.style.height = viewportH + 'px';
+        let rawScale = Math.min(viewportW / DESIGN_WIDTH, viewportH / DESIGN_HEIGHT);
         gameScale = Math.max(0.45, Math.min(1.15, rawScale));
         uiScale = Math.max(0.55, Math.min(1, rawScale));
         document.documentElement.style.setProperty('--ui-scale', uiScale);
@@ -664,6 +756,32 @@
         const gap = 15 * uiScale;
         const toolRect = toolHud.getBoundingClientRect();
         cargoHud.style.top = Math.round(toolRect.bottom + gap) + 'px';
+
+        // Distance HUD: stack it directly below whichever of Score/Zone is currently lowest,
+        // so it never overlaps them regardless of resolution, ui-scale, or zone-name length.
+        const zoneHud = document.getElementById('zone-hud');
+        const distanceHud = document.getElementById('distance-hud');
+        if (zoneHud && distanceHud) {
+            const zoneGap = 8 * uiScale;
+            const zoneRect = zoneHud.getBoundingClientRect();
+            distanceHud.style.top = Math.round(zoneRect.bottom + zoneGap) + 'px';
+        }
+
+        // Overdrive panel vs. Ship Level/Energy HUD (bottom-left): the Overdrive grid used to
+        // reserve a fixed max-height that could still run its bottom edge down past the Ship
+        // Level/Energy box on shorter viewports or once several Overdrives were unlocked (more
+        // rows). Instead, measure the Level HUD's real top edge and clamp the Overdrive panel's
+        // max-height to stop safely above it - any overflow just scrolls (it already supports
+        // that), so the two panels can never overlap at any resolution or unlock count.
+        const odContainer = document.getElementById('overdrives-container');
+        const levelHud = document.getElementById('level-hud');
+        if (odContainer && levelHud) {
+            const odGap = 12 * uiScale;
+            const odRect = odContainer.getBoundingClientRect();
+            const levelRect = levelHud.getBoundingClientRect();
+            const available = levelRect.top - odRect.top - odGap;
+            odContainer.style.maxHeight = Math.max(60, Math.round(available)) + 'px';
+        }
     }
 
     window.addEventListener('resize', resizeCanvas); resizeCanvas();
@@ -712,7 +830,7 @@
     // --- LIFETIME STATS (persisted by the save system below). Unlike playerStats.score/inventory,
     // which go up AND down as the player earns and spends, these only ever count up - they're
     // the actual "how much have you accomplished in total" numbers for save data. ---
-    let gameStats = { totalMoneyEarned: 0, totalMineralsCollected: 0, blocksDestroyed: 0, playTimeSeconds: 0 };
+    let gameStats = { totalMoneyEarned: 0, totalMineralsCollected: 0, blocksDestroyed: 0, playTimeSeconds: 0, distanceTraveled: 0 };
     
     // --- ABILITY UNLOCK PROGRESSION: only the Drill is available at game start. Every other
     // ability (Girl Power suit, Fireball, Rocket, Laser, Pickaxe, Drone, Clone, Pulse Core,
@@ -899,25 +1017,18 @@
     let displayedScore = 0;
 
     // --- DYNAMIC BACKGROUND COLOR CYCLE ---
-    // Subtle, slow-shifting palette. Each color holds/transitions over ~60s so the change
-    // is only ever noticed gradually - never obstructs gameplay elements (drawn first,
-    // in screen space, before anything else).
-    const bgPalette = [
-        { r: 5,  g: 5,  b: 8  },  // near-black (default)
-        { r: 18, g: 6,  b: 8  },  // dark red
-        { r: 14, g: 9,  b: 6  },  // dark brown
-        { r: 5,  g: 8,  b: 18 },  // dark blue
-        { r: 13, g: 5,  b: 18 },  // dark purple
-        { r: 5,  g: 14, b: 8  }   // dark green
-    ];
+    // Each zone (see worldZones below) supplies its own small palette; colors hold/transition
+    // over ~60s each so the shift is only ever noticed gradually - never obstructs gameplay
+    // elements (drawn first, in screen space, before anything else).
     const BG_COLOR_HOLD_MS = 60000; // 1 minute per color
     function getBackgroundColor(timeNow) {
-        const total = bgPalette.length * BG_COLOR_HOLD_MS;
+        const palette = getCurrentZone().bgPalette;
+        const total = palette.length * BG_COLOR_HOLD_MS;
         const progress = (timeNow % total) / BG_COLOR_HOLD_MS;
         const idx = Math.floor(progress);
         const t = progress - idx;
-        const a = bgPalette[idx];
-        const b = bgPalette[(idx + 1) % bgPalette.length];
+        const a = palette[idx];
+        const b = palette[(idx + 1) % palette.length];
         const r = Math.round(a.r + (b.r - a.r) * t);
         const g = Math.round(a.g + (b.g - a.g) * t);
         const bl = Math.round(a.b + (b.b - a.b) * t);
@@ -984,6 +1095,76 @@
     let stars = Array.from({length: 150}, () => ({ x: Math.random() * 2000 - 1000, y: Math.random() * 2000 - 1000, size: Math.random() * 2 + 1, depth: Math.random() * 0.8 + 0.2 }));
     const nodeTypes = [ { name: 'iron', color: '#8e8e93', baseHealth: 60, rewardMin: 4, rewardMax: 8, weight: 0.5 }, { name: 'bronze', color: '#cd7f32', baseHealth: 90, rewardMin: 3, rewardMax: 6, weight: 0.3 }, { name: 'gold', color: '#d4af37', baseHealth: 150, rewardMin: 2, rewardMax: 5, weight: 0.15 }, { name: 'uranium', color: '#39ff14', baseHealth: 250, rewardMin: 1, rewardMax: 3, weight: 0.05 } ];
 
+    // ============================================================
+    // WORLD PROGRESSION: ZONES
+    // ============================================================
+    // The world itself is an endless field that scrolls with the girl rather than a fixed-size
+    // map, so "different map layout" per zone is expressed as a different SPAWN PATTERN relative
+    // to her (tight orbiting clusters, a wide sparse field, an empty-centered ring, spiral arms)
+    // rather than a literal bounded shape - each still reads as a genuinely different place to
+    // fly around in, without requiring a full rewrite of the camera/world-boundary system.
+    // Unlocking requires BOTH mining depth AND lifetime money earned, so a zone always feels like
+    // a real combined milestone rather than something reachable by grinding just one stat.
+    const worldZones = [
+        { id: 'belt',     name: 'Asteroid Belt',   icon: '🌑', unlockDepth: 0,   unlockMoney: 0,      layout: 'scatter', typeWeights: { iron: 0.50, bronze: 0.30, gold: 0.15, uranium: 0.05 },
+          bgPalette: [ {r:5,g:5,b:8}, {r:18,g:6,b:8}, {r:14,g:9,b:6} ] },
+        { id: 'rift',     name: 'Crimson Rift',    icon: '🔴', unlockDepth: 40,  unlockMoney: 8000,   layout: 'cluster', typeWeights: { iron: 0.35, bronze: 0.40, gold: 0.20, uranium: 0.05 },
+          bgPalette: [ {r:22,g:4,b:4}, {r:30,g:9,b:2}, {r:16,g:3,b:3} ] },
+        { id: 'frozen',   name: 'Frozen Expanse',  icon: '❄️', unlockDepth: 90,  unlockMoney: 30000,  layout: 'sparse',  typeWeights: { iron: 0.30, bronze: 0.25, gold: 0.30, uranium: 0.15 },
+          bgPalette: [ {r:4,g:10,b:22}, {r:6,g:16,b:30}, {r:3,g:8,b:18} ] },
+        { id: 'volcanic', name: 'Volcanic Core',   icon: '🌋', unlockDepth: 160, unlockMoney: 90000,  layout: 'ring',    typeWeights: { iron: 0.20, bronze: 0.30, gold: 0.30, uranium: 0.20 },
+          bgPalette: [ {r:26,g:8,b:2}, {r:34,g:12,b:0}, {r:18,g:5,b:2} ] },
+        { id: 'void',     name: 'Void Nexus',      icon: '🌌', unlockDepth: 260, unlockMoney: 250000, layout: 'spiral',  typeWeights: { iron: 0.10, bronze: 0.20, gold: 0.30, uranium: 0.40 },
+          bgPalette: [ {r:10,g:2,b:20}, {r:4,g:2,b:10}, {r:14,g:4,b:24} ] }
+    ];
+    let currentZoneId = 'belt';
+    function getCurrentZone() { return worldZones.find(z => z.id === currentZoneId) || worldZones[0]; }
+    // Depth is derived from blocks destroyed (already tracked/saved in gameStats) rather than a
+    // separate counter, so it's always in sync with real progress and needs no extra save field.
+    function getMiningDepth() { return Math.floor(gameStats.blocksDestroyed / 3); }
+    function isZoneUnlocked(zone) { return getMiningDepth() >= zone.unlockDepth && gameStats.totalMoneyEarned >= zone.unlockMoney; }
+
+    // Picks a spawn position relative to the girl according to the current zone's layout, so
+    // each zone has a distinct spatial feel without needing a fixed/bounded map.
+    function getZoneSpawnPosition(zone, viewW, viewH, timeNow) {
+        switch (zone.layout) {
+            case 'cluster': { // A few tight, slowly-orbiting clumps with empty space between them.
+                let idx = Math.floor(Math.random() * 3);
+                let anchorAngle = (idx / 3) * Math.PI * 2 + timeNow * 0.00005;
+                let cx = playerShip.x + Math.cos(anchorAngle) * 480, cy = playerShip.y + Math.sin(anchorAngle) * 480;
+                let a = Math.random() * Math.PI * 2, d = Math.random() * 140;
+                return { x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d };
+            }
+            case 'sparse': { // Wide, thin field - fewer, more spread-out nodes to explore between.
+                let a = Math.random() * Math.PI * 2, d = 500 + Math.random() * 900;
+                return { x: playerShip.x + Math.cos(a) * d, y: playerShip.y + Math.sin(a) * d };
+            }
+            case 'ring': { // Empty "hot core" near the girl's starting point in this zone, asteroids only in a ring around it.
+                let a = Math.random() * Math.PI * 2, d = 380 + Math.random() * 260;
+                return { x: playerShip.x + Math.cos(a) * d, y: playerShip.y + Math.sin(a) * d };
+            }
+            case 'spiral': { // Three slowly-rotating spiral arms fanning out from the girl.
+                let arm = Math.floor(Math.random() * 3);
+                let t = Math.random();
+                let a = t * Math.PI * 4 + arm * (Math.PI * 2 / 3) + timeNow * 0.00003;
+                let d = 80 + t * 700;
+                return { x: playerShip.x + Math.cos(a) * d, y: playerShip.y + Math.sin(a) * d };
+            }
+            default: { // 'scatter' - the original Asteroid Belt behavior, unchanged.
+                if (Math.random() < 0.5) { return { x: (playerShip.x - viewW / 2) + Math.random() * viewW, y: (playerShip.y - viewH / 2) + Math.random() * viewH }; }
+                let a = Math.random() * Math.PI * 2, d = Math.random() * 500 + 400;
+                return { x: playerShip.x + Math.cos(a) * d, y: playerShip.y + Math.sin(a) * d };
+            }
+        }
+    }
+    // Weighted pick using the CURRENT ZONE's mineral mix (nodeTypes still holds each mineral's
+    // color/health/reward - only the odds of which one spawns change per zone).
+    function pickZoneNodeType(zone) {
+        let weights = zone.typeWeights; let r = Math.random(); let cumulative = 0;
+        for (let t of nodeTypes) { cumulative += (weights[t.name] !== undefined ? weights[t.name] : t.weight); if (r <= cumulative) return t; }
+        return nodeTypes[0];
+    }
+
     const magicCrystalEvent = {
         active: false, stage: "OFF", crystal: { x: 0, y: 0, w: 65, h: 85, scale: 1 }, portal:  { x: 0, y: 0, currentRadius: 0, maxRadius: 55, spinAngle: 0 }, hunter:  { progress: 0 },
         spawn(x, y) { this.crystal.x = x; this.crystal.y = y; this.crystal.scale = 1; this.stage = "WAITING"; this.active = true; },
@@ -1032,7 +1213,9 @@
     // --- MOBILE TOUCH JOYSTICK ---
     // Small bottom-left virtual joystick for touch devices, sized/positioned relative to the
     // viewport so it scales cleanly across phones/tablets, and repositioned automatically so it
-    // never overlaps other bottom-left UI (currently #level-hud).
+    // never overlaps other bottom-left UI: the Ship Level/Energy HUD (#level-hud) and, on short
+    // viewports where its scrollable list runs low enough, the Overdrive buttons panel
+    // (#overdrives-container) too.
     const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
     let joystickVector = { x: 0, y: 0, active: false };
     let joystickTouchId = null;
@@ -1047,17 +1230,19 @@
         joystickEl.style.height = size + 'px';
         joystickEl.style.left = margin + 'px';
 
-        // UI conflict handling: if #level-hud (or any other bottom-left UI) is present, stack the
-        // joystick above it instead of letting them overlap.
+        // UI conflict handling: for every bottom-left obstacle currently on screen, if it sits
+        // near the joystick's corner, stack the joystick above the highest (smallest "top") one
+        // instead of letting either overlap it.
         let bottomOffset = margin;
-        const hud = document.getElementById('level-hud');
-        if (hud && hud.offsetParent !== null) {
-            const hudRect = hud.getBoundingClientRect();
-            const hudBottomGap = window.innerHeight - hudRect.top;
-            if (hudRect.left < margin + size + margin) { // only if it actually sits near the joystick's corner
-                bottomOffset = Math.max(margin, hudBottomGap + margin);
+        ['level-hud', 'overdrives-container'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el || el.offsetParent === null) return;
+            const rect = el.getBoundingClientRect();
+            if (rect.left < margin + size + margin) { // only if it actually sits near the joystick's corner
+                const requiredOffset = (window.innerHeight - rect.top) + margin;
+                bottomOffset = Math.max(bottomOffset, requiredOffset);
             }
-        }
+        });
         joystickEl.style.bottom = bottomOffset + 'px';
     }
 
@@ -1222,6 +1407,7 @@
 
             this.velocityX *= this.friction; this.velocityY *= this.friction; this.x += this.velocityX * slowMoFactor; this.y += this.velocityY * slowMoFactor;
             this.distanceMoved = Math.hypot(this.x - this.lastX, this.y - this.lastY); this.lastX = this.x; this.lastY = this.y;
+            gameStats.distanceTraveled += this.distanceMoved; // running total for the Distance HUD, in all directions
             this.frameTimer++; if (this.frameTimer >= (this.isThrusting ? 10 : (Math.hypot(this.velocityX, this.velocityY) > 0.5 ? 16 : 28))) { this.currentFrameIndex = (this.currentFrameIndex + 1) % girlFrames.length; this.frameTimer = 0; }
         },
         draw() { 
@@ -1328,10 +1514,11 @@
     let lastPlayerHurtSound = 0;
 
     function produceAsteroidNode() {
-        let selectedConfig = nodeTypes[0]; let selectorRand = Math.random(); let cumulative = 0;
-        for (let t of nodeTypes) { cumulative += t.weight; if (selectorRand <= cumulative) { selectedConfig = t; break; } }
-        let viewW = canvas.width / gameScale, viewH = canvas.height / gameScale;
-        let spawnX, spawnY; if (Math.random() < 0.5) { spawnX = (playerShip.x - viewW / 2) + Math.random() * viewW; spawnY = (playerShip.y - viewH / 2) + Math.random() * viewH; } else { let spawnAngle = Math.random() * Math.PI * 2; let spawnDist = Math.random() * 500 + 400; spawnX = playerShip.x + Math.cos(spawnAngle) * spawnDist; spawnY = playerShip.y + Math.sin(spawnAngle) * spawnDist; }
+        let zone = getCurrentZone();
+        let selectedConfig = pickZoneNodeType(zone);
+        let viewW = viewportW / gameScale, viewH = viewportH / gameScale;
+        let spawnPos = getZoneSpawnPosition(zone, viewW, viewH, Date.now());
+        let spawnX = spawnPos.x, spawnY = spawnPos.y;
         
         let scaledMaxHealth = selectedConfig.baseHealth * (1 + (playerStats.level * 0.15));
         asteroidsList.push({ x: spawnX, y: spawnY, vx: (Math.random() - 0.5) * 1.5, vy: (Math.random() - 0.5) * 1.5, radius: Math.random() * 25 + 30, health: scaledMaxHealth, maxHealth: scaledMaxHealth, typeInfo: selectedConfig, spinAngle: Math.random() * Math.PI, spinVelocity: (Math.random() - 0.5) * 0.02, img: astImages[Math.floor(Math.random() * astImages.length)], pulseStart: 0, pulseDuration: 0, playerHitCooldown: 0, knockVX: 0, knockVY: 0 });
@@ -1345,7 +1532,7 @@
     // on-screen and just off-screen, like asteroid spawning) so collectibles keep turning up
     // naturally as she explores, for the entire game - not only in the original starting area.
     function produceSpecialItem() {
-        let viewW = canvas.width / gameScale, viewH = canvas.height / gameScale;
+        let viewW = viewportW / gameScale, viewH = viewportH / gameScale;
         let spawnX, spawnY;
         if (Math.random() < 0.5) { spawnX = (playerShip.x - viewW) + Math.random() * viewW * 2; spawnY = (playerShip.y - viewH) + Math.random() * viewH * 2; }
         else { let spawnAngle = Math.random() * Math.PI * 2; let spawnDist = Math.random() * 900 + 500; spawnX = playerShip.x + Math.cos(spawnAngle) * spawnDist; spawnY = playerShip.y + Math.sin(spawnAngle) * spawnDist; }
@@ -1515,6 +1702,7 @@
             inventory: inventory,
             upgradeLevels: upgradeLevels,
             gameStats: gameStats,
+            currentZoneId: currentZoneId,
             overdriveUnlocked: Object.fromEntries(Object.entries(overdrives).map(([k, o]) => [k, o.unlocked]))
         };
     }
@@ -1528,9 +1716,19 @@
         if (data.inventory) Object.assign(inventory, data.inventory);
         if (data.upgradeLevels) Object.assign(upgradeLevels, data.upgradeLevels);
         if (data.gameStats) Object.assign(gameStats, data.gameStats);
+        if (data.currentZoneId && worldZones.some(z => z.id === data.currentZoneId)) currentZoneId = data.currentZoneId;
         if (data.overdriveUnlocked) {
             for (let k in data.overdriveUnlocked) { if (overdrives[k]) overdrives[k].unlocked = !!data.overdriveUnlocked[k]; }
         }
+        // BUGFIX: mainDrone/handMines are runtime objects only ever created at the moment their
+        // unlock upgrade is purchased (see purchaseUpgrade) - they're deliberately not part of
+        // the save file itself. That meant Continue could restore hasDrone/hasPickaxe = true
+        // (and their Overdrives as unlocked) while mainDrone stayed null / handMines stayed
+        // empty, since that one-time creation code never re-ran. Both abilities then silently
+        // did nothing in-game even though everything else about them looked unlocked. Recreate
+        // them here whenever a loaded save says the ability should already exist.
+        if (playerStats.hasDrone && !mainDrone) mainDrone = { x: playerShip.x + 40, y: playerShip.y - 40 };
+        if (playerStats.hasPickaxe && handMines.length === 0) handMines = [{ x: playerShip.x, y: playerShip.y }];
         return true;
     }
 
@@ -1568,6 +1766,10 @@
 
     function continueGame() {
         loadGame();
+        // The initial 15 asteroids were spawned for the default zone before any save was loaded -
+        // regenerate them to match whichever zone the save actually left off in.
+        asteroidsList = [];
+        for (let i = 0; i < 15; i++) produceAsteroidNode();
         startGame();
     }
 
@@ -1890,11 +2092,11 @@
                 else playerStats[upg.effect] += upg.value;
             }
             if(upg.effect === 'hasGirlPower') overdrives.suit.unlocked = true;
-            if(upg.effect === 'hasPickaxe' && handMines.length === 0) { handMines = [{x: playerShip.x, y: playerShip.y}]; overdrives.pickaxe.unlocked = true; }
+            if(upg.effect === 'hasPickaxe') { if (handMines.length === 0) handMines = [{x: playerShip.x, y: playerShip.y}]; overdrives.pickaxe.unlocked = true; }
             if(upg.effect === 'hasRocket') overdrives.rocket.unlocked = true;
             if(upg.effect === 'hasLaser') overdrives.laser.unlocked = true;
             if(upg.effect === 'hasFireball') overdrives.fireball.unlocked = true;
-            if(upg.effect === 'hasDrone' && !mainDrone) { mainDrone = { x: playerShip.x + 40, y: playerShip.y - 40 }; overdrives.drone.unlocked = true; }
+            if(upg.effect === 'hasDrone') { if (!mainDrone) mainDrone = { x: playerShip.x + 40, y: playerShip.y - 40 }; overdrives.drone.unlocked = true; }
             if(upg.effect === 'hasClone') overdrives.clone.unlocked = true;
             if(upg.effect === 'hasPulseCore') overdrives.pulse.unlocked = true;
             if(upg.effect === 'hasAcidSisters') overdrives.acid.unlocked = true;
@@ -1934,11 +2136,14 @@
         if (displayedScore > playerStats.score) displayedScore = playerStats.score;
         document.getElementById('val-score').innerText = Math.floor(displayedScore).toLocaleString('en-US');
         document.getElementById('val-score-abbr').innerText = `(${formatNumber(displayedScore)})`;
+        document.getElementById('val-distance').innerText = formatNumber(gameStats.distanceTraveled);
         document.getElementById('val-iron').innerText = formatNumber(inventory.iron); document.getElementById('val-bronze').innerText = formatNumber(inventory.bronze);
         document.getElementById('val-gold').innerText = formatNumber(inventory.gold); document.getElementById('val-uranium').innerText = formatNumber(inventory.uranium);
         document.getElementById('lbl-level').innerText = formatNumber(playerStats.level); document.getElementById('lbl-xp').innerText = `${formatNumber(playerStats.xp)}/${formatNumber(playerStats.nextLevelXp)} XP`;
         document.getElementById('xp-bar').style.width = `${Math.min(100, (playerStats.xp / playerStats.nextLevelXp) * 100)}%`; 
         document.getElementById('energy-bar').style.width = `${Math.min(100, (playerStats.energy / playerStats.maxEnergy) * 100)}%`;
+        let zoneHud = document.getElementById('zone-hud');
+        if (zoneHud) { let z = getCurrentZone(); zoneHud.innerText = `${z.icon} ${z.name} · Depth ${getMiningDepth()}m`; }
         
         if (playerStats.hasGirlPower) {
             document.getElementById('sys-suit').style.display = 'flex';
@@ -2062,11 +2267,15 @@
             return;
         }
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height); const timeNow = Date.now(); frameCount++;
+        // Reset to a fresh dpr-scaled transform every frame so all draw calls below can keep
+        // using logical/CSS-pixel coordinates while still rendering to the sharp, full-resolution
+        // canvas backing store (see resizeCanvas / PIXEL RENDERING FIX above).
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, viewportW, viewportH); const timeNow = Date.now(); frameCount++;
         slowMoFactor = getSlowMoFactor(timeNow); // 1 = normal speed, <1 while slow motion is active
 
         ctx.fillStyle = getBackgroundColor(timeNow);
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, viewportW, viewportH);
 
         if (displayedScore < playerStats.score) {
             let diff = playerStats.score - displayedScore;
@@ -2077,7 +2286,8 @@
         }
         document.getElementById('val-score').innerText = Math.floor(displayedScore).toLocaleString('en-US');
         document.getElementById('val-score-abbr').innerText = `(${formatNumber(displayedScore)})`;
-        
+        document.getElementById('val-distance').innerText = formatNumber(gameStats.distanceTraveled);
+
         let needsUiRefresh = false;
         for(let key in overdrives) {
             if (overdrives[key].activeTimer > 0) {
@@ -2098,7 +2308,7 @@
             }
         }
 
-        camera.x = playerShip.x - (canvas.width / gameScale) / 2; camera.y = playerShip.y - (canvas.height / gameScale) / 2;
+        camera.x = playerShip.x - (viewportW / gameScale) / 2; camera.y = playerShip.y - (viewportH / gameScale) / 2;
         let shakeOffsetX = 0; let shakeOffsetY = 0; if (cameraShake > 0.5) { shakeOffsetX = (Math.random() - 0.5) * cameraShake; shakeOffsetY = (Math.random() - 0.5) * cameraShake; cameraShake *= 0.85; }
 
         ctx.save(); ctx.translate(-camera.x * gameScale + shakeOffsetX, -camera.y * gameScale + shakeOffsetY); ctx.scale(gameScale, gameScale);
@@ -2164,7 +2374,7 @@
             ctx.restore();
         }
 
-        let visibleAsts = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(canvas.width, canvas.height)/gameScale*0.6);
+        let visibleAsts = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(viewportW, viewportH)/gameScale*0.6);
 
         if (playerStats.hasRocket && visibleAsts.length > 0) {
             let isRocketOd = overdrives.rocket.activeTimer > 0;
@@ -2242,7 +2452,7 @@
                         // direction the item was reeled in from, so the capture reads as a
                         // clear, satisfying, highly visible payoff (Task 5). ---
                         let portalAngle = (item.approachAngle || 0) + Math.PI;
-                        let viewHalfW = (canvas.width / gameScale) / 2, viewHalfH = (canvas.height / gameScale) / 2;
+                        let viewHalfW = (viewportW / gameScale) / 2, viewHalfH = (viewportH / gameScale) / 2;
                         let portalDist = Math.min(viewHalfW, viewHalfH) * 0.85;
                         item.targetPortalX = playerShip.x + Math.cos(portalAngle) * portalDist;
                         item.targetPortalY = playerShip.y + Math.sin(portalAngle) * portalDist;
@@ -2470,8 +2680,8 @@
                 if (dist > activeTargetRadius + 12) { drill.angle = Math.atan2(dy, dx); drill.x += Math.cos(drill.angle) * playerStats.drillFlySpeed; drill.y += Math.sin(drill.angle) * playerStats.drillFlySpeed; createThrustParticle(drill.x - Math.cos(drill.angle)*16, drill.y - Math.sin(drill.angle)*16, '#ff9900', -Math.cos(drill.angle)*2, -Math.sin(drill.angle)*2, 0.1, 2.5); } else { drill.x = drill.target.x - Math.cos(drill.angle) * (activeTargetRadius + 10); drill.y = drill.target.y - Math.sin(drill.angle) * (activeTargetRadius + 10); drill.target.health -= playerStats.damage * 0.1; drawX += (Math.random() - 0.5) * 5; drawY += (Math.random() - 0.5) * 5; if (Math.random() < 0.1) playSound('drill_hit'); spawnCollisionEffect(drill.target.x, drill.target.y); applyHitImpact(drill.target, drill.x, drill.y, 1.2, 4); if (Math.random() < 0.3) spawnHitSparks(drill.x, drill.y, '#ffaa00', 3); createParticle(drill.x + Math.cos(drill.angle)*16, drill.y + Math.sin(drill.angle)*16, '#ffff', (Math.random()-0.5)*5, (Math.random()-0.5)*5, 0.1, 1.5); }
             } else { drill.x += Math.cos(drill.angle) * playerStats.drillFlySpeed; drill.y += Math.sin(drill.angle) * playerStats.drillFlySpeed; }
 
-            let clampMinX = camera.x + 24, clampMaxX = camera.x + (canvas.width / gameScale) - 24;
-            let clampMinY = camera.y + 24, clampMaxY = camera.y + (canvas.height / gameScale) - 24;
+            let clampMinX = camera.x + 24, clampMaxX = camera.x + (viewportW / gameScale) - 24;
+            let clampMinY = camera.y + 24, clampMaxY = camera.y + (viewportH / gameScale) - 24;
             let preClampX = drill.x, preClampY = drill.y;
             drill.x = Math.min(clampMaxX, Math.max(clampMinX, drill.x));
             drill.y = Math.min(clampMaxY, Math.max(clampMinY, drill.y));
@@ -2559,7 +2769,8 @@
         }
 
         if (playerStats.hasPickaxe && handMines.length > 0) {
-            let desiredAxeCount = Math.min(3, 1 + Math.floor(playerStats.level / 8));
+            // Progression: 1 axe on unlock, +1 every 8 ship levels, capped at 5 (1->2->3->4->5).
+            let desiredAxeCount = Math.min(5, 1 + Math.floor(playerStats.level / 8));
             while (handMines.length < desiredAxeCount) {
                 handMines.push({ x: playerShip.x, y: playerShip.y });
                 addFloatingText("+1 AXE!", playerShip.x, playerShip.y - 50, '#ff9900', "16px");
@@ -2578,12 +2789,16 @@
             for(let i=0; i<handMines.length; i++) {
                 let hm = handMines[i]; let targetAst = null; let minDist = 2500; 
                 let isDigging = false; 
-                
+
                 for(let a of screenTargets) { let d = Math.hypot(a.x - hm.x, a.y - hm.y); if(d < minDist) { minDist = d; targetAst = a; } }
-                
+
+                let axeDesiredAngle;
                 if (targetAst) { 
                     hm.x += (targetAst.x - hm.x) * (isAxeOd ? 0.3 : 0.15); 
                     hm.y += (targetAst.y - hm.y) * (isAxeOd ? 0.3 : 0.15); 
+                    // Face the target for the whole chase, not just once it's close enough to
+                    // strike - movement and facing should stay synchronized the entire time.
+                    axeDesiredAngle = Math.atan2(targetAst.y - hm.y, targetAst.x - hm.x);
                     if(minDist < targetAst.radius + 30) { 
                     targetAst.health -= playerStats.damage * (isAxeOd ? 0.3 : 0.08); 
                     createParticle(hm.x, hm.y, '#ff9900', (Math.random()-0.5)*8, (Math.random()-0.5)*8, 0.1, 4); 
@@ -2595,21 +2810,32 @@
                     let pAngle = orbitSpeed + (i * (Math.PI * 2 / handMines.length)); 
                     let targetX = playerShip.x + Math.cos(pAngle) * pRadius; 
                     let targetY = playerShip.y + Math.sin(pAngle) * pRadius; 
-                    hm.x += (targetX - hm.x) * 0.15; hm.y += (targetY - hm.y) * 0.15; 
+                    let axeStepX = (targetX - hm.x) * 0.15, axeStepY = (targetY - hm.y) * 0.15;
+                    // No target to chase - face the direction it's actually orbiting in, instead
+                    // of free-spinning independent of its motion.
+                    if (Math.hypot(axeStepX, axeStepY) > 0.05) axeDesiredAngle = Math.atan2(axeStepY, axeStepX);
+                    hm.x += axeStepX; hm.y += axeStepY; 
+                }
+
+                // Same smooth-turn convention used for the Drone/Drone Clones: eases onto a
+                // newly-acquired target instead of snapping, and keeps facing in sync with motion.
+                if (hm.facingAngle === undefined) hm.facingAngle = axeDesiredAngle !== undefined ? axeDesiredAngle : 0;
+                if (axeDesiredAngle !== undefined) {
+                    let axeAngDiff = Math.atan2(Math.sin(axeDesiredAngle - hm.facingAngle), Math.cos(axeDesiredAngle - hm.facingAngle));
+                    hm.facingAngle += Math.max(-0.2, Math.min(0.2, axeAngDiff));
                 }
 
                 { 
-                    let axeClampMinX = camera.x + 24, axeClampMaxX = camera.x + (canvas.width / gameScale) - 24;
-                    let axeClampMinY = camera.y + 24, axeClampMaxY = camera.y + (canvas.height / gameScale) - 24;
+                    let axeClampMinX = camera.x + 24, axeClampMaxX = camera.x + (viewportW / gameScale) - 24;
+                    let axeClampMinY = camera.y + 24, axeClampMaxY = camera.y + (viewportH / gameScale) - 24;
                     hm.x = Math.min(axeClampMaxX, Math.max(axeClampMinX, hm.x));
                     hm.y = Math.min(axeClampMaxY, Math.max(axeClampMinY, hm.y));
                 }
                 
                 ctx.save(); ctx.translate(hm.x, hm.y); 
                 
-                let drawAngle = (timeNow/200) + i; 
+                let drawAngle = hm.facingAngle + Math.PI / 4;
                 if (isDigging && targetAst) {
-                    drawAngle = Math.atan2(targetAst.y - hm.y, targetAst.x - hm.x) + Math.PI/4; 
                     let swing = Math.sin(timeNow / 40) * 1.5;
                     ctx.rotate(drawAngle + swing); 
                     
@@ -2884,8 +3110,8 @@
             while (acidClones.length < desiredAcidCount) { let idx = acidClones.length; acidClones.push({ angle: (idx / desiredAcidCount) * Math.PI * 2, x: playerShip.x, y: playerShip.y, lastThrow: 0 }); }
             while (acidClones.length > desiredAcidCount) acidClones.pop();
             const ACID_RANGE = 550;
-            let viewMinX = camera.x + 30, viewMaxX = camera.x + (canvas.width / gameScale) - 30;
-            let viewMinY = camera.y + 30, viewMaxY = camera.y + (canvas.height / gameScale) - 30;
+            let viewMinX = camera.x + 30, viewMaxX = camera.x + (viewportW / gameScale) - 30;
+            let viewMinY = camera.y + 30, viewMaxY = camera.y + (viewportH / gameScale) - 30;
 
             acidClones.forEach((c, idx) => {
                 // Find nearest valid on-screen target within range.
@@ -2897,25 +3123,39 @@
                 });
 
                 // Movement: chase target (stopping at a comfortable stand-off) or orbit the player.
-                let destX, destY;
+                let destX, destY, acidDesiredAngle;
                 if (target) {
                     let ang = Math.atan2(target.y - c.y, target.x - c.x);
                     let standoff = Math.max(0, minDist - 190);
                     destX = c.x + Math.cos(ang) * standoff;
                     destY = c.y + Math.sin(ang) * standoff;
+                    // Face the target itself (not just the direction of the standoff step), so
+                    // she's still looking at what she's throwing acid at even once she's parked
+                    // at her standoff distance and has effectively stopped closing the gap.
+                    acidDesiredAngle = ang;
                 } else {
                     let oAng = c.angle + timeNow / 1400;
                     destX = playerShip.x + Math.cos(oAng) * 80;
                     destY = playerShip.y + Math.sin(oAng) * 80;
                 }
-                c.x += (destX - c.x) * 0.12; c.y += (destY - c.y) * 0.12;
+                let acidStepX = (destX - c.x) * 0.12, acidStepY = (destY - c.y) * 0.12;
+                // No target - face the direction she's actually orbiting in, not a fixed pose.
+                if (acidDesiredAngle === undefined && Math.hypot(acidStepX, acidStepY) > 0.05) acidDesiredAngle = Math.atan2(acidStepY, acidStepX);
+                c.x += acidStepX; c.y += acidStepY;
+
+                // Same convention as the Fire Clones: face the target she's engaging, or the
+                // direction she's actually stepping while patrolling, updated directly every
+                // frame (no separate lag/easing pass) so she's always oriented the way she's
+                // actually moving/attacking.
+                if (acidDesiredAngle !== undefined) c.facingAngle = acidDesiredAngle;
+                else if (c.facingAngle === undefined) c.facingAngle = -Math.PI / 2;
 
                 // Never leave the visible gameplay area.
                 c.x = Math.min(viewMaxX, Math.max(viewMinX, c.x));
                 c.y = Math.min(viewMaxY, Math.max(viewMinY, c.y));
 
-                // Draw the acid sister (green-tinted girl clone with a glow).
-                ctx.save(); ctx.translate(c.x, c.y); ctx.globalAlpha = 0.9;
+                // Draw the acid sister (green-tinted girl clone with a glow), rotated to face c.facingAngle.
+                ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.facingAngle + Math.PI / 2); ctx.globalAlpha = 0.9;
                 ctx.shadowColor = '#7cfc00'; ctx.shadowBlur = 14;
                 const frame = girlFrames[playerShip.currentFrameIndex];
                 if (frame && frame.complete && frame.naturalWidth !== 0) { ctx.drawImage(frame, -16, -27, 32, 54); }
@@ -3012,8 +3252,8 @@
                 playSound('power_new_activate');
 
                 // NEW: fire homing circular energy projectiles at visible on-screen targets.
-                let viMinX = camera.x + 20, viMaxX = camera.x + (canvas.width / gameScale) - 20;
-                let viMinY = camera.y + 20, viMaxY = camera.y + (canvas.height / gameScale) - 20;
+                let viMinX = camera.x + 20, viMaxX = camera.x + (viewportW / gameScale) - 20;
+                let viMinY = camera.y + 20, viMaxY = camera.y + (viewportH / gameScale) - 20;
                 let onScreen = asteroidsList.filter(a => a.x >= viMinX && a.x <= viMaxX && a.y >= viMinY && a.y <= viMaxY);
                 if (onScreen.length > 0) {
                     let shots = isPulseOd ? 3 : 1;
@@ -3052,8 +3292,8 @@
         // NEW: Core Overlord homing circular energy projectiles.
         for (let i = coreProjectiles.length - 1; i >= 0; i--) {
             let cp = coreProjectiles[i]; cp.life--; cp.spin += 0.15;
-            let viMinX = camera.x, viMaxX = camera.x + (canvas.width / gameScale);
-            let viMinY = camera.y, viMaxY = camera.y + (canvas.height / gameScale);
+            let viMinX = camera.x, viMaxX = camera.x + (viewportW / gameScale);
+            let viMinY = camera.y, viMaxY = camera.y + (viewportH / gameScale);
             // Drop target if it dies or leaves the visible screen; if none, expire gracefully.
             let targetValid = cp.target && cp.target.health > 0 && asteroidsList.includes(cp.target) &&
                 cp.target.x >= viMinX && cp.target.x <= viMaxX && cp.target.y >= viMinY && cp.target.y <= viMaxY;
@@ -3136,9 +3376,9 @@
         if (slowMoFactor < 1) {
             let vignetteStrength = Math.min(1, (1 - slowMoFactor) / (1 - SLOW_MO_STRENGTH));
             ctx.save();
-            let vg = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) * 0.35, canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.7);
+            let vg = ctx.createRadialGradient(viewportW / 2, viewportH / 2, Math.min(viewportW, viewportH) * 0.35, viewportW / 2, viewportH / 2, Math.max(viewportW, viewportH) * 0.7);
             vg.addColorStop(0, 'rgba(0,180,255,0)'); vg.addColorStop(1, `rgba(0,120,255,${0.32 * vignetteStrength})`);
-            ctx.fillStyle = vg; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = vg; ctx.fillRect(0, 0, viewportW, viewportH);
             ctx.restore();
         }
 
