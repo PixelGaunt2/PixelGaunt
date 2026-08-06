@@ -66,7 +66,7 @@
         .close-btn:hover { background: #ff3333; color: white; box-shadow: 0 0 10px #ff3333; }
 
         /* --- TREE VISUALS: node-graph skill tree (branching-circuit style) --- */
-        #tree-container { flex: 1; position: relative; overflow: hidden; background: #07070c; background-image: radial-gradient(rgba(0,243,255,0.08) 1px, transparent 1px); background-size: 26px 26px; touch-action: none; cursor: grab; }
+        #tree-container { flex: 1; position: relative; overflow: hidden; background: #07070c; background-image: linear-gradient(rgba(0,243,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,243,255,0.05) 1px, transparent 1px), radial-gradient(rgba(0,243,255,0.12) 1px, transparent 1px); background-size: 26px 26px, 26px 26px, 26px 26px; touch-action: none; cursor: grab; }
         #tree-container.panning { cursor: grabbing; }
         #tree-world { position: absolute; top: 0; left: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; }
         #tree-svg { position: absolute; top: -4000px; left: -4000px; width: 8000px; height: 8000px; pointer-events: none; overflow: visible; }
@@ -76,26 +76,53 @@
 
         .tree-cat-label { position: absolute; font-size: calc(var(--ui-scale) * 11px); font-weight: bold; letter-spacing: 0.5px; white-space: nowrap; pointer-events: none; z-index: 4; text-shadow: 0 0 6px rgba(0,0,0,0.9); }
 
-        .tree-dot { position: absolute; width: 15px; height: 15px; margin: -7.5px; border-radius: 50%; border: 2.5px solid #3a3a44; background: #16161d; cursor: pointer; transition: transform 0.15s ease; z-index: 3; }
-        .tree-dot:hover { transform: scale(1.35); }
-        .tree-dot.unlocked { background: var(--nc); border-color: var(--nc); box-shadow: 0 0 8px var(--nc); }
-        .tree-dot.maxed { background: #39ff14; border-color: #39ff14; box-shadow: 0 0 10px #39ff14; }
-        .tree-dot.affordable { animation: dotPulse 1.2s infinite; }
-        @keyframes dotPulse { 0%, 100% { box-shadow: 0 0 6px var(--nc); } 50% { box-shadow: 0 0 18px var(--nc); } }
+        .tree-zoom-controls { position: absolute; right: calc(var(--ui-scale) * 14px); bottom: calc(var(--ui-scale) * 14px); z-index: 12; display: flex; flex-direction: column; gap: calc(var(--ui-scale) * 6px); pointer-events: auto; }
+        .tree-zoom-controls button { width: calc(var(--ui-scale) * 34px); height: calc(var(--ui-scale) * 34px); border-radius: calc(var(--ui-scale) * 8px); border: 2px solid #00f3ff; background: rgba(10, 10, 15, 0.9); color: #00f3ff; font-family: 'Orbitron'; font-size: calc(var(--ui-scale) * 16px); font-weight: bold; cursor: pointer; line-height: 1; box-shadow: 0 0 8px rgba(0, 243, 255, 0.3); }
+        .tree-zoom-controls button:active { background: rgba(0, 243, 255, 0.25); }
 
-        .tree-icon-node { position: absolute; width: 34px; height: 34px; margin: -17px; border-radius: 9px; border: 2.5px solid #3a3a44; background: #15151d; display: flex; align-items: center; justify-content: center; font-size: 17px; line-height: 1; cursor: pointer; z-index: 4; transition: transform 0.15s ease; }
+        .tree-dot { position: absolute; width: 13px; height: 13px; margin: -6.5px; border-radius: 3px; border: 2px solid #3a3a44; background: #12121a; cursor: pointer; transition: transform 0.15s ease; z-index: 3; transform: rotate(45deg); }
+        .tree-dot:hover { transform: rotate(45deg) scale(1.35); }
+        .tree-dot.unlocked { background: var(--nc); border-color: var(--nc); box-shadow: 0 0 6px var(--nc); }
+        .tree-dot.maxed { background: #12121a; border-color: #39ff14; box-shadow: 0 0 8px #39ff14; }
+        .tree-dot.maxed::after { content:''; position: absolute; inset: 2px; background: #39ff14; border-radius: 1px; }
+        .tree-dot.affordable { animation: dotPulse 1.2s infinite; }
+        @keyframes dotPulse { 0%, 100% { box-shadow: 0 0 4px var(--nc); } 50% { box-shadow: 0 0 14px var(--nc); } }
+
+        .tree-icon-node { position: absolute; width: 32px; height: 32px; margin: -16px; border-radius: 4px; border: 2px solid #3a3a44; background: #12121a; display: flex; align-items: center; justify-content: center; font-size: 16px; line-height: 1; cursor: pointer; z-index: 4; transition: transform 0.15s ease; }
         .tree-icon-node:hover { transform: scale(1.18); }
         .tree-icon-node.locked { opacity: 0.35; filter: grayscale(100%); }
-        .tree-icon-node.unlocked { border-color: var(--nc); background: rgba(10,10,14,0.9); box-shadow: 0 0 10px var(--nc); }
-        .tree-icon-node.maxed { border-color: #39ff14; box-shadow: 0 0 12px #39ff14; }
+        .tree-icon-node.unlocked { border-color: var(--nc); background: rgba(10,10,14,0.95); box-shadow: 0 0 6px var(--nc); }
+        .tree-icon-node.maxed { border-color: #39ff14; box-shadow: 0 0 8px #39ff14; }
         .tree-icon-node.affordable { animation: iconPulse 1.2s infinite; }
-        @keyframes iconPulse { 0%, 100% { box-shadow: 0 0 8px var(--nc); } 50% { box-shadow: 0 0 22px var(--nc); } }
+        @keyframes iconPulse { 0%, 100% { box-shadow: 0 0 5px var(--nc); } 50% { box-shadow: 0 0 14px var(--nc); } }
+
+        /* --- REVEAL: a node that just became available because of a purchase elsewhere in the
+           tree pops/bounces in with a bright flash, and its connecting edge sparks bright white
+           before settling back to its normal color - so a purchase that opens several branches
+           at once (e.g. Nano-Suit Activation) reads as a deliberate cascading reveal instead of
+           several far-apart icons silently flipping state at the same instant. ---
+        @keyframes nodeReveal { 0% { transform: scale(0.4); filter: brightness(2.6) drop-shadow(0 0 14px #fff); } 55% { transform: scale(1.35); } 75% { transform: scale(0.92); } 100% { transform: scale(1); filter: none; } }
+        @keyframes nodeRevealDiamond { 0% { transform: rotate(45deg) scale(0.4); filter: brightness(2.6) drop-shadow(0 0 10px #fff); } 55% { transform: rotate(45deg) scale(1.35); } 75% { transform: rotate(45deg) scale(0.92); } 100% { transform: rotate(45deg) scale(1); filter: none; } }
+        .tree-icon-node.just-revealed { animation: nodeReveal 0.7s cubic-bezier(.34,1.56,.64,1); }
+        .tree-dot.just-revealed { animation: nodeRevealDiamond 0.7s cubic-bezier(.34,1.56,.64,1); }
+        @keyframes edgeSpark { 0% { stroke: #ffffff; stroke-width: 4; } 100% { stroke-width: 2.5; } }
+        .edge-spark { animation: edgeSpark 0.7s ease-out; }
+
+        /* --- OPENING ANIMATION: the whole tree fades/pops itself in node-by-node, outward from
+           the origin, the first time the modal builds it - a quick "growing in" moment instead
+           of the entire graph just appearing instantly. tree-node-intro is stripped off shortly
+           after (see buildTreeDOM) so it never fights with the affordable/pulse states above. ---
+        @keyframes treeNodeIntro { 0% { opacity: 0; transform: scale(0.3); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes treeNodeIntroDiamond { 0% { opacity: 0; transform: rotate(45deg) scale(0.3); } 100% { opacity: 1; transform: rotate(45deg) scale(1); } }
+        .tree-icon-node.tree-node-intro { animation: treeNodeIntro 0.4s ease-out backwards; }
+        .tree-dot.tree-node-intro { animation: treeNodeIntroDiamond 0.4s ease-out backwards; }
 
         #node-info-card { position: absolute; bottom: calc(var(--ui-scale) * 16px); left: 50%; transform: translateX(-50%); width: calc(var(--ui-scale) * 250px); max-width: 82vw; background: #0d0d14; border: 2px solid #00f3ff; border-radius: calc(var(--ui-scale) * 10px); padding: calc(var(--ui-scale) * 14px); z-index: 20; box-shadow: 0 0 20px rgba(0,243,255,0.45); display: none; text-align: center; }
         #node-info-card .node-title { font-size: calc(var(--ui-scale) * 15px); font-weight: bold; color: #00f3ff; margin-bottom: calc(var(--ui-scale) * 4px); }
         #node-info-card .node-desc { font-size: calc(var(--ui-scale) * 11px); color: #aaa; margin-bottom: calc(var(--ui-scale) * 8px); line-height: 1.3; }
         #node-info-card .node-level { font-size: calc(var(--ui-scale) * 11px); color: #fff; margin-bottom: calc(var(--ui-scale) * 6px); }
         #node-info-card .node-cost { font-size: calc(var(--ui-scale) * 11px); font-weight: bold; margin-bottom: calc(var(--ui-scale) * 8px); }
+        #node-info-card .node-requires { font-size: calc(var(--ui-scale) * 10px); color: #ff9933; margin-bottom: calc(var(--ui-scale) * 8px); line-height: 1.3; }
 
         #tree-bottombar { display: flex; align-items: center; justify-content: space-between; padding: calc(var(--ui-scale) * 10px) calc(var(--ui-scale) * 18px); border-top: 2px solid #00f3ff; background: rgba(0, 243, 255, 0.08); gap: calc(var(--ui-scale) * 10px); flex-wrap: wrap; }
         .tree-hint-group { display: flex; gap: calc(var(--ui-scale) * 16px); }
@@ -409,6 +436,11 @@
                 <svg id="tree-svg"></svg>
                 <div id="tree-nodes"></div>
             </div>
+            <div class="tree-zoom-controls">
+                <button type="button" onclick="zoomTree(1.25)" aria-label="Zoom in">+</button>
+                <button type="button" onclick="zoomTree(0.8)" aria-label="Zoom out">−</button>
+                <button type="button" onclick="resetTreeView()" aria-label="Reset view">⤢</button>
+            </div>
             <div id="node-info-card"></div>
         </div>
 
@@ -478,6 +510,7 @@
         playSound('ui_open');
         document.getElementById('main-menu').style.display = 'none';
         document.getElementById('pause-btn').style.display = 'block';
+        positionMinimapMobile();
         gameState = "PLAYING";
         sessionActive = true;
         startBgMusic();
@@ -509,6 +542,7 @@
         playSound('ui_close');
         document.getElementById('pause-menu').style.display = 'none';
         document.getElementById('pause-btn').style.display = 'block';
+        positionMinimapMobile();
         gameState = "PLAYING";
     }
 
@@ -681,6 +715,15 @@
         } else if (type === 'upgrade_buy') {
             osc.type = 'square'; osc.frequency.setValueAtTime(500, now); osc.frequency.setValueAtTime(700, now + 0.06); osc.frequency.setValueAtTime(950, now + 0.12);
             gainNode.gain.setValueAtTime(0.06, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.3); osc.start(now); osc.stop(now + 0.3);
+        } else if (type === 'node_unlock') {
+            // Bright ascending two-note sparkle for a tree node newly becoming available (a
+            // branch just opened up) - distinct from 'upgrade_buy' (bought a level) and
+            // 'levelup' (a whole new ability just went active).
+            osc.type = 'sine'; osc.frequency.setValueAtTime(700, now); osc.frequency.exponentialRampToValueAtTime(1400, now + 0.12);
+            gainNode.gain.setValueAtTime(0.05, now); gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15); osc.start(now); osc.stop(now + 0.15);
+            let osc2 = audioCtx.createOscillator(); let g2 = audioCtx.createGain(); osc2.connect(g2); g2.connect(audioCtx.destination);
+            osc2.type = 'sine'; osc2.frequency.setValueAtTime(1050, now + 0.05); osc2.frequency.exponentialRampToValueAtTime(2100, now + 0.17);
+            g2.gain.setValueAtTime(0.04, now + 0.05); g2.gain.exponentialRampToValueAtTime(0.001, now + 0.2); osc2.start(now + 0.05); osc2.stop(now + 0.2);
         } else if (type === 'ui_open') {
             osc.type = 'sine'; osc.frequency.setValueAtTime(500, now); osc.frequency.exponentialRampToValueAtTime(1000, now + 0.12);
             gainNode.gain.setValueAtTime(0.05, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.12); osc.start(now); osc.stop(now + 0.12);
@@ -770,8 +813,26 @@
         uiScale = Math.max(0.55, Math.min(1, rawScale));
         document.documentElement.style.setProperty('--ui-scale', uiScale);
         if (joystickReady) positionJoystick();
+        if (minimapMobileReady) positionMinimapMobile();
         positionSidePanels();
+
+        // PIXEL RENDERING FIX: the minimap canvas's backing store was hardcoded to a fixed
+        // 130x130 physical pixels (its HTML width/height attributes) while its CSS box is
+        // stretched to fill #minimap-container (up to 130 CSS px). On any HiDPI/Retina screen
+        // that meant the browser had to upscale an already-1x bitmap to fill the display's
+        // real pixel grid, making the dot/circle edges look soft and jagged. Give it a
+        // dpr-scaled backing store instead, matching the sharp-canvas approach used for the
+        // main game canvas above; the draw code applies a matching mCtx.setTransform each
+        // frame so it can keep using the same logical 130x130 coordinate space untouched.
+        const minimapCanvasEl = document.getElementById('minimap');
+        if (minimapCanvasEl) {
+            const mmSize = Math.max(1, Math.round(130 * dpr));
+            if (minimapCanvasEl.width !== mmSize || minimapCanvasEl.height !== mmSize) {
+                minimapCanvasEl.width = mmSize; minimapCanvasEl.height = mmSize;
+            }
+        }
     }
+    let minimapMobileReady = false; // flips true once isTouchDevice/positionMinimapMobile below are ready
     let joystickReady = false; // flips true once the joystick DOM/logic below has initialized
 
     // --- SIDE PANEL SPACING (PC layout fix) ---
@@ -1100,6 +1161,7 @@
 
         document.getElementById('od-select-menu').style.display = 'none';
         document.getElementById('pause-btn').style.display = 'block';
+        positionMinimapMobile();
         gameState = "PLAYING";
         odSelectReadyKeys = [];
 
@@ -1157,9 +1219,10 @@
     // --- WEAPON DETECTION RANGE (drills + axes) ---
     // Drills and axes are only allowed to detect, target, and attack an asteroid once it is
     // within this many pixels of the girl. Outside this range they simply stay hidden/inactive
-    // instead of spawning or orbiting. Widened from 450 -> 600 so drills/axes engage targets
-    // noticeably further out, giving the player more breathing room before threats close in.
-    const WEAPON_ENGAGE_RANGE = 600;
+    // instead of spawning or orbiting. Widened from 450 -> 600, and now further widened to 900
+    // (Weapon Spacing pass) so drills/axes engage targets much further out, giving the player
+    // noticeably more effective range and breathing room before threats close in.
+    const WEAPON_ENGAGE_RANGE = 900;
 
     // --- WIN CONDITION ---
     // The game runs until the girl has mined $1 Quadrillion for Earth.
@@ -1220,9 +1283,10 @@
     // objects in that patrol range, it launches smaller attack drones that independently
     // hunt down and attack anything within 500-600px of themselves.
     let mainDrone = null; let miniDrones = []; let droneProjectiles = []; let lastDroneScan = 0;
-    // Widened from 500-600 -> 650-800 so both the main drone's patrol loop and each mini
-    // attack drone's target-acquisition radius reach noticeably further out.
-    const DRONE_PATROL_MIN = 650, DRONE_PATROL_MAX = 800;
+    // Widened from 500-600 -> 650-800, and now further widened (Weapon Spacing pass) to
+    // 950-1150 so both the main drone's patrol loop and each mini attack drone's
+    // target-acquisition/firing radius reach noticeably further out.
+    const DRONE_PATROL_MIN = 950, DRONE_PATROL_MAX = 1150;
 
     // --- UNLOCKABLE GIRL CLONE ABILITY (kamikaze bombers) ---
     // Completely separate system from Acid Sisters below - own array, own state, own
@@ -1417,28 +1481,49 @@
         joystickStickEl.style.transform = 'translate(-50%, -50%)';
     }
 
-    if (isTouchDevice) {
-        joystickEl.classList.add('active');
-        joystickEl.addEventListener('touchstart', e => {
-            e.preventDefault(); e.stopPropagation();
-            if (joystickTouchId !== null) return;
-            const touch = e.changedTouches[0];
-            joystickTouchId = touch.identifier;
-            initAudio();
-            setJoystickFromTouch(touch);
-        }, { passive: false });
-        joystickEl.addEventListener('touchmove', e => {
-            e.preventDefault(); e.stopPropagation();
-            for (const touch of e.changedTouches) { if (touch.identifier === joystickTouchId) setJoystickFromTouch(touch); }
-        }, { passive: false });
-        const endJoystickTouch = e => {
-            e.stopPropagation();
-            for (const touch of e.changedTouches) { if (touch.identifier === joystickTouchId) resetJoystick(); }
-        };
-        joystickEl.addEventListener('touchend', endJoystickTouch);
-        joystickEl.addEventListener('touchcancel', endJoystickTouch);
+    // --- MOBILE VIRTUAL JOYSTICK: REMOVED ---
+    // The on-screen joystick controller has been removed on touch devices per request. The
+    // joystick DOM element (#mobile-joystick) stays in the page but is never given the
+    // `.active` class, so its CSS `display: none` default keeps it permanently hidden and it
+    // never receives any touches. Movement on touch devices now relies solely on the existing
+    // tap/drag-to-move handling (touchstart/touchmove/touchend listeners above), which already
+    // works independently of the joystick and needs no changes. joystickVector stays at its
+    // default { x:0, y:0, active:false } forever, so the joystick-check branch in the player
+    // update loop below simply never triggers - no other movement code needed to change.
+    joystickReady = true;
+
+    // --- MOBILE MINIMAP REPOSITION ---
+    // On touch devices the minimap moves from its default bottom-right corner (see CSS) up to
+    // the top of the screen, tucked into the gap between the Score HUD (top-center) and the
+    // Pause button (top-right) - same top edge as both, horizontally centered in the space
+    // between them so it doesn't collide with either regardless of screen width or ui-scale.
+    const minimapEl = document.getElementById('minimap-container');
+    function positionMinimapMobile() {
+        if (!isTouchDevice || !minimapEl) return;
+        const scoreHud = document.getElementById('score-hud');
+        const pauseBtn = document.getElementById('pause-btn');
+        if (!scoreHud || !pauseBtn) return;
+        const margin = 8 * uiScale;
+        const scoreRect = scoreHud.getBoundingClientRect();
+        const pauseRect = pauseBtn.getBoundingClientRect();
+        // Pause button is display:none until a game is actually running (e.g. still on the
+        // main menu) - bail out rather than positioning against a zero-size rect; the minimap
+        // sits behind the menu overlay anyway, and gameplay code re-calls this once the pause
+        // button becomes visible (see pauseBtn display toggles below).
+        if (pauseRect.width === 0 || scoreRect.width === 0) return;
+        const mapW = minimapEl.offsetWidth;
+        const gapCenter = (scoreRect.right + pauseRect.left) / 2;
+        // Clamp so the map can never creep under the Score HUD or the Pause button even on
+        // very narrow phones where the gap between them is tight.
+        const minLeft = scoreRect.right + margin;
+        const maxLeft = pauseRect.left - margin - mapW;
+        const left = Math.max(minLeft, Math.min(maxLeft, gapCenter - mapW / 2));
+        minimapEl.style.top = scoreRect.top + 'px';
+        minimapEl.style.bottom = 'auto';
+        minimapEl.style.left = Math.round(left) + 'px';
+        minimapEl.style.right = 'auto';
     }
-    joystickReady = true; positionJoystick();
+    minimapMobileReady = true; positionMinimapMobile();
 
     const inputKeys = {};
     window.addEventListener('keydown', (e) => { inputKeys[e.code] = true; }); window.addEventListener('keyup', (e) => { inputKeys[e.code] = false; });
@@ -1588,17 +1673,29 @@
                     // offscreen buffer (source-atop there, not on the main canvas) so the
                     // color-fill only ever affects the girl's own pixels and never bleeds
                     // onto background stars/asteroids that happen to sit behind her.
+                    // PIXEL RENDERING FIX: this buffer used to be allocated at drawWidth/drawHeight
+                    // (logical/CSS pixels), i.e. a plain 1x backing store regardless of screen
+                    // density. On any HiDPI/Retina display that silently downgraded the girl's
+                    // sprite to a soft, low-res copy the instant the suit tint kicked in (Girl
+                    // Power unlocked), then stretched it back up - visible blur that every other
+                    // sprite on screen didn't have. Fix: allocate the buffer at drawWidth*dpr x
+                    // drawHeight*dpr (a real, sharp pixel grid matching the main canvas) and scale
+                    // its own context by dpr so the same drawImage/fillRect calls below still work
+                    // in logical coordinates.
                     if (!this._suitBuffer) { this._suitBuffer = document.createElement('canvas'); }
                     let buf = this._suitBuffer;
-                    if (buf.width !== this.drawWidth || buf.height !== this.drawHeight) { buf.width = this.drawWidth; buf.height = this.drawHeight; }
+                    let bw = Math.max(1, Math.round(this.drawWidth * dpr)), bh = Math.max(1, Math.round(this.drawHeight * dpr));
+                    if (buf.width !== bw || buf.height !== bh) { buf.width = bw; buf.height = bh; }
                     let bctx = buf.getContext('2d');
-                    bctx.clearRect(0, 0, buf.width, buf.height);
-                    bctx.drawImage(activeFrame, 0, 0, buf.width, buf.height);
+                    bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                    bctx.imageSmoothingEnabled = true; bctx.imageSmoothingQuality = 'high';
+                    bctx.clearRect(0, 0, this.drawWidth, this.drawHeight);
+                    bctx.drawImage(activeFrame, 0, 0, this.drawWidth, this.drawHeight);
                     let tintAlpha = 0.30 + (gpActive ? gpRamp * 0.25 : 0); // deeper tint while active
                     bctx.globalCompositeOperation = 'source-atop';
                     bctx.globalAlpha = tintAlpha;
                     bctx.fillStyle = suitTier.color;
-                    bctx.fillRect(0, 0, buf.width, buf.height);
+                    bctx.fillRect(0, 0, this.drawWidth, this.drawHeight);
                     bctx.globalCompositeOperation = 'source-over';
                     bctx.globalAlpha = 1;
 
@@ -1701,125 +1798,137 @@
     // straight out of playerStats.score ($). Minerals no longer factor into any cost anywhere
     // in this tree - see canAfford()/purchaseUpgrade() above. ---
     const upgradeTrees = {
-        // --- ABILITY UNLOCK COSTS (tiered for a long-term incremental game) ---
-        // Every `hasX` unlock node below (Girl Suit, Fireball, Rocket, Laser, Pickaxe, Drone,
-        // Clone, Pulse Core, Acid Sisters, Electric Shock) is priced in four rough tiers so each
-        // new ability feels like a real progression milestone rather than a similarly-priced
-        // grab-bag: ~500-1100 for the earliest no-prerequisite choices, ~2600-2900 for the next
-        // step up, ~6500-7200 for mid-game abilities, and 15000-18000 for the two latest, most
-        // powerful abilities (Girl Clones, Acid Sisters). These base costs then also pass through
-        // the same BASE_COST_MULTIPLIER/COST_GROWTH_RATE scaling as every other upgrade (see
-        // getCost() below), so the actual in-game prices are these numbers scaled further up.
+        // ============================================================
+        // TECH TREE STRUCTURE
+        // ------------------------------------------------------------
+        // Every upgrade node now carries three new fields on top of its original
+        // id/name/desc/cost/effect/value/maxLevel (all of which are untouched, so old saves
+        // still line up 1:1 with these ids):
+        //   - prereq: [{id, level}, ...]  - ALL listed nodes must be at >= that level before
+        //     this node can be purchased. An empty array means "no prerequisite" (a tree root).
+        //     A node can require MULTIPLE prior nodes (a branch merge), and a single node can be
+        //     the parent of several children (a branch split) - this is what turns each former
+        //     flat list into an actual branching skill tree instead of one straight line.
+        //   - lane: horizontal branch offset (0 = center spine, negative/positive = left/right
+        //     branch) used purely for the node-graph layout.
+        //   - depth: how many steps out from the category's root along its spoke, also purely
+        //     for layout.
+        //
+        // OVERALL ABILITY-UNLOCK PROGRESSION (the "which power-up opens up when" tier, spanning
+        // every tree - not just levels within one tree):
+        //   TIER 1 - EARLY (3 power-ups, open with just the always-available Drill):
+        //     Girl Suit (suit_0), Mining Rocket (rkt_1), Fireballs (wpn_fb1)
+        //   TIER 2 - MID (5 power-ups, gated behind the cheapest Tier-1 pick, Nano-Suit
+        //     Activation, so the player has to commit to the Suit branch before the mid-game
+        //     opens up):
+        //     Laser (wpn_laser1), Fire Split (firesplit_1), Attack Drone (drone_1),
+        //     Electric Shock (shock_1), Pulse Core (pulse_1)
+        //   TIER 3 - LATE (2 powerful abilities, gated behind TWO completed Tier-2 branches -
+        //     Drone AND Pulse Core - so they're a real capstone reward, not just an expensive
+        //     purchase):
+        //     Girl Clones (clone_1), Acid Sisters (acid_1)
+        // Within EVERY individual tree, the strongest node (the final capstone - usually the
+        // Overdrive Core, sometimes a top-tier damage upgrade) requires multiple earlier branches
+        // to already be invested in, not just "the previous node in the list" as before.
+        // ============================================================
         drill: [
-            { id: "drill_base", name: "Base Drill", desc: "Standard mining equipment", cost: {}, effect: null, value: 0, maxLevel: 1, baseUnlock: true },
-            { id: "drill_tungsten", name: "Tungsten Drill", desc: "+ Drill damage", cost: { money: 320 }, effect: "damage", value: 0.1, maxLevel: 1000 },
-            { id: "drill_diamond", name: "Diamond Drill", desc: "+ Higher asteroid damage", cost: { money: 840 }, effect: "damage", value: 0.25, maxLevel: 1000 },
-            { id: "drill_plasma", name: "Plasma Drill", desc: "Adds energy damage", cost: { money: 2100 }, effect: "damage", value: 0.5, maxLevel: 1000 },
-            { id: "drill_void", name: "Void Drill", desc: "Massively increases mining power", cost: { money: 6000 }, effect: "damage", value: 1.0, maxLevel: 1000 },
-            { id: "drill_od_dur", name: "Drill Storm Core", desc: "+1s Drill Storm overdrive duration", cost: { money: 630 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "drill_base", name: "Base Drill", desc: "Standard mining equipment", cost: {}, effect: null, value: 0, maxLevel: 1, baseUnlock: true, prereq: [], lane: 0, depth: 0 },
+            { id: "drill_tungsten", name: "Tungsten Drill", desc: "+ Drill damage", cost: { money: 320 }, effect: "damage", value: 0.1, maxLevel: 1000, prereq: [{ id: "drill_base", level: 1 }], lane: 0, depth: 1 },
+            { id: "drill_diamond", name: "Diamond Drill", desc: "+ Higher asteroid damage", cost: { money: 840 }, effect: "damage", value: 0.25, maxLevel: 1000, prereq: [{ id: "drill_tungsten", level: 1 }], lane: -1, depth: 2 },
+            { id: "drill_plasma", name: "Plasma Drill", desc: "Adds energy damage", cost: { money: 2100 }, effect: "damage", value: 0.5, maxLevel: 1000, prereq: [{ id: "drill_tungsten", level: 1 }], lane: 1, depth: 2 },
+            { id: "drill_od_dur", name: "Drill Storm Core", desc: "+1s Drill Storm overdrive duration", cost: { money: 630 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "drill_tungsten", level: 1 }], lane: 2, depth: 2 },
+            { id: "drill_void", name: "Void Drill", desc: "Massively increases mining power", cost: { money: 6000 }, effect: "damage", value: 1.0, maxLevel: 1000, prereq: [{ id: "drill_diamond", level: 1 }, { id: "drill_plasma", level: 1 }], lane: 0, depth: 3 }
         ],
-        weapon: { 
+        weapon: {
             laser: [
-                { id: "wpn_laser1", name: "Plasma Laser Cannon", desc: "Unlock Laser Weapon", cost: { money: 2600 }, effect: "hasLaser", value: true, maxLevel: 1 },
-                { id: "wpn_laser2", name: "Laser Level 2", desc: "+ Laser damage & fire rate", cost: { money: 1200 }, effect: "damage", value: 0.2, maxLevel: 1000 },
-                { id: "wpn_laser3", name: "Laser Level 3", desc: "+ Bigger laser beam", cost: { money: 3000 }, effect: "damage", value: 0.3, maxLevel: 1000 },
-                { id: "wpn_laser4", name: "Quantum Laser", desc: "Extreme Laser Power", cost: { money: 6000 }, effect: "damage", value: 0.5, maxLevel: 1000 },
-                { id: "laser_od_dur", name: "Laser Overdrive Core", desc: "+1s Laser Beam overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000 }
+                { id: "wpn_laser1", name: "Plasma Laser Cannon", desc: "Unlock Laser Weapon", cost: { money: 2600 }, effect: "hasLaser", value: true, maxLevel: 1, prereq: [{ id: "suit_0", level: 1 }], lane: 0, depth: 0 },
+                { id: "wpn_laser2", name: "Laser Level 2", desc: "+ Laser damage & fire rate", cost: { money: 1200 }, effect: "damage", value: 0.2, maxLevel: 1000, prereq: [{ id: "wpn_laser1", level: 1 }], lane: -1, depth: 1 },
+                { id: "laser_od_dur", name: "Laser Overdrive Core", desc: "+1s Laser Beam overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "wpn_laser1", level: 1 }], lane: 1, depth: 1 },
+                { id: "wpn_laser3", name: "Laser Level 3", desc: "+ Bigger laser beam", cost: { money: 3000 }, effect: "damage", value: 0.3, maxLevel: 1000, prereq: [{ id: "wpn_laser2", level: 3 }], lane: -1, depth: 2 },
+                { id: "wpn_laser4", name: "Quantum Laser", desc: "Extreme Laser Power", cost: { money: 6000 }, effect: "damage", value: 0.5, maxLevel: 1000, prereq: [{ id: "wpn_laser3", level: 1 }, { id: "laser_od_dur", level: 1 }], lane: 0, depth: 3 }
             ],
             fireball: [
-                { id: "wpn_fb1", name: "Massive Fireballs", desc: "Unlock Fireballs", cost: { money: 800 }, effect: "hasFireball", value: true, maxLevel: 1 },
-                { id: "wpn_fb2", name: "Fireball Level 2", desc: "More damage", cost: { money: 1200 }, effect: "damage", value: 0.2, maxLevel: 1000 },
-                { id: "wpn_fb3", name: "Solar Flame", desc: "Bigger explosion radius", cost: { money: 3000 }, effect: "damage", value: 0.3, maxLevel: 1000 },
-                { id: "wpn_fb4", name: "Supernova Fireball", desc: "Huge destruction", cost: { money: 6000 }, effect: "damage", value: 0.5, maxLevel: 1000 },
-                { id: "fireball_od_dur", name: "Inferno Overdrive Core", desc: "+1s Inferno overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000 }
+                { id: "wpn_fb1", name: "Massive Fireballs", desc: "Unlock Fireballs", cost: { money: 800 }, effect: "hasFireball", value: true, maxLevel: 1, prereq: [{ id: "drill_base", level: 1 }], lane: 0, depth: 0 },
+                { id: "wpn_fb2", name: "Fireball Level 2", desc: "More damage", cost: { money: 1200 }, effect: "damage", value: 0.2, maxLevel: 1000, prereq: [{ id: "wpn_fb1", level: 1 }], lane: -1, depth: 1 },
+                { id: "fireball_od_dur", name: "Inferno Overdrive Core", desc: "+1s Inferno overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "wpn_fb1", level: 1 }], lane: 1, depth: 1 },
+                { id: "wpn_fb3", name: "Solar Flame", desc: "Bigger explosion radius", cost: { money: 3000 }, effect: "damage", value: 0.3, maxLevel: 1000, prereq: [{ id: "wpn_fb2", level: 3 }], lane: -1, depth: 2 },
+                { id: "wpn_fb4", name: "Supernova Fireball", desc: "Huge destruction", cost: { money: 6000 }, effect: "damage", value: 0.5, maxLevel: 1000, prereq: [{ id: "wpn_fb3", level: 1 }, { id: "fireball_od_dur", level: 1 }], lane: 0, depth: 3 }
             ]
         },
         rocket: [
-            { id: "rkt_1", name: "Mining Rocket", desc: "Unlock Rocket Launcher", cost: { money: 1100 }, effect: "hasRocket", value: true, maxLevel: 1 },
-            { id: "rkt_2", name: "Rocket Engine II", desc: "Faster reloading", cost: { money: 1200 }, effect: null, value: 0, maxLevel: 1000 },
-            { id: "rkt_3", name: "Multi Rocket", desc: "Launch multiple rockets", cost: { money: 3450 }, effect: null, value: 0, maxLevel: 1000 },
-            { id: "rkt_4", name: "Nuclear Mining Rocket", desc: "Large explosion damage", cost: { money: 6750 }, effect: "damage", value: 0.5, maxLevel: 1000 },
-            { id: "rocket_od_dur", name: "Missile Overdrive Core", desc: "+1s Missile Rain overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "rkt_1", name: "Mining Rocket", desc: "Unlock Rocket Launcher", cost: { money: 1100 }, effect: "hasRocket", value: true, maxLevel: 1, prereq: [{ id: "drill_base", level: 1 }], lane: 0, depth: 0 },
+            { id: "rkt_2", name: "Rocket Engine II", desc: "Faster reloading", cost: { money: 1200 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "rkt_1", level: 1 }], lane: -1, depth: 1 },
+            { id: "rocket_od_dur", name: "Missile Overdrive Core", desc: "+1s Missile Rain overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "rkt_1", level: 1 }], lane: 1, depth: 1 },
+            { id: "rkt_3", name: "Multi Rocket", desc: "Launch multiple rockets", cost: { money: 3450 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "rkt_2", level: 3 }], lane: -1, depth: 2 },
+            { id: "rkt_4", name: "Nuclear Mining Rocket", desc: "Large explosion damage", cost: { money: 6750 }, effect: "damage", value: 0.5, maxLevel: 1000, prereq: [{ id: "rkt_3", level: 1 }, { id: "rocket_od_dur", level: 1 }], lane: 0, depth: 3 }
         ],
         energy: [
-            { id: "en_1", name: "Solar Pack", desc: "Energy regeneration increase", cost: { money: 225 }, effect: "energyRegen", value: 0.005, maxLevel: 1000 },
-            { id: "en_2", name: "Energy Tank", desc: "Increase maximum energy", cost: { money: 850 }, effect: "maxEnergy", value: 2, maxLevel: 1000 },
-            { id: "en_3", name: "Advanced Reactor", desc: "Energy drains slower", cost: { money: 1500 }, effect: "energyDrain", value: -0.001, maxLevel: 1000 },
-            { id: "en_4", name: "Fusion Core", desc: "Massive power increase", cost: { money: 4800 }, effect: "energyRegen", value: 0.01, maxLevel: 1000 }
+            { id: "en_1", name: "Solar Pack", desc: "Energy regeneration increase", cost: { money: 225 }, effect: "energyRegen", value: 0.005, maxLevel: 1000, prereq: [], lane: 0, depth: 0 },
+            { id: "en_2", name: "Energy Tank", desc: "Increase maximum energy", cost: { money: 850 }, effect: "maxEnergy", value: 2, maxLevel: 1000, prereq: [{ id: "en_1", level: 1 }], lane: -1, depth: 1 },
+            { id: "en_3", name: "Advanced Reactor", desc: "Energy drains slower", cost: { money: 1500 }, effect: "energyDrain", value: -0.001, maxLevel: 1000, prereq: [{ id: "en_1", level: 1 }], lane: 1, depth: 1 },
+            { id: "en_4", name: "Fusion Core", desc: "Massive power increase", cost: { money: 4800 }, effect: "energyRegen", value: 0.01, maxLevel: 1000, prereq: [{ id: "en_2", level: 1 }, { id: "en_3", level: 1 }], lane: 0, depth: 2 }
         ],
         movement: [
-            { id: "mov_1", name: "Thruster Boost", desc: "Increase movement speed", cost: { money: 250 }, effect: "speed", value: 0.005, maxLevel: 1000 },
-            { id: "mov_2", name: "Jet Engine Backpack", desc: "Higher flying acceleration", cost: { money: 900 }, effect: "speed", value: 0.005, maxLevel: 1000 },
-            { id: "mov_3", name: "Extended Grapple Wire", desc: "Increase auto-collect distance", cost: { money: 1200 }, effect: "magnetRadius", value: 0.5, maxLevel: 1000 },
-            { id: "mov_4", name: "Quantum Mobility", desc: "Extreme movement speed", cost: { money: 3060 }, effect: "speed", value: 0.01, maxLevel: 1000 }
+            { id: "mov_1", name: "Thruster Boost", desc: "Increase movement speed", cost: { money: 250 }, effect: "speed", value: 0.005, maxLevel: 1000, prereq: [], lane: 0, depth: 0 },
+            { id: "mov_2", name: "Jet Engine Backpack", desc: "Higher flying acceleration", cost: { money: 900 }, effect: "speed", value: 0.005, maxLevel: 1000, prereq: [{ id: "mov_1", level: 1 }], lane: -1, depth: 1 },
+            { id: "mov_3", name: "Extended Grapple Wire", desc: "Increase auto-collect distance", cost: { money: 1200 }, effect: "magnetRadius", value: 0.5, maxLevel: 1000, prereq: [{ id: "mov_1", level: 1 }], lane: 1, depth: 1 },
+            { id: "mov_4", name: "Quantum Mobility", desc: "Extreme movement speed", cost: { money: 3060 }, effect: "speed", value: 0.01, maxLevel: 1000, prereq: [{ id: "mov_2", level: 1 }, { id: "mov_3", level: 1 }], lane: 0, depth: 2 }
         ],
         suit: [
-            { id: "suit_0", name: "Nano-Suit Activation", desc: "Unlock the Girl Power suit ability", cost: { money: 500 }, effect: "hasGirlPower", value: true, maxLevel: 1 },
-            { id: "suit_1", name: "Armor Upgrade", desc: "Reduce space damage", cost: { money: 400 }, effect: "defense", value: 0.1, maxLevel: 1000 },
-            { id: "suit_2", name: "Magnetic Suit", desc: "Collect minerals from farther distance", cost: { money: 1000 }, effect: "magnetRadius", value: 1.0, maxLevel: 1000 },
-            { id: "suit_3", name: "Pickaxe Deploy", desc: "Unlock Impact Pickaxe", cost: { money: 2900 }, effect: "hasPickaxe", value: true, maxLevel: 1 },
-            { id: "suit_4", name: "Cosmic Suit", desc: "Maximum protection", cost: { money: 6750 }, effect: "defense", value: 0.2, maxLevel: 1000 },
-            { id: "suit_od_dur", name: "Girl Power Core", desc: "+1s Girl Power overdrive duration, deepens suit color tier", cost: { money: 900 }, effect: null, value: 0, maxLevel: 1000 },
-            { id: "pickaxe_od_dur", name: "Axe Fury Core", desc: "+1s Axe Fury overdrive duration", cost: { money: 1120 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "suit_0", name: "Nano-Suit Activation", desc: "Unlock the Girl Power suit ability", cost: { money: 500 }, effect: "hasGirlPower", value: true, maxLevel: 1, prereq: [{ id: "drill_base", level: 1 }], lane: 0, depth: 0 },
+            { id: "suit_1", name: "Armor Upgrade", desc: "Reduce space damage", cost: { money: 400 }, effect: "defense", value: 0.1, maxLevel: 1000, prereq: [{ id: "suit_0", level: 1 }], lane: -1, depth: 1 },
+            { id: "suit_2", name: "Magnetic Suit", desc: "Collect minerals from farther distance", cost: { money: 1000 }, effect: "magnetRadius", value: 1.0, maxLevel: 1000, prereq: [{ id: "suit_0", level: 1 }], lane: 1, depth: 1 },
+            { id: "suit_3", name: "Pickaxe Deploy", desc: "Unlock Impact Pickaxe", cost: { money: 2900 }, effect: "hasPickaxe", value: true, maxLevel: 1, prereq: [{ id: "suit_1", level: 1 }, { id: "suit_2", level: 1 }], lane: 0, depth: 2 },
+            { id: "suit_4", name: "Cosmic Suit", desc: "Maximum protection", cost: { money: 6750 }, effect: "defense", value: 0.2, maxLevel: 1000, prereq: [{ id: "suit_1", level: 5 }], lane: -1, depth: 2 },
+            { id: "pickaxe_od_dur", name: "Axe Fury Core", desc: "+1s Axe Fury overdrive duration", cost: { money: 1120 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "suit_3", level: 1 }], lane: 1, depth: 3 },
+            { id: "suit_od_dur", name: "Girl Power Core", desc: "+1s Girl Power overdrive duration, deepens suit color tier", cost: { money: 900 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "suit_4", level: 1 }, { id: "suit_3", level: 1 }], lane: 0, depth: 3 }
         ],
         drone: [
-            { id: "drone_1", name: "Recon Drone", desc: "Unlock a small companion attack drone", cost: { money: 6500 }, effect: "hasDrone", value: true, maxLevel: 1 },
-            { id: "drone_2", name: "Twin Cannons", desc: "+ Drone projectile damage", cost: { money: 1350 }, effect: "droneDamage", value: 0.2, maxLevel: 1000 },
-            { id: "drone_3", name: "Rapid Targeting", desc: "+ Drone fire rate", cost: { money: 2550 }, effect: "droneFireRateLevel", value: 1, maxLevel: 20 },
-            { id: "drone_4", name: "Support Bay", desc: "+1 max attack drone in the air at once (always active, more during Drone Swarm overdrive)", cost: { money: 4200 }, effect: "droneSupportCount", value: 1, maxLevel: 4 },
-            { id: "drone_od_dur", name: "Drone Overdrive Core", desc: "+1s Drone Swarm overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "drone_1", name: "Recon Drone", desc: "Unlock a small companion attack drone", cost: { money: 6500 }, effect: "hasDrone", value: true, maxLevel: 1, prereq: [{ id: "suit_0", level: 1 }], lane: 0, depth: 0 },
+            { id: "drone_2", name: "Twin Cannons", desc: "+ Drone projectile damage", cost: { money: 1350 }, effect: "droneDamage", value: 0.2, maxLevel: 1000, prereq: [{ id: "drone_1", level: 1 }], lane: -1, depth: 1 },
+            { id: "drone_3", name: "Rapid Targeting", desc: "+ Drone fire rate", cost: { money: 2550 }, effect: "droneFireRateLevel", value: 1, maxLevel: 20, prereq: [{ id: "drone_1", level: 1 }], lane: 1, depth: 1 },
+            { id: "drone_4", name: "Support Bay", desc: "+1 max attack drone in the air at once (always active, more during Drone Swarm overdrive)", cost: { money: 4200 }, effect: "droneSupportCount", value: 1, maxLevel: 4, prereq: [{ id: "drone_2", level: 3 }], lane: -1, depth: 2 },
+            { id: "drone_od_dur", name: "Drone Overdrive Core", desc: "+1s Drone Swarm overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "drone_4", level: 1 }, { id: "drone_3", level: 3 }], lane: 0, depth: 3 }
         ],
         clone: [
-            { id: "clone_1", name: "Mirror Matrix", desc: "Unlock the Girl Clones ability - kamikaze clones that detonate on contact", cost: { money: 15000 }, effect: "hasClone", value: true, maxLevel: 1 },
-            { id: "clone_2", name: "Ember Infusion", desc: "+ Clone explosion damage", cost: { money: 1500 }, effect: "cloneDamage", value: 0.2, maxLevel: 1000 },
-            { id: "clone_3", name: "Rapid Ignition", desc: "+ Faster clone respawn after detonating", cost: { money: 3000 }, effect: "cloneFireRateLevel", value: 1, maxLevel: 20 },
-            { id: "clone_4", name: "Sisterhood", desc: "+1 Girl Clone (always active, all 5 during Overdrive)", cost: { money: 5100 }, effect: "cloneCount", value: 1, maxLevel: 4 },
-            { id: "clone_5", name: "Extended Reach", desc: "+ Clone target-seeking range", cost: { money: 2520 }, effect: "cloneRange", value: 10, maxLevel: 15 },
-            { id: "clone_6", name: "Volatile Payload", desc: "+ Explosion blast radius", cost: { money: 3030 }, effect: "cloneBlastRadius", value: 4, maxLevel: 25 },
-            { id: "clone_7", name: "Encore Charges", desc: "+ Chance for a bonus Encore Blast dealing extra damage on detonation", cost: { money: 3200 }, effect: "cloneEncoreChance", value: 0.04, maxLevel: 15 },
-            { id: "clone_od_dur", name: "Clone Overdrive Core", desc: "+1s Girl Clones overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "clone_1", name: "Mirror Matrix", desc: "Unlock the Girl Clones ability - kamikaze clones that detonate on contact", cost: { money: 15000 }, effect: "hasClone", value: true, maxLevel: 1, prereq: [{ id: "drone_1", level: 1 }, { id: "pulse_1", level: 1 }], lane: 0, depth: 0 },
+            { id: "clone_2", name: "Ember Infusion", desc: "+ Clone explosion damage", cost: { money: 1500 }, effect: "cloneDamage", value: 0.2, maxLevel: 1000, prereq: [{ id: "clone_1", level: 1 }], lane: -1, depth: 1 },
+            { id: "clone_5", name: "Extended Reach", desc: "+ Clone target-seeking range", cost: { money: 2520 }, effect: "cloneRange", value: 10, maxLevel: 15, prereq: [{ id: "clone_1", level: 1 }], lane: 1, depth: 1 },
+            { id: "clone_3", name: "Rapid Ignition", desc: "+ Faster clone respawn after detonating", cost: { money: 3000 }, effect: "cloneFireRateLevel", value: 1, maxLevel: 20, prereq: [{ id: "clone_2", level: 3 }], lane: -2, depth: 2 },
+            { id: "clone_6", name: "Volatile Payload", desc: "+ Explosion blast radius", cost: { money: 3030 }, effect: "cloneBlastRadius", value: 4, maxLevel: 25, prereq: [{ id: "clone_2", level: 1 }, { id: "clone_5", level: 1 }], lane: 0, depth: 2 },
+            { id: "clone_4", name: "Sisterhood", desc: "+1 Girl Clone (always active, all 5 during Overdrive)", cost: { money: 5100 }, effect: "cloneCount", value: 1, maxLevel: 4, prereq: [{ id: "clone_5", level: 3 }], lane: 2, depth: 2 },
+            { id: "clone_7", name: "Encore Charges", desc: "+ Chance for a bonus Encore Blast dealing extra damage on detonation", cost: { money: 3200 }, effect: "cloneEncoreChance", value: 0.04, maxLevel: 15, prereq: [{ id: "clone_3", level: 1 }, { id: "clone_6", level: 1 }, { id: "clone_4", level: 1 }], lane: 0, depth: 3 },
+            { id: "clone_od_dur", name: "Clone Overdrive Core", desc: "+1s Girl Clones overdrive duration", cost: { money: 1950 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "clone_7", level: 1 }], lane: 0, depth: 4 }
         ],
-        // --- NEW SEPARATE POWER: PULSE CORE - its own unlock, progression and overdrive.
-        // Completely independent from the Girl Suit tree / Girl Power (Electric Shock), which
-        // is left exactly as it was. ---
         pulse: [
-            { id: "pulse_1", name: "Pulse Core", desc: "Unlock the Pulse Core - emits damaging energy shockwaves", cost: { money: 7200 }, effect: "hasPulseCore", value: true, maxLevel: 1 },
-            { id: "pulse_2", name: "Overcharged Core", desc: "+ Pulse damage", cost: { money: 1425 }, effect: "pulseDamage", value: 0.2, maxLevel: 1000 },
-            { id: "pulse_3", name: "Amplified Emitter", desc: "+ Pulse shockwave radius", cost: { money: 2850 }, effect: null, value: 0, maxLevel: 1000 },
-            { id: "pulse_4", name: "Rapid Discharge", desc: "+ Pulse frequency (fires more often)", cost: { money: 3600 }, effect: null, value: 0, maxLevel: 30 },
-            { id: "pulse_od_dur", name: "Core Overload Matrix", desc: "+1s Core Overload overdrive duration", cost: { money: 2070 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "pulse_1", name: "Pulse Core", desc: "Unlock the Pulse Core - emits damaging energy shockwaves", cost: { money: 7200 }, effect: "hasPulseCore", value: true, maxLevel: 1, prereq: [{ id: "suit_0", level: 1 }], lane: 0, depth: 0 },
+            { id: "pulse_2", name: "Overcharged Core", desc: "+ Pulse damage", cost: { money: 1425 }, effect: "pulseDamage", value: 0.2, maxLevel: 1000, prereq: [{ id: "pulse_1", level: 1 }], lane: -1, depth: 1 },
+            { id: "pulse_3", name: "Amplified Emitter", desc: "+ Pulse shockwave radius", cost: { money: 2850 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "pulse_1", level: 1 }], lane: 1, depth: 1 },
+            { id: "pulse_4", name: "Rapid Discharge", desc: "+ Pulse frequency (fires more often)", cost: { money: 3600 }, effect: null, value: 0, maxLevel: 30, prereq: [{ id: "pulse_2", level: 1 }, { id: "pulse_3", level: 1 }], lane: 0, depth: 2 },
+            { id: "pulse_od_dur", name: "Core Overload Matrix", desc: "+1s Core Overload overdrive duration", cost: { money: 2070 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "pulse_4", level: 1 }], lane: 0, depth: 3 }
         ],
         acidsisters: [
-            { id: "acid_1", name: "Acid Coven", desc: "Unlock the Acid Sisters ability", cost: { money: 18000 }, effect: "hasAcidSisters", value: true, maxLevel: 1 },
-            { id: "acid_2", name: "Corrosive Mix", desc: "+ Acid Sisters damage", cost: { money: 1650 }, effect: "acidDamage", value: 0.2, maxLevel: 1000 },
-            { id: "acid_3", name: "Rapid Flasks", desc: "+ Acid throwing speed", cost: { money: 3330 }, effect: "acidFireRateLevel", value: 1, maxLevel: 25 },
-            { id: "acid_od_dur", name: "Acid Overdrive Core", desc: "+1s Acid Sisters overdrive duration", cost: { money: 2190 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "acid_1", name: "Acid Coven", desc: "Unlock the Acid Sisters ability", cost: { money: 18000 }, effect: "hasAcidSisters", value: true, maxLevel: 1, prereq: [{ id: "firesplit_1", level: 1 }, { id: "shock_1", level: 1 }], lane: 0, depth: 0 },
+            { id: "acid_2", name: "Corrosive Mix", desc: "+ Acid Sisters damage", cost: { money: 1650 }, effect: "acidDamage", value: 0.2, maxLevel: 1000, prereq: [{ id: "acid_1", level: 1 }], lane: -1, depth: 1 },
+            { id: "acid_3", name: "Rapid Flasks", desc: "+ Acid throwing speed", cost: { money: 3330 }, effect: "acidFireRateLevel", value: 1, maxLevel: 25, prereq: [{ id: "acid_1", level: 1 }], lane: 1, depth: 1 },
+            { id: "acid_od_dur", name: "Acid Overdrive Core", desc: "+1s Acid Sisters overdrive duration", cost: { money: 2190 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "acid_2", level: 1 }, { id: "acid_3", level: 1 }], lane: 0, depth: 2 }
         ],
-        // --- ELECTRIC SHOCK: now its own fully independent unlockable ability (Task 3),
-        // completely separate from the Girl Suit tree. Auto-attacks continuously once
-        // unlocked via the Passive Ability System, weak/slow at first, and scales with these
-        // upgrades (damage, attack speed, range) plus its own Overdrive (Electric Storm). ---
         shock: [
-            { id: "shock_1", name: "Storm Cell", desc: "Unlock the Electric Shock ability", cost: { money: 6800 }, effect: "hasElectricShock", value: true, maxLevel: 1 },
-            { id: "shock_2", name: "High Voltage", desc: "+ Electric Shock damage", cost: { money: 1500 }, effect: "shockDamage", value: 0.2, maxLevel: 1000 },
-            { id: "shock_3", name: "Capacitor Bank", desc: "+ Electric Shock attack speed", cost: { money: 2940 }, effect: "shockFireRateLevel", value: 1, maxLevel: 25 },
-            { id: "shock_4", name: "Long Arc Coils", desc: "+ Electric Shock strike range", cost: { money: 2400 }, effect: "shockRange", value: 15, maxLevel: 20 },
-            { id: "shock_od_dur", name: "Storm Core", desc: "+1s Electric Storm overdrive duration", cost: { money: 2190 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "shock_1", name: "Storm Cell", desc: "Unlock the Electric Shock ability", cost: { money: 6800 }, effect: "hasElectricShock", value: true, maxLevel: 1, prereq: [{ id: "suit_0", level: 1 }], lane: 0, depth: 0 },
+            { id: "shock_2", name: "High Voltage", desc: "+ Electric Shock damage", cost: { money: 1500 }, effect: "shockDamage", value: 0.2, maxLevel: 1000, prereq: [{ id: "shock_1", level: 1 }], lane: -1, depth: 1 },
+            { id: "shock_3", name: "Capacitor Bank", desc: "+ Electric Shock attack speed", cost: { money: 2940 }, effect: "shockFireRateLevel", value: 1, maxLevel: 25, prereq: [{ id: "shock_1", level: 1 }], lane: 1, depth: 1 },
+            { id: "shock_4", name: "Long Arc Coils", desc: "+ Electric Shock strike range", cost: { money: 2400 }, effect: "shockRange", value: 15, maxLevel: 20, prereq: [{ id: "shock_2", level: 1 }, { id: "shock_3", level: 1 }], lane: 0, depth: 2 },
+            { id: "shock_od_dur", name: "Storm Core", desc: "+1s Electric Storm overdrive duration", cost: { money: 2190 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "shock_4", level: 1 }], lane: 0, depth: 3 }
         ],
-        // --- NEW SEPARATE POWER: FIRE SPLIT - a brand-new ability, completely independent of
-        // every existing weapon (including the unrelated "Fireball"/Inferno orbiting orbs above).
-        // Fires a single bright-red fire bolt that splits into 3 smaller bolts in a V formation
-        // on its first impact. Its own unlock, damage, fire rate, projectile speed, burn,
-        // lifetime, extra-split-chance upgrades, and its own Overdrive (Firestorm Split). ---
         firesplit: [
-            { id: "firesplit_1", name: "Firestorm Split", desc: "Unlock Fire Split - a bolt that splits into 3 fire projectiles on impact", cost: { money: 2700 }, effect: "hasFireSplit", value: true, maxLevel: 1 },
-            { id: "firesplit_2", name: "Molten Core", desc: "+ Fire Split damage", cost: { money: 1600 }, effect: "fireSplitDamage", value: 0.22, maxLevel: 1000 },
-            { id: "firesplit_3", name: "Rapid Ignition", desc: "+ Fire Split throwing speed (fires more often)", cost: { money: 2000 }, effect: "fireSplitFireRateLevel", value: 1, maxLevel: 25 },
-            { id: "firesplit_4", name: "Accelerant", desc: "+ Fire Split projectile speed", cost: { money: 1800 }, effect: "fireSplitSpeedLevel", value: 1, maxLevel: 20 },
-            { id: "firesplit_5", name: "Smoldering Burn", desc: "+ Burn damage and duration on anything hit", cost: { money: 2200 }, effect: "fireSplitBurnLevel", value: 1, maxLevel: 20 },
-            { id: "firesplit_6", name: "Extended Fuse", desc: "+ Fire Split projectile lifetime/range", cost: { money: 1500 }, effect: "fireSplitLifetimeLevel", value: 1, maxLevel: 15 },
-            { id: "firesplit_7", name: "Chain Combustion", desc: "+ Chance for split projectiles to split again on their next hit", cost: { money: 3500 }, effect: "fireSplitExtraSplitChance", value: 0.03, maxLevel: 15 },
-            { id: "firesplit_od_dur", name: "Firestorm Core", desc: "+1s Firestorm Split overdrive duration", cost: { money: 2100 }, effect: null, value: 0, maxLevel: 1000 }
+            { id: "firesplit_1", name: "Firestorm Split", desc: "Unlock Fire Split - a bolt that splits into 3 fire projectiles on impact", cost: { money: 2700 }, effect: "hasFireSplit", value: true, maxLevel: 1, prereq: [{ id: "suit_0", level: 1 }], lane: 0, depth: 0 },
+            { id: "firesplit_2", name: "Molten Core", desc: "+ Fire Split damage", cost: { money: 1600 }, effect: "fireSplitDamage", value: 0.22, maxLevel: 1000, prereq: [{ id: "firesplit_1", level: 1 }], lane: -1, depth: 1 },
+            { id: "firesplit_3", name: "Rapid Ignition", desc: "+ Fire Split throwing speed (fires more often)", cost: { money: 2000 }, effect: "fireSplitFireRateLevel", value: 1, maxLevel: 25, prereq: [{ id: "firesplit_1", level: 1 }], lane: 1, depth: 1 },
+            { id: "firesplit_4", name: "Accelerant", desc: "+ Fire Split projectile speed", cost: { money: 1800 }, effect: "fireSplitSpeedLevel", value: 1, maxLevel: 20, prereq: [{ id: "firesplit_2", level: 3 }], lane: -2, depth: 2 },
+            { id: "firesplit_6", name: "Extended Fuse", desc: "+ Fire Split projectile lifetime/range", cost: { money: 1500 }, effect: "fireSplitLifetimeLevel", value: 1, maxLevel: 15, prereq: [{ id: "firesplit_3", level: 3 }], lane: 2, depth: 2 },
+            { id: "firesplit_5", name: "Smoldering Burn", desc: "+ Burn damage and duration on anything hit", cost: { money: 2200 }, effect: "fireSplitBurnLevel", value: 1, maxLevel: 20, prereq: [{ id: "firesplit_2", level: 1 }, { id: "firesplit_3", level: 1 }], lane: 0, depth: 2 },
+            { id: "firesplit_7", name: "Chain Combustion", desc: "+ Chance for split projectiles to split again on their next hit", cost: { money: 3500 }, effect: "fireSplitExtraSplitChance", value: 0.03, maxLevel: 15, prereq: [{ id: "firesplit_4", level: 1 }, { id: "firesplit_5", level: 1 }, { id: "firesplit_6", level: 1 }], lane: 0, depth: 3 },
+            { id: "firesplit_od_dur", name: "Firestorm Core", desc: "+1s Firestorm Split overdrive duration", cost: { money: 2100 }, effect: null, value: 0, maxLevel: 1000, prereq: [{ id: "firesplit_7", level: 1 }], lane: 0, depth: 4 }
         ]
     };
 
@@ -2066,6 +2175,8 @@
     // dragging around a tree and tapping nodes to purchase upgrades.
     let treeBuilt = false;
     let treePanX = 0, treePanY = 0, treeZoom = 1;
+    let treeContentExtent = 900, treeFitZoom = 1;
+    const TREE_MIN_ZOOM = 0.28, TREE_MAX_ZOOM = 2.2;
     let treeNodeMeta = {};
     let selectedTreeNodeId = null;
 
@@ -2095,42 +2206,94 @@
 
     function isIconNode(upg) { return upg.maxLevel === 1; } // boolean unlocks get an icon; incremental levels get a dot
 
+    // Returns true only when every prerequisite of `upg` has been invested to at least the
+    // required level - this is what turns the tree from "unlock nodes strictly in list order"
+    // into a real branching graph: a node can require one parent, several parents (a branch
+    // merge/capstone), or a node from a completely different power-up's tree (the cross-tree
+    // ability-tier gating described where each tree's data is defined).
+    function prereqsMet(upg) {
+        if (!upg.prereq || upg.prereq.length === 0) return true;
+        return upg.prereq.every(pr => (upgradeLevels[pr.id] || 0) >= pr.level);
+    }
+
     function buildTreeDOM() {
         const svg = document.getElementById('tree-svg');
         const nodesEl = document.getElementById('tree-nodes');
         let svgHTML = `<g transform="translate(4000,4000)">`;
         let nodesHTML = `<div class="tree-origin" style="left:0px; top:0px;"></div>`;
         const angleStep = (Math.PI * 2) / treeCategories.length;
+        // stepMain/baseOffset control how far out each depth ring sits; laneAngleStep controls
+        // how far a branch swings *sideways* from its category's spoke, expressed as an ANGLE
+        // (not a fixed pixel offset). Using an angle means the sideways gap between sibling
+        // branches grows together with the radius (stepMain*depth), which is exactly what keeps
+        // both (a) sibling nodes within one category's own branch, and (b) neighboring
+        // categories' spokes - including the two categories that wrap around at the start/end of
+        // the circle - from ever landing on top of each other, at any depth/zoom level. (A fixed
+        // pixel lane offset, as this used before, stays constant while the radius shrinks toward
+        // the center, which is what caused nodes to collide near the tree's origin.)
+        const stepMain = 180, baseOffset = 180, laneAngleStep = 7 * Math.PI / 180;
 
+        // --- PASS 1: compute a world-space position for every node (per-category spoke, with
+        // `depth` steps outward along the spoke and `lane` steps sideways for branching) before
+        // drawing anything, so prerequisite edges - including ones that reach into a DIFFERENT
+        // category's spoke, like every mid-tier ability requiring Nano-Suit Activation - can be
+        // drawn as straight lines between two already-known points. ---
+        const nodeWorldPos = {};
+        const catByNodeId = {};
         treeCategories.forEach((cat, catIdx) => {
-            let angle = catIdx * angleStep - Math.PI / 2;
-            let dirX = Math.cos(angle), dirY = Math.sin(angle);
-            let perpX = -dirY, perpY = dirX;
-            let stepMain = 76;
-            let cx = dirX * 66, cy = dirY * 66;
-
-            let points = [];
-            cat.nodes.forEach((upg, i) => {
-                let zig = (i % 2 === 0 ? 1 : -1) * (i === 0 ? 0 : 15);
-                cx += dirX * stepMain; cy += dirY * stepMain;
-                points.push({ x: cx + perpX * zig, y: cy + perpY * zig });
+            let baseAngle = catIdx * angleStep - Math.PI / 2;
+            let dirX = Math.cos(baseAngle); // only used below to decide which side a label leans
+            cat.nodes.forEach(upg => {
+                let mainDist = baseOffset + upg.depth * stepMain;
+                let angle = baseAngle + upg.lane * laneAngleStep;
+                nodeWorldPos[upg.id] = { x: Math.cos(angle) * mainDist, y: Math.sin(angle) * mainDist };
+                catByNodeId[upg.id] = cat;
             });
 
-            let prevX = 0, prevY = 0;
-            points.forEach((p, i) => {
-                svgHTML += `<line data-line-id="${cat.id}_${i}" x1="${prevX}" y1="${prevY}" x2="${p.x}" y2="${p.y}" stroke="#333" stroke-width="3" />`;
-                prevX = p.x; prevY = p.y;
-            });
-
-            let lastP = points[points.length - 1] || { x: 0, y: 0 };
+            let maxDepth = Math.max(...cat.nodes.map(n => n.depth));
+            let tipNodes = cat.nodes.filter(n => n.depth === maxDepth);
+            let tipLane = tipNodes.reduce((a, n) => a + n.lane, 0) / tipNodes.length;
+            let tipDist = baseOffset + maxDepth * stepMain + 40;
+            let tipAngle = baseAngle + tipLane * laneAngleStep;
+            let lx = Math.cos(tipAngle) * tipDist, ly = Math.sin(tipAngle) * tipDist;
             let translateX = dirX > 0.3 ? '0%' : (dirX < -0.3 ? '-100%' : '-50%');
-            nodesHTML += `<div class="tree-cat-label" style="left:${lastP.x + dirX * 30}px; top:${lastP.y + dirY * 30 - 6}px; color:${cat.color}; transform: translate(${translateX}, 0);">${cat.title.toUpperCase()}</div>`;
+            nodesHTML += `<div class="tree-cat-label" style="left:${lx}px; top:${ly - 6}px; color:${cat.color}; transform: translate(${translateX}, 0);">${cat.title.toUpperCase()}</div>`;
+        });
 
-            cat.nodes.forEach((upg, i) => {
-                let p = points[i];
+        // Track how far the tree actually extends so renderVisualTree can pick an initial zoom
+        // level that fits the whole thing on screen instead of always opening zoomed in on the
+        // center - the tree got noticeably bigger once node spacing was fixed, so a fixed
+        // starting zoom would otherwise crop most of it off-screen at open time.
+        treeContentExtent = 200;
+        Object.values(nodeWorldPos).forEach(p => {
+            treeContentExtent = Math.max(treeContentExtent, Math.abs(p.x) + 60, Math.abs(p.y) + 60);
+        });
+
+        // --- PASS 2: draw one edge per (node, prerequisite) pair. Same-category edges (a node's
+        // own branch) are drawn solid/thick; cross-category edges (an ability tree gated behind
+        // a DIFFERENT power-up, e.g. Laser requiring Nano-Suit, or Girl Clones requiring both
+        // Drone AND Pulse Core) are drawn thinner/dashed so the branching within one tree still
+        // reads clearly while the bigger cross-tree tech-tree gating is still visible. ---
+        let edgeIdx = 0;
+        treeCategories.forEach(cat => {
+            cat.nodes.forEach(upg => {
+                (upg.prereq || []).forEach(pr => {
+                    let from = nodeWorldPos[pr.id], to = nodeWorldPos[upg.id];
+                    if (!from || !to) return;
+                    let sameCat = catByNodeId[pr.id] === catByNodeId[upg.id];
+                    svgHTML += `<line data-edge-id="e${edgeIdx}" data-edge-to="${upg.id}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke="#4a4936" stroke-width="${sameCat ? 2.5 : 1.5}" ${sameCat ? '' : 'stroke-dasharray="4,3"'} />`;
+                    edgeIdx++;
+                });
+            });
+        });
+
+        treeCategories.forEach(cat => {
+            cat.nodes.forEach(upg => {
+                let p = nodeWorldPos[upg.id];
+                let introDelay = Math.min(upg.depth * 45, 500) + 'ms';
                 nodesHTML += isIconNode(upg)
-                    ? `<div class="tree-icon-node" data-node-id="${upg.id}" style="left:${p.x}px; top:${p.y}px; --nc:${cat.color};">${nodeIconOverride[upg.id] || cat.icon}</div>`
-                    : `<div class="tree-dot" data-node-id="${upg.id}" style="left:${p.x}px; top:${p.y}px; --nc:${cat.color};"></div>`;
+                    ? `<div class="tree-icon-node tree-node-intro" data-node-id="${upg.id}" style="left:${p.x}px; top:${p.y}px; --nc:${cat.color}; animation-delay:${introDelay};">${nodeIconOverride[upg.id] || cat.icon}</div>`
+                    : `<div class="tree-dot tree-node-intro" data-node-id="${upg.id}" style="left:${p.x}px; top:${p.y}px; --nc:${cat.color}; animation-delay:${introDelay};"></div>`;
             });
         });
 
@@ -2140,12 +2303,11 @@
 
         treeNodeMeta = {};
         treeCategories.forEach(cat => {
-            cat.nodes.forEach((upg, i) => {
+            cat.nodes.forEach(upg => {
                 treeNodeMeta[upg.id] = {
                     upg, tab: cat.tab, subTree: cat.subTree, catId: cat.id, color: cat.color,
-                    prevId: i > 0 ? cat.nodes[i - 1].id : null,
                     el: nodesEl.querySelector(`[data-node-id="${upg.id}"]`),
-                    lineEl: svg.querySelector(`[data-line-id="${cat.id}_${i}"]`)
+                    lineEls: Array.from(svg.querySelectorAll(`[data-edge-to="${upg.id}"]`))
                 };
             });
         });
@@ -2156,6 +2318,11 @@
 
         setupTreePanZoom();
         treeBuilt = true;
+        // The intro class only needs to exist long enough to play its one-time fade/pop-in;
+        // stripping it afterward guarantees it can never collide with the 'affordable' pulse
+        // animation (or the reveal-bounce animation) that gets toggled on the same elements
+        // later, since two different `animation` shorthand rules on one element don't merge.
+        setTimeout(() => { nodesEl.querySelectorAll('.tree-node-intro').forEach(el => el.classList.remove('tree-node-intro')); }, 1000);
     }
 
     function applyTreeTransform() {
@@ -2165,10 +2332,11 @@
     function setupTreePanZoom() {
         const container = document.getElementById('tree-container');
         let dragging = false, lastX = 0, lastY = 0, moved = false;
+        let isPinching = false, pinchStartDist = 0, pinchStartZoom = 1;
 
         const startDrag = (x, y) => { dragging = true; moved = false; lastX = x; lastY = y; container.classList.add('panning'); };
         const doDrag = (x, y) => {
-            if (!dragging) return;
+            if (!dragging || isPinching) return;
             let dxp = x - lastX, dyp = y - lastY;
             if (Math.abs(dxp) > 2 || Math.abs(dyp) > 2) moved = true;
             treePanX += dxp; treePanY += dyp; lastX = x; lastY = y;
@@ -2182,7 +2350,7 @@
         // this container instead of the actual element per the Pointer Events spec - which is
         // exactly why upgrade icons and the buy button previously did nothing when tapped.
         container.addEventListener('pointerdown', e => {
-            if (e.target.closest('[data-node-id]') || e.target.closest('#node-info-card')) return;
+            if (e.target.closest('[data-node-id]') || e.target.closest('#node-info-card') || e.target.closest('.tree-zoom-controls')) return;
             startDrag(e.clientX, e.clientY); container.setPointerCapture(e.pointerId);
         });
         container.addEventListener('pointermove', e => doDrag(e.clientX, e.clientY));
@@ -2193,10 +2361,46 @@
         container.addEventListener('wheel', e => {
             e.preventDefault();
             let factor = e.deltaY < 0 ? 1.1 : 0.9;
-            treeZoom = Math.max(0.5, Math.min(2, treeZoom * factor));
+            treeZoom = Math.max(TREE_MIN_ZOOM, Math.min(TREE_MAX_ZOOM, treeZoom * factor));
             applyTreeTransform();
         }, { passive: false });
+
+        // Two-finger pinch-to-zoom for mobile/touch. Runs alongside the pointer-event based
+        // single-finger panning above (which stays responsible for one-finger drag); while a
+        // pinch is active, doDrag() is short-circuited so the two gestures don't fight each
+        // other over treePanX/Y.
+        const touchDist = touches => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+        container.addEventListener('touchstart', e => {
+            if (e.touches.length >= 2) {
+                isPinching = true; dragging = false; container.classList.remove('panning');
+                pinchStartDist = touchDist(e.touches); pinchStartZoom = treeZoom;
+            }
+        }, { passive: true });
+        container.addEventListener('touchmove', e => {
+            if (isPinching && e.touches.length >= 2) {
+                e.preventDefault();
+                let factor = touchDist(e.touches) / pinchStartDist;
+                treeZoom = Math.max(TREE_MIN_ZOOM, Math.min(TREE_MAX_ZOOM, pinchStartZoom * factor));
+                applyTreeTransform();
+            }
+        }, { passive: false });
+        container.addEventListener('touchend', e => { if (e.touches.length < 2) isPinching = false; });
+        container.addEventListener('touchcancel', () => { isPinching = false; });
     }
+
+    // Zoom buttons (+ / - / reset) live over the tree canvas so touch users without a mouse
+    // wheel - and anyone who'd rather tap than pinch - have an explicit way to zoom out and see
+    // power-ups that pan alone would leave off-screen.
+    window.zoomTree = function(factor) {
+        treeZoom = Math.max(TREE_MIN_ZOOM, Math.min(TREE_MAX_ZOOM, treeZoom * factor));
+        applyTreeTransform();
+    };
+    window.resetTreeView = function() {
+        const container = document.getElementById('tree-container');
+        treeZoom = treeFitZoom;
+        treePanX = container.clientWidth / 2; treePanY = container.clientHeight / 2;
+        applyTreeTransform();
+    };
 
     function selectTreeNode(id) { selectedTreeNodeId = id; showNodeInfoCard(id); }
 
@@ -2209,7 +2413,7 @@
         const meta = treeNodeMeta[id];
         if (!meta) return;
         const upg = meta.upg; const level = upgradeLevels[upg.id]; const maxed = level >= upg.maxLevel;
-        const locked = meta.prevId ? upgradeLevels[meta.prevId] === 0 : false;
+        const locked = !prereqsMet(upg);
         const currentCost = getCost(upg.cost, level); const afford = canAfford(currentCost);
 
         let btnHTML;
@@ -2220,11 +2424,25 @@
             btnHTML = `<button class="action-btn" ${afford ? '' : 'disabled'} onclick="purchaseUpgrade('${upg.id}', '${meta.tab}', ${subArg})">${level === 0 ? 'UNLOCK' : 'UPGRADE'}</button>`;
         }
 
+        // When locked, spell out exactly which prerequisite(s) are still missing (by name and
+        // required level) instead of a bare "Locked", so a branching tree with multiple
+        // requirements per node is still self-explanatory at a glance.
+        let reqHTML = '';
+        if (locked && upg.prereq && upg.prereq.length) {
+            let missing = upg.prereq.filter(pr => (upgradeLevels[pr.id] || 0) < pr.level).map(pr => {
+                let reqUpg = treeNodeMeta[pr.id] ? treeNodeMeta[pr.id].upg : null;
+                let reqName = reqUpg ? reqUpg.name : pr.id;
+                return pr.level > 1 ? `${reqName} Lvl ${pr.level}` : reqName;
+            });
+            reqHTML = `<div class="node-requires">Requires: ${missing.join(', ')}</div>`;
+        }
+
         document.getElementById('node-info-card').innerHTML = `
             <div class="node-title">${upg.name}</div>
             <div class="node-desc">${upg.desc}</div>
             <div class="node-level">Lvl: ${level}/${upg.maxLevel}</div>
             <div class="node-cost">${maxed ? 'Max Level' : (locked ? 'Locked' : formatCostHTML(currentCost))}</div>
+            ${reqHTML}
             ${btnHTML}`;
         document.getElementById('node-info-card').style.display = 'block';
     }
@@ -2238,10 +2456,9 @@
     function updateTreeNodeStates() {
         if (!treeBuilt) return;
         treeCategories.forEach(cat => {
-            let prevUnlocked = true;
             cat.nodes.forEach(upg => {
                 const meta = treeNodeMeta[upg.id]; const level = upgradeLevels[upg.id];
-                const maxed = level >= upg.maxLevel; const locked = !prevUnlocked;
+                const maxed = level >= upg.maxLevel; const locked = !prereqsMet(upg);
                 const afford = !locked && !maxed && canAfford(getCost(upg.cost, level));
 
                 if (meta.el) {
@@ -2251,8 +2468,11 @@
                     meta.el.classList.toggle('affordable', afford);
                     meta.el.title = `${upg.name} (Lvl ${level}/${upg.maxLevel})`;
                 }
-                if (meta.lineEl) meta.lineEl.setAttribute('stroke', locked ? '#333' : cat.color);
-                if (level === 0) prevUnlocked = false;
+                // Every incoming edge into this node lights up together once the node itself has
+                // been invested in at least once - a branch merge with two parent edges shows
+                // both parent lines lit only once BOTH sides of the merge have actually been
+                // taken, since the node can't have level>0 until prereqsMet() was already true.
+                (meta.lineEls || []).forEach(lineEl => lineEl.setAttribute('stroke', (level > 0) ? meta.color : '#4a4936'));
             });
         });
 
@@ -2264,18 +2484,50 @@
         if (!treeBuilt) {
             buildTreeDOM();
             const container = document.getElementById('tree-container');
+            // Fit the whole tree in view on first open rather than opening zoomed to 1x, which
+            // would crop most of a tree this size off-screen - especially on narrow mobile
+            // viewports. Still fully pannable/zoomable afterward.
+            let smallerSide = Math.min(container.clientWidth, container.clientHeight) || 600;
+            treeFitZoom = Math.max(TREE_MIN_ZOOM, Math.min(1, (smallerSide / 2) / treeContentExtent));
+            treeZoom = treeFitZoom;
             treePanX = container.clientWidth / 2; treePanY = container.clientHeight / 2;
             applyTreeTransform();
         }
         updateTreeNodeStates();
     };
 
+    // A purchase can flip prereqsMet() to true for several other nodes at once (e.g. Nano-Suit
+    // Activation opens 5 different branch roots simultaneously) - rather than let them all just
+    // silently appear, stagger a little bounce + spark + chime across them so it plays out as an
+    // obvious "these paths just opened!" moment instead of an unannounced state flip.
+    function revealTreeNodes(nodes) {
+        nodes.forEach((n, i) => {
+            setTimeout(() => {
+                const meta = treeNodeMeta[n.id];
+                if (!meta || !meta.el) return;
+                meta.el.classList.add('just-revealed');
+                (meta.lineEls || []).forEach(lineEl => lineEl.classList.add('edge-spark'));
+                playSound('node_unlock');
+                setTimeout(() => {
+                    meta.el.classList.remove('just-revealed');
+                    (meta.lineEls || []).forEach(lineEl => lineEl.classList.remove('edge-spark'));
+                }, 700);
+            }, i * 160);
+        });
+    }
+
     window.purchaseUpgrade = function(id, tab, subTree = null) {
         let list = subTree ? upgradeTrees[tab][subTree] : upgradeTrees[tab];
         let upg = list.find(u => u.id === id);
         let currentCost = getCost(upg.cost, upgradeLevels[id]);
 
-        if(canAfford(currentCost) && upgradeLevels[id] < upg.maxLevel) {
+        if(canAfford(currentCost) && upgradeLevels[id] < upg.maxLevel && prereqsMet(upg)) {
+            // Snapshot every node that's still locked *before* this purchase, so afterward we can
+            // tell exactly which ones this specific purchase opened up (vs. ones that were
+            // already available) and only animate those.
+            const allNodes = treeCategories.flatMap(c => c.nodes);
+            const lockedBefore = new Set(allNodes.filter(n => !prereqsMet(n)).map(n => n.id));
+
             playerStats.score -= (currentCost.money || 0);
             upgradeLevels[id]++;
             
@@ -2305,19 +2557,30 @@
                 playSound('upgrade_buy'); addFloatingText(`${upg.name} UPGRADED!`, playerShip.x, playerShip.y - 40, '#00f3ff', "16px");
             }
             renderVisualTree(); refreshLiveUiDisplays();
+
+            let newlyRevealed = allNodes.filter(n => lockedBefore.has(n.id) && n.id !== id && prereqsMet(n));
+            if (newlyRevealed.length > 0) revealTreeNodes(newlyRevealed);
         } else { playSound('click'); }
     }
 
-    function checkUpgradeGlow() {
-        let canUpgradeAnything = false;
-        for(let tab in upgradeTrees) {
-            if(tab === 'weapon') {
-                let lLocked = false; for(let upg of upgradeTrees.weapon.laser) { if(lLocked) break; if(upgradeLevels[upg.id] < upg.maxLevel && canAfford(getCost(upg.cost, upgradeLevels[upg.id]))) { canUpgradeAnything = true; break; } if(upgradeLevels[upg.id] === 0) lLocked = true; }
-                let fLocked = false; for(let upg of upgradeTrees.weapon.fireball) { if(fLocked || canUpgradeAnything) break; if(upgradeLevels[upg.id] < upg.maxLevel && canAfford(getCost(upg.cost, upgradeLevels[upg.id]))) { canUpgradeAnything = true; break; } if(upgradeLevels[upg.id] === 0) fLocked = true; }
-            } else {
-                let locked = false; for(let upg of upgradeTrees[tab]) { if(locked) break; if(upgradeLevels[upg.id] < upg.maxLevel && canAfford(getCost(upg.cost, upgradeLevels[upg.id]))) { canUpgradeAnything = true; break; } if(upgradeLevels[upg.id] === 0) locked = true; }
-            } if(canUpgradeAnything) break;
+    // Flattens every tree (including the laser/fireball sub-trees) into one plain list of nodes.
+    // Used anywhere that needs to scan ALL upgrade nodes uniformly rather than per-category -
+    // now that unlocking is prerequisite-based instead of strict list order, a node's position
+    // in its own array no longer tells you anything about whether it's reachable.
+    function allUpgradeNodes() {
+        let all = [];
+        for (let tab in upgradeTrees) {
+            let entry = upgradeTrees[tab];
+            if (Array.isArray(entry)) all = all.concat(entry);
+            else { all = all.concat(entry.laser); all = all.concat(entry.fireball); }
         }
+        return all;
+    }
+
+    function checkUpgradeGlow() {
+        let canUpgradeAnything = allUpgradeNodes().some(upg =>
+            upgradeLevels[upg.id] < upg.maxLevel && prereqsMet(upg) && canAfford(getCost(upg.cost, upgradeLevels[upg.id]))
+        );
         const pBtn = document.getElementById('pause-btn');
         if(canUpgradeAnything) { pBtn.classList.add('glow-active'); } else { pBtn.classList.remove('glow-active'); }
     }
@@ -2442,11 +2705,22 @@
                 let fill = document.getElementById(`od-fill-${key}`);
                 let unlockInfo = abilityUnlockNode[key];
                 if (unlockInfo) {
-                    let unlockCost = getCost(unlockInfo.list.find(u => u.id === unlockInfo.id).cost, 0).money;
+                    let unlockUpg = unlockInfo.list.find(u => u.id === unlockInfo.id);
+                    if (!prereqsMet(unlockUpg)) {
+                        // Money isn't the blocker yet - a tech-tree prerequisite is. Name it
+                        // instead of showing a $ progress bar that would otherwise look reachable.
+                        let missingNames = unlockUpg.prereq.filter(pr => (upgradeLevels[pr.id] || 0) < pr.level)
+                            .map(pr => (treeNodeMeta[pr.id] ? treeNodeMeta[pr.id].upg.name : pr.id));
+                        if (fill) { fill.style.width = '0%'; }
+                        if (btn) { btn.innerText = `🔒 Requires ${missingNames[0]}`; btn.style.background = '#222'; btn.style.color = '#888'; btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none'; }
+                        box.title = `Locked - requires ${missingNames.join(', ')} first (skill tree).`;
+                    } else {
+                    let unlockCost = getCost(unlockUpg.cost, 0).money;
                     let pct = Math.max(0, Math.min(100, (playerStats.score / unlockCost) * 100));
                     if (fill) { fill.style.width = `${pct}%`; fill.style.background = '#555'; }
                     if (btn) { btn.innerText = `🔒 $${formatNumber(unlockCost)}`; btn.style.background = '#222'; btn.style.color = '#888'; btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none'; }
                     box.title = `Locked - unlock "${od.name}" for $${formatNumber(unlockCost)} in the skill tree (${Math.floor(pct)}% there).`;
+                    }
                 } else {
                     if (fill) { fill.style.width = '0%'; }
                     if (btn) { btn.innerText = 'LOCKED'; btn.style.background = '#222'; btn.style.color = '#666'; btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none'; }
@@ -2475,6 +2749,11 @@
         // using logical/CSS-pixel coordinates while still rendering to the sharp, full-resolution
         // canvas backing store (see resizeCanvas / PIXEL RENDERING FIX above).
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        // PIXEL RENDERING FIX: use the browser's highest-quality resampling filter whenever a
+        // sprite is drawn at a different size than its source image (upgrade icons, asteroid/
+        // item art scaled per-instance, etc.) instead of the low-quality default, so scaled
+        // sprites stay as clean and artifact-free as possible.
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
         ctx.clearRect(0, 0, viewportW, viewportH); const timeNow = Date.now(); frameCount++;
         slowMoFactor = getSlowMoFactor(timeNow); // 1 = normal speed, <1 while slow motion is active
 
@@ -2578,7 +2857,10 @@
             ctx.restore();
         }
 
-        let visibleAsts = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(viewportW, viewportH)/gameScale*0.6);
+        // Targeting radius widened from 0.6x -> 0.9x of the larger viewport dimension (Weapon
+        // Spacing pass) so Missiles (and anything else drawing from visibleAsts) can acquire
+        // and engage targets noticeably further from the girl before they come fully on-screen.
+        let visibleAsts = asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(viewportW, viewportH)/gameScale*0.9);
 
         if (playerStats.hasRocket && visibleAsts.length > 0) {
             let isRocketOd = overdrives.rocket.activeTimer > 0;
@@ -2607,7 +2889,10 @@
                     let target = visibleAsts[Math.floor(Math.random() * visibleAsts.length)];
                     let rAngle = Math.atan2(target.y - playerShip.y, target.x - playerShip.x) + ((Math.random()-0.5)*0.6);
                     let launchFormationAngle = (r / numRockets) * Math.PI * 2;
-                    let launchRingRadius = 22 + (r % 3) * 8; // slight radius stagger avoids a perfect flat ring
+                    // Ring radius now scales gently with the burst size (was a flat 22-30) so a
+                    // big late-game/Overdrive volley of up to 20 missiles fans out into a wider,
+                    // cleaner ring instead of bunching up at a small fixed radius.
+                    let launchRingRadius = Math.min(60, 22 + numRockets * 1.8) + (r % 3) * 8;
                     let spawnX = playerShip.x + Math.cos(launchFormationAngle) * launchRingRadius;
                     let spawnY = playerShip.y + Math.sin(launchFormationAngle) * launchRingRadius;
                     rocketsList.push({ x: spawnX, y: spawnY, vx: Math.cos(rAngle)*5, vy: Math.sin(rAngle)*5, target: target, angle: rAngle, life: 250 });
@@ -2713,7 +2998,16 @@
         let drillCooldown = isDrillOd ? 200 : normalDrillCooldown;
         let maxDrillsOnScreen = isDrillOd ? 25 : Math.min(14, 2 + Math.floor(playerStats.level / 2));
         if (timeNow - lastDrillDeploy > drillCooldown && document.getElementById('menu-upgrades').style.display !== 'flex' && screenBoundTargets.length > 0 && drillsList.length < maxDrillsOnScreen) {
-            let target = screenBoundTargets[Math.floor(Math.random() * screenBoundTargets.length)]; let angleToTarget = Math.atan2(target.y - playerShip.y, target.x - playerShip.x); drillsList.push({ x: playerShip.x, y: playerShip.y, target: target, angle: angleToTarget, life: 1000 }); createParticle(playerShip.x, playerShip.y, '#ffcc00', 0, 0, 0.05, 10); playSound('drill_deploy'); lastDrillDeploy = timeNow;
+            let target = screenBoundTargets[Math.floor(Math.random() * screenBoundTargets.length)]; let angleToTarget = Math.atan2(target.y - playerShip.y, target.x - playerShip.x);
+            // Launch spacing (Weapon Spacing pass): during Overdrive's fast 200ms deploy rate
+            // several drills can be alive and launching in quick succession, so - same idea as
+            // the missile/pulse volleys - each new drill fans out from a small rotating point
+            // around the girl instead of every one starting from her exact center pixel.
+            let drillFormationAngle = (drillsList.length % 8) * (Math.PI * 2 / 8);
+            let drillRingRadius = 16 + (drillsList.length % 3) * 6;
+            let drillSpawnX = playerShip.x + Math.cos(drillFormationAngle) * drillRingRadius;
+            let drillSpawnY = playerShip.y + Math.sin(drillFormationAngle) * drillRingRadius;
+            drillsList.push({ x: drillSpawnX, y: drillSpawnY, target: target, angle: angleToTarget, life: 1000 }); createParticle(drillSpawnX, drillSpawnY, '#ffcc00', 0, 0, 0.05, 10); playSound('drill_deploy'); lastDrillDeploy = timeNow;
         }
 
         if (playerStats.hasFireball) {
@@ -2726,7 +3020,9 @@
             
             let throwCooldown = isFbOd ? 300 : 1500;
             if (timeNow - lastFireballThrow > throwCooldown && asteroidsList.length > 0) {
-                let targetAst = null; let minDist = 1200; 
+                // Search radius widened from 1200 -> 1600 (Weapon Spacing pass) so Fireball can
+                // find and throw at targets much further from the girl before giving up.
+                let targetAst = null; let minDist = 1600; 
                 for(let j=0; j < asteroidsList.length; j++) { let d = Math.hypot(asteroidsList[j].x - playerShip.x, asteroidsList[j].y - playerShip.y); if(d < minDist) { minDist = d; targetAst = asteroidsList[j]; } }
                 if (targetAst && thrownFireballs.length < 120) { let fAngle = Math.atan2(targetAst.y - playerShip.y, targetAst.x - playerShip.x); thrownFireballs.push({x: playerShip.x, y: playerShip.y, vx: Math.cos(fAngle)*9, vy: Math.sin(fAngle)*9, target: targetAst, life: 150}); lastFireballThrow = timeNow; playSound('fireball_throw'); }
             }
@@ -2754,7 +3050,8 @@
             let isFsOd = overdrives.firesplit.activeTimer > 0;
             let throwCooldown = Math.max(180, 1100 - (playerStats.fireSplitFireRateLevel * 30)) / (isFsOd ? 2.5 : 1);
             if (timeNow - lastFireSplitThrow > throwCooldown && asteroidsList.length > 0) {
-                let targetAst = null; let minDist = 1200;
+                // Search radius widened from 1200 -> 1600 (Weapon Spacing pass), matching Fireball.
+                let targetAst = null; let minDist = 1600;
                 for (let j = 0; j < asteroidsList.length; j++) { let d = Math.hypot(asteroidsList[j].x - playerShip.x, asteroidsList[j].y - playerShip.y); if (d < minDist) { minDist = d; targetAst = asteroidsList[j]; } }
                 if (targetAst) {
                     let fsAngle = Math.atan2(targetAst.y - playerShip.y, targetAst.x - playerShip.x);
@@ -3327,9 +3624,14 @@
         if (playerStats.hasAcidSisters) {
             let isAcidOd = overdrives.acid.activeTimer > 0;
             let desiredAcidCount = isAcidOd ? 5 : Math.min(5, 1 + Math.floor(playerStats.level / 10));
-            while (acidClones.length < desiredAcidCount) { let idx = acidClones.length; acidClones.push({ angle: (idx / desiredAcidCount) * Math.PI * 2, x: playerShip.x, y: playerShip.y, lastThrow: 0 }); }
+            // Spacing (Weapon Spacing pass): Overdrive can field the whole squad of 5 in the
+            // same frame, so give each sister her own starting point around a small ring
+            // (matching her assigned formation angle) instead of every one materializing on
+            // the exact same pixel before they've had a chance to spread out.
+            while (acidClones.length < desiredAcidCount) { let idx = acidClones.length; let spawnAngle = (idx / desiredAcidCount) * Math.PI * 2; acidClones.push({ angle: spawnAngle, x: playerShip.x + Math.cos(spawnAngle) * 40, y: playerShip.y + Math.sin(spawnAngle) * 40, lastThrow: 0 }); }
             while (acidClones.length > desiredAcidCount) acidClones.pop();
-            const ACID_RANGE = 700;
+            // Widened from 700 -> 900 (Weapon Spacing pass) so Acid Sisters engage targets further out.
+            const ACID_RANGE = 900;
             let viewMinX = camera.x + 30, viewMaxX = camera.x + (viewportW / gameScale) - 30;
             let viewMinY = camera.y + 30, viewMaxY = camera.y + (viewportH / gameScale) - 30;
 
@@ -3484,7 +3786,7 @@
                     let t = onScreen[Math.floor(Math.random() * onScreen.length)];
                     let ang = Math.atan2(t.y - coreY, t.x - coreX);
                     let shotFormationAngle = shots > 1 ? (s / shots) * Math.PI * 2 : 0;
-                    let shotRingRadius = shots > 1 ? 10 : 0;
+                    let shotRingRadius = shots > 1 ? 18 : 0; // widened slightly for cleaner separation
                     let cpSpawnX = coreX + Math.cos(shotFormationAngle) * shotRingRadius;
                     let cpSpawnY = coreY + Math.sin(shotFormationAngle) * shotRingRadius;
                     if (coreProjectiles.length < 150) coreProjectiles.push({ x: cpSpawnX, y: cpSpawnY, vx: Math.cos(ang) * 6, vy: Math.sin(ang) * 6, target: t, life: 140, spin: 0 });
@@ -3573,6 +3875,8 @@
         const minimapCanvas = document.getElementById('minimap');
         if (minimapCanvas) {
             const mCtx = minimapCanvas.getContext('2d');
+            mCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            mCtx.imageSmoothingEnabled = true; mCtx.imageSmoothingQuality = 'high';
             mCtx.clearRect(0, 0, 130, 130);
             
             mCtx.save();
