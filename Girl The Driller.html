@@ -4165,7 +4165,7 @@ const STORY_IMAGES = {
                         playSound('portal_open');
                     }
                 }
-                if (item.img && item.img.complete && item.img.naturalWidth !== 0) { ctx.drawImage(item.img, item.x - item.width/2, (item.y - item.height/2) + Math.sin(timeNow*0.003+i)*10, item.width, item.height); } else { ctx.fillStyle = "#ff00ff"; ctx.fillRect(item.x - 10, item.y - 10, 20, 20); }
+                if (item.img && item.img.complete && item.img.naturalWidth !== 0) { ctx.drawImage(item.img, item.x - item.width/2, (item.y - item.height/2) + Math.sin(timeNow*0.003+i)*10, item.width, item.height); }
             } else {
                 item.portalRadius = Math.min(50, (item.portalRadius || 0) + 3);
                 ctx.save(); ctx.translate(item.targetPortalX, item.targetPortalY); ctx.rotate(timeNow * 0.005); let pGlow = ctx.createRadialGradient(0, 0, 5, 0, 0, item.portalRadius); pGlow.addColorStop(0, "#ffff"); pGlow.addColorStop(0.3, "#00f3ff"); pGlow.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = pGlow; ctx.beginPath(); ctx.arc(0, 0, item.portalRadius, 0, Math.PI*2); ctx.fill(); ctx.restore();
