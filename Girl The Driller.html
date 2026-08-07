@@ -14,14 +14,23 @@
         }
         canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; background: transparent; }
 
+        /* --- ICON ASSET SYSTEM ---
+           Two reusable, generic classes cover every replaced icon in the game so we don't need
+           a bespoke CSS rule per icon location:
+             .inline-icon  - for icons that sit inline with text (menu buttons, zone rows, HUD
+                              titles). Sized in `em` units so it automatically matches whatever
+                              font-size its surrounding text/context already uses.
+             .icon-fill    - for icons that are the sole content of a fixed-size slot (Overdrive
+                              HUD boxes, skill-tree nodes/accents, selection cards). Fills 100%
+                              of its parent container and is never stretched/squashed. */
+        .inline-icon { height: 1em; width: 1em; object-fit: contain; vertical-align: -0.15em; margin-right: 0.32em; flex-shrink: 0; }
+        .icon-fill { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
+
         /* --- HUD --- */
         #hud { position: absolute; top: calc(var(--ui-scale) * 15px); left: calc(var(--ui-scale) * 15px); z-index: 10; background: rgba(10, 10, 15, 0.9); border: 2px solid #00f3ff; border-radius: calc(var(--ui-scale) * 10px); padding: calc(var(--ui-scale) * 12px) calc(var(--ui-scale) * 20px); box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); pointer-events: auto; }
         .resource-row { display: flex; align-items: center; margin: calc(var(--ui-scale) * 6px) 0; font-weight: bold; font-size: calc(var(--ui-scale) * 15px); }
-        .res-icon { width: calc(var(--ui-scale) * 22px); height: calc(var(--ui-scale) * 22px); margin-right: calc(var(--ui-scale) * 10px); border-radius: calc(var(--ui-scale) * 4px); display: inline-block; }
-        .icon-iron { background: #8e8e93; border: 1px solid #aeaeae; }
-        .icon-bronze { background: #cd7f32; border: 1px solid #e59866; }
-        .icon-gold { background: #d4af37; border: 1px solid #f4d03f; }
-        .icon-uranium { background: #39ff14; box-shadow: 0 0 8px #39ff14; }
+        .res-icon { width: calc(var(--ui-scale) * 22px); height: calc(var(--ui-scale) * 22px); margin-right: calc(var(--ui-scale) * 10px); border-radius: calc(var(--ui-scale) * 4px); display: inline-block; object-fit: contain; }
+        .icon-iron, .icon-bronze, .icon-gold, .icon-uranium { background: transparent; }
 
         /* --- SCORE BOARD ---
            Stack order (top to bottom): real Score (#score-hud, combat points), Money
@@ -125,6 +134,11 @@
 
         .tree-node .node-accent { position:absolute; right:-5px; bottom:-5px; width:13px; height:13px; border-radius:50%; background:#0a0a10; border:1px solid var(--nc); display:flex; align-items:center; justify-content:center; font-size:8px; line-height:1; pointer-events:none; box-shadow: 0 0 4px rgba(0,0,0,0.8); }
         .tree-node[data-kind="minor"] .node-accent { width:11px; height:11px; right:-4px; bottom:-4px; font-size:6.5px; }
+        /* Main branch icon and the small corner accent icon both get a touch of inset padding
+           (rather than filling 100% flush to the edge) so artwork doesn't visually collide with
+           the node's border/clip-path at these very small sizes. */
+        .tree-node > img.icon-fill { width: 80%; height: 80%; }
+        .node-accent > img.icon-fill { width: 76%; height: 76%; }
         .tree-node.locked .node-accent { opacity: 0.5; }
 
         .tree-node .node-badge { position:absolute; bottom:-7px; left:50%; transform: translateX(-50%); font-size: 6.5px; font-weight: bold; letter-spacing: 0.5px; padding: 1px 4px; border-radius: 5px; background: rgba(0,0,0,0.75); border: 1px solid var(--nc); color: var(--nc); white-space: nowrap; pointer-events:none; opacity: 0; transition: opacity 0.2s ease; }
@@ -231,8 +245,8 @@
         #overdrives-container { position: absolute; top: calc(var(--ui-scale) * 180px); left: calc(var(--ui-scale) * 15px); z-index: 10; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(var(--ui-scale) * 8px); pointer-events: auto; width: min(calc(var(--ui-scale) * 268px), calc(100vw - var(--ui-scale) * 30px)); max-height: calc(100vh - var(--ui-scale) * 200px); overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
         .od-box { background: rgba(10, 10, 15, 0.9); border: 1px solid #555; padding: calc(var(--ui-scale) * 6px); border-radius: calc(var(--ui-scale) * 6px); width: 100%; min-width: 0; text-align: center; transition: opacity 0.3s, filter 0.3s; position: relative; overflow: hidden; }
         .od-box.locked { opacity: 0.45; filter: grayscale(0.75); }
-        .od-icon { font-size: calc(var(--ui-scale) * 16px); line-height: 1; margin-bottom: calc(var(--ui-scale) * 2px); transition: transform 0.25s ease, filter 0.25s ease; }
-        .od-icon.icon-locked { filter: grayscale(100%) brightness(0.8); opacity: 0.6; }
+        .od-icon { height: calc(var(--ui-scale) * 22px); line-height: 1; margin: 0 auto calc(var(--ui-scale) * 2px); transition: transform 0.25s ease, filter 0.25s ease; }
+        .od-icon img.icon-locked { filter: grayscale(100%) brightness(0.8); opacity: 0.6; }
         /* --- Unlock animation: fired once, the moment a power-up's `unlocked` flag flips true.
            A quick icon flip/pop (lock -> ability icon) plus a bright radial flash sweeping the
            box, so the transition reads as a distinct "power-up granted" beat rather than the
@@ -279,7 +293,7 @@
         #od-select-cards-container { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(var(--ui-scale) * 16px); max-width: 90vw; padding: 0 calc(var(--ui-scale) * 10px); }
         .od-select-card { background: #12121a; border: 2px solid #555; border-radius: calc(var(--ui-scale) * 12px); padding: calc(var(--ui-scale) * 16px) calc(var(--ui-scale) * 14px); width: calc(var(--ui-scale) * 130px); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; animation: odCardIn 0.35s ease-out; }
         .od-select-card:hover { transform: translateY(-6px) scale(1.05); }
-        .od-select-card-icon { font-size: calc(var(--ui-scale) * 34px); line-height: 1; margin-bottom: calc(var(--ui-scale) * 10px); }
+        .od-select-card-icon { height: calc(var(--ui-scale) * 34px); line-height: 1; margin: 0 auto calc(var(--ui-scale) * 10px); }
         .od-select-card-name { font-size: calc(var(--ui-scale) * 13px); font-weight: bold; text-transform: uppercase; margin-bottom: calc(var(--ui-scale) * 12px); line-height: 1.3; min-height: calc(var(--ui-scale) * 34px); display: flex; align-items: center; justify-content: center; }
         .od-select-card-btn { font-family: 'Orbitron'; font-weight: bold; font-size: calc(var(--ui-scale) * 11px); color: #000; border-radius: calc(var(--ui-scale) * 6px); padding: calc(var(--ui-scale) * 7px) 0; letter-spacing: 0.5px; }
         @keyframes odCardIn { from { opacity: 0; transform: translateY(14px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
@@ -382,38 +396,38 @@
 
     <div id="main-menu" class="overlay-menu">
         <div class="overlay-title">Girl: The Driller</div>
-        <button class="menu-btn" id="btn-continue" onclick="continueGame()" style="display:none; background: #1f7a3d; border-color: #39ff14; color: #39ff14;">▶ CONTINUE</button>
-        <button class="menu-btn" id="btn-play-now" onclick="newGameFromMenuOrStart()" style="background: #155f5f;">▶ PLAY NOW</button>
-        <button class="menu-btn" onclick="showReadme()">📄 README</button>
-        <button class="menu-btn" onclick="openUpgradesFromMenu()">⚙️ SKILL TREE</button>
+        <button class="menu-btn" id="btn-continue" onclick="continueGame()" style="display:none; background: #1f7a3d; border-color: #39ff14; color: #39ff14;"><img class="inline-icon" src="btn-play.png" alt="">CONTINUE</button>
+        <button class="menu-btn" id="btn-play-now" onclick="newGameFromMenuOrStart()" style="background: #155f5f;"><img class="inline-icon" src="btn-play.png" alt="">PLAY NOW</button>
+        <button class="menu-btn" onclick="showReadme()"><img class="inline-icon" src="btn-readme.png" alt="">README</button>
+        <button class="menu-btn" onclick="openUpgradesFromMenu()"><img class="inline-icon" src="btn-skilltree.png" alt="">SKILL TREE</button>
         <button class="menu-btn" id="btn-music-toggle" onclick="toggleMusic()">🎵 MUSIC: ON</button>
-        <button class="menu-btn" id="btn-reset-progress" onclick="resetProgressFromMenu()" style="display:none; border-color: #ff3333; color: #ff3333;">🗑️ RESET PROGRESS</button>
+        <button class="menu-btn" id="btn-reset-progress" onclick="resetProgressFromMenu()" style="display:none; border-color: #ff3333; color: #ff3333;"><img class="inline-icon" src="btn-resetprogress.png" alt="">RESET PROGRESS</button>
     </div>
 
     <div id="readme-menu" class="overlay-menu" style="display: none; z-index: 60;">
         <div class="overlay-title" style="font-size: calc(var(--ui-scale) * 34px);">README</div>
         <div class="readme-text">This game was created with AI assistance and may contain bugs. If you find any bugs or issues, please report them by contacting: <span class="readme-email">pixelgaunt@gmail.com</span></div>
-        <button class="menu-btn" onclick="closeReadme()">⬅ BACK</button>
+        <button class="menu-btn" onclick="closeReadme()"><img class="inline-icon" src="btn-back.png" alt="">BACK</button>
     </div>
 
     <div id="pause-menu" class="overlay-menu" style="display: none; background: rgba(5, 5, 8, 0.85);">
         <div class="overlay-title" style="color: #ffea00; text-shadow: 0 0 15px #ffea00;">PAUSED</div>
-        <button class="menu-btn" onclick="resumeGame()" style="background: #155f5f; border-color: #ffea00; color: #ffea00;">▶ RESUME</button>
-        <button class="menu-btn" onclick="openUpgradesFromPause()">⚙️ SKILL TREE</button>
-        <button class="menu-btn" onclick="openZonesMenu()">🗺️ MINING ZONES</button>
+        <button class="menu-btn" onclick="resumeGame()" style="background: #155f5f; border-color: #ffea00; color: #ffea00;"><img class="inline-icon" src="btn-play.png" alt="">RESUME</button>
+        <button class="menu-btn" onclick="openUpgradesFromPause()"><img class="inline-icon" src="btn-skilltree.png" alt="">SKILL TREE</button>
+        <button class="menu-btn" onclick="openZonesMenu()"><img class="inline-icon" src="btn-miningzones.png" alt="">MINING ZONES</button>
         <button class="menu-btn" onclick="saveGameManual()" style="border-color: #39ff14; color: #39ff14;">💾 SAVE GAME</button>
-        <button class="menu-btn" onclick="goToMainMenu()" style="border-color: #ff3333; color: #ff3333;">🏠 MAIN MENU</button>
+        <button class="menu-btn" onclick="goToMainMenu()" style="border-color: #ff3333; color: #ff3333;"><img class="inline-icon" src="btn-mainmenu.png" alt="">MAIN MENU</button>
     </div>
 
     <div id="zones-menu" class="overlay-menu" style="display: none; z-index: 60; background: rgba(5, 5, 8, 0.93);">
-        <div class="overlay-title" style="font-size: calc(var(--ui-scale) * 30px);">🗺️ MINING ZONES</div>
+        <div class="overlay-title" style="font-size: calc(var(--ui-scale) * 30px);"><img class="inline-icon" src="btn-miningzones.png" alt="">MINING ZONES</div>
         <div id="zones-depth-readout" class="readme-text" style="font-size: calc(var(--ui-scale) * 14px); margin-bottom: calc(var(--ui-scale) * 4px);">Depth: 0m</div>
         <div id="zones-list" style="display:flex; flex-direction:column; gap: calc(var(--ui-scale) * 10px); max-height: 55vh; overflow-y:auto; width: min(520px, 85vw); padding: calc(var(--ui-scale) * 4px);"></div>
-        <button class="menu-btn" onclick="closeZonesMenu()">⬅ BACK</button>
+        <button class="menu-btn" onclick="closeZonesMenu()"><img class="inline-icon" src="btn-back.png" alt="">BACK</button>
     </div>
 
     <div id="od-select-menu" class="overlay-menu" style="display: none;">
-        <div class="overlay-title" style="color: #ffea00; text-shadow: 0 0 15px #ffea00; font-size: calc(var(--ui-scale) * 32px);">⚡ OVERDRIVE READY</div>
+        <div class="overlay-title" style="color: #ffea00; text-shadow: 0 0 15px #ffea00; font-size: calc(var(--ui-scale) * 32px);"><img class="inline-icon" src="energy-battery.png" alt="">OVERDRIVE READY</div>
         <div class="od-select-sub">Multiple systems are charged - choose one to activate!</div>
         <div id="od-select-timer-wrap">
             <div id="od-select-timer-bar"><div id="od-select-timer-fill"></div></div>
@@ -426,21 +440,21 @@
         <div class="overlay-title" style="color: #39ff14; text-shadow: 0 0 20px #39ff14;">MISSION COMPLETE!</div>
         <div class="readme-text" style="max-width: min(520px, 85vw);">The girl has mined <strong style="color:#ffcc00;">$1 Quadrillion</strong> in resources and shipped it all back to Earth. Her cargo runs have supercharged humanity's technology for generations to come.</div>
         <div class="readme-text" style="font-size: calc(var(--ui-scale) * 22px); color: #ffcc00; font-weight: bold; margin-top: calc(var(--ui-scale) * -10px);">TOTAL MONEY EARNED: <span id="win-final-score">$0</span></div>
-        <button class="menu-btn" onclick="restartGame()" style="background: #155f5f; border-color: #39ff14; color: #39ff14;">🔄 PLAY AGAIN</button>
+        <button class="menu-btn" onclick="restartGame()" style="background: #155f5f; border-color: #39ff14; color: #39ff14;"><img class="inline-icon" src="btn-playagain.png" alt="">PLAY AGAIN</button>
     </div>
 
     <button id="pause-btn" onclick="pauseGame()">⏸ PAUSE</button>
 
-    <div id="score-hud">⭐ SCORE: <span id="val-combat-score">0</span> <span id="val-combat-score-abbr" style="font-size:0.6em; color:#c8faff; margin-left:8px; opacity:0.85;">(0)</span></div>
+    <div id="score-hud"><img class="inline-icon" src="hud-score.png" alt="">SCORE: <span id="val-combat-score">0</span> <span id="val-combat-score-abbr" style="font-size:0.6em; color:#c8faff; margin-left:8px; opacity:0.85;">(0)</span></div>
     <div id="money-hud">$<span id="val-score">0</span> <span id="val-score-abbr" style="font-size:0.6em; color:#fff3b0; margin-left:8px; opacity:0.85;">(0)</span></div>
-    <div id="zone-hud">🌑 Asteroid Belt · Depth <span id="val-zone-depth">0</span>m</div>
+    <div id="zone-hud"><img class="inline-icon" src="zone-asteroidbelt.png" alt="">Asteroid Belt · Depth <span id="val-zone-depth">0</span>m</div>
     <div id="distance-hud">📏 DISTANCE: <span id="val-distance">0</span>m</div>
 
     <div id="hud">
-        <div class="resource-row"><div class="res-icon icon-iron"></div> Iron: <span id="val-iron">0</span></div>
-        <div class="resource-row"><div class="res-icon icon-bronze"></div> Bronze: <span id="val-bronze">0</span></div>
-        <div class="resource-row"><div class="res-icon icon-gold"></div> Gold: <span id="val-gold">0</span></div>
-        <div class="resource-row"><div class="res-icon icon-uranium"></div> Uranium: <span id="val-uranium">0</span></div>
+        <div class="resource-row"><img class="res-icon icon-iron" src="resource-iron.png" alt=""> Iron: <span id="val-iron">0</span></div>
+        <div class="resource-row"><img class="res-icon icon-bronze" src="resource-bronze.png" alt=""> Bronze: <span id="val-bronze">0</span></div>
+        <div class="resource-row"><img class="res-icon icon-gold" src="resource-gold.png" alt=""> Gold: <span id="val-gold">0</span></div>
+        <div class="resource-row"><img class="res-icon icon-uranium" src="resource-uranium.png" alt=""> Uranium: <span id="val-uranium">0</span></div>
     </div>
 
     <div id="tool-status-hud">
@@ -460,79 +474,79 @@
     </div>
 
     <div id="special-items-hud">
-        <div class="special-items-title">🛰️ Earth Cargo</div>
+        <div class="special-items-title"><img class="inline-icon" src="hud-earthcargo.png" alt="">Earth Cargo</div>
         <div id="special-items-grid"></div>
     </div>
 
     <div id="overdrives-container">
         <div class="od-box" id="od-box-suit">
-            <div class="od-icon" id="od-icon-suit">🔒</div>
+            <div class="od-icon" id="od-icon-suit"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
             <div class="od-name" style="color:#d942ff;"><span class="od-tier">T1</span>Girl Power</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-suit" style="background:#d942ff;"></div></div>
             <button class="od-btn" id="od-btn-suit" onclick="activateOverdrive('suit')">0/25</button>
         </div>
         <div class="od-box" id="od-box-drill">
-            <div class="od-icon" id="od-icon-drill">🔒</div>
+            <div class="od-icon" id="od-icon-drill"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
             <div class="od-name" style="color:#aaa;"><span class="od-tier">START</span>Drill Storm</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-drill" style="background:#aaa;"></div></div>
             <button class="od-btn" id="od-btn-drill" onclick="activateOverdrive('drill')">0/25</button>
         </div>
         <div class="od-box" id="od-box-pickaxe">
-            <div class="od-icon" id="od-icon-pickaxe">🔒</div>
+            <div class="od-icon" id="od-icon-pickaxe"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
             <div class="od-name" style="color:#ff9900;"><span class="od-tier">T2</span>Axe Fury</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-pickaxe" style="background:#ff9900;"></div></div>
             <button class="od-btn" id="od-btn-pickaxe" onclick="activateOverdrive('pickaxe')">0/25</button>
         </div>
         <div class="od-box" id="od-box-rocket">
-            <div class="od-icon" id="od-icon-rocket">🔒</div>
+            <div class="od-icon" id="od-icon-rocket"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
             <div class="od-name" style="color:#39ff14;"><span class="od-tier">T1</span>Missile Rain</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-rocket" style="background:#39ff14;"></div></div>
             <button class="od-btn" id="od-btn-rocket" onclick="activateOverdrive('rocket')">0/25</button>
         </div>
         <div class="od-box" id="od-box-laser">
-            <div class="od-icon" id="od-icon-laser">🔒</div>
+            <div class="od-icon" id="od-icon-laser"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
             <div class="od-name" style="color:#ff3366;"><span class="od-tier">T2</span>Laser Beam</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-laser" style="background:#ff3366;"></div></div>
             <button class="od-btn" id="od-btn-laser" onclick="activateOverdrive('laser')">0/25</button>
         </div>
         <div class="od-box" id="od-box-fireball">
-            <div class="od-icon" id="od-icon-fireball">🔒</div>
+            <div class="od-icon" id="od-icon-fireball"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
             <div class="od-name" style="color:#00f3ff;"><span class="od-tier">T1</span>Inferno</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-fireball" style="background:#00f3ff;"></div></div>
             <button class="od-btn" id="od-btn-fireball" onclick="activateOverdrive('fireball')">0/25</button>
         </div>
         <div class="od-box" id="od-box-drone">
-            <div class="od-icon" id="od-icon-drone">🔒</div>
+            <div class="od-icon" id="od-icon-drone"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
             <div class="od-name" style="color:#00ffcc;"><span class="od-tier">T3</span>Drone Swarm</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-drone" style="background:#00ffcc;"></div></div>
             <button class="od-btn" id="od-btn-drone" onclick="activateOverdrive('drone')">0/25</button>
         </div>
         <div class="od-box" id="od-box-clone">
-            <div class="od-icon" id="od-icon-clone">🔒</div>
+            <div class="od-icon" id="od-icon-clone"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
             <div class="od-name" style="color:#ff5500;"><span class="od-tier">T4</span>Girl Clones</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-clone" style="background:#ff5500;"></div></div>
             <button class="od-btn" id="od-btn-clone" onclick="activateOverdrive('clone')">0/25</button>
         </div>
         <div class="od-box" id="od-box-pulse">
-            <div class="od-icon" id="od-icon-pulse">🔒</div>
+            <div class="od-icon" id="od-icon-pulse"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
             <div class="od-name" style="color:#ff00aa;"><span class="od-tier">T3</span>Core Overload</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-pulse" style="background:#ff00aa;"></div></div>
             <button class="od-btn" id="od-btn-pulse" onclick="activateOverdrive('pulse')">0/25</button>
         </div>
         <div class="od-box" id="od-box-acid">
-            <div class="od-icon" id="od-icon-acid">🔒</div>
+            <div class="od-icon" id="od-icon-acid"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
             <div class="od-name" style="color:#7cfc00;"><span class="od-tier">T4</span>Acid Sisters</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-acid" style="background:#7cfc00;"></div></div>
             <button class="od-btn" id="od-btn-acid" onclick="activateOverdrive('acid')">0/25</button>
         </div>
         <div class="od-box" id="od-box-shock">
-            <div class="od-icon" id="od-icon-shock">🔒</div>
+            <div class="od-icon" id="od-icon-shock"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
             <div class="od-name" style="color:#66e0ff;"><span class="od-tier">T3</span>Electric Storm</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-shock" style="background:#66e0ff;"></div></div>
             <button class="od-btn" id="od-btn-shock" onclick="activateOverdrive('shock')">0/25</button>
         </div>
         <div class="od-box" id="od-box-firesplit">
-            <div class="od-icon" id="od-icon-firesplit">🔒</div>
+            <div class="od-icon" id="od-icon-firesplit"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
             <div class="od-name" style="color:#ff3300;"><span class="od-tier">T2</span>Firestorm Split</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-firesplit" style="background:#ff3300;"></div></div>
             <button class="od-btn" id="od-btn-firesplit" onclick="activateOverdrive('firesplit')">0/25</button>
@@ -605,7 +619,7 @@
             <button type="button" class="story-btn" onclick="storySkip(event)">⏭ SKIP</button>
         </div>
 
-        <button type="button" class="story-btn" id="story-nav-prev" style="position:absolute; z-index:6;" onclick="storyPrev(event)">◀ PREV</button>
+        <button type="button" class="story-btn" id="story-nav-prev" style="position:absolute; z-index:6;" onclick="storyPrev(event)"><img class="inline-icon" src="btn-back.png" alt="">PREV</button>
 
         <div id="story-dialogue-wrap">
             <div id="story-dialogue-box">
@@ -787,7 +801,7 @@ const STORY_IMAGES = {
     function renderZonesList() {
         let depth = getMiningDepth();
         let cur = getCurrentZone();
-        document.getElementById('zones-depth-readout').innerText = `Current: ${cur.icon} ${cur.name}  ·  Mining Depth: ${depth}m  ·  Lifetime Earned: $${formatNumber(gameStats.totalMoneyEarned)}`;
+        document.getElementById('zones-depth-readout').innerHTML = `Current: ${cur.icon} ${cur.name}  ·  Mining Depth: ${depth}m  ·  Lifetime Earned: $${formatNumber(gameStats.totalMoneyEarned)}`;
         let container = document.getElementById('zones-list');
         container.innerHTML = '';
         worldZones.forEach(zone => {
@@ -796,7 +810,7 @@ const STORY_IMAGES = {
             let pct = zone.unlockDepth === 0 && zone.unlockMoney === 0 ? 100 : Math.floor(Math.min(100, Math.min(depth / Math.max(1, zone.unlockDepth), gameStats.totalMoneyEarned / Math.max(1, zone.unlockMoney)) * 100));
             let row = document.createElement('div');
             row.style.cssText = `border: 2px solid ${unlocked ? '#39ff14' : '#444'}; border-radius: 8px; padding: calc(var(--ui-scale) * 10px); display: flex; justify-content: space-between; align-items: center; gap: 10px; background: rgba(255,255,255,0.03);`;
-            let reqLine = unlocked ? `✅ Unlocked` : `🔒 Needs ${zone.unlockDepth}m depth &amp; $${formatNumber(zone.unlockMoney)} lifetime earned (${pct}% there)`;
+            let reqLine = unlocked ? `<img class="inline-icon" src="checkmark.png" alt="">Unlocked` : `<img class="inline-icon" src="lock.png" alt="">Needs ${zone.unlockDepth}m depth &amp; $${formatNumber(zone.unlockMoney)} lifetime earned (${pct}% there)`;
             row.innerHTML = `<div style="text-align:left;">
                 <div style="font-weight:bold; font-size: calc(var(--ui-scale) * 15px);">${zone.icon} ${zone.name}${isCurrent ? ' <span style=\"color:#39ff14;\">(current)</span>' : ''}</div>
                 <div style="font-size: calc(var(--ui-scale) * 11px); color: #aaa;">${reqLine}</div>
@@ -804,7 +818,7 @@ const STORY_IMAGES = {
             let btn = document.createElement('button');
             btn.className = 'menu-btn'; btn.style.cssText = 'width:auto; min-width:0; padding: 8px 14px; margin:0; font-size: calc(var(--ui-scale) * 12px);';
             if (isCurrent) { btn.innerText = 'HERE'; btn.disabled = true; btn.style.opacity = 0.5; }
-            else if (!unlocked) { btn.innerText = '🔒'; btn.disabled = true; btn.style.opacity = 0.5; }
+            else if (!unlocked) { btn.innerHTML = '<img class="inline-icon" style="margin-right:0;" src="lock.png" alt="">'; btn.disabled = true; btn.style.opacity = 0.5; }
             else { btn.innerText = 'TRAVEL'; btn.onclick = () => travelToZone(zone.id); }
             row.appendChild(btn);
             container.appendChild(row);
@@ -1652,7 +1666,23 @@ const STORY_IMAGES = {
     // NOTE: 'drill' previously reused the mining-PICK glyph (⛏️), which reads as a pickaxe/axe
     // rather than a drill and was easy to confuse with the Axe ability's icon - fixed to a
     // proper tool glyph (🛠️) below so the two are visually distinct. ---
-    const odIconMap = { suit: '🛡️', drill: '🛠️', pickaxe: '🪓', rocket: '🚀', laser: '⚡', fireball: '🔥', drone: '🤖', clone: '👥', pulse: '💥', acid: '🧪', shock: '🌩️', firesplit: '🧨' };
+    // Each value is a ready-to-insert <img> tag (icon-fill fills its od-icon/card-icon slot
+    // without stretching) so the exact same map works for both the Overdrive HUD boxes and the
+    // Overdrive selection cards further down - one icon per ability, everywhere it appears.
+    const odIconMap = {
+        suit: '<img class="icon-fill" src="suit-girlpower.png" alt="">',
+        drill: '<img class="icon-fill" src="drill-autodrill.png" alt="">',
+        pickaxe: '<img class="icon-fill" src="pickaxe-axe.png" alt="">',
+        rocket: '<img class="icon-fill" src="rocket-missiles.png" alt="">',
+        laser: '<img class="icon-fill" src="laser-weapon.png" alt="">',
+        fireball: '<img class="icon-fill" src="fireball-inferno.png" alt="">',
+        drone: '<img class="icon-fill" src="drone-attack.png" alt="">',
+        clone: '<img class="icon-fill" src="clone-girlclones.png" alt="">',
+        pulse: '<img class="icon-fill" src="pulse-coreoverload.png" alt="">',
+        acid: '<img class="icon-fill" src="acid-sisters.png" alt="">',
+        shock: '<img class="icon-fill" src="shock-electric.png" alt="">',
+        firesplit: '<img class="icon-fill" src="firesplit-firestorm.png" alt="">'
+    };
     let odPrevUnlocked = {};
 
     // --- GIRL POWER SUIT: COLOR TIER SYSTEM (Task 1) ---
@@ -1791,7 +1821,7 @@ const STORY_IMAGES = {
         container.innerHTML = '';
         odSelectReadyKeys.forEach(key => {
             let od = overdrives[key];
-            let icon = odIconMap[key] || '⭐';
+            let icon = odIconMap[key] || '<img class="icon-fill" src="hud-score.png" alt="">';
             let card = document.createElement('div');
             card.className = 'od-select-card';
             card.style.borderColor = od.color;
@@ -2113,15 +2143,15 @@ const STORY_IMAGES = {
     // Unlocking requires BOTH mining depth AND lifetime money earned, so a zone always feels like
     // a real combined milestone rather than something reachable by grinding just one stat.
     const worldZones = [
-        { id: 'belt',     name: 'Asteroid Belt',   icon: '🌑', unlockDepth: 0,   unlockMoney: 0,      layout: 'scatter', typeWeights: { iron: 0.50, bronze: 0.30, gold: 0.15, uranium: 0.05 },
+        { id: 'belt',     name: 'Asteroid Belt',   icon: '<img class="inline-icon" src="zone-asteroidbelt.png" alt="">', unlockDepth: 0,   unlockMoney: 0,      layout: 'scatter', typeWeights: { iron: 0.50, bronze: 0.30, gold: 0.15, uranium: 0.05 },
           bgPalette: [ {r:5,g:5,b:8}, {r:18,g:6,b:8}, {r:14,g:9,b:6} ] },
-        { id: 'rift',     name: 'Crimson Rift',    icon: '🔴', unlockDepth: 40,  unlockMoney: 8000,   layout: 'cluster', typeWeights: { iron: 0.35, bronze: 0.40, gold: 0.20, uranium: 0.05 },
+        { id: 'rift',     name: 'Crimson Rift',    icon: '<img class="inline-icon" src="zone-crimsonrift.png" alt="">', unlockDepth: 40,  unlockMoney: 8000,   layout: 'cluster', typeWeights: { iron: 0.35, bronze: 0.40, gold: 0.20, uranium: 0.05 },
           bgPalette: [ {r:22,g:4,b:4}, {r:30,g:9,b:2}, {r:16,g:3,b:3} ] },
-        { id: 'frozen',   name: 'Frozen Expanse',  icon: '❄️', unlockDepth: 90,  unlockMoney: 30000,  layout: 'sparse',  typeWeights: { iron: 0.30, bronze: 0.25, gold: 0.30, uranium: 0.15 },
+        { id: 'frozen',   name: 'Frozen Expanse',  icon: '<img class="inline-icon" src="zone-frozenexpanse.png" alt="">', unlockDepth: 90,  unlockMoney: 30000,  layout: 'sparse',  typeWeights: { iron: 0.30, bronze: 0.25, gold: 0.30, uranium: 0.15 },
           bgPalette: [ {r:4,g:10,b:22}, {r:6,g:16,b:30}, {r:3,g:8,b:18} ] },
-        { id: 'volcanic', name: 'Volcanic Core',   icon: '🌋', unlockDepth: 160, unlockMoney: 90000,  layout: 'ring',    typeWeights: { iron: 0.20, bronze: 0.30, gold: 0.30, uranium: 0.20 },
+        { id: 'volcanic', name: 'Volcanic Core',   icon: '<img class="inline-icon" src="zone-volcaniccore.png" alt="">', unlockDepth: 160, unlockMoney: 90000,  layout: 'ring',    typeWeights: { iron: 0.20, bronze: 0.30, gold: 0.30, uranium: 0.20 },
           bgPalette: [ {r:26,g:8,b:2}, {r:34,g:12,b:0}, {r:18,g:5,b:2} ] },
-        { id: 'void',     name: 'Void Nexus',      icon: '🌌', unlockDepth: 260, unlockMoney: 250000, layout: 'spiral',  typeWeights: { iron: 0.10, bronze: 0.20, gold: 0.30, uranium: 0.40 },
+        { id: 'void',     name: 'Void Nexus',      icon: '<img class="inline-icon" src="zone-voidnexus.png" alt="">', unlockDepth: 260, unlockMoney: 250000, layout: 'spiral',  typeWeights: { iron: 0.10, bronze: 0.20, gold: 0.30, uranium: 0.40 },
           bgPalette: [ {r:10,g:2,b:20}, {r:4,g:2,b:10}, {r:14,g:4,b:24} ] }
     ];
     let currentZoneId = 'belt';
@@ -2913,7 +2943,7 @@ const STORY_IMAGES = {
         let playBtn = document.getElementById('btn-play-now');
         if (continueBtn) continueBtn.style.display = hasSave ? 'block' : 'none';
         if (resetBtn) resetBtn.style.display = hasSave ? 'block' : 'none';
-        if (playBtn) playBtn.innerText = hasSave ? '🆕 NEW GAME' : '▶ PLAY NOW';
+        if (playBtn) playBtn.innerHTML = hasSave ? '🆕 NEW GAME' : '<img class="inline-icon" src="btn-play.png" alt="">PLAY NOW';
     }
 
     function continueGame() {
@@ -3093,20 +3123,24 @@ const STORY_IMAGES = {
     let treeNodeMeta = {};
     let selectedTreeNodeId = null;
 
+    // Icon values are ready-to-insert <img> tags, reusing exactly the same artwork as the
+    // Overdrive HUD/cards for every branch that also has an Overdrive (suit/drill/laser/
+    // fireball/rocket/drone/clone/pulse/acidsisters/shock/firesplit) so a branch reads as the
+    // same ability everywhere it shows up, per the icon pack integration pass.
     const treeCategories = [
-        { id: 'suit',     title: 'Girl Suit',    icon: '🛡️', color: '#d942ff', nodes: upgradeTrees.suit,            tab: 'suit',     subTree: null },
-        { id: 'movement', title: 'Mobility',      icon: '💨', color: '#00bfff', nodes: upgradeTrees.movement,        tab: 'movement', subTree: null },
-        { id: 'energy',   title: 'Energy Sys',    icon: '🔋', color: '#ffd700', nodes: upgradeTrees.energy,          tab: 'energy',   subTree: null },
-        { id: 'drill',    title: 'Drilling',      icon: '🛠️', color: '#c0c0c8', nodes: upgradeTrees.drill,           tab: 'drill',    subTree: null },
-        { id: 'laser',    title: 'Laser Weapon',  icon: '⚡', color: '#ff3366', nodes: upgradeTrees.weapon.laser,    tab: 'weapon',   subTree: 'laser' },
-        { id: 'fireball', title: 'Fireball',      icon: '🔥', color: '#00f3ff', nodes: upgradeTrees.weapon.fireball, tab: 'weapon',   subTree: 'fireball' },
-        { id: 'rocket',   title: 'Missiles',      icon: '🚀', color: '#39ff14', nodes: upgradeTrees.rocket,          tab: 'rocket',   subTree: null },
-        { id: 'drone',    title: 'Attack Drone',  icon: '🤖', color: '#00ffcc', nodes: upgradeTrees.drone,           tab: 'drone',    subTree: null },
-        { id: 'clone',    title: 'Girl Clones',   icon: '👥', color: '#ff5500', nodes: upgradeTrees.clone,           tab: 'clone',    subTree: null },
-        { id: 'pulse',    title: 'Pulse Core',    icon: '💥', color: '#ff00aa', nodes: upgradeTrees.pulse,           tab: 'pulse',    subTree: null },
-        { id: 'acidsisters', title: 'Acid Sisters', icon: '🧪', color: '#7cfc00', nodes: upgradeTrees.acidsisters,  tab: 'acidsisters', subTree: null },
-        { id: 'shock',    title: 'Electric Shock', icon: '🌩️', color: '#66e0ff', nodes: upgradeTrees.shock,        tab: 'shock',    subTree: null },
-        { id: 'firesplit', title: 'Fire Split',   icon: '🧨', color: '#ff3300', nodes: upgradeTrees.firesplit,    tab: 'firesplit', subTree: null }
+        { id: 'suit',     title: 'Girl Suit',    icon: '<img class="icon-fill" src="suit-girlpower.png" alt="">', color: '#d942ff', nodes: upgradeTrees.suit,            tab: 'suit',     subTree: null },
+        { id: 'movement', title: 'Mobility',      icon: '<img class="icon-fill" src="mobility-speed.png" alt="">', color: '#00bfff', nodes: upgradeTrees.movement,        tab: 'movement', subTree: null },
+        { id: 'energy',   title: 'Energy Sys',    icon: '<img class="icon-fill" src="energy-battery.png" alt="">', color: '#ffd700', nodes: upgradeTrees.energy,          tab: 'energy',   subTree: null },
+        { id: 'drill',    title: 'Drilling',      icon: '<img class="icon-fill" src="drill-autodrill.png" alt="">', color: '#c0c0c8', nodes: upgradeTrees.drill,           tab: 'drill',    subTree: null },
+        { id: 'laser',    title: 'Laser Weapon',  icon: '<img class="icon-fill" src="laser-weapon.png" alt="">', color: '#ff3366', nodes: upgradeTrees.weapon.laser,    tab: 'weapon',   subTree: 'laser' },
+        { id: 'fireball', title: 'Fireball',      icon: '<img class="icon-fill" src="fireball-inferno.png" alt="">', color: '#00f3ff', nodes: upgradeTrees.weapon.fireball, tab: 'weapon',   subTree: 'fireball' },
+        { id: 'rocket',   title: 'Missiles',      icon: '<img class="icon-fill" src="rocket-missiles.png" alt="">', color: '#39ff14', nodes: upgradeTrees.rocket,          tab: 'rocket',   subTree: null },
+        { id: 'drone',    title: 'Attack Drone',  icon: '<img class="icon-fill" src="drone-attack.png" alt="">', color: '#00ffcc', nodes: upgradeTrees.drone,           tab: 'drone',    subTree: null },
+        { id: 'clone',    title: 'Girl Clones',   icon: '<img class="icon-fill" src="clone-girlclones.png" alt="">', color: '#ff5500', nodes: upgradeTrees.clone,           tab: 'clone',    subTree: null },
+        { id: 'pulse',    title: 'Pulse Core',    icon: '<img class="icon-fill" src="pulse-coreoverload.png" alt="">', color: '#ff00aa', nodes: upgradeTrees.pulse,           tab: 'pulse',    subTree: null },
+        { id: 'acidsisters', title: 'Acid Sisters', icon: '<img class="icon-fill" src="acid-sisters.png" alt="">', color: '#7cfc00', nodes: upgradeTrees.acidsisters,  tab: 'acidsisters', subTree: null },
+        { id: 'shock',    title: 'Electric Shock', icon: '<img class="icon-fill" src="shock-electric.png" alt="">', color: '#66e0ff', nodes: upgradeTrees.shock,        tab: 'shock',    subTree: null },
+        { id: 'firesplit', title: 'Fire Split',   icon: '<img class="icon-fill" src="firesplit-firestorm.png" alt="">', color: '#ff3300', nodes: upgradeTrees.firesplit,    tab: 'firesplit', subTree: null }
     ];
 
     // --- PER-NODE ICON OVERRIDES ---
@@ -3115,7 +3149,7 @@ const STORY_IMAGES = {
     // Axe/Pickaxe ability but lives inside the "Girl Suit" branch, so without an override it
     // rendered the suit's shield icon instead of an axe. Add any future off-category unlock
     // nodes here rather than giving them their own branch, to avoid reshaping the tree layout.
-    const nodeIconOverride = { suit_3: '🪓' };
+    const nodeIconOverride = { suit_3: '<img class="icon-fill" src="pickaxe-axe.png" alt="">' };
 
     function isIconNode(upg) { return upg.maxLevel === 1; } // boolean unlocks get an icon; incremental levels get a dot
 
@@ -3155,13 +3189,27 @@ const STORY_IMAGES = {
     // Small corner-badge glyph layered on top of minor/major nodes to hint at what stat that
     // level-up actually improves, since they all now share their branch's main icon. Ability
     // and capstone nodes skip this - their main icon alone already tells the whole story.
+    // Values are <img> tags where the icon pack had a clear visual match (swords for damage,
+    // a shield for defense, a stopwatch/gear dial for every "fire rate" stat, a target reticle
+    // for range, etc.) reused across every ability that shares that stat. A few glyphs
+    // (count +, random chance dice, duration hourglass) have no matching supplied asset, so
+    // per the "don't force a wrong icon" rule they're left as their original emoji.
+    const ICON_DAMAGE = '<img class="icon-fill" src="accent-damage.png" alt="">';
+    const ICON_DEFENSE = '<img class="icon-fill" src="accent-defense.png" alt="">';
+    const ICON_MAGNET = '<img class="icon-fill" src="accent-magnet.png" alt="">';
+    const ICON_SPEED = '<img class="icon-fill" src="mobility-speed.png" alt="">';
+    const ICON_ENERGY = '<img class="icon-fill" src="energy-battery.png" alt="">';
+    const ICON_FIRERATE = '<img class="icon-fill" src="accent-firerate.png" alt="">';
+    const ICON_RANGE = '<img class="icon-fill" src="accent-range.png" alt="">';
+    const ICON_BLAST = '<img class="icon-fill" src="accent-blastradius.png" alt="">';
+    const ICON_BURN = '<img class="icon-fill" src="fireball-inferno.png" alt="">';
     const accentIcon = {
-        damage: '⚔️', defense: '🛡', magnetRadius: '🧲', speed: '💨', energyRegen: '🔋', maxEnergy: '🔋', energyDrain: '🔋',
-        droneDamage: '⚔️', droneFireRateLevel: '⏱', droneSupportCount: '➕', cloneDamage: '⚔️', cloneRange: '🎯',
-        cloneFireRateLevel: '⏱', cloneBlastRadius: '💢', cloneCount: '➕', cloneEncoreChance: '🎲', pulseDamage: '⚔️',
-        acidDamage: '⚔️', acidFireRateLevel: '⏱', shockDamage: '⚔️', shockFireRateLevel: '⏱', shockRange: '🎯',
-        fireSplitDamage: '⚔️', fireSplitFireRateLevel: '⏱', fireSplitSpeedLevel: '💨', fireSplitLifetimeLevel: '⏳',
-        fireSplitBurnLevel: '🔥', fireSplitExtraSplitChance: '🎲'
+        damage: ICON_DAMAGE, defense: ICON_DEFENSE, magnetRadius: ICON_MAGNET, speed: ICON_SPEED, energyRegen: ICON_ENERGY, maxEnergy: ICON_ENERGY, energyDrain: ICON_ENERGY,
+        droneDamage: ICON_DAMAGE, droneFireRateLevel: ICON_FIRERATE, droneSupportCount: '➕', cloneDamage: ICON_DAMAGE, cloneRange: ICON_RANGE,
+        cloneFireRateLevel: ICON_FIRERATE, cloneBlastRadius: ICON_BLAST, cloneCount: '➕', cloneEncoreChance: '🎲', pulseDamage: ICON_DAMAGE,
+        acidDamage: ICON_DAMAGE, acidFireRateLevel: ICON_FIRERATE, shockDamage: ICON_DAMAGE, shockFireRateLevel: ICON_FIRERATE, shockRange: ICON_RANGE,
+        fireSplitDamage: ICON_DAMAGE, fireSplitFireRateLevel: ICON_FIRERATE, fireSplitSpeedLevel: ICON_SPEED, fireSplitLifetimeLevel: '⏳',
+        fireSplitBurnLevel: ICON_BURN, fireSplitExtraSplitChance: '🎲'
     };
     function nodeAccent(upg, kind) {
         if (kind !== 'minor' && kind !== 'major') return '';
@@ -3725,7 +3773,7 @@ const STORY_IMAGES = {
         document.getElementById('xp-bar').style.width = `${Math.min(100, (playerStats.xp / playerStats.nextLevelXp) * 100)}%`; 
         document.getElementById('energy-bar').style.width = `${Math.min(100, (playerStats.energy / playerStats.maxEnergy) * 100)}%`;
         let zoneHud = document.getElementById('zone-hud');
-        if (zoneHud) { let z = getCurrentZone(); zoneHud.innerText = `${z.icon} ${z.name} · Depth ${getMiningDepth()}m`; }
+        if (zoneHud) { let z = getCurrentZone(); zoneHud.innerHTML = `${z.icon} ${z.name} · Depth ${getMiningDepth()}m`; }
         
         if (playerStats.hasGirlPower) {
             document.getElementById('sys-suit').style.display = 'flex';
@@ -3758,7 +3806,7 @@ const STORY_IMAGES = {
 
             if (od.unlocked) {
                 box.classList.remove('locked');
-                if (icon) { icon.textContent = odIconMap[key] || '⭐'; icon.classList.remove('icon-locked'); }
+                if (icon) { icon.innerHTML = odIconMap[key] || '<img class="icon-fill" src="hud-score.png" alt="">'; }
                 if (justUnlocked) {
                     // Smooth unlock animation: icon pop/flip + a bright radial flash across the
                     // box, auto-removed once the CSS animation finishes so it only plays once.
@@ -3827,7 +3875,7 @@ const STORY_IMAGES = {
                 // player actually unlocks the underlying power-up - and shows a padlock icon
                 // instead of the ability icon so it never reads as already-available.
                 box.classList.add('locked');
-                if (icon) { icon.textContent = '🔒'; icon.classList.add('icon-locked'); }
+                if (icon) { icon.innerHTML = '<img class="icon-fill icon-locked" src="lock.png" alt="">'; }
                 let btn = document.getElementById(`od-btn-${key}`);
                 let fill = document.getElementById(`od-fill-${key}`);
                 let unlockInfo = abilityUnlockNode[key];
@@ -3839,13 +3887,13 @@ const STORY_IMAGES = {
                         let missingNames = unlockUpg.prereq.filter(pr => (upgradeLevels[pr.id] || 0) < pr.level)
                             .map(pr => (treeNodeMeta[pr.id] ? treeNodeMeta[pr.id].upg.name : pr.id));
                         if (fill) { fill.style.width = '0%'; }
-                        if (btn) { btn.innerText = `🔒 Requires ${missingNames[0]}`; btn.style.background = '#222'; btn.style.color = '#888'; btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none'; }
+                        if (btn) { btn.innerHTML = `<img class="inline-icon" src="lock.png" alt="">Requires ${missingNames[0]}`; btn.style.background = '#222'; btn.style.color = '#888'; btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none'; }
                         box.title = `Locked - requires ${missingNames.join(', ')} first (skill tree).`;
                     } else {
                     let unlockCost = getCost(unlockUpg.cost, 0).money;
                     let pct = Math.max(0, Math.min(100, (playerStats.score / unlockCost) * 100));
                     if (fill) { fill.style.width = `${pct}%`; fill.style.background = '#555'; }
-                    if (btn) { btn.innerText = `🔒 $${formatNumber(unlockCost)}`; btn.style.background = '#222'; btn.style.color = '#888'; btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none'; }
+                    if (btn) { btn.innerHTML = `<img class="inline-icon" src="lock.png" alt="">$${formatNumber(unlockCost)}`; btn.style.background = '#222'; btn.style.color = '#888'; btn.style.boxShadow = 'none'; btn.style.pointerEvents = 'none'; }
                     box.title = `Locked - unlock "${od.name}" for $${formatNumber(unlockCost)} in the skill tree (${Math.floor(pct)}% there).`;
                     }
                 } else {
@@ -4465,9 +4513,10 @@ const STORY_IMAGES = {
                 const avoidRadius = playerShip.radius + 85;
                 if (pDist > 0.01 && pDist < solidRadius && overdrives.suit.activeTimer <= 0) {
                     let nx = -toPX / pDist, ny = -toPY / pDist;
-                    let overlap = solidRadius - pDist;
-                    ast.knockVX += nx * overlap * 0.06; ast.knockVY += ny * overlap * 0.06;
-                    playerShip.velocityX -= nx * overlap * 0.012; playerShip.velocityY -= ny * overlap * 0.012;
+                    // Touch feel (was: knock the asteroid away + shove the player back). Now the
+                    // object just sits under the girl and fades toward 50% opacity while she's on
+                    // top of it (see ast.touchAlpha, eased below and applied at draw time) - no
+                    // more getting flung apart on contact.
                     if (timeNow - (ast.playerHitCooldown || 0) > 450) {
                     ast.playerHitCooldown = timeNow;
                     let dmg = Math.max(0.6, (ast.typeInfo.baseHealth / 45) - playerStats.defense * 0.12);
@@ -4487,6 +4536,15 @@ const STORY_IMAGES = {
                     let sp = Math.hypot(ast.vx, ast.vy); let maxDrift = 2.2;
                     if (sp > maxDrift) { ast.vx = (ast.vx / sp) * maxDrift; ast.vy = (ast.vy / sp) * maxDrift; }
                 }
+
+                // --- TOUCH OPACITY FEEL ---
+                // While the girl is standing on/overlapping an object, ease that object's draw
+                // alpha down toward 50% (instead of the old knockback) so she visibly reads as
+                // on top of it rather than colliding with it. Eases back up to fully opaque once
+                // she moves off. ast.touchAlpha persists on the asteroid object between frames.
+                if (ast.touchAlpha === undefined) ast.touchAlpha = 1;
+                let touchTarget = (pDist > 0.01 && pDist < solidRadius) ? 0.5 : 1;
+                ast.touchAlpha += (touchTarget - ast.touchAlpha) * 0.18;
             }
 
             let pulseElapsed = ast.pulseStart ? (timeNow - ast.pulseStart) : Infinity;
@@ -4501,14 +4559,16 @@ const STORY_IMAGES = {
             // biggest fps sink in the game. An additive-blend redraw of the same sprite gives
             // an equivalent bright "flash" for a small fraction of the cost.
             if (ast.img && ast.img.complete && ast.img.naturalWidth !== 0) {
+                let touchAlpha = ast.touchAlpha === undefined ? 1 : ast.touchAlpha;
+                ctx.globalAlpha = touchAlpha;
                 ctx.drawImage(ast.img, -ast.radius, -ast.radius, ast.radius * 2, ast.radius * 2);
                 if (hitPulse > 0.02) {
                     ctx.globalCompositeOperation = 'lighter';
-                    ctx.globalAlpha = Math.min(1, hitPulse * 0.9);
+                    ctx.globalAlpha = Math.min(1, hitPulse * 0.9) * touchAlpha;
                     ctx.drawImage(ast.img, -ast.radius, -ast.radius, ast.radius * 2, ast.radius * 2);
                     ctx.globalCompositeOperation = 'source-over';
-                    ctx.globalAlpha = 1;
                 }
+                ctx.globalAlpha = 1;
             }
             ctx.restore();
             // Tier indicator ring: hardened objects get a pulsing hazard-orange outline (reads as
