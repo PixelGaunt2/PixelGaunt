@@ -59,6 +59,10 @@
         .overlay-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 10, 0.9); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: auto; overflow-y: auto; padding: calc(var(--ui-scale) * 20px) 0; }
         .overlay-title { font-size: calc(var(--ui-scale) * 50px); color: #00f3ff; margin-bottom: calc(var(--ui-scale) * 40px); text-shadow: 0 0 20px #00f3ff; text-transform: uppercase; letter-spacing: 2px; }
         .menu-btn { background: #1a1a24; border: 2px solid #00f3ff; color: #00f3ff; font-family: 'Orbitron'; font-size: calc(var(--ui-scale) * 20px); font-weight: bold; padding: calc(var(--ui-scale) * 15px) calc(var(--ui-scale) * 40px); border-radius: calc(var(--ui-scale) * 8px); cursor: pointer; margin: calc(var(--ui-scale) * 10px); width: calc(var(--ui-scale) * 250px); max-width: 80vw; transition: 0.3s; box-shadow: 0 0 10px rgba(0, 243, 255, 0.2); }
+        /* Destructive-action confirm state (New Game / Reset Progress): replaces the old native
+           confirm() popup - the button pulses for 1.5s while armed, tapping again cancels it. */
+        .menu-btn.btn-arming { animation: btnArmPulse 0.6s ease-in-out infinite; font-size: calc(var(--ui-scale) * 15px); }
+        @keyframes btnArmPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
         .menu-btn:hover { background: #00f3ff; color: #000; box-shadow: 0 0 20px #00f3ff; transform: scale(1.05); }
 
         @keyframes alertGlow {
@@ -2948,6 +2952,31 @@ const STORY_IMAGES = {
 
     function continueGame() {
         loadGame();
+        // BUGFIX: Continue was replaying every opening/story image and dialogue, then hanging.
+        // Cause: storyMaybeStartIntro() only skips the intro if 'intro4' is already marked
+        // viewed, but nothing retroactively marked the catch-up MILESTONE scenes (drone
+        // unlocked, suit unlocked, zones reached, even the final win cutscene) as viewed just
+        // because the restored save already satisfies their conditions. So Continue would queue
+        // every one of those scenes back-to-back on top of a possible intro replay - which is
+        // what looked like "all the opening images loading from the beginning" - and if that
+        // queue reached the 'final' scene while gameState wasn't actually "PLAYING" yet, the
+        // story overlay never handed control back, which is what looked like a hang.
+        // Fix: a resumed save has already "lived through" the intro and any milestone whose
+        // condition is currently true, so mark all of that viewed up front. Only milestones the
+        // player crosses newly, later in this session, will ever queue a scene again.
+        STORY_INTRO_SEQUENCE.forEach(storyMarkViewed);
+        if (!storySceneViewed('m1_shipment') && gameStats.totalMoneyEarned >= 500) storyMarkViewed('m1_shipment');
+        if (!storySceneViewed('m2_drill') && (upgradeLevels['drill_tungsten'] || 0) >= 1) storyMarkViewed('m2_drill');
+        if (!storySceneViewed('m3_drone') && playerStats.hasDrone) storyMarkViewed('m3_drone');
+        if (!storySceneViewed('m4_suit') && playerStats.hasGirlPower) storyMarkViewed('m4_suit');
+        let contRift = worldZones.find(z => z.id === 'rift');
+        if (!storySceneViewed('m5_blackhole') && contRift && isZoneUnlocked(contRift)) storyMarkViewed('m5_blackhole');
+        let contFrozen = worldZones.find(z => z.id === 'frozen');
+        if (!storySceneViewed('m6_station') && contFrozen && isZoneUnlocked(contFrozen)) storyMarkViewed('m6_station');
+        let contVolcanic = worldZones.find(z => z.id === 'volcanic');
+        if (!storySceneViewed('m7_overlord') && contVolcanic && isZoneUnlocked(contVolcanic)) storyMarkViewed('m7_overlord');
+        if (!storySceneViewed('final') && playerStats.score >= WIN_SCORE) storyMarkViewed('final');
+
         // The initial 15 asteroids were spawned for the default zone before any save was loaded -
         // regenerate them to match whichever zone the save actually left off in.
         asteroidsList = [];
@@ -2970,9 +2999,39 @@ const STORY_IMAGES = {
     // snaps back to its true code-default state, same pattern restartGame() already relies on),
     // and finally flagging via sessionStorage that the reload should drop straight into a fresh
     // PLAYING session instead of sitting on the main menu waiting for another click.
+    // UPDATE: native confirm() popups were replaced with a short in-game hold/delay instead.
+    // Clicking a destructive button (New Game / Reset Progress) locks that button, shows a
+    // "confirming" label right on it, and fires the action automatically 1.5s later - no
+    // browser dialog box interrupting the page. Clicking again during that window cancels.
+    function armDestructiveAction(btnId, label, action) {
+        let btn = document.getElementById(btnId);
+        if (!btn) { action(); return; }
+        if (btn._armTimer) {
+            // Second click while armed = cancel.
+            clearTimeout(btn._armTimer);
+            btn._armTimer = null;
+            btn.innerHTML = btn._origHtml;
+            btn.classList.remove('btn-arming');
+            return;
+        }
+        btn._origHtml = btn.innerHTML;
+        btn.innerHTML = label;
+        btn.classList.add('btn-arming');
+        playSound('click');
+        btn._armTimer = setTimeout(() => {
+            btn._armTimer = null;
+            action();
+        }, 1500);
+    }
+
     function newGameFromMenu() {
         if (hasSaveData()) {
-            if (!confirm("Starting a new game will permanently delete your current save and ALL progress (currency, minerals, upgrades, unlocks, score). This cannot be undone. Continue?")) return;
+            armDestructiveAction('btn-play-now', '⏳ Starting New Game… (tap to cancel)', () => {
+                deleteSaveData();
+                try { sessionStorage.setItem('gtdPendingNewGame', '1'); } catch (e) {}
+                window.location.reload();
+            });
+            return;
         }
         deleteSaveData();
         try { sessionStorage.setItem('gtdPendingNewGame', '1'); } catch (e) {}
@@ -2980,9 +3039,10 @@ const STORY_IMAGES = {
     }
 
     function resetProgressFromMenu() {
-        if (!confirm("This will permanently delete your saved progress. This cannot be undone. Are you sure?")) return;
-        deleteSaveData();
-        window.location.reload();
+        armDestructiveAction('btn-reset-progress', '⏳ Resetting… (tap to cancel)', () => {
+            deleteSaveData();
+            window.location.reload();
+        });
     }
 
     // ============================================================
@@ -4510,38 +4570,17 @@ const STORY_IMAGES = {
                 let toPX = playerShip.x - ast.x, toPY = playerShip.y - ast.y;
                 let pDist = Math.hypot(toPX, toPY);
                 let solidRadius = playerShip.radius * 0.65 + ast.radius * (1 + (1 - (ast.health / ast.maxHealth)) * 0.4);
-                const avoidRadius = playerShip.radius + 85;
-                if (pDist > 0.01 && pDist < solidRadius && overdrives.suit.activeTimer <= 0) {
-                    let nx = -toPX / pDist, ny = -toPY / pDist;
-                    // Touch feel (was: knock the asteroid away + shove the player back). Now the
-                    // object just sits under the girl and fades toward 50% opacity while she's on
-                    // top of it (see ast.touchAlpha, eased below and applied at draw time) - no
-                    // more getting flung apart on contact.
-                    if (timeNow - (ast.playerHitCooldown || 0) > 450) {
-                    ast.playerHitCooldown = timeNow;
-                    let dmg = Math.max(0.6, (ast.typeInfo.baseHealth / 45) - playerStats.defense * 0.12);
-                    playerStats.energy = Math.max(0, playerStats.energy - dmg);
-                    cameraShake = Math.max(cameraShake, 7);
-                    spawnHitSparks(ast.x - nx * ast.radius * 0.5, ast.y - ny * ast.radius * 0.5, '#ff5555');
-                    addFloatingText(`-${dmg.toFixed(1)}`, playerShip.x, playerShip.y - 40, '#ff5555', "13px");
-                    if (timeNow - lastPlayerHurtSound > 350) { playSound('player_hurt'); lastPlayerHurtSound = timeNow; }
-                    refreshLiveUiDisplays();
-                    }
-                } else if (pDist > 0.01 && pDist < avoidRadius) {
-                    let nx = -toPX / pDist, ny = -toPY / pDist;
-                    let tx = -ny, ty = nx;
-                    let strength = (avoidRadius - pDist) / avoidRadius * 0.05;
-                    ast.vx += nx * strength * 0.4 + tx * strength * 0.6;
-                    ast.vy += ny * strength * 0.4 + ty * strength * 0.6;
-                    let sp = Math.hypot(ast.vx, ast.vy); let maxDrift = 2.2;
-                    if (sp > maxDrift) { ast.vx = (ast.vx / sp) * maxDrift; ast.vy = (ast.vy / sp) * maxDrift; }
-                }
+                // PASS-THROUGH COLLISION: objects no longer deal damage, knock the player back,
+                // or steer/dodge out of the girl's way. While she's overlapping one, it simply
+                // eases toward 50% opacity (ast.touchAlpha below) so she visibly reads as passing
+                // through/over it, then eases back to fully opaque once she's clear. Objects keep
+                // their own drift/velocity untouched the whole time, so they glide through her
+                // smoothly instead of colliding.
 
                 // --- TOUCH OPACITY FEEL ---
-                // While the girl is standing on/overlapping an object, ease that object's draw
-                // alpha down toward 50% (instead of the old knockback) so she visibly reads as
-                // on top of it rather than colliding with it. Eases back up to fully opaque once
-                // she moves off. ast.touchAlpha persists on the asteroid object between frames.
+                // While the girl is overlapping an object, ease its draw alpha down toward 50%.
+                // Eases back up to fully opaque once she moves off. ast.touchAlpha persists on
+                // the asteroid object between frames.
                 if (ast.touchAlpha === undefined) ast.touchAlpha = 1;
                 let touchTarget = (pDist > 0.01 && pDist < solidRadius) ? 0.5 : 1;
                 ast.touchAlpha += (touchTarget - ast.touchAlpha) * 0.18;
