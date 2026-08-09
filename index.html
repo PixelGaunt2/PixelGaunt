@@ -14,9 +14,13 @@
     <title>PixelGaunt - Play Free HTML5 Browser Games Online</title>
     <meta name="description" content="PixelGaunt is a modern browser gaming platform offering high-quality HTML5 games you can play instantly online. No downloads, no installs — just click and play.">
     <link rel="canonical" href="https://pixelgaunt.com/">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Not referenced anywhere in current code; deferred so it never competes with critical render if it's wired up later -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         /* CORE PREMIUM THEME SYSTEM */
         :root {
@@ -264,6 +268,7 @@
             background-position: top center; 
             overflow: hidden; 
         }
+        .card-thumb-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; z-index: 0; }
         .gif-overlay { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: top center; opacity: 0; transition: opacity 0.4s ease; }
         .game-card:hover .gif-overlay { opacity: 1; }
         .card-thumb::before { content: ''; position: absolute; inset: 0; z-index: 2; background: linear-gradient(to bottom, transparent, rgba(12, 12, 22, 0.95)); }
@@ -1288,6 +1293,13 @@
         // so we can re-render it in the correct order after a ranking update without losing the active filter.
         let currentDisplayedList = games;
 
+        /* ===== GAME LAUNCH STATE GUARD ===== */
+        // activeGameId: the game currently open in the viewport (null when none is open).
+        // isLaunchingGame: short debounce lock so a rapid double-click/duplicate trigger
+        // can't fire launchViewport twice in a row and force a second iframe load.
+        let activeGameId = null;
+        let isLaunchingGame = false;
+
         // A game must reach this many total plays before it can appear in the "Top Plays" hero section.
         const TOP_PLAYS_THRESHOLD = 100;
 
@@ -1402,6 +1414,8 @@
 
             exitElementFullscreen();
             unlockGameOrientation();
+
+            activeGameId = null;
         }
 
         window.openPage = function(pageId) {
@@ -1429,25 +1443,38 @@
             document.getElementById('top-cat-bar').scrollLeft += val;
         }
 
+        // Tracks the ids/order of the last thing actually painted into #game-grid, so a
+        // play-count bump that doesn't change anyone's rank doesn't force a full DOM rebuild.
+        let lastRenderedGridKey = null;
+
         window.renderGames = function(gameList) {
             currentDisplayedList = gameList;
             const rankedList = window.getRankedGames(gameList);
 
             const gameGrid = document.getElementById('game-grid');
-            gameGrid.innerHTML = '';
+
             if (rankedList.length === 0) {
+                lastRenderedGridKey = 'empty';
                 gameGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px; font-size:0.9rem;">No entries found fitting active matrix fields.</p>';
                 return;
             }
+
+            // Same games, same order as what's already on screen -> nothing to do.
+            const gridKey = rankedList.map(g => g.id).join(',');
+            if (gridKey === lastRenderedGridKey) return;
+            lastRenderedGridKey = gridKey;
+
+            gameGrid.innerHTML = '';
             rankedList.forEach(game => {
                 const card = document.createElement('div');
                 card.className = 'game-card';
                 card.onclick = () => window.launchViewport(game.id);
                 const safeImg = encodeURI(game.image);
-                const safePreview = encodeURI(game.preview || game.image.replace('.png', '.gif')); 
+                const safePreview = encodeURI(game.preview || game.image.replace('.png', '.gif'));
                 card.innerHTML = `
-                    <div class="card-thumb" style="background-image: url('${safeImg}');">
-                        <div class="gif-overlay" style="background-image: url('${safePreview}');"></div>
+                    <div class="card-thumb">
+                        <img class="card-thumb-img" src="${safeImg}" alt="${game.title}" loading="lazy" decoding="async" width="400" height="300">
+                        <div class="gif-overlay" data-gif="${safePreview}"></div>
                         <div class="play-overlay"><div class="play-btn-circle"></div></div>
                     </div>
                     <div class="card-info">
@@ -1458,6 +1485,19 @@
                         </div>
                     </div>
                 `;
+
+                // The preview GIF is never fetched on render - only on genuine hover/touch
+                // intent, and only once per card (result is cached by the browser after that).
+                const gifLayer = card.querySelector('.gif-overlay');
+                let gifRequested = false;
+                const loadGifOnce = () => {
+                    if (gifRequested) return;
+                    gifRequested = true;
+                    gifLayer.style.backgroundImage = `url('${gifLayer.dataset.gif}')`;
+                };
+                card.addEventListener('mouseenter', loadGifOnce, { once: true });
+                card.addEventListener('touchstart', loadGifOnce, { once: true, passive: true });
+
                 gameGrid.appendChild(card);
             });
         }
@@ -1543,16 +1583,50 @@
             });
         }
 
-        window.launchViewport = function(gameId) {
+        // historyMode controls how the URL/history entry is written:
+        //   'push'    - a genuine new launch (card click, hero/spotlight button) - default.
+        //   'replace' - restoring state from the URL on initial page load (no new back-entry).
+        //   'none'    - triggered by the browser's own back/forward (popstate already updated history).
+        window.launchViewport = function(gameId, historyMode) {
+            historyMode = historyMode || 'push';
+
             const game = games.find(g => g.id === gameId);
             if (!game) return;
 
-            window.registerGamePlay(gameId);
+            const gameplayPage = document.getElementById('gameplay-page');
+            const alreadyRunning = activeGameId === gameId && gameplayPage && gameplayPage.style.display === 'block';
+
+            // This exact game is already open and running - do NOT touch the iframe again.
+            // Reassigning iframe.src (even to the same URL) forces a real reload, which is
+            // exactly the "game restarts by itself" symptom this guards against.
+            if (alreadyRunning) {
+                if (historyMode === 'push') {
+                    history.pushState({ page: 'game', id: gameId }, game.title, `?play=${encodeURIComponent(game.title.toLowerCase().replace(/ /g, '-'))}`);
+                }
+                return;
+            }
+
+            // Debounce lock: blocks a second launch (e.g. a rapid double-click on a card,
+            // or two triggers arriving back-to-back) from sneaking in before the guard
+            // above has anything to compare against.
+            if (isLaunchingGame) return;
+            isLaunchingGame = true;
+            setTimeout(() => { isLaunchingGame = false; }, 400);
+
+            activeGameId = gameId;
 
             window.hideAllPages();
-            history.pushState({ page: 'game', id: gameId }, game.title, `?play=${encodeURIComponent(game.title.toLowerCase().replace(/ /g, '-'))}`);
-            document.getElementById('gameplay-page').style.display = 'block';
+            // hideAllPages() just reset activeGameId to null - restore it now that we're
+            // actually committed to opening this game.
+            activeGameId = gameId;
+
+            gameplayPage.style.display = 'block';
             window.scrollTo(0, 0);
+
+            // Start the game loading as the very first thing we do, before any of the
+            // (comparatively unimportant) text/detail panel updates below.
+            const gameIframe = document.getElementById('game-canvas');
+            gameIframe.src = encodeURI(game.url);
 
             document.getElementById('current-game-title').innerText = game.title;
             document.getElementById('current-game-studio').innerHTML = game.studio;
@@ -1573,10 +1647,14 @@
             } else {
                 aiContainer.style.display = 'none';
             }
-            
-            const gameIframe = document.getElementById('game-canvas');
-            gameIframe.src = encodeURI(game.url); 
-            
+
+            if (historyMode === 'push') {
+                history.pushState({ page: 'game', id: gameId }, game.title, `?play=${encodeURIComponent(game.title.toLowerCase().replace(/ /g, '-'))}`);
+            } else if (historyMode === 'replace') {
+                history.replaceState({ page: 'game', id: gameId }, game.title, `?play=${encodeURIComponent(game.title.toLowerCase().replace(/ /g, '-'))}`);
+            }
+            // historyMode === 'none': popstate already updated the URL/history for us.
+
             const portalBgm = document.getElementById('portal-bgm');
             if(game.bgm) {
                 portalBgm.src = encodeURI(game.bgm);
@@ -1584,6 +1662,10 @@
             }
 
             window.applyMobileFullscreenForGame(game);
+
+            // Play-count tracking / Top Plays / Top Categories / grid re-render are pure
+            // bookkeeping - defer them so they can never delay the game becoming visible.
+            setTimeout(() => window.registerGamePlay(gameId), 0);
         }
 
         window.goHome = function() {
@@ -1760,7 +1842,7 @@
         }
 
         window.addEventListener('popstate', function(event) {
-            if (event.state && event.state.page === 'game') { window.launchViewport(event.state.id); } 
+            if (event.state && event.state.page === 'game') { window.launchViewport(event.state.id, 'none'); } 
             else if (event.state && event.state.page) { window.openPage(event.state.page); } 
             else { window.goHome(); }
         });
@@ -1775,7 +1857,10 @@
             
             if (playQuery) {
                 const game = games.find(g => g.title.toLowerCase().replace(/ /g, '-') === playQuery);
-                if (game) setTimeout(() => window.launchViewport(game.id), 100);
+                // 'replace' - the URL already reflects this game, so attach the correct
+                // history state without pushing a second, redundant back-entry.
+                if (game) window.launchViewport(game.id, 'replace');
+                else window.goHome();
             } else if (pageQuery) {
                  const targetPage = pageQuery + '-page';
                  if(document.getElementById(targetPage)) window.openPage(targetPage);
@@ -1784,10 +1869,12 @@
                 window.goHome();
             }
 
-            setTimeout(() => {
+            // Hide the loader once the critical content has actually been painted, rather
+            // than after a fixed guess-timeout. Two rAFs = wait for the next real frame.
+            requestAnimationFrame(() => requestAnimationFrame(() => {
                 const loader = document.getElementById('loader');
                 if(loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 300); }
-            }, 800); 
+            }));
         };
         
         window.onclick = (e) => { 
