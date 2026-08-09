@@ -2684,6 +2684,26 @@ const STORY_IMAGES = {
     const inputKeys = {};
     window.addEventListener('keydown', (e) => { inputKeys[e.code] = true; }); window.addEventListener('keyup', (e) => { inputKeys[e.code] = false; });
 
+    // --- DEV-ONLY PERF OVERLAY (hidden by default, never shown to normal players) ---
+    // Toggled with the backtick/tilde key, which isn't bound to anything else in the game.
+    // Shows a live, real read of frame time / FPS plus the current counts of the heaviest
+    // per-frame systems (asteroids, particles, drones, clones) and whether adaptive perf mode
+    // has kicked in, so actual bottlenecks can be confirmed on a real device instead of guessed
+    // at from source alone - e.g. if avg ms stays low but "lowFx" never engages while the game
+    // still feels choppy, the cost is likely outside this loop (browser compositing, OS-level,
+    // background tab throttling, etc.) rather than anything in the JS update/render path.
+    let perfOverlayEl = null, perfOverlayVisible = false;
+    window.addEventListener('keydown', (e) => {
+        if (e.key !== '`' && e.key !== '~') return;
+        perfOverlayVisible = !perfOverlayVisible;
+        if (!perfOverlayEl) {
+            perfOverlayEl = document.createElement('div');
+            perfOverlayEl.style.cssText = 'position:fixed;top:4px;left:4px;z-index:99999;background:rgba(0,0,0,0.78);color:#39ff14;font:11px/1.4 monospace;padding:7px 10px;border-radius:5px;pointer-events:none;white-space:pre;';
+            document.body.appendChild(perfOverlayEl);
+        }
+        perfOverlayEl.style.display = perfOverlayVisible ? 'block' : 'none';
+    });
+
     // --- ESCAPE / ENTER: dedicated menu-control keys, layered on top of the movement key
     // listener above so all keyboard controls keep working simultaneously with mouse input. ---
     window.addEventListener('keydown', (e) => {
@@ -2853,22 +2873,37 @@ const STORY_IMAGES = {
                     // curH*dpr (a real, sharp pixel grid matching the main canvas) and scale
                     // its own context by dpr so the same drawImage/fillRect calls below still work
                     // in logical coordinates.
+                    // PERF FIX: this tinted buffer used to be fully rebuilt (clearRect + drawImage
+                    // + fillRect + composite-mode reset) every single render frame, unconditionally,
+                    // for as long as Girl Power stayed unlocked - i.e. a full extra offscreen render
+                    // pass of the player sprite, 60 times a second, for most of a normal playthrough.
+                    // In reality its actual inputs (which animation frame is showing, the girl's
+                    // draw size, and the tint color/strength) only change every 10-28 frames when
+                    // idle/moving (see frameTimer above) or continuously only while a Girl Power
+                    // Overdrive ramp is actively running. So the buffer is now cached and only
+                    // redrawn when one of those inputs has actually changed since the last frame -
+                    // every other frame just reuses the already-tinted buffer as-is, cutting this
+                    // from ~3 offscreen draw calls/frame down to 1 (the final blit) most of the time.
+                    let tintAlpha = 0.30 + (gpActive ? gpRamp * 0.25 : 0); // deeper tint while active
                     if (!this._suitBuffer) { this._suitBuffer = document.createElement('canvas'); }
                     let buf = this._suitBuffer;
                     let bw = Math.max(1, Math.round(curW * dpr)), bh = Math.max(1, Math.round(curH * dpr));
-                    if (buf.width !== bw || buf.height !== bh) { buf.width = bw; buf.height = bh; }
-                    let bctx = buf.getContext('2d');
-                    bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-                    bctx.imageSmoothingEnabled = true; bctx.imageSmoothingQuality = 'high';
-                    bctx.clearRect(0, 0, curW, curH);
-                    bctx.drawImage(activeFrame, srcX, srcY, srcW, srcH, 0, 0, curW, curH);
-                    let tintAlpha = 0.30 + (gpActive ? gpRamp * 0.25 : 0); // deeper tint while active
-                    bctx.globalCompositeOperation = 'source-atop';
-                    bctx.globalAlpha = tintAlpha;
-                    bctx.fillStyle = suitTier.color;
-                    bctx.fillRect(0, 0, curW, curH);
-                    bctx.globalCompositeOperation = 'source-over';
-                    bctx.globalAlpha = 1;
+                    let tintKey = activeFrame.src + '|' + bw + '|' + bh + '|' + suitTier.color + '|' + tintAlpha.toFixed(3);
+                    if (this._suitBufferKey !== tintKey) {
+                        this._suitBufferKey = tintKey;
+                        if (buf.width !== bw || buf.height !== bh) { buf.width = bw; buf.height = bh; }
+                        let bctx = buf.getContext('2d');
+                        bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                        bctx.imageSmoothingEnabled = true; bctx.imageSmoothingQuality = 'high';
+                        bctx.clearRect(0, 0, curW, curH);
+                        bctx.drawImage(activeFrame, srcX, srcY, srcW, srcH, 0, 0, curW, curH);
+                        bctx.globalCompositeOperation = 'source-atop';
+                        bctx.globalAlpha = tintAlpha;
+                        bctx.fillStyle = suitTier.color;
+                        bctx.fillRect(0, 0, curW, curH);
+                        bctx.globalCompositeOperation = 'source-over';
+                        bctx.globalAlpha = 1;
+                    }
 
                     ctx.drawImage(buf, -curW / 2, -curH / 2, curW, curH);
                     ctx.shadowBlur = 0;
@@ -5684,25 +5719,33 @@ const STORY_IMAGES = {
 
         for (let i = textParticles.length - 1; i >= 0; i--) { let tp = textParticles[i]; tp.y -= 0.6; tp.life--; ctx.globalAlpha = Math.min(1, tp.life / 20); ctx.fillStyle = tp.color; ctx.font = `bold ${tp.size} 'Orbitron'`; ctx.fillText(tp.text, tp.x, tp.y); ctx.globalAlpha = 1.0; if (tp.life <= 0) textParticles.splice(i, 1); }
 
-        if (minimapCanvasEl && minimapCtxCached) {
+        // PERF: the minimap previously redrew from scratch (clearRect + one arc/fill per
+        // asteroid) every single render frame, even though nothing about it is visually
+        // time-critical - a few-pixel dot barely needs to move at 60fps. It's now throttled to
+        // roughly a 20fps refresh (every 3rd frame) via minimapFrameSkip, which is imperceptible
+        // to the player but cuts its per-frame cost to a third. Also swapped the asteroid-dot
+        // .forEach() for a plain indexed loop (no per-frame closure allocation) per the same
+        // hot-loop-array-op guidance applied elsewhere in this file.
+        if (minimapCanvasEl && minimapCtxCached && (frameCount % 3 === 0)) {
             const mCtx = minimapCtxCached;
             mCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
             mCtx.imageSmoothingEnabled = true; mCtx.imageSmoothingQuality = perfMode.lowFx ? 'low' : 'high';
             mCtx.clearRect(0, 0, 130, 130);
-            
-            mCtx.save();
-            mCtx.translate(65, 65); 
-            let mapScale = 0.015; 
 
-            asteroidsList.forEach(a => {
+            mCtx.save();
+            mCtx.translate(65, 65);
+            let mapScale = 0.015;
+
+            for (let i = 0; i < asteroidsList.length; i++) {
+                const a = asteroidsList[i];
                 mCtx.beginPath();
-                mCtx.arc((a.x - playerShip.x)*mapScale, (a.y - playerShip.y)*mapScale, Math.max(1, a.radius*mapScale), 0, Math.PI*2);
+                mCtx.arc((a.x - playerShip.x) * mapScale, (a.y - playerShip.y) * mapScale, Math.max(1, a.radius * mapScale), 0, Math.PI * 2);
                 mCtx.fillStyle = a.typeInfo.color;
                 mCtx.fill();
-            });
+            }
 
             mCtx.beginPath();
-            mCtx.arc(0, 0, 3, 0, Math.PI*2);
+            mCtx.arc(0, 0, 3, 0, Math.PI * 2);
             mCtx.fillStyle = '#00f3ff';
             mCtx.fill();
 
@@ -5727,6 +5770,18 @@ const STORY_IMAGES = {
             vg.addColorStop(0, 'rgba(0,180,255,0)'); vg.addColorStop(1, `rgba(0,120,255,${0.32 * vignetteStrength})`);
             ctx.fillStyle = vg; ctx.fillRect(0, 0, viewportW, viewportH);
             ctx.restore();
+        }
+
+        if (perfOverlayVisible && perfOverlayEl && frameCount % 15 === 0 && frameTimeHistory.length) {
+            let avgFt = frameTimeHistory.reduce((a, b) => a + b, 0) / frameTimeHistory.length;
+            let maxFt = Math.max.apply(null, frameTimeHistory);
+            let droneCount = miniDrones.length + (mainDrone ? 1 : 0);
+            perfOverlayEl.textContent =
+                `FPS ~${Math.round(1000 / (avgFt || 16.7))}  (avg ${avgFt.toFixed(1)}ms / max ${maxFt.toFixed(1)}ms)\n` +
+                `asteroids ${asteroidsList.length}  particles ${visualParticles.length + thrustParticles.length}\n` +
+                `drones ${droneCount}  fireClones ${fireClones.length}  acidClones ${acidClones.length}\n` +
+                `drills ${drillsList.length}  rockets ${rocketsList.length}  mines ${handMines.length}\n` +
+                `lowFx: ${perfMode.lowFx}   dpr: ${dpr}`;
         }
 
         requestAnimationFrame(renderFrame);
