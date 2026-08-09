@@ -12,7 +12,7 @@
             margin: 0; padding: 0; width: 100%; height: 100%; background-color: #050508;
             overflow: hidden; font-family: 'Orbitron', sans-serif; color: #e0e0e8;
         }
-        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; background: transparent; }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; background: transparent; touch-action: none; }
 
         /* --- ICON ASSET SYSTEM ---
            Two reusable, generic classes cover every replaced icon in the game so we don't need
@@ -666,6 +666,36 @@ const STORY_IMAGES = {
     }
     window.addEventListener('keydown', initAudio, { once: true });
     window.addEventListener('mousedown', initAudio, { once: true });
+
+    // --- WEB-HOSTED / EMBEDDED-PAGE FIX: Page Visibility API ---
+    // On a portal page (tabs full of other games/tournaments/store content around the game
+    // viewport), a player very commonly switches tabs or scrolls the embedding page away and
+    // back. Two real problems that causes if left unhandled:
+    //   1. Sound keeps playing (oscillator SFX + bg music) into a backgrounded/invisible tab -
+    //      wasted CPU and an unwanted audio leak the player didn't ask for.
+    //   2. requestAnimationFrame is throttled/paused by the browser while hidden, so the single
+    //      frame right after the tab comes back can report a multi-second gap - see the 250ms
+    //      outlier guard in updatePerfMode() for how that's kept from corrupting the perf
+    //      average. This handler additionally clears the sample history outright on resume so
+    //      perf mode starts clean rather than partially poisoned by that one huge gap frame.
+    // Gameplay itself doesn't need an explicit pause/resume here: nothing in this file advances
+    // movement/timers using real elapsed wall-clock time (see the frame-based-timer notes
+    // elsewhere in this file) - each requestAnimationFrame tick simulates exactly one fixed
+    // logical step regardless of how long real time it took to arrive, so a throttled/paused
+    // background tab naturally just means gameplay is briefly paused too, with no catch-up burst
+    // and no teleporting once it resumes.
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+            if (bgMusicElement && !bgMusicElement.paused) { wasBgMusicPlaying = true; bgMusicElement.pause(); }
+        } else {
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            if (wasBgMusicPlaying) { bgMusicElement.play().catch(() => {}); wasBgMusicPlaying = false; }
+            frameTimeHistory.length = 0;
+            lastFrameStartTime = performance.now();
+        }
+    });
+    let wasBgMusicPlaying = false;
 
     const bgMusicElement = document.getElementById('bgMusic');
     // Task 7: background music sits at just 1% volume throughout the game - it should be a
@@ -2565,6 +2595,13 @@ const STORY_IMAGES = {
     window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
     window.addEventListener('mousedown', e => { isMouseThrusting = true; initAudio(); });
     window.addEventListener('mouseup', e => { isMouseThrusting = false; });
+    // WEB-HOSTED / EMBEDDED-PAGE FIX: these fire on the whole window (so ship-thrust-toward-
+    // touch keeps working no matter where on the page a touch starts), and never call
+    // preventDefault - so they can be safely marked passive. On a content-heavy portal page the
+    // browser would otherwise have to wait for each one to finish before it's sure it's safe to
+    // start scrolling/handling the touch itself, which is exactly the kind of input lag this
+    // section of the game was asked to eliminate. (The canvas itself also gets `touch-action:
+    // none` in CSS, so the page never tries to scroll under a touch that started on the game.)
     window.addEventListener('touchstart', e => {
         // Ignore touches that started on the joystick itself - those are handled separately
         // below and shouldn't also trigger tap-to-move thrust toward the joystick's screen position.
@@ -2573,16 +2610,16 @@ const STORY_IMAGES = {
         if (joystickTouchId !== null) return;
         if (e.target.closest && e.target.closest('#overdrives-container')) return;
         isMouseThrusting = true; mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; initAudio();
-    });
+    }, { passive: true });
     window.addEventListener('touchmove', e => {
         if (joystickTouchId !== null) return;
         if (e.target.closest && e.target.closest('#overdrives-container')) return;
         mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY;
-    });
+    }, { passive: true });
     window.addEventListener('touchend', e => {
         if (joystickTouchId !== null) return;
         isMouseThrusting = false;
-    });
+    }, { passive: true });
 
     // --- MOBILE TOUCH JOYSTICK ---
     // Small bottom-left virtual joystick for touch devices, sized/positioned relative to the
@@ -4382,6 +4419,16 @@ const STORY_IMAGES = {
     const PERF_ENTER_LOWFX_MS = 18.5; // sustained avg below ~54fps -> drop to low FX
     const PERF_EXIT_LOWFX_MS = 15.5;  // sustained avg above ~64fps -> restore full FX
     function updatePerfMode(deltaMs) {
+        // PERF/WEB FIX: a background/inactive tab (common on a busy portal page like
+        // pixelgaunt.com, where a player might tab over to check a tournament or the store)
+        // gets its requestAnimationFrame throttled or fully paused by the browser. The very
+        // first frame after the tab becomes active again can therefore report a delta of
+        // seconds, not milliseconds. Feeding that single outlier into the rolling average used
+        // to instantly (and wrongly) trip adaptive perf mode into low-FX for the next ~30
+        // frames even though the game itself never actually struggled - it was just backgrounded.
+        // Anything above 250ms is assumed to be a resume/backgrounding artifact, not a real
+        // slow frame, and is dropped from the sample instead of being averaged in.
+        if (deltaMs > 250) return;
         frameTimeHistory.push(deltaMs);
         if (frameTimeHistory.length > PERF_SAMPLE_SIZE) frameTimeHistory.shift();
         if (frameTimeHistory.length < PERF_SAMPLE_SIZE) return;
