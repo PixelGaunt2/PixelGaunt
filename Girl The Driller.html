@@ -1528,6 +1528,83 @@ const STORY_IMAGES = {
     // Earth Cargo. Instead, measure Active Systems' real rendered height every time its
     // contents can change (row added, resize, ui-scale change) and place Earth Cargo a fixed
     // gap below that measured bottom edge, so the two panels can never merge at any resolution.
+    // --- UI/OBJECT OCCLUSION FADE ---
+    // The HUD panels marked for this behavior each dim to 50% opacity, independently and only
+    // for as long as some in-world object is actually passing underneath that specific panel,
+    // and snap back to 100% the instant nothing is left overlapping it. Detection works in
+    // screen space: each frame we take every currently-visible game object's world position,
+    // project it through the same camera/gameScale transform the renderer itself uses, and do
+    // a cheap circle-vs-rect overlap test against each watched panel's real on-screen
+    // bounding box (so it stays correct through resizes/ui-scale/layout changes automatically,
+    // with no hardcoded coordinates). This never touches the objects themselves - purely a
+    // cosmetic opacity toggle on the UI layer, so visibility, collision, and gameplay for the
+    // moving objects are completely unaffected.
+    //
+    // NOTE on the overdrive boxes specifically: each individual .od-box (Girl Power, Drill
+    // Storm, Axe Fury, ...) is watched on its own, NOT the shared #overdrives-container as a
+    // whole - watching the container would dim every overdrive box at once just because one
+    // of them had something underneath, and would stack on top of that box's own CSS opacity
+    // (e.g. a still-locked box already sits at 0.45 opacity), making it darker than the
+    // intended flat 50%. Per-box watching keeps each one fully independent, and clearing the
+    // inline opacity (rather than forcing it back to '1') when nothing is underneath restores
+    // exactly whatever that box's own normal/locked opacity already was - no permanent dimming,
+    // no stacking, no change to any box that has nothing under it.
+    const UI_OCCLUSION_TARGET_IDS = ['hud', 'score-hud', 'money-hud', 'zone-hud', 'distance-hud', 'pause-btn', 'tool-status-hud', 'special-items-hud', 'level-hud'];
+    let uiOcclusionEls = [];
+    function initUiOcclusionWatchers() {
+        const odBoxes = Array.from(document.querySelectorAll('#overdrives-container .od-box'));
+        uiOcclusionEls = UI_OCCLUSION_TARGET_IDS.map(id => document.getElementById(id)).filter(Boolean).concat(odBoxes);
+        uiOcclusionEls.forEach(el => { if (!el.style.transition) el.style.transition = 'opacity 0.18s ease'; else if (!/opacity/.test(el.style.transition)) el.style.transition += ', opacity 0.18s ease'; });
+    }
+    // Scratch array reused every frame instead of reallocated, to avoid needless GC churn in
+    // the render loop (see PERF notes elsewhere in this file for why that matters here).
+    const _uiOcclusionChecks = [];
+    function updateUiObjectOcclusion() {
+        if (!uiOcclusionEls.length) return;
+        _uiOcclusionChecks.length = 0;
+        // Projects one world-space circle (object center + radius) into screen space and
+        // queues it for testing, skipping anything that's nowhere near the visible viewport
+        // (cheap reject) so off-screen entities in big lists like asteroids/specials don't
+        // cost anything.
+        function addCheck(wx, wy, wr) {
+            const sx = (wx - camera.x) * gameScale, sy = (wy - camera.y) * gameScale, sr = wr * gameScale;
+            if (sx + sr < -20 || sx - sr > viewportW + 20 || sy + sr < -20 || sy - sr > viewportH + 20) return;
+            _uiOcclusionChecks.push(sx, sy, sr);
+        }
+        addCheck(playerShip.x, playerShip.y, playerShip.radius);
+        for (let i = 0; i < asteroidsList.length; i++) { const a = asteroidsList[i]; addCheck(a.x, a.y, a.radius); }
+        for (let i = 0; i < specialItemsList.length; i++) { const s = specialItemsList[i]; if (!s.isCollected) addCheck(s.x, s.y, Math.max(s.width, s.height) / 2); }
+        for (let i = 0; i < drillsList.length; i++) { const d = drillsList[i]; addCheck(d.x, d.y, 18); }
+        if (mainDrone) addCheck(mainDrone.x, mainDrone.y, 22);
+        for (let i = 0; i < miniDrones.length; i++) { const d = miniDrones[i]; addCheck(d.x, d.y, 14); }
+        for (let i = 0; i < fireClones.length; i++) { const c = fireClones[i]; addCheck(c.x, c.y, 16); }
+        for (let i = 0; i < acidClones.length; i++) { const c = acidClones[i]; addCheck(c.x, c.y, 16); }
+        for (let i = 0; i < rocketsList.length; i++) { const r = rocketsList[i]; addCheck(r.x, r.y, 10); }
+        for (let i = 0; i < handMines.length; i++) { const m = handMines[i]; addCheck(m.x, m.y, 14); }
+
+        for (let e = 0; e < uiOcclusionEls.length; e++) {
+            const el = uiOcclusionEls[e];
+            if (el.offsetParent === null && getComputedStyle(el).display === 'none') continue; // hidden panels cost nothing
+            const rect = el.getBoundingClientRect();
+            let overlap = false;
+            for (let i = 0; i < _uiOcclusionChecks.length; i += 3) {
+                const sx = _uiOcclusionChecks[i], sy = _uiOcclusionChecks[i + 1], sr = _uiOcclusionChecks[i + 2];
+                const closestX = Math.max(rect.left, Math.min(sx, rect.right));
+                const closestY = Math.max(rect.top, Math.min(sy, rect.bottom));
+                const dx = sx - closestX, dy = sy - closestY;
+                if ((dx * dx + dy * dy) < sr * sr) { overlap = true; break; }
+            }
+            // Only ever set our own 0.5 override, or clear it. We never force opacity to '1'
+            // directly - clearing the inline style lets the element's own CSS (e.g. a locked
+            // .od-box's 0.45, or a plain panel's normal 1) take back over exactly as it was.
+            if (overlap) {
+                if (el.style.opacity !== '0.5') el.style.opacity = '0.5';
+            } else if (el.style.opacity === '0.5') {
+                el.style.removeProperty('opacity');
+            }
+        }
+    }
+
     function positionSidePanels() {
         const toolHud = document.getElementById('tool-status-hud');
         const cargoHud = document.getElementById('special-items-hud');
@@ -5634,6 +5711,11 @@ const STORY_IMAGES = {
 
         ctx.restore();
 
+        // UI/object occlusion fade - see updateUiObjectOcclusion() above for how this works.
+        // Placed after every world object has finished moving/updating for this frame so the
+        // overlap test always reflects this frame's real, final positions.
+        updateUiObjectOcclusion();
+
         // --- SLOW MOTION VIGNETTE (screen-space, drawn after the world-transform restore so
         // it isn't affected by camera/gameScale) - a soft blue-tinted edge glow while slow
         // motion is active, so the effect is unmistakably visible rather than a subtle change
@@ -5650,7 +5732,7 @@ const STORY_IMAGES = {
         requestAnimationFrame(renderFrame);
     }
     
-    refreshLiveUiDisplays(); updateSpecialItemsHud(); requestAnimationFrame(renderFrame);
+    refreshLiveUiDisplays(); updateSpecialItemsHud(); initUiOcclusionWatchers(); requestAnimationFrame(renderFrame);
     storyInitParticles();
 </script>
 </body>
