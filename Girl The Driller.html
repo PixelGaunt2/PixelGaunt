@@ -2277,7 +2277,16 @@ const STORY_IMAGES = {
     // particle slots, guaranteeing a continuous, stable trail on both PC and mobile.
     let thrustParticles = [];
     let homingParticles = []; let shockwaves = [];   
-    let camera = { x: 0, y: 0 }; let cameraShake = 0; let lastDrillDeploy = 0;
+    // CAMERA FOLLOW: camera.x/y remain the world-space top-left of the view (every existing
+    // draw call below already reads these, so nothing downstream needs to change). What's new
+    // is camera.centerX/centerY - the camera's own tracked focus point - which now lags the
+    // player through a small dead-zone plus a lerp instead of snapping exactly onto the player
+    // every frame, so minor jitter/wobble no longer drags the whole world with it while the
+    // camera still keeps up comfortably during real movement. centerX/centerY start null and
+    // are snapped onto the player's actual start position the first time the render loop runs
+    // (see renderFrame), so there's no slow pan-in when a run begins.
+    let camera = { x: 0, y: 0, centerX: null, centerY: null };
+    let cameraShake = 0; let lastDrillDeploy = 0;
 
     // --- SLOW MOTION POWER (fixed/rewritten) ---
     // Previously this worked by inserting real-world delays between animation frames
@@ -2313,6 +2322,25 @@ const STORY_IMAGES = {
     // instead of spawning or orbiting. Reined back in to 500 (within the requested 450-550px
     // window) - the earlier 900px widening let drills/axes chase targets too far off-screen.
     const WEAPON_ENGAGE_RANGE = 500;
+
+    // --- UNIVERSAL POWER-UP TARGETING HELPER ---
+    // Every offensive power-up (Drill, Missile, and all other auto-targeting abilities) must
+    // search ONLY real gameplay objects (asteroidsList - NEVER bgAmbientObjects, which are
+    // marked backgroundOnly and are purely decorative), ignore anything outside its max range,
+    // and always prefer the nearest valid candidate over a farther one. This helper is the single
+    // shared implementation of that rule so every power-up's targeting logic stays consistent.
+    // `list` defaults to the real asteroid/mineral field; pass a pre-filtered array (e.g. a
+    // range-limited subset already computed this frame) to avoid rescanning it.
+    function findNearestTarget(fromX, fromY, maxRange, list) {
+        let source = list || asteroidsList;
+        let target = null, minDist = maxRange;
+        for (let i = 0; i < source.length; i++) {
+            let a = source[i];
+            let d = Math.hypot(a.x - fromX, a.y - fromY);
+            if (d < minDist) { minDist = d; target = a; }
+        }
+        return target;
+    }
 
     // --- WIN CONDITION ---
     // The game runs until the girl has mined $1 Quadrillion for Earth.
@@ -2467,7 +2495,8 @@ const STORY_IMAGES = {
     let mainDrone = null; let miniDrones = []; let droneProjectiles = []; let lastDroneScan = 0; let nextMiniDroneId = 1;
     // Reined back in to 450-550 (per request) - the earlier 950-1150 widening let the main
     // drone and its mini attack drones range too far from the girl, off the visible screen.
-    const DRONE_PATROL_MIN = 450, DRONE_PATROL_MAX = 550;
+    // Universal Power-Up Targeting Rule: max range capped to WEAPON_ENGAGE_RANGE (500) - was 550.
+    const DRONE_PATROL_MIN = 450, DRONE_PATROL_MAX = 500;
 
     // --- UNLOCKABLE GIRL CLONE ABILITY (kamikaze bombers) ---
     // Completely separate system from Acid Sisters below - own array, own state, own
@@ -2493,6 +2522,49 @@ const STORY_IMAGES = {
     let coreProjectiles = [];
     
     let stars = Array.from({length: 150}, () => ({ x: Math.random() * 2000 - 1000, y: Math.random() * 2000 - 1000, size: Math.random() * 2 + 1, depth: Math.random() * 0.8 + 0.2 }));
+
+    // --- AMBIENT BACKGROUND OBJECTS/MINERALS (purely decorative) ---
+    // Reuses the same already-loaded destroyable-object and mineral art (OBJECT_DEFS[].img /
+    // mineralImages, both defined above) at tiny, semi-transparent, slowly-drifting sizes to
+    // make the background feel like a much busier space environment. This is a *separate*,
+    // completely independent pool from the real gameplay asteroids/minerals in asteroidsList
+    // etc. - it is never pushed into, read from, or checked against any spawn/collision/
+    // reward/drill system, so it cannot affect scoring, health, upgrades, or drops in any way.
+    // It only ever gets iterated in the render loop below (see the stars draw loop) purely to
+    // update its own drift position and paint it - nothing else in the game ever looks at it.
+    let bgAmbientObjects = [];
+    (function initBgAmbientObjects() {
+        const pool = [];
+        OBJECT_DEFS.forEach(def => { if (def.img) pool.push(def.img); });
+        mineralImages.forEach(img => { if (img) pool.push(img); });
+        if (!pool.length) return;
+        // Tile size (2600) mirrors the stars' wrap-around approach (2000) but a bit larger so
+        // these read as sparser/more distant than the star field. depth reuses the same
+        // parallax convention as stars (lower = further back / slower camera-relative drift).
+        // Count/size bumped up (was 50 objects @ ~4-13px) so the background reads as a genuinely
+        // busy field of distant asteroids/minerals rather than tiny barely-visible specks, while
+        // staying well under real gameplay object size (~60-110px visible diameter - see
+        // produceAsteroidNode's radius). backgroundOnly:true is a belt-and-suspenders marker: even
+        // though this pool already lives completely outside asteroidsList/specialItemsList (the
+        // only lists any targeting/collision/reward code ever reads), every target-selection
+        // helper below explicitly only iterates asteroidsList, so a backgroundOnly item could never
+        // be picked up even if some future code accidentally concatenated the arrays.
+        bgAmbientObjects = Array.from({ length: 90 }, () => {
+            const angle = Math.random() * Math.PI * 2;
+            const depth = Math.random() * 0.5 + 0.12;
+            const speed = Math.random() * 0.10 + 0.02; // px/frame, independent slow drift
+            return {
+                img: pool[Math.floor(Math.random() * pool.length)],
+                x: Math.random() * 2600 - 1300, y: Math.random() * 2600 - 1300,
+                depth,
+                size: Math.random() * 16 + 8,          // ~8-24px: clearly visible, still far smaller than real gameplay objects
+                opacity: Math.random() * 0.28 + 0.12,  // a bit more visible, still never competes with real objects
+                vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                rotation: Math.random() * Math.PI * 2, rotSpeed: (Math.random() - 0.5) * 0.0015,
+                backgroundOnly: true
+            };
+        });
+    })();
     // moneyPerUnit: added so mineral pickups (see the homingParticles collection loop below) pay
     // out real money/score on collection - not just an inventory tally like before. Scaled with
     // each mineral's rarity/toughness (baseHealth), so the rarer uranium chunks are worth far
@@ -4540,13 +4612,54 @@ const STORY_IMAGES = {
             }
         }
 
-        camera.x = playerShip.x - (viewportW / gameScale) / 2; camera.y = playerShip.y - (viewportH / gameScale) / 2;
+        // CAMERA FOLLOW (dead-zone + smoothing): previously camera.x/y were set to center on
+        // playerShip exactly every single frame, which reads as the world snapping rigidly to
+        // the player - any tiny wobble (thruster drift, a bump off an asteroid) yanks the whole
+        // scene with it. Now the camera tracks its own center point, which only starts moving
+        // once the player drifts outside a small dead-zone around it, and then eases toward the
+        // player with a lerp rather than jumping straight there - the same smoothing idiom
+        // already used elsewhere in this file (e.g. displayedScore above). camera.x/camera.y
+        // are still derived as plain top-left-of-view world coordinates at the end, so every
+        // existing render/collision call below that reads them is unaffected.
+        let viewWorldW = viewportW / gameScale, viewWorldH = viewportH / gameScale;
+        if (camera.centerX === null) { camera.centerX = playerShip.x; camera.centerY = playerShip.y; }
+        let deadZoneHalfW = viewWorldW * 0.09, deadZoneHalfH = viewWorldH * 0.09;
+        let camDx = playerShip.x - camera.centerX, camDy = playerShip.y - camera.centerY;
+        let followTargetX = camera.centerX, followTargetY = camera.centerY;
+        if (Math.abs(camDx) > deadZoneHalfW) followTargetX = playerShip.x - Math.sign(camDx) * deadZoneHalfW;
+        if (Math.abs(camDy) > deadZoneHalfH) followTargetY = playerShip.y - Math.sign(camDy) * deadZoneHalfH;
+        camera.centerX += (followTargetX - camera.centerX) * 0.12;
+        camera.centerY += (followTargetY - camera.centerY) * 0.12;
+        camera.x = camera.centerX - viewWorldW / 2; camera.y = camera.centerY - viewWorldH / 2;
         let shakeOffsetX = 0; let shakeOffsetY = 0; if (cameraShake > 0.5) { shakeOffsetX = (Math.random() - 0.5) * cameraShake; shakeOffsetY = (Math.random() - 0.5) * cameraShake; cameraShake *= 0.85; }
 
         ctx.save(); ctx.translate(-camera.x * gameScale + shakeOffsetX, -camera.y * gameScale + shakeOffsetY); ctx.scale(gameScale, gameScale);
 
         ctx.fillStyle = '#ffff';
         for (let i = 0; i < stars.length; i++) { let star = stars[i]; let drawX = ((star.x - camera.x * star.depth) % 2000 + 2000) % 2000 + camera.x - 1000; let drawY = ((star.y - camera.y * star.depth) % 2000 + 2000) % 2000 + camera.y - 1000; ctx.fillRect(drawX, drawY, star.size, star.size); }
+
+        // AMBIENT BACKGROUND OBJECTS/MINERALS: drawn immediately after the stars and before any
+        // real gameplay object below, so they always render strictly behind the player, drills,
+        // asteroids, minerals, projectiles, and (being on the world/canvas layer, under the DOM)
+        // the UI too. Purely visual - see initBgAmbientObjects above for why this can never touch
+        // gameplay. Drift is applied here (the only place this pool is ever updated) and wrapped
+        // with the same camera-parallax tiling formula used for stars just above.
+        {
+            const ambientCount = perfCap(bgAmbientObjects.length, Math.ceil(bgAmbientObjects.length * 0.5));
+            const prevAlpha = ctx.globalAlpha;
+            for (let i = 0; i < ambientCount; i++) {
+                const o = bgAmbientObjects[i];
+                if (!o.img || !o.img.complete || o.img.naturalWidth === 0) continue;
+                o.x += o.vx * slowMoFactor; o.y += o.vy * slowMoFactor; o.rotation += o.rotSpeed * slowMoFactor;
+                let drawX = ((o.x - camera.x * o.depth) % 2600 + 2600) % 2600 + camera.x - 1300;
+                let drawY = ((o.y - camera.y * o.depth) % 2600 + 2600) % 2600 + camera.y - 1300;
+                ctx.globalAlpha = o.opacity;
+                ctx.save(); ctx.translate(drawX, drawY); ctx.rotate(o.rotation);
+                ctx.drawImage(o.img, -o.size / 2, -o.size / 2, o.size, o.size);
+                ctx.restore();
+            }
+            ctx.globalAlpha = prevAlpha;
+        }
 
         if (Math.hypot(blackHole.x - playerShip.x, blackHole.y - playerShip.y) > 3000) { let angle = Math.random() * Math.PI * 2; blackHole.x = playerShip.x + Math.cos(angle) * 1500; blackHole.y = playerShip.y + Math.sin(angle) * 1500; } else { blackHole.x += (playerShip.x - blackHole.x) * 0.0003; blackHole.y += (playerShip.y - blackHole.y) * 0.0003; }
 
@@ -4572,18 +4685,23 @@ const STORY_IMAGES = {
         // Electric Storm Overdrive. No longer connected to Girl Power in any way. ---
         if (playerStats.hasElectricShock) {
             let isShockOd = overdrives.shock.activeTimer > 0;
-            let shockRange = 550 + playerStats.shockRange + (isShockOd ? 250 : 0);
+            // Universal Power-Up Targeting Rule: never exceed WEAPON_ENGAGE_RANGE, but keep the
+            // "Long Arc Coils" (shockRange) upgrade and Overdrive bonus meaningful up to that cap
+            // instead of just discarding them (base lowered from 550 so the upgrade still has
+            // room to matter before saturating at the hard cap).
+            let shockRange = Math.min(WEAPON_ENGAGE_RANGE, 300 + playerStats.shockRange + (isShockOd ? 100 : 0));
             let shockInterval = Math.max(220, 1100 - (playerStats.shockFireRateLevel * 35)) / (isShockOd ? 2.2 : 1);
             if (timeNow - lastLightningStrike > shockInterval) {
                 lastLightningStrike = timeNow;
-                let strikeCandidates = asteroidsList.filter(a => Math.hypot(a.x - playerShip.x, a.y - playerShip.y) < shockRange);
+                // Sorted nearest-first so strikes always prioritize the closest valid targets.
+                let strikeCandidates = asteroidsList.filter(a => Math.hypot(a.x - playerShip.x, a.y - playerShip.y) < shockRange)
+                    .sort((a, b) => Math.hypot(a.x - playerShip.x, a.y - playerShip.y) - Math.hypot(b.x - playerShip.x, b.y - playerShip.y));
                 if (strikeCandidates.length > 0) {
                     // PERF/CLUTTER CAP: Electric Storm Overdrive capped at 3 concurrent strikes (was up to 4).
                     let numStrikes = isShockOd ? Math.min(3, 2 + Math.floor(Math.random() * 2)) : 1;
                     for (let s = 0; s < numStrikes && strikeCandidates.length > 0; s++) {
-                        let idx = Math.floor(Math.random() * strikeCandidates.length);
-                        spawnLightningStrike(strikeCandidates[idx], isShockOd);
-                        strikeCandidates.splice(idx, 1);
+                        spawnLightningStrike(strikeCandidates[0], isShockOd);
+                        strikeCandidates.splice(0, 1);
                     }
                 }
             }
@@ -4607,10 +4725,10 @@ const STORY_IMAGES = {
             ctx.restore();
         }
 
-        // Targeting radius widened from 0.6x -> 0.9x of the larger viewport dimension (Weapon
-        // Spacing pass) so Missiles (and anything else drawing from visibleAsts) can acquire
-        // and engage targets noticeably further from the girl before they come fully on-screen.
-        let visibleAsts = playerStats.hasRocket ? asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < Math.max(viewportW, viewportH)/gameScale*0.9) : [];
+        // Universal Power-Up Targeting Rule: Missiles are capped to WEAPON_ENGAGE_RANGE (same as
+        // the Drill) and sorted nearest-first so a volley always prioritizes the closest valid
+        // targets over farther ones instead of picking randomly from anything on/near screen.
+        let visibleAsts = playerStats.hasRocket ? asteroidsList.filter(ast => Math.hypot(ast.x - playerShip.x, ast.y - playerShip.y) < WEAPON_ENGAGE_RANGE).sort((a, b) => Math.hypot(a.x - playerShip.x, a.y - playerShip.y) - Math.hypot(b.x - playerShip.x, b.y - playerShip.y)) : [];
 
         if (playerStats.hasRocket && visibleAsts.length > 0) {
             let isRocketOd = overdrives.rocket.activeTimer > 0;
@@ -4651,7 +4769,10 @@ const STORY_IMAGES = {
                     let launchRingRadius = Math.min(60, 22 + numRockets * 1.8) + (r % 3) * 8;
                     queueBurstSpawn(() => {
                         if (rocketsList.length > 150 || visibleAsts.length === 0) return;
-                        let target = visibleAsts[Math.floor(Math.random() * visibleAsts.length)];
+                        // visibleAsts is sorted nearest-first; cycling through it (instead of
+                        // picking randomly) means the volley always favors the closest valid
+                        // targets first, only reaching farther ones once nearer targets are covered.
+                        let target = visibleAsts[r % visibleAsts.length];
                         let rAngle = Math.atan2(target.y - playerShip.y, target.x - playerShip.x) + ((Math.random()-0.5)*0.6);
                         let spawnX = playerShip.x + Math.cos(launchFormationAngle) * launchRingRadius;
                         let spawnY = playerShip.y + Math.sin(launchFormationAngle) * launchRingRadius;
@@ -4800,7 +4921,9 @@ const STORY_IMAGES = {
         // solo activation can't flood the screen.
         let maxDrillsOnScreen = isDrillOd ? 5 : 1;
         if (timeNow - lastDrillDeploy > drillCooldown && menuUpgradesEl.style.display !== 'flex' && screenBoundTargets.length > 0 && drillsList.length < maxDrillsOnScreen) {
-            let target = screenBoundTargets[Math.floor(Math.random() * screenBoundTargets.length)]; let angleToTarget = Math.atan2(target.y - playerShip.y, target.x - playerShip.x);
+            // Nearest-first targeting (Universal Power-Up Targeting Rule): screenBoundTargets is
+            // already limited to WEAPON_ENGAGE_RANGE of the player, so pick the closest of those.
+            let target = findNearestTarget(playerShip.x, playerShip.y, WEAPON_ENGAGE_RANGE, screenBoundTargets); let angleToTarget = Math.atan2(target.y - playerShip.y, target.x - playerShip.x);
             // Launch spacing (Weapon Spacing pass): during Overdrive's fast 200ms deploy rate
             // several drills can be alive and launching in quick succession, so - same idea as
             // the missile/pulse volleys - each new drill fans out from a small rotating point
@@ -4826,9 +4949,8 @@ const STORY_IMAGES = {
             // fireballs (Overdrive here only speeds up the reload), so a new one can't launch
             // until the previous thrown fireball has hit, expired, or otherwise resolved.
             if (timeNow - lastFireballThrow > throwCooldown && asteroidsList.length > 0 && thrownFireballs.length === 0) {
-                // Search radius widened from 1200 -> 1600 (Weapon Spacing pass) so Fireball can
-                // find and throw at targets much further from the girl before giving up.
-                let targetAst = null; let minDist = 1600; 
+                // Universal Power-Up Targeting Rule: capped to WEAPON_ENGAGE_RANGE, nearest first.
+                let targetAst = null; let minDist = WEAPON_ENGAGE_RANGE; 
                 for(let j=0; j < asteroidsList.length; j++) { let d = Math.hypot(asteroidsList[j].x - playerShip.x, asteroidsList[j].y - playerShip.y); if(d < minDist) { minDist = d; targetAst = asteroidsList[j]; } }
                 if (targetAst && thrownFireballs.length < 120) { let fAngle = Math.atan2(targetAst.y - playerShip.y, targetAst.x - playerShip.x); thrownFireballs.push({x: playerShip.x, y: playerShip.y, vx: Math.cos(fAngle)*9, vy: Math.sin(fAngle)*9, target: targetAst, life: 150}); lastFireballThrow = timeNow; playSound('fireball_throw'); }
             }
@@ -4860,8 +4982,8 @@ const STORY_IMAGES = {
             // until every bolt from the previous throw has hit or expired. The 3-way split
             // itself is the ability's explicit exception and still fires all at once.
             if (timeNow - lastFireSplitThrow > throwCooldown && asteroidsList.length > 0 && fireSplitList.length === 0) {
-                // Search radius widened from 1200 -> 1600 (Weapon Spacing pass), matching Fireball.
-                let targetAst = null; let minDist = 1600;
+                // Universal Power-Up Targeting Rule: capped to WEAPON_ENGAGE_RANGE, nearest first.
+                let targetAst = null; let minDist = WEAPON_ENGAGE_RANGE;
                 for (let j = 0; j < asteroidsList.length; j++) { let d = Math.hypot(asteroidsList[j].x - playerShip.x, asteroidsList[j].y - playerShip.y); if (d < minDist) { minDist = d; targetAst = asteroidsList[j]; } }
                 if (targetAst) {
                     let fsAngle = Math.atan2(targetAst.y - playerShip.y, targetAst.x - playerShip.x);
@@ -4934,7 +5056,10 @@ const STORY_IMAGES = {
         if (playerStats.hasLaser && asteroidsList.length > 0) {
             let isLaserOd = overdrives.laser.activeTimer > 0;
             if (isLaserOd || frameCount % 60 === 0) {
-                ctx.save(); ctx.globalCompositeOperation = "lighter"; let currentSourceX = playerShip.x; let currentSourceY = playerShip.y; let unvisited = [...asteroidsList]; let chainCount = 0;
+                ctx.save(); ctx.globalCompositeOperation = "lighter"; let currentSourceX = playerShip.x; let currentSourceY = playerShip.y;
+                // Universal Power-Up Targeting Rule: only real gameplay objects within
+                // WEAPON_ENGAGE_RANGE of the player ever enter the chain-target pool.
+                let unvisited = asteroidsList.filter(a => Math.hypot(a.x - playerShip.x, a.y - playerShip.y) < WEAPON_ENGAGE_RANGE); let chainCount = 0;
                 
                 let baseLaserWidth = Math.min(25, 4 + (upgradeLevels['wpn_laser3'] * 0.1));
                 // PERF/CLUTTER CAP: Laser Beam Overdrive capped at 3 concurrent joint targets (was up to 10).
@@ -4942,7 +5067,7 @@ const STORY_IMAGES = {
 
                 while (unvisited.length > 0) {
                     if (chainCount >= maxTargets) break;
-                    let targetAst = null; let minDist = 1500; let targetIndex = -1;
+                    let targetAst = null; let minDist = WEAPON_ENGAGE_RANGE; let targetIndex = -1;
                     for (let j = 0; j < unvisited.length; j++) { let d = Math.hypot(unvisited[j].x - currentSourceX, unvisited[j].y - currentSourceY); if (d < minDist) { minDist = d; targetAst = unvisited[j]; targetIndex = j; } }
                     if (targetAst) {
                     const bX = targetAst.x - currentSourceX; const bY = targetAst.y - currentSourceY; const pAngle = Math.atan2(bY, bX) + Math.PI / 2;
@@ -5282,7 +5407,8 @@ const STORY_IMAGES = {
                 if (miniDrones.length < desiredMiniDrones) {
                     let detected = asteroidsList.filter(a => Math.hypot(a.x - mainDrone.x, a.y - mainDrone.y) < DRONE_PATROL_MAX);
                     if (detected.length > 0) {
-                        let target = detected[Math.floor(Math.random() * detected.length)];
+                        // Nearest-first targeting instead of random pick.
+                        let target = findNearestTarget(mainDrone.x, mainDrone.y, DRONE_PATROL_MAX, detected);
                         miniDrones.push({ id: nextMiniDroneId++, x: mainDrone.x, y: mainDrone.y, target, life: 900, lastFire: 0, spawnPhase: Math.random() * Math.PI * 2 });
                         if (Math.random() < 0.6) playSound('drone_shoot');
                     }
@@ -5296,8 +5422,8 @@ const STORY_IMAGES = {
                 let d = miniDrones[i]; d.life--;
 
                 if (!d.target || d.target.health <= 0 || !asteroidsList.includes(d.target) || Math.hypot(d.target.x - d.x, d.target.y - d.y) > DRONE_PATROL_MAX) {
-                    let candidates = asteroidsList.filter(a => Math.hypot(a.x - d.x, a.y - d.y) < DRONE_PATROL_MAX);
-                    d.target = candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+                    // Nearest-first targeting instead of random pick.
+                    d.target = findNearestTarget(d.x, d.y, DRONE_PATROL_MAX);
                 }
 
                 let droneCloneDesiredAngle;
@@ -5372,7 +5498,8 @@ const STORY_IMAGES = {
         const CLONE_BLAST_RADIUS_BASE = 85;
         if (playerStats.hasClone) {
             let isCloneOd = overdrives.clone.activeTimer > 0;
-            let cloneSeekRange = CLONE_SEEK_RANGE_BASE + playerStats.cloneRange;
+            // Universal Power-Up Targeting Rule: never exceed WEAPON_ENGAGE_RANGE even with upgrades.
+            let cloneSeekRange = Math.min(WEAPON_ENGAGE_RANGE, CLONE_SEEK_RANGE_BASE + playerStats.cloneRange);
             let cloneBlastRadius = CLONE_BLAST_RADIUS_BASE + playerStats.cloneBlastRadius;
             // PERF/CLUTTER CAP: Girl Cloner (Overdrive or not) capped at 3 concurrent clones (was up to 5).
             let desiredCloneCount = isCloneOd ? 3 : Math.min(3, 1 + playerStats.cloneCount);
@@ -5517,8 +5644,8 @@ const STORY_IMAGES = {
             // the exact same pixel before they've had a chance to spread out.
             while (acidClones.length < desiredAcidCount) { let idx = acidClones.length; let spawnAngle = (idx / desiredAcidCount) * Math.PI * 2; acidClones.push({ id: nextAcidCloneId++, angle: spawnAngle, x: playerShip.x + Math.cos(spawnAngle) * 40, y: playerShip.y + Math.sin(spawnAngle) * 40, lastThrow: 0 }); }
             while (acidClones.length > desiredAcidCount) acidClones.pop();
-            // Widened from 700 -> 900 (Weapon Spacing pass) so Acid Sisters engage targets further out.
-            const ACID_RANGE = 900;
+            // Universal Power-Up Targeting Rule: capped to WEAPON_ENGAGE_RANGE (was 900).
+            const ACID_RANGE = WEAPON_ENGAGE_RANGE;
             let viewMinX = camera.x + 30, viewMaxX = camera.x + (viewportW / gameScale) - 30;
             let viewMinY = camera.y + 30, viewMaxY = camera.y + (viewportH / gameScale) - 30;
 
@@ -5664,20 +5791,22 @@ const STORY_IMAGES = {
                 pulseRings.push({ x: playerShip.x, y: playerShip.y, radius: 12, maxRadius: maxR, life: 1.0, hitSet: new Set() });
                 playSound('power_new_activate');
 
-                // NEW: fire homing circular energy projectiles at visible on-screen targets.
-                let viMinX = camera.x + 20, viMaxX = camera.x + (viewportW / gameScale) - 20;
-                let viMinY = camera.y + 20, viMaxY = camera.y + (viewportH / gameScale) - 20;
-                let onScreen = asteroidsList.filter(a => a.x >= viMinX && a.x <= viMaxX && a.y >= viMinY && a.y <= viMaxY);
+                // Universal Power-Up Targeting Rule: fire homing projectiles only at real
+                // gameplay targets within WEAPON_ENGAGE_RANGE of the core, nearest first (was an
+                // unranged on-screen random pick).
+                let rangedTargets = asteroidsList.filter(a => Math.hypot(a.x - coreX, a.y - coreY) < WEAPON_ENGAGE_RANGE)
+                    .sort((a, b) => Math.hypot(a.x - coreX, a.y - coreY) - Math.hypot(b.x - coreX, b.y - coreY));
                 // PERF/CLUTTER CAP: Core Overload Overdrive capped at 10 concurrent homing
                 // projectiles on screen at once - each pulse still only fires 3 at a time, but
                 // fast repeated pulses could otherwise let them pile up well past that.
-                if (onScreen.length > 0 && coreProjectiles.length < perfCap(10, 5) && (isPulseOd || coreProjectiles.length === 0)) {
+                if (rangedTargets.length > 0 && coreProjectiles.length < perfCap(10, 5) && (isPulseOd || coreProjectiles.length === 0)) {
                     let shots = isPulseOd ? 3 : 1;
                     // Same launch-spacing idea as the missile volley: fan multi-shot bursts out
                     // from a small ring around the core instead of stacking every shot on the
                     // exact same pixel, so Overdrive's 3-shot burst reads as organized, not clumped.
                     for (let s = 0; s < shots; s++) {
-                    let t = onScreen[Math.floor(Math.random() * onScreen.length)];
+                    // Nearest-first (cycling through the sorted list) instead of a random pick.
+                    let t = rangedTargets[s % rangedTargets.length];
                     let ang = Math.atan2(t.y - coreY, t.x - coreX);
                     let shotFormationAngle = shots > 1 ? (s / shots) * Math.PI * 2 : 0;
                     let shotRingRadius = shots > 1 ? 18 : 0; // widened slightly for cleaner separation
