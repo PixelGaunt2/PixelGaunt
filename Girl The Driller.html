@@ -4,7 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Girl: The Driller</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <!-- HOSTING PERF FIX: on file:// there is no network round-trip, so this stylesheet loaded
+         instantly and never blocked anything. Once hosted on a real server (pixelgaunt.com) or
+         on mobile data, the browser must pay a DNS+TLS+request round-trip to fonts.googleapis.com
+         before it can continue parsing the page, delaying first paint and the start of the game
+         script itself - this is pure network latency, invisible when testing locally. preconnect
+         warms the connection early, and loading the stylesheet as non-render-blocking (media=print
+         swapped to all on load, with a <noscript> fallback) lets the page/script start immediately
+         instead of stalling on the font request. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet"></noscript>
     <style>
         :root { --ui-scale: 1; }
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
@@ -1540,6 +1551,20 @@ const STORY_IMAGES = {
     // needs to change. All gameplay code that used to read canvas.width/canvas.height for
     // world-space view size now reads viewportW/viewportH (the logical CSS size) instead, since
     // canvas.width/canvas.height are now physical (dpr-scaled) pixel counts.
+    // --- LOW-END DEVICE FAST PATH ---
+    // The adaptive perf system further below (perfMode/updatePerfMode) only reacts AFTER it has
+    // measured ~30 real frames of sustained slowness, which on a genuinely weak device is half a
+    // second or more of visible stutter before the game lightens itself up - and that ramp-up
+    // itself competes with the phone's limited CPU/GPU budget. Detecting an obviously low-end
+    // device up front (coarse pointer + touch = phone/tablet, combined with a low logical core
+    // count) lets us start with a lower DPR cap and low-FX effects already engaged, so the first
+    // frame is already in the cheap path instead of only getting there after visibly struggling.
+    // This never permanently disables full-quality visuals - the adaptive system below can still
+    // turn low-FX back off if the device turns out to handle full effects fine.
+    const isLikelyMobile = (('ontouchstart' in window) || navigator.maxTouchPoints > 0) &&
+        window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const isLikelyLowEndDevice = isLikelyMobile && (navigator.hardwareConcurrency || 4) <= 4;
+
     let dpr = 1;
     let viewportW = window.innerWidth, viewportH = window.innerHeight;
 
@@ -1551,7 +1576,11 @@ const STORY_IMAGES = {
         // pixel grid, not blurry) while cutting worst-case fill/paint work roughly in half to
         // a quarter on the phones that needed it most - this is the single biggest lever for
         // "not quite smooth 60fps" on mobile/high-res displays.
-        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        // LOW-END FAST PATH: a detected low-end phone gets an even lower cap (1.5) than the
+        // general mobile/desktop cap of 2 - still a real, dense-enough pixel grid to look sharp,
+        // but meaningfully fewer physical pixels for every clearRect/gradient/shadowBlur/
+        // drawImage call to touch each frame on the weakest hardware.
+        dpr = Math.min(window.devicePixelRatio || 1, isLikelyLowEndDevice ? 1.5 : 2);
         viewportW = window.innerWidth; viewportH = window.innerHeight;
         canvas.width = Math.round(viewportW * dpr);
         canvas.height = Math.round(viewportH * dpr);
@@ -2602,38 +2631,21 @@ const STORY_IMAGES = {
     // particle slots, guaranteeing a continuous, stable trail on both PC and mobile.
     let thrustParticles = [];
     let homingParticles = []; let shockwaves = [];   
-    let camera = { x: 0, y: 0 }; let cameraShake = 0; let lastDrillDeploy = 0;
+    let camera = { x: 0, y: 0 }; let lastDrillDeploy = 0;
     // Timestamp (timeNow) the Plasma Overdrive (Laser Beam Overdrive) was last activated - used
     // to drive the 4-corner cannons' brief charge-up animation before they start firing.
     let plasmaOverdriveStartTime = 0;
 
-    // --- SLOW MOTION POWER (fixed/rewritten) ---
-    // Previously this worked by inserting real-world delays between animation frames
-    // (throttling the whole render loop). That approach barely read as "slow motion" (just a
-    // few choppy frames) and also risked dragging down UI/input responsiveness since input
-    // sampling and player movement live in the same loop that was being throttled.
-    //
-    // Now the game keeps rendering at full, smooth framerate at all times - nothing about the
-    // loop's cadence changes, so the UI (HUD, buttons, menus) is never affected. Instead, a
-    // single slowMoFactor (0-1) is computed each frame from a real wall-clock end time and is
-    // multiplied directly into the per-frame movement of world objects - asteroids,
-    // projectiles, drones/clones, and the player - so everything visibly moves in slow motion
-    // together, then eases back up to full speed over the last moments instead of snapping.
-    let slowMoEndTime = 0;
-    let slowMoFactor = 1; // 1 = normal speed, <1 while slow motion is active (updated every frame)
-    const SLOW_MO_STRENGTH = 0.28;   // world moves at ~28% speed while fully active
-    const SLOW_MO_EASE_MS = 220;     // ease back to full speed over this final window
-    function triggerSlowMo(durationMs) {
-        const now = Date.now();
-        // Extend/refresh rather than stack - guarantees at least durationMs of effect from now.
-        slowMoEndTime = Math.max(slowMoEndTime, now + durationMs);
-    }
-    function getSlowMoFactor(now) {
-        if (now >= slowMoEndTime) return 1;
-        let remaining = slowMoEndTime - now;
-        if (remaining < SLOW_MO_EASE_MS) return SLOW_MO_STRENGTH + (1 - SLOW_MO_STRENGTH) * (1 - remaining / SLOW_MO_EASE_MS);
-        return SLOW_MO_STRENGTH;
-    }
+    // --- SLOW MOTION POWER: REMOVED ---
+    // A brief slow-motion beat used to fire every time an object was destroyed
+    // (spawnDestructionBurst below). With objects being destroyed roughly every second, that
+    // meant slowMoFactor was constantly dropping and re-easing, which read as the game
+    // repeatedly stuttering/pausing instead of a smooth fast-paced shooter. The whole
+    // time-scaling system has been removed - world objects (asteroids, projectiles,
+    // drones/clones, particles, the player) now always advance at a plain, constant per-frame
+    // rate with no slow-motion multiplier anywhere, so rapid consecutive destructions can never
+    // cause the game to pause, freeze, or slow down. Destruction visuals themselves (shockwaves,
+    // particle bursts, sparks) are untouched - only the time-scaling beat is gone.
 
     // --- WEAPON DETECTION RANGE (drills + axes) ---
     // Drills and axes are only allowed to detect, target, and attack an asteroid once it is
@@ -2781,7 +2793,6 @@ const STORY_IMAGES = {
         target.health -= dmg;
         awardCombatScore(dmg, target.x, target.y);
         applyHitImpact(target, startX, startY, 5, 9);
-        cameraShake = Math.max(cameraShake, 10);
         shockwaves.push({ x: target.x, y: target.y, radius: 8, speed: 7, life: 1.0, color: '#aef9ff' });
         for (let k = 0; k < 14; k++) createParticle(target.x, target.y, k % 2 === 0 ? '#aef9ff' : '#ffff', (Math.random() - 0.5) * 16, (Math.random() - 0.5) * 16, 0.06, 2 + Math.random() * 3);
         spawnHitSparks(target.x, target.y, '#aef9ff', 5);
@@ -2908,8 +2919,15 @@ const STORY_IMAGES = {
     // same systems the normal minerals already use. No separate collection system, no rope,
     // no portal.
     const EPIC_CRYSTAL_TYPE_INDEX = 2; // this crystal's slot within the existing Earth Cargo set (specialItemImages/specialItemCounts)
+    // BUGFIX: this box used to be 65x85 - a much bigger, non-square box than the 40x40 every
+    // normal Earth Cargo mineral spawns with (see produceSpecialItem/populateWorldWithSpecials
+    // above) - and draw() below stretched the crystal's full source image (padding included)
+    // into that oversized box instead of cropping to its visible pixels first. That combination
+    // is what made the white crystal render much larger than the other Earth Cargo items. Using
+    // the same 40x40 box as every other mineral keeps its on-screen size consistent with the rest
+    // of the set.
     const magicCrystalEvent = {
-        active: false, crystal: { x: 0, y: 0, w: 65, h: 85 },
+        active: false, crystal: { x: 0, y: 0, w: 40, h: 40 },
         spawn(x, y) { this.crystal.x = x; this.crystal.y = y; this.active = true; },
         update(player) {
             if (!this.active) return;
@@ -2929,7 +2947,24 @@ const STORY_IMAGES = {
             if (!this.active) return;
             let crysCenterX = this.crystal.x + (this.crystal.w / 2); let crysCenterY = this.crystal.y + (this.crystal.h / 2);
             drawObjectRing(crysCenterX, crysCenterY, Math.max(this.crystal.w, this.crystal.h) / 2 + 5, 'rgba(217, 66, 255, 0.35)', 2);
-            ctx.save(); ctx.translate(crysCenterX, crysCenterY); let floatY = Math.sin(Date.now() * 0.006) * 4; if (crystalImg.complete && crystalImg.naturalWidth !== 0) { ctx.drawImage(crystalImg, -this.crystal.w / 2, (-this.crystal.h / 2) + floatY, this.crystal.w, this.crystal.h); } else { ctx.fillStyle = "#a32cc4"; ctx.fillRect(-this.crystal.w / 2, -this.crystal.h / 2, this.crystal.w, this.crystal.h); } ctx.restore();
+            ctx.save(); ctx.translate(crysCenterX, crysCenterY); let floatY = Math.sin(Date.now() * 0.006) * 4;
+            // BUGFIX: crop to the sprite's actual visible pixels and contain-fit (preserve aspect
+            // ratio) inside the same 40x40 box every other Earth Cargo item uses, instead of
+            // stretching the whole source canvas - padding and all - across a fixed w/h. This is
+            // the same fix already applied to the normal minerals above (see getVisibleBBox usage
+            // there) - without it, extra padding baked into this sprite's source image was part of
+            // what made the crystal read as oversized.
+            let vb = getVisibleBBox(crystalImg);
+            if (vb) {
+                let fitScale = Math.min(this.crystal.w / vb.width, this.crystal.h / vb.height);
+                let dw = vb.width * fitScale, dh = vb.height * fitScale;
+                ctx.drawImage(crystalImg, vb.x, vb.y, vb.width, vb.height, -dw / 2, (-dh / 2) + floatY, dw, dh);
+            } else if (crystalImg.complete && crystalImg.naturalWidth !== 0) {
+                ctx.drawImage(crystalImg, -this.crystal.w / 2, (-this.crystal.h / 2) + floatY, this.crystal.w, this.crystal.h);
+            } else {
+                ctx.fillStyle = "#a32cc4"; ctx.fillRect(-this.crystal.w / 2, -this.crystal.h / 2, this.crystal.w, this.crystal.h);
+            }
+            ctx.restore();
         }
     };
 
@@ -3203,7 +3238,7 @@ const STORY_IMAGES = {
                 }
             }
 
-            this.velocityX *= this.friction; this.velocityY *= this.friction; this.x += this.velocityX * slowMoFactor; this.y += this.velocityY * slowMoFactor;
+            this.velocityX *= this.friction; this.velocityY *= this.friction; this.x += this.velocityX; this.y += this.velocityY;
             this.distanceMoved = Math.hypot(this.x - this.lastX, this.y - this.lastY); this.lastX = this.x; this.lastY = this.y;
             gameStats.distanceTraveled += this.distanceMoved; // running total for the Distance HUD, in all directions
             this.frameTimer++; if (this.frameTimer >= (this.isThrusting ? 10 : (Math.hypot(this.velocityX, this.velocityY) > 0.5 ? 16 : 28))) { this.currentFrameIndex = (this.currentFrameIndex + 1) % girlFrames.length; this.frameTimer = 0; }
@@ -3364,15 +3399,16 @@ const STORY_IMAGES = {
     // --- DESTRUCTION EFFECTS (Task 6) ---
     // Shared "high quality" destruction burst used whenever the girl fully destroys an
     // object: a bright white core flash ring + a colored shockwave ring, a wide spread of
-    // colored debris particles, a tight cluster of bright sparks, and a brief slow-motion
-    // beat so every kill reads as satisfying and impactful.
+    // colored debris particles, and a tight cluster of bright sparks, so every kill reads as
+    // satisfying and impactful. (This used to also trigger a brief slow-motion beat - removed,
+    // since destroying objects should never affect game speed; see note near the old
+    // slowMoFactor system above.)
     function spawnDestructionBurst(x, y, radius, color) {
         shockwaves.push({ x, y, radius: Math.max(10, radius * 0.4), speed: 10, life: 1.0, color: '#ffffff' });
         shockwaves.push({ x, y, radius: Math.max(10, radius * 0.6), speed: 6.5, life: 1.0, color: color });
         for (let k = 0; k < 26; k++) createParticle(x, y, color, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, 0.032, Math.random() * 4 + 2);
         for (let k = 0; k < 8; k++) createParticle(x, y, '#ffffff', (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8, 0.05, Math.random() * 2 + 1);
         spawnHitSparks(x, y, color, 12);
-        triggerSlowMo(350); // ms - was a near-imperceptible few frames before; now a genuine beat
     }
     let lastPlayerHurtSound = 0;
 
@@ -3552,10 +3588,20 @@ const STORY_IMAGES = {
             { id: "en_4", name: "Fusion Core", desc: "Massive power increase", cost: { money: 10590 }, effect: "energyRegen", value: 0.01, maxLevel: 20, prereq: [{ id: "en_2", level: 1 }, { id: "en_3", level: 1 }], lane: 0, depth: 2 }
         ],
         movement: [
-            { id: "mov_1", name: "Thruster Boost", desc: "Increase movement speed", cost: { money: 620 }, effect: "speed", value: 0.005, maxLevel: 20, prereq: [], lane: 0, depth: 0 },
-            { id: "mov_2", name: "Jet Engine Backpack", desc: "Higher flying acceleration", cost: { money: 3300 }, effect: "speed", value: 0.005, maxLevel: 20, prereq: [{ id: "mov_1", level: 1 }], lane: -1, depth: 1 },
+            // BUGFIX: these three nodes are the only ones with effect:"speed", so they're the
+            // upgrades responsible for the girl's movement speed (see playerStats.speed and
+            // playerShip.update() below, which multiplies every movement input - keyboard,
+            // joystick, and mouse/touch thrust - by playerStats.speed). purchaseUpgrade() already
+            // adds `value` straight onto playerStats.speed on every purchase with no cap, so the
+            // stacking itself was always correct - the bug was that these `value` amounts were so
+            // tiny relative to the base speed of 2.5 (as little as 0.005, a 0.2% change per level)
+            // that 20 levels of a node barely moved the needle and the increase was effectively
+            // imperceptible. Bumped to values that add up to a clearly noticeable speed gain per
+            // level while keeping the same additive/uncapped stacking and the same base speed.
+            { id: "mov_1", name: "Thruster Boost", desc: "Increase movement speed", cost: { money: 620 }, effect: "speed", value: 0.04, maxLevel: 20, prereq: [], lane: 0, depth: 0 },
+            { id: "mov_2", name: "Jet Engine Backpack", desc: "Higher flying acceleration", cost: { money: 3300 }, effect: "speed", value: 0.04, maxLevel: 20, prereq: [{ id: "mov_1", level: 1 }], lane: -1, depth: 1 },
             { id: "mov_3", name: "Extended Grapple Wire", desc: "Increase auto-collect distance", cost: { money: 2470 }, effect: "magnetRadius", value: 0.5, maxLevel: 20, prereq: [{ id: "mov_1", level: 1 }], lane: 1, depth: 1 },
-            { id: "mov_4", name: "Quantum Mobility", desc: "Extreme movement speed", cost: { money: 7730 }, effect: "speed", value: 0.01, maxLevel: 20, prereq: [{ id: "mov_2", level: 1 }, { id: "mov_3", level: 1 }], lane: 0, depth: 2 }
+            { id: "mov_4", name: "Quantum Mobility", desc: "Extreme movement speed", cost: { money: 7730 }, effect: "speed", value: 0.06, maxLevel: 20, prereq: [{ id: "mov_2", level: 1 }, { id: "mov_3", level: 1 }], lane: 0, depth: 2 }
         ],
         suit: [
             { id: "suit_0", name: "Nano-Suit Activation", desc: "Unlock the Girl Power suit ability", cost: { money: 500000 }, effect: "hasGirlPower", value: true, maxLevel: 1, prereq: [{ id: "drill_base", level: 1 }], lane: 0, depth: 0 },
@@ -4751,7 +4797,11 @@ const STORY_IMAGES = {
     // the particle/text/homing caps below (which shrink so fewer objects are alive to update,
     // draw, and collision-check each frame - this is the bigger win since it cuts the per-frame
     // work across EVERY weapon's asteroid-scan loop, not just one).
-    let perfMode = { lowFx: false };
+    // LOW-END FAST PATH: start already in low-FX on a detected low-end device (see
+    // isLikelyLowEndDevice above) instead of waiting for the adaptive sampler to catch up after
+    // real stutter has already happened. updatePerfMode below can still turn this back off if
+    // the device turns out to run full effects at a comfortable frame rate.
+    let perfMode = { lowFx: isLikelyLowEndDevice };
     let frameTimeHistory = [];
     let lastFrameStartTime = performance.now();
     const PERF_SAMPLE_SIZE = 30;
@@ -4837,7 +4887,6 @@ const STORY_IMAGES = {
         // slight sharpness difference on scaled sprites, invisible during actual gameplay.
         ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = perfMode.lowFx ? 'low' : 'high';
         ctx.clearRect(0, 0, viewportW, viewportH); const timeNow = Date.now(); frameCount++;
-        slowMoFactor = getSlowMoFactor(timeNow); // 1 = normal speed, <1 while slow motion is active
 
         ctx.fillStyle = getBackgroundColor(timeNow);
         ctx.fillRect(0, 0, viewportW, viewportH);
@@ -4884,9 +4933,8 @@ const STORY_IMAGES = {
         }
 
         camera.x = playerShip.x - (viewportW / gameScale) / 2; camera.y = playerShip.y - (viewportH / gameScale) / 2;
-        let shakeOffsetX = 0; let shakeOffsetY = 0; if (cameraShake > 0.5) { shakeOffsetX = (Math.random() - 0.5) * cameraShake; shakeOffsetY = (Math.random() - 0.5) * cameraShake; cameraShake *= 0.85; }
 
-        ctx.save(); ctx.translate(-camera.x * gameScale + shakeOffsetX, -camera.y * gameScale + shakeOffsetY); ctx.scale(gameScale, gameScale);
+        ctx.save(); ctx.translate(-camera.x * gameScale, -camera.y * gameScale); ctx.scale(gameScale, gameScale);
 
         ctx.fillStyle = '#ffff';
         for (let i = 0; i < stars.length; i++) { let star = stars[i]; let drawX = ((star.x - camera.x * star.depth) % 2000 + 2000) % 2000 + camera.x - 1000; let drawY = ((star.y - camera.y * star.depth) % 2000 + 2000) % 2000 + camera.y - 1000; ctx.fillRect(drawX, drawY, star.size, star.size); }
@@ -4903,7 +4951,7 @@ const STORY_IMAGES = {
             if (overdrives.suit.activeTimer > 0) {
                 createParticle(playerShip.x, playerShip.y, '#d942ff', (Math.random()-0.5)*5, (Math.random()-0.5)*5, 0.05, 4);
             } else {
-                playerStats.energy = Math.max(0, playerStats.energy - Math.max(0.5, 3 - playerStats.defense*0.2)); addFloatingText("WARNING! BLACK HOLE DAMAGE!", playerShip.x, playerShip.y - 80, '#ff0000'); playerShip.velocityX = (playerShip.x - blackHole.x) * 0.6; playerShip.velocityY = (playerShip.y - blackHole.y) * 0.6; cameraShake = 20; if (timeNow - lastPlayerHurtSound > 400) { playSound('player_hurt'); lastPlayerHurtSound = timeNow; } refreshLiveUiDisplays(); 
+                playerStats.energy = Math.max(0, playerStats.energy - Math.max(0.5, 3 - playerStats.defense*0.2)); addFloatingText("WARNING! BLACK HOLE DAMAGE!", playerShip.x, playerShip.y - 80, '#ff0000'); playerShip.velocityX = (playerShip.x - blackHole.x) * 0.6; playerShip.velocityY = (playerShip.y - blackHole.y) * 0.6; if (timeNow - lastPlayerHurtSound > 400) { playSound('player_hurt'); lastPlayerHurtSound = timeNow; } refreshLiveUiDisplays(); 
             }
         }
 
@@ -5019,7 +5067,7 @@ const STORY_IMAGES = {
         for (let i = rocketsList.length - 1; i >= 0; i--) {
             let rk = rocketsList[i]; rk.life--;
             if (rk.target && rk.target.health > 0) { let targetAngle = Math.atan2(rk.target.y - rk.y, rk.target.x - rk.x); rk.vx += Math.cos(targetAngle) * 0.5; rk.vy += Math.sin(targetAngle) * 0.5; let spd = Math.hypot(rk.vx, rk.vy); if (spd > 12) { rk.vx = (rk.vx/spd)*12; rk.vy = (rk.vy/spd)*12; } rk.angle = Math.atan2(rk.vy, rk.vx); }
-            rk.x += rk.vx * slowMoFactor; rk.y += rk.vy * slowMoFactor; createThrustParticle(rk.x - Math.cos(rk.angle)*11, rk.y - Math.sin(rk.angle)*11, '#1e90ff', -rk.vx*0.3, -rk.vy*0.3, 0.1, 6);
+            rk.x += rk.vx; rk.y += rk.vy; createThrustParticle(rk.x - Math.cos(rk.angle)*11, rk.y - Math.sin(rk.angle)*11, '#1e90ff', -rk.vx*0.3, -rk.vy*0.3, 0.1, 6);
             // Missile sprite drawn ~30% smaller than before (was 50x30) - the old size read as
             // oversized relative to the player/asteroids; hit-radius and thrust offset above are
             // scaled down to match so collisions still feel like they line up with the sprite.
@@ -5029,7 +5077,7 @@ const STORY_IMAGES = {
             for (let j = 0; j < asteroidsList.length; j++) {
                 let ast = asteroidsList[j];
                 if (Math.hypot(ast.x - rk.x, ast.y - rk.y) < ast.radius + 14) {
-                    ast.health -= playerStats.damage * 1.5; awardCombatScore(playerStats.damage * 1.5, ast.x, ast.y); playSound('explode'); spawnCollisionEffect(ast.x, ast.y); applyHitImpact(ast, rk.x, rk.y, 7, 10); spawnHitSparks(rk.x, rk.y, '#ffaa00', 8); shockwaves.push({x: rk.x, y: rk.y, radius: 10, speed: 8, life: 1.0, color: '#ff3300'}); for(let k=0; k<15; k++) createParticle(rk.x, rk.y, '#ffaa00', (Math.random()-0.5)*15, (Math.random()-0.5)*15, 0.05, 5); cameraShake = Math.max(cameraShake, 6); hit = true; break;
+                    ast.health -= playerStats.damage * 1.5; awardCombatScore(playerStats.damage * 1.5, ast.x, ast.y); playSound('explode'); spawnCollisionEffect(ast.x, ast.y); applyHitImpact(ast, rk.x, rk.y, 7, 10); spawnHitSparks(rk.x, rk.y, '#ffaa00', 8); shockwaves.push({x: rk.x, y: rk.y, radius: 10, speed: 8, life: 1.0, color: '#ff3300'}); for(let k=0; k<15; k++) createParticle(rk.x, rk.y, '#ffaa00', (Math.random()-0.5)*15, (Math.random()-0.5)*15, 0.05, 5); hit = true; break;
                 }
             }
             if (hit || rk.life <= 0) rocketsList.splice(i, 1);
@@ -5164,7 +5212,7 @@ const STORY_IMAGES = {
         }
 
         for(let i = thrownFireballs.length - 1; i >= 0; i--) {
-            let fb = thrownFireballs[i]; fb.x += fb.vx * slowMoFactor; fb.y += fb.vy * slowMoFactor; fb.life--;
+            let fb = thrownFireballs[i]; fb.x += fb.vx; fb.y += fb.vy; fb.life--;
             if (fb.target && fb.target.health > 0) { let angle = Math.atan2(fb.target.y - fb.y, fb.target.x - fb.x); fb.vx += Math.cos(angle) * 0.4; fb.vy += Math.sin(angle) * 0.4; let speed = Math.hypot(fb.vx, fb.vy); if (speed > 10) { fb.vx = (fb.vx/speed)*10; fb.vy = (fb.vy/speed)*10; } }
             createParticle(fb.x, fb.y, '#00aaff', -fb.vx*0.2, -fb.vy*0.2, 0.1, 7); { let fbFrame = fireballFrames[Math.floor(timeNow / 90) % fireballFrames.length]; if (fbFrame.complete && fbFrame.naturalWidth !== 0) { ctx.drawImage(fbFrame, fb.x - 22, fb.y - 22, 44, 44); } else { ctx.beginPath(); ctx.arc(fb.x, fb.y, 22, 0, Math.PI*2); ctx.fillStyle='#00f3ff'; ctx.fill(); } }
 
@@ -5253,7 +5301,7 @@ const STORY_IMAGES = {
 
         for (let i = fireSplitList.length - 1; i >= 0; i--) {
             let fs = fireSplitList[i];
-            fs.x += fs.vx * slowMoFactor; fs.y += fs.vy * slowMoFactor; fs.life--; fs.angle = Math.atan2(fs.vy, fs.vx);
+            fs.x += fs.vx; fs.y += fs.vy; fs.life--; fs.angle = Math.atan2(fs.vy, fs.vx);
 
             // Bright red / light-red flame trail - visually distinct from every other projectile
             // in the game (which lean blue/green/purple).
@@ -5439,9 +5487,9 @@ const STORY_IMAGES = {
             }
         }
 
-        for(let i=visualParticles.length-1; i>=0; i--) { let p = visualParticles[i]; p.x += p.vx * slowMoFactor; p.y += p.vy * slowMoFactor; p.life -= p.decay; if(p.life <= 0) { releaseParticle(p); let last = visualParticles.length - 1; if (i !== last) visualParticles[i] = visualParticles[last]; visualParticles.pop(); } else { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size); } } ctx.globalAlpha = 1.0; 
+        for(let i=visualParticles.length-1; i>=0; i--) { let p = visualParticles[i]; p.x += p.vx; p.y += p.vy; p.life -= p.decay; if(p.life <= 0) { releaseParticle(p); let last = visualParticles.length - 1; if (i !== last) visualParticles[i] = visualParticles[last]; visualParticles.pop(); } else { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size); } } ctx.globalAlpha = 1.0; 
         // Update + draw Missile/Drill thrust exhaust from its own dedicated pool (never starved by combat FX above).
-        for(let i=thrustParticles.length-1; i>=0; i--) { let p = thrustParticles[i]; p.x += p.vx * slowMoFactor; p.y += p.vy * slowMoFactor; p.life -= p.decay; if(p.life <= 0) { releaseThrustParticle(p); let last = thrustParticles.length - 1; if (i !== last) thrustParticles[i] = thrustParticles[last]; thrustParticles.pop(); } else { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size); } } ctx.globalAlpha = 1.0; 
+        for(let i=thrustParticles.length-1; i>=0; i--) { let p = thrustParticles[i]; p.x += p.vx; p.y += p.vy; p.life -= p.decay; if(p.life <= 0) { releaseThrustParticle(p); let last = thrustParticles.length - 1; if (i !== last) thrustParticles[i] = thrustParticles[last]; thrustParticles.pop(); } else { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size); } } ctx.globalAlpha = 1.0; 
         // Defensive cap (covers every shockwave-creation site above at once) - keeps a burst of
         // simultaneous kills/blasts from piling up more rings than are ever visually useful.
         if (shockwaves.length > 120) shockwaves.splice(0, shockwaves.length - 120);
@@ -5544,8 +5592,8 @@ const STORY_IMAGES = {
         for (let i = asteroidsList.length - 1; i >= 0; i--) {
             let ast = asteroidsList[i];
             ast.knockVX = (ast.knockVX || 0) * 0.88; ast.knockVY = (ast.knockVY || 0) * 0.88;
-            ast.x += (ast.vx + ast.knockVX) * slowMoFactor; ast.y += (ast.vy + ast.knockVY) * slowMoFactor;
-            ast.spinAngle += ast.spinVelocity * slowMoFactor;
+            ast.x += (ast.vx + ast.knockVX); ast.y += (ast.vy + ast.knockVY);
+            ast.spinAngle += ast.spinVelocity;
 
             let astBhDistX = blackHole.x - ast.x; let astBhDistY = blackHole.y - ast.y; let astBhDist = Math.hypot(astBhDistX, astBhDistY);
             if (astBhDist < 1200) { let astPull = (1200 - astBhDist) / 1200 * 0.002; ast.vx += (astBhDistX / astBhDist) * astPull; ast.vy += (astBhDistY / astBhDist) * astPull; }
@@ -5620,7 +5668,7 @@ const STORY_IMAGES = {
             ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(ast.x - 20, ast.y - (ast.radius * bloatScale) - 15, 40, 5); ctx.fillStyle = ast.typeInfo.color; ctx.fillRect(ast.x - 20, ast.y - (ast.radius * bloatScale) - 15, 40 * healthPercent, 5);
 
             if (ast.health <= 0) {
-                cameraShake = 18; playSound('explode'); spawnDestructionBurst(ast.x, ast.y, ast.radius * bloatScale, ast.typeInfo.color);
+                playSound('explode'); spawnDestructionBurst(ast.x, ast.y, ast.radius * bloatScale, ast.typeInfo.color);
                 
                 // Reward scales with tier too, not just level - hardened objects took longer to
                 // kill so they pay out more, weak ones are a quick, smaller payout.
@@ -5853,7 +5901,7 @@ const STORY_IMAGES = {
             }
         }
         for (let i = droneProjectiles.length - 1; i >= 0; i--) {
-            let p = droneProjectiles[i]; p.x += p.vx * slowMoFactor; p.y += p.vy * slowMoFactor; p.life--;
+            let p = droneProjectiles[i]; p.x += p.vx; p.y += p.vy; p.life--;
             ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fillStyle = '#33ffea'; fxShadow('#33ffea', 10); ctx.fill(); ctx.shadowBlur = 0;
             let hit = false;
             if (p.target && p.target.health > 0 && asteroidsList.includes(p.target) && Math.hypot(p.target.x - p.x, p.target.y - p.y) < p.target.radius + 16) {
@@ -5993,9 +6041,6 @@ const STORY_IMAGES = {
                         // like a follow-up hit rather than a palette-swapped normal explosion.
                         shockwaves.push({ x: blastX, y: blastY, radius: Math.max(14, cloneBlastRadius * 0.6), speed: 7.5, life: 1.0, color: '#ffee00' });
                         for (let k = 0; k < 16; k++) { let pa = Math.random() * Math.PI * 2; let sp = 4 + Math.random() * 7; createParticle(blastX, blastY, '#ffee00', Math.cos(pa) * sp, Math.sin(pa) * sp, 0.05, 3 + Math.random() * 4); }
-                        cameraShake = Math.max(cameraShake, 13);
-                    } else {
-                        cameraShake = Math.max(cameraShake, 9);
                     }
                     cloneBlasts.push({ x: blastX, y: blastY, radius: cloneBlastRadius, life: 1.0, encore: isEncore });
                     playSound('clone_explode');
@@ -6121,7 +6166,7 @@ const STORY_IMAGES = {
                 ap.vx += Math.cos(ang) * 0.5; ap.vy += Math.sin(ang) * 0.5;
                 let sp = Math.hypot(ap.vx, ap.vy); if (sp > 10) { ap.vx = (ap.vx / sp) * 10; ap.vy = (ap.vy / sp) * 10; }
             }
-            ap.x += ap.vx * slowMoFactor; ap.y += ap.vy * slowMoFactor;
+            ap.x += ap.vx; ap.y += ap.vy;
             createParticle(ap.x, ap.y, '#5fbf00', -ap.vx * 0.2, -ap.vy * 0.2, 0.12, 4);
             let blobPulse = 6 + Math.sin(ap.spin) * 1.5;
             ctx.save(); ctx.translate(ap.x, ap.y);
@@ -6145,7 +6190,6 @@ const STORY_IMAGES = {
                     acidSplats.push({ x: ap.x, y: ap.y, radius: splashR, life: 1.0 });
                     for (let k = 0; k < 14; k++) createParticle(ap.x, ap.y, k % 2 === 0 ? '#7cfc00' : '#c8ff7a', (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14, 0.05, 2 + Math.random() * 4);
                     shockwaves.push({ x: ap.x, y: ap.y, radius: 8, speed: 6, life: 1.0, color: '#7cfc00' });
-                    cameraShake = Math.max(cameraShake, 4);
                     playSound('acid_splash');
                     hit = true; break;
                 }
@@ -6286,7 +6330,7 @@ const STORY_IMAGES = {
                 let sp = Math.min(9, Math.hypot(cp.vx, cp.vy) + 0.2);
                 cp.vx = Math.cos(newAng) * sp; cp.vy = Math.sin(newAng) * sp;
             }
-            cp.x += cp.vx * slowMoFactor; cp.y += cp.vy * slowMoFactor;
+            cp.x += cp.vx; cp.y += cp.vy;
 
             let r = 9 + Math.sin(cp.spin) * 3; // pulsing size
             ctx.save(); ctx.translate(cp.x, cp.y);
@@ -6305,7 +6349,6 @@ const STORY_IMAGES = {
                 applyHitImpact(cp.target, cp.x, cp.y, 4, 8); spawnHitSparks(cp.x, cp.y, '#ff00aa', 7);
                 shockwaves.push({ x: cp.x, y: cp.y, radius: 6, speed: 6, life: 1.0, color: '#ff00aa' });
                 for (let k = 0; k < 10; k++) createParticle(cp.x, cp.y, k % 2 === 0 ? '#ff00aa' : '#ffffff', (Math.random() - 0.5) * 12, (Math.random() - 0.5) * 12, 0.06, 2 + Math.random() * 3);
-                cameraShake = Math.max(cameraShake, 5);
                 playSound('power_new_hit');
                 hit = true;
             }
@@ -6354,18 +6397,8 @@ const STORY_IMAGES = {
         // overlap test always reflects this frame's real, final positions.
         updateUiObjectOcclusion();
 
-        // --- SLOW MOTION VIGNETTE (screen-space, drawn after the world-transform restore so
-        // it isn't affected by camera/gameScale) - a soft blue-tinted edge glow while slow
-        // motion is active, so the effect is unmistakably visible rather than a subtle change
-        // in speed alone. Fades in/out smoothly with the same slowMoFactor used for movement. ---
-        if (slowMoFactor < 1) {
-            let vignetteStrength = Math.min(1, (1 - slowMoFactor) / (1 - SLOW_MO_STRENGTH));
-            ctx.save();
-            let vg = ctx.createRadialGradient(viewportW / 2, viewportH / 2, Math.min(viewportW, viewportH) * 0.35, viewportW / 2, viewportH / 2, Math.max(viewportW, viewportH) * 0.7);
-            vg.addColorStop(0, 'rgba(0,180,255,0)'); vg.addColorStop(1, `rgba(0,120,255,${0.32 * vignetteStrength})`);
-            ctx.fillStyle = vg; ctx.fillRect(0, 0, viewportW, viewportH);
-            ctx.restore();
-        }
+        // (Slow-motion vignette removed along with the rest of the slow-motion system - see
+        // note near the old slowMoFactor definitions above.)
 
         if (perfOverlayVisible && perfOverlayEl && frameCount % 15 === 0 && frameTimeHistory.length) {
             let avgFt = frameTimeHistory.reduce((a, b) => a + b, 0) / frameTimeHistory.length;
