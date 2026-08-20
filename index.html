@@ -631,6 +631,12 @@
             header { flex-direction: column; gap: 16px; padding: 20px; }
             .nav-links { flex-wrap: wrap; justify-content: center; }
         }
+        /* Mobile: shrink social icons so all remain visible on one line without horizontal overflow */
+        @media (max-width: 768px) {
+            .footer-content { max-width: 100%; }
+            .social-icons { gap: clamp(6px, 1.8vw, 14px); flex-wrap: nowrap; max-width: 100%; }
+            .social-icons a { width: clamp(30px, 8vw, 44px); height: clamp(30px, 8vw, 44px); font-size: clamp(0.8rem, 2.8vw, 1.15rem); flex-shrink: 0; }
+        }
     </style>
 	<!-- Open Graph / Social Media Meta Tags -->
 <meta property="og:title" content="Pixel Gaunt Studios - Indie Game Developer Portfolio">
