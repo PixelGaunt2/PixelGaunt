@@ -116,6 +116,48 @@
         #pause-btn { position: absolute; top: calc(var(--ui-scale) * 15px); right: calc(var(--ui-scale) * 15px); z-index: 15; background: rgba(20, 20, 30, 0.9); border: 2px solid #00f3ff; color: #00f3ff; font-family: var(--font-pixel); padding: calc(var(--ui-scale) * 10px) calc(var(--ui-scale) * 25px); border-radius: calc(var(--ui-scale) * 8px); font-weight: bold; cursor: pointer; font-size: calc(var(--ui-scale) * 16px); transition: 0.3s; display: none; }
         #pause-btn:hover { background: #00f3ff; color: #000; box-shadow: 0 0 0 3px #00f3ff; }
 
+        /* ============================================================
+           MOBILE GAMEPLAY "EXIT FULLSCREEN" BUTTON
+           ------------------------------------------------------------
+           This is a GAME-side gameplay UI control (part of Girl: The
+           Driller's own HTML/CSS/JS), NOT a website/site-level control.
+           If this file is ever embedded in a wrapping site (e.g. an
+           iframe on pixelgaunt.com), that outer site's own fullscreen
+           button/nav/footer/social controls must never be touched by
+           this code, and this button must never be confused for them.
+           Scope of this button only:
+             - visible ONLY on phone-class mobile devices (not desktop,
+               not tablets - see isPhoneDevice in the script below)
+             - visible ONLY during actual gameplay (gameState ===
+               "PLAYING"), never over the main menu/pause/settings/etc.
+             - visible ONLY while the browser is actually in fullscreen
+             - exits the browser's Fullscreen API only; never closes
+               the game, never closes the browser/tab, never returns
+               to the main menu, never touches score/save/progression.
+               The game keeps running underneath exactly as before.
+           Positioned top-right, stacked just below #pause-btn so it
+           never overlaps that button or the minimap. */
+        #gameplay-exit-fs-btn {
+            position: absolute;
+            top: calc(var(--ui-scale) * 62px);
+            right: calc(var(--ui-scale) * 15px);
+            z-index: 15;
+            display: none;
+            width: calc(var(--ui-scale) * 38px);
+            height: calc(var(--ui-scale) * 38px);
+            align-items: center;
+            justify-content: center;
+            background: rgba(20, 20, 30, 0.9);
+            border: 2px solid #00f3ff;
+            color: #00f3ff;
+            border-radius: calc(var(--ui-scale) * 8px);
+            font-size: calc(var(--ui-scale) * 16px);
+            line-height: 1;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        #gameplay-exit-fs-btn:active { background: #00f3ff; color: #000; }
+
         .overlay-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 10, 0.9); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: auto; overflow-y: auto; padding: calc(var(--ui-scale) * 20px) 0; }
         /* Main-menu background: the provided artwork already contains the game's title text,
            so it is applied only to #main-menu (never to the gameplay canvas or other overlay
@@ -660,7 +702,7 @@
         <button class="menu-btn" id="btn-reset-progress" onclick="resetProgressFromMenu()" style="display:none; border-color: #ff3333; color: #ff3333;"><img class="inline-icon" src="btn-resetprogress.png" alt="">RESET PROGRESS</button>
     </div>
 
-    <!-- SETTINGS: reuses the existing .overlay-menu look (same as Game Guide/Mining Zones).
+    <!-- SETTINGS: reuses the existing .overlay-menu look (same as Game Guide).
          The MUSIC row simply relocates the pre-existing #btn-music-toggle button and its
          toggleMusic() handler - same id, same label span, same behavior, just parented here
          instead of directly in #main-menu. RESOLUTION lists only the four supported 16:9
@@ -700,15 +742,15 @@
 
             <div class="guide-page" data-page="1">
             <h2>Game Overview</h2>
-            <p>You play as the <strong>Girl Driller</strong>, a lone space miner drilling deeper and deeper into a series of asteroid mining zones. Your goal is simple: fly around, destroy mineable objects (asteroids), collect the minerals and Antique Cargo they drop, and use the money to unlock and upgrade an ever-growing arsenal of Power-Ups and Overdrive abilities.</p>
-            <p>As you earn Money and reach greater Depth, new Mining Zones unlock further out from Earth, each one adding tougher, denser fields of mineable objects. Progression is driven entirely by the Skill Tree: money earned from mining and combat is spent there to unlock new Power-Ups, boost their damage/fire rate, and extend how long each Overdrive stays active.</p>
+            <p>You play as the <strong>Girl Driller</strong>, a lone space miner working the Asteroid Belt. Your goal is simple: fly around, destroy mineable objects (asteroids), collect the minerals and Antique Cargo they drop, and use the money to unlock and upgrade an ever-growing arsenal of Power-Ups and Overdrive abilities.</p>
+            <p>As you earn Money, progression is driven entirely by the Skill Tree: money earned from mining and combat is spent there to unlock new Power-Ups, boost their damage/fire rate, and extend how long each Overdrive stays active.</p>
 
             <h2>Player Controls</h2>
             <ul>
                 <li><strong>Move:</strong> Arrow Keys or <span class="guide-tag">W / A / S / D</span>. Movement steadily drains your Energy meter - you can only move while you have Energy left.</li>
                 <li><strong>Move (mouse/touch):</strong> Press and hold the left mouse button, or touch and hold the screen, and the ship thrusts toward that point. On touch devices you can also drag anywhere to move.</li>
-                <li><strong>Attacking:</strong> There is no manual fire button - every unlocked Power-Up (Drill, Laser, Fireball, Rocket, Drone, etc.) fires automatically on its own, at its own pace, once you've unlocked it in the Skill Tree.</li>
-                <li><strong>Overdrive buttons:</strong> Each unlocked Power-Up gets its own Overdrive button in the on-screen Active Systems panel. Tap/click a button once it reads <strong>READY</strong> to activate that Overdrive.</li>
+                <li><strong>Attacking:</strong> There is no manual fire button - every unlocked Power-Up (Drill, Suit, Fireball) fires automatically on its own, at its own pace, once you've unlocked it in the Skill Tree.</li>
+                <li><strong>Overdrive buttons:</strong> Each of the 3 Power-Ups gets its own Overdrive button in the on-screen Overdrive panel. Tap/click a button once it reads <strong>READY</strong> to activate that Overdrive.</li>
                 <li><strong>Pause:</strong> Click/tap the Pause button in the HUD, or press <span class="guide-tag">Escape</span>.</li>
                 <li><strong>Menus:</strong> <span class="guide-tag">Enter</span> confirms/continues on menu and story screens; <span class="guide-tag">Escape</span> backs out of the Skill Tree or closes the pause menu.</li>
                 <li><strong>Mobile:</strong> All of the above works the same way with on-screen taps - the Overdrive buttons and Pause button are always visible in the HUD, and touch-and-hold anywhere on the play area to move.</li>
@@ -718,9 +760,9 @@
 
             <div class="guide-page" data-page="2">
             <h2>Mining &amp; Destroyable Objects</h2>
-            <p>Every Mining Zone is filled with destroyable objects (asteroids). They sit in place until a Power-Up's projectile or effect strikes them.</p>
+            <p>The Mining Zone is filled with destroyable objects (asteroids). They sit in place until a Power-Up's projectile or effect strikes them.</p>
             <ul>
-                <li><strong>Spawning:</strong> Objects continually spawn back into the zone as they're destroyed, drawn from that zone's own pool of mineral types.</li>
+                <li><strong>Spawning:</strong> Objects continually spawn back in as they're destroyed, drawn from the zone's pool of mineral types.</li>
                 <li><strong>Movement:</strong> Objects are stationary - they don't chase or move toward you; you fly out to them.</li>
                 <li><strong>Damage from Power-Ups:</strong> Any hit from any active Power-Up's projectile registers as exactly one hit against that object's fixed hit requirement (see the durability table below) - a Power-Up's damage/upgrade level does not let a single hit count as more than one hit.</li>
                 <li><strong>HP / hit system:</strong> Each object has a fixed number of hits it can take before being destroyed, based purely on its mineral type (Iron/Bronze/Gold/Uranium) - see below.</li>
@@ -742,64 +784,36 @@
 
             <div class="guide-page" data-page="3">
             <h2>Minerals &amp; Rewards</h2>
-            <p>Destroying an object releases its mineral reward, which you collect simply by flying close enough to touch it - it's then added to your running Money total automatically. Higher-tier minerals (Gold, Uranium) are worth more Money per unit but take more hits to reach, so tougher zones pay off more per object.</p>
-            <p>Money is the currency spent on every Skill Tree unlock and upgrade, so mining efficiently (using the right Power-Ups for the zone you're in, and popping Overdrives on cooldown) directly speeds up your progression.</p>
+            <p>Destroying an object releases its mineral reward, which you collect simply by flying close enough to touch it - it's then added to your running Money total automatically. Higher-tier minerals (Gold, Uranium) are worth more Money per unit but take more hits to reach.</p>
+            <p>Money is the currency spent on every Skill Tree unlock and upgrade, so mining efficiently (using the right Power-Ups, and popping Overdrives on cooldown) directly speeds up your progression.</p>
 
             <h3>Antique Cargo</h3>
-            <p>Separate from ordinary mineral drops, rare <strong>Antique Cargo</strong> collectibles occasionally spawn out in the zone as their own glowing pickups. Fly into one to collect it - it's instantly added to your Antique Cargo tally, shown as its own icon grid in the HUD with a running count for each type collected. There are 5 different Antique Cargo mineral/crystal types to find and collect over the course of the game.</p>
+            <p>Separate from ordinary mineral drops, rare <strong>Antique Cargo</strong> collectibles occasionally spawn as their own glowing pickups. Fly into one to collect it - it's instantly added to your Antique Cargo tally, shown as its own icon grid in the HUD with a running count for each type collected. There are 5 different Antique Cargo mineral/crystal types to find and collect over the course of the game.</p>
 
             </div>
 
             <div class="guide-page" data-page="4">
             <h2>Power-Ups</h2>
-            <p>Power-Ups are unlocked one at a time from the Skill Tree by spending Money. Once unlocked, a Power-Up fires automatically for the rest of the run/session - you never have to aim or trigger it manually. Every combat Power-Up also has its own paired Overdrive (see the Overdrives section below) and its own upgrade nodes that boost its damage, fire rate, or other stats.</p>
+            <p>Power-Ups are unlocked one at a time from the Skill Tree by spending Money. Once unlocked, a Power-Up fires automatically for the rest of the run/session - you never have to aim or trigger it manually. Drill, Suit, and Fireball each have their own paired Overdrive (see the Overdrives section below) and their own chain of upgrade nodes that boost damage, fire rate, or other stats.</p>
 
             <h3>Drilling (starting Power-Up)</h3>
-            <p>Your basic mining tool, available from the very start with no unlock cost. Automatically drills into nearby objects. Upgraded through the Drilling tree (Tungsten/Diamond/Void Drill nodes) for more damage. Its Overdrive is <strong>Drill Storm</strong>.</p>
+            <p>Your basic mining tool, available from the very start with no unlock cost. Automatically drills into nearby objects. Upgraded through the Drill tree (Drill Power/Drill Speed/Heavy Drill/Max Drill nodes) for more damage, faster drill flight speed, and a longer Overdrive. Its Overdrive is <strong>Drill Storm</strong>.</p>
 
             <h3>Girl Suit / Nano-Suit</h3>
-            <p>Unlocks the "Girl Power" suit ability and is also the gateway node most other Power-Ups are unlocked behind. Suit upgrades add Armor (reduced damage taken), a Magnetic Suit (collect minerals from farther away without flying right up to them), and a late-game Cosmic Suit for maximum protection. Its Overdrive is <strong>Girl Power</strong>.</p>
-
-            <h3>Impact Pickaxe</h3>
-            <p>A melee-range hand weapon unlocked from the Suit tree. Its Overdrive, <strong>Axe Fury</strong>, spawns two Pixel Axes that swing and strike nearby objects for the duration of the Overdrive.</p>
-
-            <h3>Missiles (Mining Rocket)</h3>
-            <p>Fires homing rockets automatically at nearby objects at a steady reload rate (upgradeable for faster reloading). Its Overdrive is <strong>Missile Rain</strong>.</p>
-
-            <h3>Laser Weapon (Plasma Laser Cannon)</h3>
-            <p>Fires a directional laser beam automatically at objects. Its Overdrive, <strong>Laser Beam</strong>, summons four Plasma Laser Cannons positioned diagonally around you (up-left, up-right, down-left, down-right), all firing simultaneously at every object in range for the Overdrive's duration.</p>
+            <p>Unlocks the "Girl Power" suit ability and is also the gateway node the Fireball Power-Up is unlocked behind. Suit upgrades add Armor (reduced damage taken), Energy (larger energy pool), a Shield (extra damage reduction on top of Armor), and a capstone Max Suit node. Its Overdrive is <strong>Girl Power</strong>.</p>
 
             <h3>Fireball</h3>
-            <p>Auto-fires fireball projectiles at objects. Its Overdrive is <strong>Inferno</strong>.</p>
+            <p>Auto-fires fireball projectiles at objects. Upgraded through the Fireball tree (Fireball Power/Fire Rate/Fireball Size/Multi-Fire nodes) for more damage, faster throwing, a bigger orbit, and extra orbiting fireballs during its Overdrive. Its Overdrive is <strong>Inferno</strong>.</p>
 
-            <h3>Attack Drone</h3>
-            <p>A companion drone that flies alongside you and fires its own shots automatically. Upgradeable for more projectile damage (Twin Cannons) and faster fire rate (Rapid Targeting). Its Overdrive is <strong>Drone Swarm</strong>.</p>
+            <h2>Power-Up Upgrades</h2>
+            <p>Each of the 3 Power-Ups has its own branch in the Skill Tree with numbered upgrade nodes (up to level 20). Spending Money on these nodes increases that Power-Up's damage, fire rate, speed, or a similar stat depending on the Power-Up. A fully upgraded Power-Up hits harder and fires faster than a freshly-unlocked one.</p>
+            <div class="guide-note">Important: upgrading a Power-Up never bypasses a destroyable object's fixed hit requirement. A maxed-out Power-Up still needs 3 hits to break Iron, 6 for Bronze, 9 for Gold, and 12 for Uranium - upgrades just get you there faster and let you fight tougher objects more comfortably.</div>
 
             </div>
 
             <div class="guide-page" data-page="5">
-            <h2>Power-Ups (continued)</h2>
-            <h3>Girl Clones</h3>
-            <p>Kamikaze clones of the Girl that seek out nearby objects and detonate on contact for explosion damage. Upgradeable for more explosion damage and a longer target-seeking range. Its Overdrive is also named <strong>Girl Clones</strong>.</p>
-
-            <h3>Pulse Core</h3>
-            <p>Emits damaging energy shockwaves outward from your ship automatically. Upgradeable for more damage and a larger shockwave radius. Its Overdrive is <strong>Core Overload</strong>.</p>
-
-            <h3>Electric Shock</h3>
-            <p>Automatically zaps nearby objects with electricity. Upgradeable for more damage and faster attack speed. Its Overdrive is <strong>Electric Storm</strong>.</p>
-
-            <h3>Fire Split</h3>
-            <p>Fires three independent fire projectiles at once - one left, one forward, one right - each traveling and hitting separately. Upgradeable for more damage and a faster throwing rate. Its Overdrive, <strong>Firestorm Split</strong>, repeatedly fires bursts of nine independent projectiles (three groups of three) for as long as the Overdrive is active.</p>
-
-            <h3>Acid Sisters</h3>
-            <p>Throws corrosive acid flasks at objects automatically. Upgradeable for more damage and faster throwing speed. Its Overdrive is <strong>Acid Sisters</strong>.</p>
-
-            <h3>Collector</h3>
+            <h2>Collector</h2>
             <p>Not a weapon - this unlocks a small autonomous companion that automatically flies to and gathers whatever minerals/Antique Cargo collectibles are currently visible on screen, then moves on to the next one. It never attacks and has no Overdrive; it just saves you legwork on pickups.</p>
-
-            <h2>Power-Up Upgrades</h2>
-            <p>Every combat Power-Up has its own branch in the Skill Tree with numbered upgrade nodes (most go up to level 20 or 25). Spending Money on these nodes increases that Power-Up's damage, fire rate, throwing/attack speed, or a similar stat depending on the Power-Up. A fully upgraded Power-Up hits harder and fires faster than a freshly-unlocked one.</p>
-            <div class="guide-note">Important: upgrading a Power-Up never bypasses a destroyable object's fixed hit requirement. A maxed-out Power-Up still needs 3 hits to break Iron, 6 for Bronze, 9 for Gold, and 12 for Uranium - upgrades just get you there faster and let you fight tougher zones more comfortably.</div>
 
             </div>
 
@@ -828,17 +842,12 @@
             </div>
 
             <div class="guide-page" data-page="7">
-            <h2>Zones</h2>
-            <p>There are 5 Mining Zones, unlocked in order as your Depth and Money increase. Each zone adds its own set of destroyable objects into the mix, and every object unlocked in an earlier zone stays available in every later zone too - so later zones have a larger, more varied mix of objects rather than replacing what came before.</p>
+            <h2>Mining Zone</h2>
+            <p>The game takes place in a single Mining Zone: the <strong>Asteroid Belt</strong>. It has its own set of 5 destroyable objects, spawning endlessly as you clear them.</p>
             <table class="guide-table">
-                <tr><th>Zone</th><th>Name</th><th>New Objects Added</th></tr>
+                <tr><th>Zone</th><th>Name</th><th>Objects</th></tr>
                 <tr><td>Zone 1</td><td>Asteroid Belt</td><td>5</td></tr>
-                <tr><td>Zone 2</td><td>Crimson Rift</td><td>10 (cumulative)</td></tr>
-                <tr><td>Zone 3</td><td>Frozen Expanse</td><td>15 (cumulative)</td></tr>
-                <tr><td>Zone 4</td><td>Volcanic Core</td><td>20 (cumulative)</td></tr>
-                <tr><td>Zone 5</td><td>Void Nexus</td><td>25 (cumulative)</td></tr>
             </table>
-            <p>You can travel between unlocked zones from the Mining Zones menu (accessible from the Pause menu).</p>
 
             </div>
 
@@ -850,15 +859,14 @@
             <ul>
                 <li>Mine objects and collect minerals/Antique Cargo to build up Money.</li>
                 <li>Spend Money in the Skill Tree to unlock new Power-Ups, upgrade existing ones, and add levels to Overdrive Cores.</li>
-                <li>As Depth and Money increase, new Mining Zones unlock, each adding tougher, more varied destroyable objects.</li>
                 <li>Every unlocked combat Power-Up gets its own Overdrive, which strengthens on a growing wait/active cycle every time you use it.</li>
-                <li>Rewards (Money from minerals, Antique Cargo pickups, and Skill Tree progress) all build on each other - better Power-Ups let you clear tougher zones faster, which earns more Money, which funds more upgrades.</li>
+                <li>Rewards (Money from minerals, Antique Cargo pickups, and Skill Tree progress) all build on each other - better Power-Ups let you clear objects faster, which earns more Money, which funds more upgrades.</li>
             </ul>
 
             <h2>Save System</h2>
             <p>The game uses full <strong>auto-save</strong> - there is no manual Save button and nothing you need to remember to do.</p>
             <ul>
-                <li>Your progress (Money, unlocked Power-Ups, upgrade levels, unlocked zones, Antique Cargo counts, and more) is saved automatically at key moments - pausing, leaving to the main menu, reaching a milestone, or traveling to a zone - and periodically during play.</li>
+                <li>Your progress (Money, unlocked Power-Ups, upgrade levels, Antique Cargo counts, and more) is saved automatically at key moments - pausing, leaving to the main menu, reaching a milestone - and periodically during play.</li>
                 <li>Saved progress is loaded automatically the next time you open the game.</li>
                 <li>From the main menu, <strong>Continue</strong> resumes your saved game exactly where you left off.</li>
                 <li><strong>New Game</strong> (shown once a save exists) and <strong>Reset Progress</strong> both wipe your saved progression back to a fresh start - use these only if you actually want to start over.</li>
@@ -870,12 +878,12 @@
             <h2>UI</h2>
             <ul>
                 <li><strong>Money:</strong> Your current spendable currency, shown in the HUD and used for every Skill Tree purchase.</li>
-                <li><strong>Depth:</strong> How far you've mined/traveled, shown in the HUD and on the Mining Zones screen - it's what unlocks new zones alongside Money.</li>
+                <li><strong>Depth:</strong> How far you've mined/traveled, shown in the HUD.</li>
                 <li><strong>Score:</strong> A running combat/progress score shown at the top of the HUD.</li>
-                <li><strong>Power-Up / Overdrive buttons:</strong> The Active Systems panel lists every unlocked Power-Up with its own Overdrive button, showing WAIT/READY status and a countdown.</li>
+                <li><strong>Power-Up / Overdrive buttons:</strong> The Overdrive panel lists Drill, Suit, and Fireball with their own Overdrive button, showing WAIT/READY status and a countdown.</li>
                 <li><strong>Antique Cargo panel:</strong> Shows one icon per Antique Cargo type with your collected count for each.</li>
                 <li><strong>Energy bar:</strong> Shows your remaining Energy, which drains as you move and limits how long you can fly before needing to let it recover.</li>
-                <li><strong>Pause button:</strong> Opens the pause menu, giving access to the Skill Tree, Mining Zones, and Main Menu.</li>
+                <li><strong>Pause button:</strong> Opens the pause menu, giving access to the Skill Tree and Main Menu.</li>
             </ul>
 
             <h2>Tips</h2>
@@ -885,8 +893,7 @@
                 <li>Remember hits are fixed per mineral type (3/6/9/12) - upgrading damage speeds up how fast you land those hits, but tougher minerals will always take more hits than weaker ones.</li>
                 <li>Unlock the Collector early if you can afford it - letting it handle pickups frees you up to keep moving and fighting instead of detouring for every drop.</li>
                 <li>Watch your Energy bar while moving - running out mid-flight leaves you stranded until it recovers, so don't stray too far from the action.</li>
-                <li>Prioritize unlocking a couple of Power-Ups you like over spreading Money thin across many - a well-upgraded Power-Up and its Overdrive will carry you through a zone faster than several barely-upgraded ones.</li>
-                <li>Progress through zones as your current loadout allows - each new zone's objects stack on top of the previous zone's, so a stronger loadout makes earlier objects trivial while you focus on the newest threats.</li>
+                <li>Prioritize unlocking a couple of Power-Ups you like over spreading Money thin across many - a well-upgraded Power-Up and its Overdrive will carry you further than several barely-upgraded ones.</li>
             </ul>
             </div>
 
@@ -903,15 +910,7 @@
         <button class="menu-btn" onclick="showSettingsFromPause()"><img class="inline-icon" src="futuristic_sci-fi_pause_contro.png" alt="">SETTINGS</button>
         <button class="menu-btn" onclick="showReadmeFromPause()"><img class="guide-icon" src="game-guide-icon.png" alt="">GAME GUIDE</button>
         <button class="menu-btn" onclick="openUpgradesFromPause()"><img class="inline-icon" src="futuristic_sci-fi_skill_tree_o.png" alt="">SKILL TREE</button>
-        <button class="menu-btn" onclick="openZonesMenu()"><img class="inline-icon" src="futuristic_space_mining_zone_i.png" alt="">MINING ZONES</button>
         <button class="menu-btn" onclick="goToMainMenu()" style="border-color: #ff3333; color: #ff3333;"><img class="inline-icon" src="futuristic_sci-fi_command_cent.png" alt="">MAIN MENU</button>
-    </div>
-
-    <div id="zones-menu" class="overlay-menu" style="display: none; z-index: 60; background: rgba(5, 5, 8, 0.93);">
-        <div class="overlay-title" style="font-size: calc(var(--ui-scale) * 30px);"><img class="inline-icon" src="futuristic_space_mining_zone_i.png" alt="">MINING ZONES</div>
-        <div id="zones-depth-readout" class="readme-text" style="font-size: calc(var(--ui-scale) * 14px); margin-bottom: calc(var(--ui-scale) * 4px);">Depth: 0m</div>
-        <div id="zones-list" style="display:flex; flex-direction:column; gap: calc(var(--ui-scale) * 10px); max-height: 55vh; overflow-y:auto; width: min(520px, 85vw); padding: calc(var(--ui-scale) * 4px);"></div>
-        <button class="menu-btn" onclick="closeZonesMenu()"><img class="inline-icon" src="btn-back.png" alt="">BACK</button>
     </div>
 
     <div id="od-select-menu" class="overlay-menu" style="display: none;">
@@ -932,6 +931,10 @@
     </div>
 
     <button id="pause-btn" onclick="pauseGame()"><img class="inline-icon" src="futuristic_sci-fi_pause_contro.png" alt="">PAUSE</button>
+    <!-- GAME-side gameplay-only control (see #gameplay-exit-fs-btn CSS comment above for the
+         full website-vs-game scope rule). Exits browser fullscreen only; never closes the
+         game, never returns to the main menu. -->
+    <button id="gameplay-exit-fs-btn" onclick="exitFullscreenGameplayMobile()" aria-label="Exit Fullscreen" title="Exit Fullscreen">⛶</button>
 
     <div id="score-hud"><img class="inline-icon" src="hud-score.png" alt="">SCORE: <span id="val-combat-score">0</span> <span id="val-combat-score-abbr" style="font-size:0.6em; color:#c8faff; margin-left:8px; opacity:0.85;">(0)</span></div>
     <div id="money-hud">$<span id="val-score">0</span> <span id="val-score-abbr" style="font-size:0.6em; color:#fff3b0; margin-left:8px; opacity:0.85;">(0)</span></div>
@@ -949,16 +952,7 @@
         <div style="color: #fff; font-size: calc(var(--ui-scale) * 12px); text-align: center; margin-bottom: 8px; border-bottom: 1px solid #444; padding-bottom: 4px;">ACTIVE SYSTEMS</div>
         <div id="sys-suit" class="sys-row" style="color: #d942ff; display: none;"><span class="sys-dot" style="background:#d942ff; color:#d942ff;"></span><span class="sys-name">Girl Suit</span><span class="sys-val" id="val-suit-sys">Normal</span></div>
         <div id="sys-drill" class="sys-row" style="color: #aaa;"><span class="sys-dot" style="background:#aaa; color:#aaa;"></span><span class="sys-name">Auto-Drill</span><span class="sys-val" id="val-drill-sys">ON</span></div>
-        <div id="sys-pickaxe" class="sys-row" style="color: #ff9900; display: none;"><span class="sys-dot" style="background:#ff9900; color:#ff9900;"></span><span class="sys-name">Pickaxe</span><span class="sys-val" id="val-pickaxe-sys">Orbit</span></div>
-        <div id="sys-rocket" class="sys-row" style="color: #39ff14; display: none;"><span class="sys-dot" style="background:#39ff14; color:#39ff14;"></span><span class="sys-name">Missiles</span><span class="sys-val" id="val-rocket-sys">Ready</span></div>
-        <div id="sys-laser" class="sys-row" style="color: #ff3366; display: none;"><span class="sys-dot" style="background:#ff3366; color:#ff3366;"></span><span class="sys-name">Plasma L.</span><span class="sys-val" id="val-laser-sys">Ready</span></div>
         <div id="sys-fireball" class="sys-row" style="color: #00f3ff; display: none;"><span class="sys-dot" style="background:#00f3ff; color:#00f3ff;"></span><span class="sys-name">Fireballs</span><span class="sys-val" id="val-fireball-sys">Ready</span></div>
-        <div id="sys-drone" class="sys-row" style="color: #00ffcc; display: none;"><span class="sys-dot" style="background:#00ffcc; color:#00ffcc;"></span><span class="sys-name">Attack Drone</span><span class="sys-val" id="val-drone-sys">Ready</span></div>
-        <div id="sys-clone" class="sys-row" style="color: #ff5500; display: none;"><span class="sys-dot" style="background:#ff5500; color:#ff5500;"></span><span class="sys-name">Girl Clones</span><span class="sys-val" id="val-clone-sys">Ready</span></div>
-        <div id="sys-pulse" class="sys-row" style="color: #00e5ff; display: none;"><span class="sys-dot" style="background:#00e5ff; color:#00e5ff;"></span><span class="sys-name">Pulse Core</span><span class="sys-val" id="val-pulse-sys">Ready</span></div>
-        <div id="sys-acid" class="sys-row" style="color: #7cfc00; display: none;"><span class="sys-dot" style="background:#7cfc00; color:#7cfc00;"></span><span class="sys-name">Acid Sisters</span><span class="sys-val" id="val-acid-sys">Ready</span></div>
-        <div id="sys-shock" class="sys-row" style="color: #66e0ff; display: none;"><span class="sys-dot" style="background:#66e0ff; color:#66e0ff;"></span><span class="sys-name">Electric Shock</span><span class="sys-val" id="val-shock-sys">Ready</span></div>
-        <div id="sys-firesplit" class="sys-row" style="color: #ff3300; display: none;"><span class="sys-dot" style="background:#ff3300; color:#ff3300;"></span><span class="sys-name">Fire Split</span><span class="sys-val" id="val-firesplit-sys">Ready</span></div>
         <div id="sys-collector" class="sys-row" style="color: #ffd23f; display: none;"><span class="sys-dot" style="background:#ffd23f; color:#ffd23f;"></span><span class="sys-name">Collector</span><span class="sys-val" id="val-collector-sys">Active</span></div>
     </div>
 
@@ -980,65 +974,11 @@
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-drill" style="background:#aaa;"></div></div>
             <button class="od-btn" id="od-btn-drill" onclick="activateOverdrive('drill')">WAIT: 5s</button>
         </div>
-        <div class="od-box" id="od-box-pickaxe"><span class="od-key">3</span>
-            <div class="od-icon" id="od-icon-pickaxe"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
-            <div class="od-name" style="color:#ff9900;"><span class="od-tier">T2</span>Axe Fury</div>
-            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-pickaxe" style="background:#ff9900;"></div></div>
-            <button class="od-btn" id="od-btn-pickaxe" onclick="activateOverdrive('pickaxe')">WAIT: 5s</button>
-        </div>
-        <div class="od-box" id="od-box-rocket"><span class="od-key">4</span>
-            <div class="od-icon" id="od-icon-rocket"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
-            <div class="od-name" style="color:#39ff14;"><span class="od-tier">T1</span>Missile Rain</div>
-            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-rocket" style="background:#39ff14;"></div></div>
-            <button class="od-btn" id="od-btn-rocket" onclick="activateOverdrive('rocket')">WAIT: 5s</button>
-        </div>
-        <div class="od-box" id="od-box-laser"><span class="od-key">5</span>
-            <div class="od-icon" id="od-icon-laser"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
-            <div class="od-name" style="color:#ff3366;"><span class="od-tier">T2</span>Laser Beam</div>
-            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-laser" style="background:#ff3366;"></div></div>
-            <button class="od-btn" id="od-btn-laser" onclick="activateOverdrive('laser')">WAIT: 5s</button>
-        </div>
-        <div class="od-box" id="od-box-fireball"><span class="od-key">6</span>
+        <div class="od-box" id="od-box-fireball"><span class="od-key">3</span>
             <div class="od-icon" id="od-icon-fireball"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
             <div class="od-name" style="color:#00f3ff;"><span class="od-tier">T1</span>Inferno</div>
             <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-fireball" style="background:#00f3ff;"></div></div>
             <button class="od-btn" id="od-btn-fireball" onclick="activateOverdrive('fireball')">WAIT: 5s</button>
-        </div>
-        <div class="od-box" id="od-box-drone"><span class="od-key">7</span>
-            <div class="od-icon" id="od-icon-drone"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
-            <div class="od-name" style="color:#00ffcc;"><span class="od-tier">T3</span>Drone Swarm</div>
-            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-drone" style="background:#00ffcc;"></div></div>
-            <button class="od-btn" id="od-btn-drone" onclick="activateOverdrive('drone')">WAIT: 5s</button>
-        </div>
-        <div class="od-box" id="od-box-clone"><span class="od-key">8</span>
-            <div class="od-icon" id="od-icon-clone"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
-            <div class="od-name" style="color:#ff5500;"><span class="od-tier">T4</span>Girl Clones</div>
-            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-clone" style="background:#ff5500;"></div></div>
-            <button class="od-btn" id="od-btn-clone" onclick="activateOverdrive('clone')">WAIT: 5s</button>
-        </div>
-        <div class="od-box" id="od-box-pulse"><span class="od-key">9</span>
-            <div class="od-icon" id="od-icon-pulse"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
-            <div class="od-name" style="color:#00e5ff;"><span class="od-tier">T3</span>Core Overload</div>
-            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-pulse" style="background:#00e5ff;"></div></div>
-            <button class="od-btn" id="od-btn-pulse" onclick="activateOverdrive('pulse')">WAIT: 5s</button>
-        </div>
-        <div class="od-box" id="od-box-acid"><span class="od-key">0</span>
-            <div class="od-icon" id="od-icon-acid"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
-            <div class="od-name" style="color:#7cfc00;"><span class="od-tier">T4</span>Acid Sisters</div>
-            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-acid" style="background:#7cfc00;"></div></div>
-            <button class="od-btn" id="od-btn-acid" onclick="activateOverdrive('acid')">WAIT: 5s</button>
-        </div>
-        <div class="od-box" id="od-box-shock"><span class="od-key">-</span>
-            <div class="od-icon" id="od-icon-shock"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
-            <div class="od-name" style="color:#66e0ff;"><span class="od-tier">T3</span>Electric Storm</div>
-            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-shock" style="background:#66e0ff;"></div></div>
-            <button class="od-btn" id="od-btn-shock" onclick="activateOverdrive('shock')">WAIT: 5s</button>
-        </div>
-        <div class="od-box" id="od-box-firesplit"><span class="od-key">=</span>
-            <div class="od-icon" id="od-icon-firesplit"><img class="icon-fill icon-locked" src="lock.png" alt=""></div>
-            <div class="od-name" style="color:#ff3300;"><span class="od-tier">T2</span>Firestorm Split</div>
-            <div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-firesplit" style="background:#ff3300;"></div></div>
-            <button class="od-btn" id="od-btn-firesplit" onclick="activateOverdrive('firesplit')">WAIT: 5s</button>
         </div>
     </div>
 
@@ -1494,69 +1434,6 @@ const STORY_IMAGES = {
         gameState = "UPGRADES";
         document.getElementById('menu-upgrades').style.display = 'flex';
         renderVisualTree(); 
-    }
-
-    // --- MINING ZONES MENU ---
-    function openZonesMenu() {
-        playSound('ui_open');
-        document.getElementById('pause-menu').style.display = 'none';
-        document.getElementById('zones-menu').style.display = 'flex';
-        renderZonesList();
-        kbOpenMenuFocus('zones-menu');
-    }
-
-    function closeZonesMenu() {
-        playSound('ui_close');
-        document.getElementById('zones-menu').style.display = 'none';
-        document.getElementById('pause-menu').style.display = 'flex';
-    }
-
-    function renderZonesList() {
-        let depth = getMiningDepth();
-        let cur = getCurrentZone();
-        document.getElementById('zones-depth-readout').innerHTML = `Current: ${cur.icon} ${cur.name}  ·  Mining Depth: ${depth}m  ·  Lifetime Earned: $${formatNumber(gameStats.totalMoneyEarned)}`;
-        let container = document.getElementById('zones-list');
-        container.innerHTML = '';
-        worldZones.forEach(zone => {
-            let unlocked = isZoneUnlocked(zone);
-            let isCurrent = zone.id === currentZoneId;
-            let pct = zone.unlockDepth === 0 && zone.unlockMoney === 0 ? 100 : Math.floor(Math.min(100, Math.min(depth / Math.max(1, zone.unlockDepth), gameStats.totalMoneyEarned / Math.max(1, zone.unlockMoney)) * 100));
-            let row = document.createElement('div');
-            row.style.cssText = `border: 2px solid ${unlocked ? '#39ff14' : '#444'}; border-radius: 8px; padding: calc(var(--ui-scale) * 10px); display: flex; justify-content: space-between; align-items: center; gap: 10px; background: rgba(255,255,255,0.03);`;
-            let reqLine = unlocked ? `<img class="inline-icon" src="checkmark.png" alt="">Unlocked` : `<img class="inline-icon" src="lock.png" alt="">Needs ${zone.unlockDepth}m depth &amp; $${formatNumber(zone.unlockMoney)} lifetime earned (${pct}% there)`;
-            row.innerHTML = `<div style="text-align:left;">
-                <div style="font-weight:bold; font-size: calc(var(--ui-scale) * 15px);">${zone.icon} ${zone.name}${isCurrent ? ' <span style=\"color:#39ff14;\">(current)</span>' : ''}</div>
-                <div style="font-size: calc(var(--ui-scale) * 11px); color: #aaa;">${reqLine}</div>
-            </div>`;
-            let btn = document.createElement('button');
-            btn.className = 'menu-btn'; btn.style.cssText = 'width:auto; min-width:0; padding: 8px 14px; margin:0; font-size: calc(var(--ui-scale) * 12px);';
-            if (isCurrent) { btn.innerText = 'HERE'; btn.disabled = true; btn.style.opacity = 0.5; }
-            else if (!unlocked) { btn.innerHTML = '<img class="inline-icon" style="margin-right:0;" src="lock.png" alt="">'; btn.disabled = true; btn.style.opacity = 0.5; }
-            else { btn.innerText = 'TRAVEL'; btn.onclick = () => travelToZone(zone.id); }
-            row.appendChild(btn);
-            container.appendChild(row);
-        });
-    }
-
-    function travelToZone(zoneId) {
-        if (zoneId === currentZoneId) return;
-        currentZoneId = zoneId;
-        let zone = getCurrentZone();
-        // Clear the old zone's field and immediately seed the new one toward ITS OWN target
-        // population instead of a flat "15" - that flat number used to leave later (higher-
-        // target) zones sitting almost empty right after travel, relying entirely on the
-        // per-frame top-up loop to slowly climb the rest of the way up, which read as "spawning
-        // is slow" right when a player first arrives in a denser zone. Seeding to 45% of target
-        // here (bounded, single burst) gets the field feeling populated immediately; the normal
-        // top-up logic in the main loop closes the remaining gap smoothly over the next second
-        // or two, same as it does after any other spawn-target change.
-        asteroidsList = [];
-        let zoneInitialTarget = Math.max(15, Math.round(getLevelObjectCountTarget() * 0.45));
-        for (let i = 0; i < zoneInitialTarget; i++) produceAsteroidNode();
-        addFloatingText(`🗺️ ENTERED ${zone.name.toUpperCase()}`, playerShip.x, playerShip.y - 60, '#00f3ff', "20px");
-        playSound('levelup');
-        closeZonesMenu(); resumeGame(); refreshLiveUiDisplays();
-        autoSaveNow(); // entering/traveling to a zone is a deliberate progress event
     }
 
     function closeUpgradesMenu() {
@@ -2105,18 +1982,6 @@ const STORY_IMAGES = {
         }
         if (!storySceneViewed('m4_suit') && playerStats.hasGirlPower) {
             storyQueueScene('m4_suit'); return;
-        }
-        let rift = worldZones.find(z => z.id === 'rift');
-        if (!storySceneViewed('m5_blackhole') && rift && isZoneUnlocked(rift)) {
-            storyQueueScene('m5_blackhole'); return;
-        }
-        let frozen = worldZones.find(z => z.id === 'frozen');
-        if (!storySceneViewed('m6_station') && frozen && isZoneUnlocked(frozen)) {
-            storyQueueScene('m6_station'); return;
-        }
-        let volcanic = worldZones.find(z => z.id === 'volcanic');
-        if (!storySceneViewed('m7_overlord') && volcanic && isZoneUnlocked(volcanic)) {
-            storyQueueScene('m7_overlord'); return;
         }
         if (!storySceneViewed('final') && playerStats.score >= WIN_SCORE) {
             storyQueueScene('final'); return;
@@ -2975,77 +2840,27 @@ const STORY_IMAGES = {
     // Centralized definition for every destroyable-object visual in the game. Every object
     // below is a MULTI-FRAME object: `frames` (in HP-progression order: frame 1 = full-health
     // / just-spawned -> frame 5 = almost destroyed) is used instead of a single static `file`.
-    // `level` now maps 1:1 to the 5 Mining Zones (see worldZones / getCurrentLevelNumber below)
-    // so each zone progressively unlocks 5 more objects into the spawn pool while every object
-    // already unlocked in an earlier zone stays available (getAvailableObjectsForLevel keeps
-    // every entry whose `level <= lvl`, so zone 5's pool is simply all 25):
-    //   Zone 1 (belt)     -> objects 1-5    (level 1)
-    //   Zone 2 (rift)     -> objects 6-10   (level 2, cumulative 1-10)
-    //   Zone 3 (frozen)   -> objects 11-15  (level 3, cumulative 1-15)
-    //   Zone 4 (volcanic) -> objects 16-20  (level 4, cumulative 1-20)
-    //   Zone 5 (void)     -> objects 21-25  (level 5, cumulative 1-25 - includes the 4 new
-    //                        objects added below plus the one remaining original object)
+    // The game has a single Mining Zone (Asteroid Belt), so this is simply the complete,
+    // always-available pool of destroyable objects - there is no per-zone gating.
     // `scale` is a per-object visual normalization multiplier auto-derived from frame 1's actual
     // non-transparent pixel bounding box (measured offline, same method the old art used) so
     // every object reads as a consistent in-world size despite differing amounts of transparent
     // padding in the source art. File names are exactly as supplied and unchanged, and every
-    // file lives directly next to index.html (no subfolder). The previous 7-object set (files
-    // 16.png-52.png) has been fully removed - no references to those files remain anywhere in
-    // this system.
+    // file lives directly next to index.html (no subfolder).
     const OBJECT_DEFS = [
-        // --- ORIGINAL 7 destroyable objects (35 images, 16.png-52.png) - restored ---
-        // Zone 1 (Asteroid Belt): objects 1-5
-        { id: 1, frames: ["16.png", "17.png", "18.png", "19.png", "21.png"], level: 1, scale: 1.103 },
-        { id: 2, frames: ["22.png", "23.png", "24.png", "25.png", "26.png"], level: 1, scale: 1.157 },
-        { id: 3, frames: ["27.png", "28.png", "29.png", "30.png", "31.png"], level: 1, scale: 1.143 },
-        { id: 4, frames: ["32.png", "33.png", "34.png", "35.png", "36.png"], level: 1, scale: 1.2 },
-        { id: 5, frames: ["37.png", "38.png", "39.png", "40.png", "41.png"], level: 1, scale: 1.2 },
-        // Zone 2 (Crimson Rift): objects 6-10
-        { id: 6, frames: ["43.png", "44.png", "45.png", "46.png", "47.png"], level: 2, scale: 1.2 },
-        { id: 7, frames: ["48.png", "49.png", "50.png", "51.png", "52.png"], level: 2, scale: 1.091 },
-        // --- SECOND BATCH: 7 more destroyable objects (35 images, 53.png-85.png) ---
-        { id: 8, frames: ["53.png", "54.png", "55.png", "56.png", "57.png"], level: 2, scale: 1.099 },
-        { id: 9, frames: ["58.png", "59.png", "60.png", "61.png", "62.png"], level: 2, scale: 1.2 },
-        { id: 10, frames: ["63.png", "64.png", "65.png", "66.png", "67.png"], level: 2, scale: 1.169 },
-        // Zone 3 (Frozen Expanse): objects 11-15
-        { id: 11, frames: ["67+.png", "68.png", "69.png", "70.png", "71.png"], level: 3, scale: 1.14 },
-        { id: 12, frames: ["71+.png", "72.png", "73.png", "74.png", "75.png"], level: 3, scale: 1.112 },
-        { id: 13, frames: ["76.png", "77.png", "78.png", "79.png", "80.png"], level: 3, scale: 1.154 },
-        { id: 14, frames: ["81.png", "82.png", "83.png", "84.png", "85.png"], level: 3, scale: 1.06 },
-        // --- THIRD BATCH: 3 more destroyable objects (15 images, 86.png-100.png) ---
-        { id: 15, frames: ["86.png", "87.png", "88.png", "89.png", "90.png"], level: 3, scale: 1.112 },
-        // Zone 4 (Volcanic Core): objects 16-20
-        { id: 16, frames: ["91.png", "92.png", "93.png", "94.png", "95.png"], level: 4, scale: 1.036 },
-        { id: 17, frames: ["96.png", "97.png", "98.png", "99.png", "100.png"], level: 4, scale: 1.112 },
-        // --- FOURTH BATCH: 3 more destroyable objects (15 images, 101-105.png / 112-121.png) ---
-        { id: 18, frames: ["101.png", "102.png", "103.png", "104.png", "105.png"], level: 4, scale: 1.048 },
-        { id: 19, frames: ["112.png", "113.png", "114.png", "115.png", "116.png"], level: 4, scale: 1.184 },
-        { id: 20, frames: ["117.png", "118.png", "119.png", "120.png", "121.png"], level: 4, scale: 1.2 },
-        // --- FIFTH BATCH: 1 more destroyable object (5 images, 137-141.png) ---
-        // Zone 5 (Void Nexus): objects 21-25 - the one remaining original object plus the 4 new
-        // objects added below (20 new images, 1.png/12-15.png, 122-136.png).
-        { id: 21, frames: ["137.png", "138.png", "139.png", "140.png", "141.png"], level: 5, scale: 1.169 },
-        // --- SIXTH BATCH: 4 NEW destroyable objects (20 images, 1.png/12-15.png, 122-136.png) ---
-        { id: 22, frames: ["1.png", "12.png", "13.png", "14.png", "15.png"], level: 5, scale: 1.0 },
-        { id: 23, frames: ["122.png", "123.png", "124.png", "125.png", "126.png"], level: 5, scale: 1.023 },
-        { id: 24, frames: ["127.png", "128.png", "129.png", "130.png", "131.png"], level: 5, scale: 1.06 },
-        { id: 25, frames: ["132.png", "133.png", "134.png", "135.png", "136.png"], level: 5, scale: 1.1 },
+        { id: 1, frames: ["16.png", "17.png", "18.png", "19.png", "21.png"], scale: 1.103 },
+        { id: 2, frames: ["22.png", "23.png", "24.png", "25.png", "26.png"], scale: 1.157 },
+        { id: 3, frames: ["27.png", "28.png", "29.png", "30.png", "31.png"], scale: 1.143 },
+        { id: 4, frames: ["32.png", "33.png", "34.png", "35.png", "36.png"], scale: 1.2 },
+        { id: 5, frames: ["37.png", "38.png", "39.png", "40.png", "41.png"], scale: 1.2 },
     ];
     // ============================================================
-    // ASSET MANAGER (perf fix: startup connection-pool congestion)
+    // ASSET MANAGER
     // ------------------------------------------------------------
-    // PERF FIX: destroyable-object artwork used to be preloaded for all 25 objects (125
-    // external PNG files - 5 zones x 5 objects x 5 frames each) synchronously at script load,
-    // regardless of which zone the player was actually in. That burst of 125 simultaneous
-    // image requests competed with the handful of UI/HUD icons (menu buttons, lock icons, zone
-    // icons, etc.) for the browser's limited concurrent-connection pool, which is what made
-    // those small icons visibly pop in late even though every file sits right next to
-    // index.html. Fixed below by loading each zone's object artwork only once that zone is
-    // actually reachable (see getAvailableObjectsForLevel), funneled through one small cache so
-    // no file is ever requested twice. Every draw call for these objects already has a
-    // "hasn't loaded yet" placeholder (the rock silhouette a bit further down), so this is
-    // purely a loading-ORDER change - what gets drawn, when an object becomes destroyable, its
-    // HP/frame progression, hitbox, and everything else about gameplay is untouched.
+    // Small cache so every destroyable-object image file is ever requested exactly once,
+    // regardless of how many times it's referenced. Every draw call for these objects already
+    // has a "hasn't loaded yet" placeholder (the rock silhouette a bit further down), so images
+    // simply pop in as they finish loading.
     const AssetManager = {
         cache: new Map(),
         // Returns the (possibly still-loading) Image for `src`, creating and caching exactly
@@ -3064,8 +2879,7 @@ const STORY_IMAGES = {
             let img = this.cache.get(src);
             return !!(img && img.complete && img.naturalWidth !== 0);
         },
-        // Explicitly warm the cache for a batch of srcs (used for zone 1's immediate needs and
-        // the background prefetch below) without needing the returned Image objects.
+        // Explicitly warm the cache for a batch of srcs without needing the returned Image objects.
         preload(list) { list.forEach(src => this.load(src)); }
     };
 
@@ -3084,67 +2898,18 @@ const STORY_IMAGES = {
             def.img = AssetManager.load(def.file);
         }
     }
-    // Zone 1's 5 objects are needed the instant the game starts, so load them eagerly. Every
-    // other object (zones 2-5, 100 images) is loaded lazily the moment its zone's pool is
-    // actually requested - see getAvailableObjectsForLevel - i.e. the moment the player reaches
-    // that zone, not at page startup.
-    OBJECT_DEFS.filter(def => def.level <= 1).forEach(ensureObjectDefAssetsLoaded);
+    // All 5 objects are needed the instant the game starts, so load them eagerly.
+    OBJECT_DEFS.forEach(ensureObjectDefAssetsLoaded);
     // id -> def lookup, used at spawn time.
     const OBJECT_DEFS_BY_ID = {}; OBJECT_DEFS.forEach(def => { OBJECT_DEFS_BY_ID[def.id] = def; });
-    // Cached per-level pools (recomputed lazily, not every frame) so repeated spawns don't
-    // re-filter the 7-entry array on every single call.
-    const _objectPoolCache = {};
-    // getAvailableObjectsForLevel(level): the single centralized entry point every destroyable-
-    // object spawn path uses to pick a legal object for the CURRENT level. Objects are gated by
-    // zone via their `level` field (see the zone breakdown in the OBJECT_DEFS comment above), so
-    // e.g. level 3's pool is objects 1-15 (everything unlocked in zones 1-3, cumulative).
-    function getAvailableObjectsForLevel(level) {
-        let lvl = Math.max(1, Math.min(5, level || 1));
-        if (_objectPoolCache[lvl]) return _objectPoolCache[lvl];
-        let pool = OBJECT_DEFS.filter(def => def.level <= lvl);
-        // This pool has just been computed for the first time, meaning `lvl` has just become
-        // reachable for the first time - load artwork for any of its objects that hasn't been
-        // requested yet (zone 1's objects were already eagerly loaded above, so this is a
-        // no-op for them; it's what actually fires the first time a player reaches zones 2-5).
-        pool.forEach(ensureObjectDefAssetsLoaded);
-        _objectPoolCache[lvl] = pool;
-        return pool;
+    // Picks one random object definition from the (single, always-available) pool.
+    function pickRandomObjectForLevel() {
+        return OBJECT_DEFS[Math.floor(Math.random() * OBJECT_DEFS.length)];
     }
-    // Idle-time background prefetch: once the browser is idle after startup (so this never
-    // competes with the UI/HUD icons or the initial paint), quietly warm the cache for the next
-    // not-yet-reached zone, one zone at a time, so its artwork is typically already warm by the
-    // time the player actually travels there. Purely a loading-order nicety on top of the
-    // on-demand loading above - if requestIdleCallback is unsupported, or this never gets to
-    // run, getAvailableObjectsForLevel still loads everything on demand regardless.
-    function prefetchNextZoneObjectsInBackground() {
-        let nextLevel = OBJECT_DEFS.reduce((min, def) => def._assetsRequested ? min : Math.min(min, def.level), 6);
-        if (nextLevel > 5) return; // every object already requested
-        OBJECT_DEFS.filter(def => def.level === nextLevel).forEach(ensureObjectDefAssetsLoaded);
-        scheduleIdlePrefetch();
-    }
-    function scheduleIdlePrefetch() {
-        let run = () => prefetchNextZoneObjectsInBackground();
-        if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 4000 });
-        else setTimeout(run, 4000);
-    }
-    setTimeout(scheduleIdlePrefetch, 3000); // let the initial UI/HUD icons get a clear head start first
-    // Picks one random object definition from the pool unlocked at the given level.
-    function pickRandomObjectForLevel(level) {
-        let pool = getAvailableObjectsForLevel(level);
-        return pool[Math.floor(Math.random() * pool.length)];
-    }
-    // The game's 5 "levels" are the 5 Mining Zones (see worldZones) in unlock order - this maps
-    // the player's current zone to its 1-based level number for the object-pool system above.
-    function getCurrentLevelNumber() {
-        let idx = worldZones.findIndex(z => z.id === currentZoneId);
-        return idx >= 0 ? idx + 1 : 1;
-    }
-    // --- PER-LEVEL/PLANE ACTIVE OBJECT COUNT TARGET ---
-    // This is the "how many objects are simultaneously active on screen" progression, kept
+    // --- ACTIVE OBJECT COUNT TARGET ---
+    // This is the "how many objects are simultaneously active on screen" target, kept
     // completely separate from playerStats.level (the player's XP level, used elsewhere for
-    // toughness/spawn-chance ramping). It's keyed off getCurrentLevelNumber() - the same 1-based
-    // Mining Zone ("level"/"plane") number the object-unlock pool above uses - so it advances
-    // exactly when the player reaches a new zone, not when they gain XP.
+    // toughness/spawn-chance ramping).
     //
     // --- SCREEN-CAPACITY SAFE MAXIMUM (the "100%" reference) ---
     // computeScreenCapacityDensity() is a grid-style estimate of how many objects can actually
@@ -3178,23 +2943,17 @@ const STORY_IMAGES = {
         let capacity = Math.floor(((areaW * areaH) / (cell * cell)) * RANDOM_PACKING_EFFICIENCY);
         return Math.max(60, Math.min(160, capacity));
     }
-    // --- PER-LEVEL DENSITY PERCENTAGE ---
-    // Level 1 = 20% of the safe-capacity reference, +15% every level after that (35, 50, 65),
-    // clamped at 75% (the requested safe maximum screen density) so density keeps climbing
-    // toward - but never past - a comfortably playable ceiling with room for the Girl to move.
-    // This is a MINIMUM TARGET for simultaneously active objects (the spawn loop keeps producing
-    // new ones below `asteroidsList.length < maxAsteroidsOnScreen` until this count is reached),
-    // not merely a spawn probability - the probability (spawnChance, computed separately below)
-    // only controls how fast the field fills toward this target, never how high the target
-    // itself goes.
+    // --- DENSITY PERCENTAGE ---
+    // A flat 20% of the safe-capacity reference (well short of the 75% comfortably-playable
+    // ceiling), so the field stays populated with room for the Girl to move. This is a MINIMUM
+    // TARGET for simultaneously active objects (the spawn loop keeps producing new ones below
+    // `asteroidsList.length < maxAsteroidsOnScreen` until this count is reached), not merely a
+    // spawn probability - the probability (spawnChance, computed separately below) only controls
+    // how fast the field fills toward this target, never how high the target itself goes.
     const LEVEL_DENSITY_PERCENT_BASE = 20;
-    const LEVEL_DENSITY_PERCENT_STEP = 15;
-    const LEVEL_DENSITY_PERCENT_MAX = 75;
     function getLevelObjectCountTarget() {
-        let zoneLevel = getCurrentLevelNumber();
-        let percent = Math.min(LEVEL_DENSITY_PERCENT_MAX, LEVEL_DENSITY_PERCENT_BASE + (zoneLevel - 1) * LEVEL_DENSITY_PERCENT_STEP);
         let safeMax = computeScreenCapacityDensity();
-        return Math.max(1, Math.round(safeMax * percent / 100));
+        return Math.max(1, Math.round(safeMax * LEVEL_DENSITY_PERCENT_BASE / 100));
     }
 
     // Per-mineral-type pickup art (user-provided exact assets, one per ore type - matches the
@@ -3669,7 +3428,7 @@ const STORY_IMAGES = {
     let playerStats = { 
         level: 1, xp: 0, nextLevelXp: 100, score: 0, energy: 100, 
         damage: 1, speed: 2.5, drillFlySpeed: 4.0, maxEnergy: 100, energyRegen: 0.02, energyDrain: 0.2,
-        defense: 1, magnetRadius: 20,
+        defense: 1, magnetRadius: 20, shield: 0, fireballFireRateLevel: 0,
         hasGirlPower: false, hasLaser: false, hasFireball: false, hasPickaxe: false, hasRocket: false,
         hasDrone: false, droneDamage: 1, droneFireRateLevel: 0, droneSupportCount: 0,
         hasClone: false, cloneDamage: 1, cloneFireRateLevel: 0, cloneCount: 0, cloneRange: 0, cloneBlastRadius: 0, cloneEncoreChance: 0,
@@ -3753,7 +3512,7 @@ const STORY_IMAGES = {
     ];
     function getSuitUpgradeScore() {
         return (upgradeLevels['suit_1'] || 0) + (upgradeLevels['suit_2'] || 0) +
-               (upgradeLevels['suit_4'] || 0) + (upgradeLevels['suit_od_dur'] || 0);
+               (upgradeLevels['suit_3'] || 0) + (upgradeLevels['suit_od_dur'] || 0);
     }
     function getSuitTier() {
         let score = getSuitUpgradeScore();
@@ -4538,33 +4297,20 @@ const STORY_IMAGES = {
     const nodeTypes = [ { name: 'iron', color: '#8e8e93', baseHealth: 60, hitsRequired: 3, rewardMin: 4, rewardMax: 8, weight: 0.5, moneyPerUnit: 150 }, { name: 'bronze', color: '#cd7f32', baseHealth: 90, hitsRequired: 6, rewardMin: 3, rewardMax: 6, weight: 0.3, moneyPerUnit: 225 }, { name: 'gold', color: '#d4af37', baseHealth: 150, hitsRequired: 9, rewardMin: 2, rewardMax: 5, weight: 0.15, moneyPerUnit: 375 }, { name: 'uranium', color: '#39ff14', baseHealth: 250, hitsRequired: 12, rewardMin: 1, rewardMax: 3, weight: 0.05, moneyPerUnit: 625 } ];
 
     // ============================================================
-    // WORLD PROGRESSION: ZONES
+    // WORLD: MINING ZONE
     // ============================================================
-    // The world itself is an endless field that scrolls with the girl rather than a fixed-size
-    // map, so "different map layout" per zone is expressed as a different SPAWN PATTERN relative
-    // to her (tight orbiting clusters, a wide sparse field, an empty-centered ring, spiral arms)
-    // rather than a literal bounded shape - each still reads as a genuinely different place to
-    // fly around in, without requiring a full rewrite of the camera/world-boundary system.
-    // Unlocking requires BOTH mining depth AND lifetime money earned, so a zone always feels like
-    // a real combined milestone rather than something reachable by grinding just one stat.
+    // The game has a single Mining Zone (Asteroid Belt). The world itself is an endless field
+    // that scrolls with the girl rather than a fixed-size map; objects spawn in a scatter
+    // pattern relative to her position.
     const worldZones = [
-        { id: 'belt',     name: 'Asteroid Belt',   icon: '<img class="inline-icon" src="zone-asteroidbelt.png" alt="">', unlockDepth: 0,   unlockMoney: 0,      layout: 'scatter', typeWeights: { iron: 0.50, bronze: 0.30, gold: 0.15, uranium: 0.05 },
-          bgPalette: [ {r:5,g:5,b:8}, {r:18,g:6,b:8}, {r:14,g:9,b:6} ] },
-        { id: 'rift',     name: 'Crimson Rift',    icon: '<img class="inline-icon" src="zone-crimsonrift.png" alt="">', unlockDepth: 40,  unlockMoney: 8000,   layout: 'cluster', typeWeights: { iron: 0.35, bronze: 0.40, gold: 0.20, uranium: 0.05 },
-          bgPalette: [ {r:22,g:4,b:4}, {r:30,g:9,b:2}, {r:16,g:3,b:3} ] },
-        { id: 'frozen',   name: 'Frozen Expanse',  icon: '<img class="inline-icon" src="zone-frozenexpanse.png" alt="">', unlockDepth: 90,  unlockMoney: 30000,  layout: 'sparse',  typeWeights: { iron: 0.30, bronze: 0.25, gold: 0.30, uranium: 0.15 },
-          bgPalette: [ {r:4,g:10,b:22}, {r:6,g:16,b:30}, {r:3,g:8,b:18} ] },
-        { id: 'volcanic', name: 'Volcanic Core',   icon: '<img class="inline-icon" src="zone-volcaniccore.png" alt="">', unlockDepth: 160, unlockMoney: 90000,  layout: 'ring',    typeWeights: { iron: 0.20, bronze: 0.30, gold: 0.30, uranium: 0.20 },
-          bgPalette: [ {r:26,g:8,b:2}, {r:34,g:12,b:0}, {r:18,g:5,b:2} ] },
-        { id: 'void',     name: 'Void Nexus',      icon: '<img class="inline-icon" src="zone-voidnexus.png" alt="">', unlockDepth: 260, unlockMoney: 250000, layout: 'spiral',  typeWeights: { iron: 0.10, bronze: 0.20, gold: 0.30, uranium: 0.40 },
-          bgPalette: [ {r:10,g:2,b:20}, {r:4,g:2,b:10}, {r:14,g:4,b:24} ] }
+        { id: 'belt', name: 'Asteroid Belt', icon: '<img class="inline-icon" src="zone-asteroidbelt.png" alt="">', layout: 'scatter', typeWeights: { iron: 0.50, bronze: 0.30, gold: 0.15, uranium: 0.05 },
+          bgPalette: [ {r:5,g:5,b:8}, {r:18,g:6,b:8}, {r:14,g:9,b:6} ] }
     ];
     let currentZoneId = 'belt';
-    function getCurrentZone() { return worldZones.find(z => z.id === currentZoneId) || worldZones[0]; }
+    function getCurrentZone() { return worldZones[0]; }
     // Depth is derived from blocks destroyed (already tracked/saved in gameStats) rather than a
     // separate counter, so it's always in sync with real progress and needs no extra save field.
     function getMiningDepth() { return Math.floor(gameStats.blocksDestroyed / 3); }
-    function isZoneUnlocked(zone) { return getMiningDepth() >= zone.unlockDepth && gameStats.totalMoneyEarned >= zone.unlockMoney; }
 
     // --- OFF-SCREEN SPAWN SYSTEM (replaces the old inside-screen radial spawn system) ---
     // Destroyable objects now spawn just outside the player's current visible viewport, on a
@@ -4913,7 +4659,7 @@ const STORY_IMAGES = {
     // MENU KEYBOARD NAVIGATION - shared helpers
     // ============================================================
     // Generic focus-based Arrow/Enter/Space navigation layered on top of every existing overlay
-    // menu (Main Menu, Pause Menu, Settings, Game Guide, Mining Zones, Win, and - via its own
+    // menu (Main Menu, Pause Menu, Settings, Game Guide, Win, and - via its own
     // pan/select handling - the Skill Tree). This is purely an alternate INPUT method: every
     // "activate" below just calls .click() on the exact same button a mouse click already
     // activates, so all existing onclick handlers/logic/menu layout are completely unchanged.
@@ -4929,13 +4675,12 @@ const STORY_IMAGES = {
         return !!el && window.getComputedStyle(el).display !== 'none';
     }
 
-    // Priority order per spec: Skill Tree > Game Guide > Settings > Mining Zones > Win >
+    // Priority order per spec: Skill Tree > Game Guide > Settings > Win >
     // Pause Menu > Main Menu > gameplay. Only the highest active one consumes Arrow/Enter/Space.
     function kbActiveMenuId() {
         if (kbMenuVisible('menu-upgrades')) return 'menu-upgrades';
         if (kbMenuVisible('readme-menu')) return 'readme-menu';
         if (kbMenuVisible('settings-menu')) return 'settings-menu';
-        if (kbMenuVisible('zones-menu')) return 'zones-menu';
         if (kbMenuVisible('win-menu')) return 'win-menu';
         if (kbMenuVisible('pause-menu')) return 'pause-menu';
         if (kbMenuVisible('main-menu') && gameState === 'MENU') return 'main-menu';
@@ -4945,7 +4690,7 @@ const STORY_IMAGES = {
 
     // Every visible, enabled .menu-btn inside a container, in DOM/visual order - the same order
     // the buttons are laid out on screen for every menu this drives (Main Menu, Pause Menu,
-    // Game Guide's Back/Next row, Mining Zones' rows, Win).
+    // Game Guide's Back/Next row, Win).
     function kbGetMenuButtons(containerId) {
         const container = document.getElementById(containerId);
         if (!container) return [];
@@ -5069,7 +4814,6 @@ const STORY_IMAGES = {
             if (activeMenu === 'menu-upgrades') closeUpgradesMenu();
             else if (activeMenu === 'readme-menu') closeReadme();
             else if (activeMenu === 'settings-menu') closeSettings();
-            else if (activeMenu === 'zones-menu') closeZonesMenu();
             else if (activeMenu === 'pause-menu') resumeGame();
             else if (gameState === 'PLAYING') pauseGame();
             // Main Menu / Win Menu: nothing to back out to - same as before this change.
@@ -5141,7 +4885,7 @@ const STORY_IMAGES = {
             return;
         }
 
-        // Main Menu / Pause Menu / Mining Zones / Win: plain vertical button-stack focus nav -
+        // Main Menu / Pause Menu / Win: plain vertical button-stack focus nav -
         // these menus are single-column, so Left/Right have nothing to do.
         if (isUp) kbSetMenuFocus(activeMenu, (kbMenuFocusIndex[activeMenu] || 0) - 1);
         else if (isDown) kbSetMenuFocus(activeMenu, (kbMenuFocusIndex[activeMenu] || 0) + 1);
@@ -5159,20 +4903,21 @@ const STORY_IMAGES = {
         else if (e.code === 'KeyF' && selectedTreeNodeId) { e.preventDefault(); focusTreeNode(selectedTreeNodeId); }
     });
 
-    // --- OVERDRIVE KEYBOARD SHORTCUTS: number row (1-9, 0, -, =) maps directly to the 12
-    // Overdrives in the same order they appear in the Active Systems / Overdrive HUD panel
-    // above. This is purely an alternate INPUT method - every press just calls the existing
+    // --- OVERDRIVE KEYBOARD SHORTCUTS: number row 1-3 maps directly to the 3 Overdrives in
+    // the same order they appear in the Overdrive HUD panel above (Girl Power, Drill Storm,
+    // Inferno). This is purely an alternate INPUT method - every press just calls the existing
     // window.activateOverdrive(key) function (see its definition above), so all existing
     // unlock/ready/cooldown/global-lock/selection-screen logic in that function still applies
-    // unchanged. Nothing here bypasses locks, cooldowns, or duplicates activation logic. ---
+    // unchanged. Nothing here bypasses locks, cooldowns, or duplicates activation logic.
+    // Every other keybind that used to live here (pickaxe/rocket/laser/drone/clone/pulse/
+    // acid/shock/firesplit) pointed at an Overdrive that no longer exists - removed rather
+    // than left dangling, so those keys are simply not bound to anything anymore. ---
     const OVERDRIVE_KEYBINDS = {
-        'Digit1': 'suit', 'Digit2': 'drill', 'Digit3': 'pickaxe', 'Digit4': 'rocket',
-        'Digit5': 'laser', 'Digit6': 'fireball', 'Digit7': 'drone', 'Digit8': 'clone',
-        'Digit9': 'pulse', 'Digit0': 'acid', 'Minus': 'shock', 'Equal': 'firesplit'
+        'Digit1': 'suit', 'Digit2': 'drill', 'Digit3': 'fireball'
     };
     // Reverse lookup (Overdrive key -> the label shown on its keyboard badge, e.g. 'suit' ->
-    // '1', 'shock' -> '-'). Purely for display on the HUD badges and the OD selection cards
-    // below - does not affect activation logic.
+    // '1'). Purely for display on the HUD badges and the OD selection cards below - does not
+    // affect activation logic.
     const OVERDRIVE_KEY_LABELS = {};
     for (const code in OVERDRIVE_KEYBINDS) {
         let label = code.startsWith('Digit') ? code.slice(5) : (code === 'Minus' ? '-' : (code === 'Equal' ? '=' : code));
@@ -5182,13 +4927,13 @@ const STORY_IMAGES = {
         const odKey = OVERDRIVE_KEYBINDS[e.code];
         if (!odKey) return;
 
-        // Don't treat number-row/-/= as Overdrive shortcuts while a text field has focus.
+        // Don't treat number-row shortcuts as Overdrive shortcuts while a text field has focus.
         const activeEl = document.activeElement;
         const tag = activeEl && activeEl.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || (activeEl && activeEl.isContentEditable)) return;
 
         // Fire during actual gameplay, and ALSO while the Overdrive selection card screen
-        // (OD_SELECT) is open - the same number/-/= key that activates an Overdrive from the
+        // (OD_SELECT) is open - the same number key that activates an Overdrive from the
         // HUD doubles as picking that Overdrive's card when multiple are ready at once. Every
         // other menu/overlay (Skill Tree, Settings, Game Guide, story, Pause, etc.) is still
         // ignored entirely.
@@ -5768,7 +5513,7 @@ const STORY_IMAGES = {
     // the majority of what spawns, keeping the overall difficulty curve balanced.
     const HARDENED_TIER_CHANCE_MAX = 0.32;
     // NOTE: the old flat MAX_ASTEROIDS_HARD_CAP (34) constant that used to live here has been
-    // replaced by the level/plane-based getLevelObjectCountTarget() (see near getCurrentLevelNumber)
+    // replaced by getLevelObjectCountTarget()
     // used below by maxAsteroidsOnScreen - that flat cap was exactly the bug where every zone
     // past Level 1 got silently capped at roughly the same on-screen count.
     // REMOVED (bugfix): this constant used to apply a "slight" +25% spawn-chance bump for the
@@ -5937,11 +5682,9 @@ const STORY_IMAGES = {
         let dirX = dirDX / dirLen, dirY = dirDY / dirLen;
         let moveSpeed = OFFSCREEN_SPEED_MIN + Math.random() * (OFFSCREEN_SPEED_MAX - OFFSCREEN_SPEED_MIN);
 
-        // --- LEVEL-GATED OBJECT VISUAL: pick a random destroyable-object definition from ONLY
-        // the pool unlocked at the player's current level (see getAvailableObjectsForLevel /
-        // getCurrentLevelNumber above). This is the single spawn path for the main object field,
-        // so the level's object pool is respected everywhere asteroids are produced. ---
-        let objectDef = pickRandomObjectForLevel(getCurrentLevelNumber());
+        // Pick a random destroyable-object definition from the single always-available pool.
+        // This is the single spawn path for the main object field.
+        let objectDef = pickRandomObjectForLevel();
         // Frozen at spawn so an object's toughness never shifts mid-life as the player keeps
         // leveling up while it's still on screen - see getObjectHealthLevelMultiplier and
         // applyWeaponTierHitDamage (the actual hits-to-destroy divisor) above.
@@ -6015,161 +5758,52 @@ const STORY_IMAGES = {
     // --- UPGRADE ECONOMY (Money-only): every cost below is a single { money: N } value spent
     // straight out of playerStats.score ($). Minerals no longer factor into any cost anywhere
     // in this tree - see canAfford()/purchaseUpgrade() above. ---
+    // ============================================================
+    // SKILL TREE DATA — focused on exactly 3 systems: DRILL, SUIT, FIREBALL. Every other
+    // power-up/upgrade branch that used to live here (Laser, Rocket, Energy, Movement, Drone,
+    // Clone, Pulse Core, Acid Sisters, Electric Shock, Fire Split, Collector) has been
+    // completely removed from this data - not hidden, filtered, or CSS-suppressed. Their node
+    // ids no longer exist anywhere in this object, so upgradeLevels/prereqsMet/purchaseUpgrade
+    // can never resolve or unlock them again.
+    //
+    // Each of the 3 surviving systems is a base/unlock node followed by a short linear chain
+    // of incremental upgrade nodes (each node's prereq points at the previous one in its own
+    // chain), so there's real depth to spend Money on within Drill/Suit/Fireball instead of a
+    // single flat unlock:
+    //   DRILL:    Drill Power -> Drill Speed -> Heavy Drill -> Max Drill
+    //   SUIT:     Armor -> Energy -> Shield -> Max Suit
+    //   FIREBALL: Fireball Power -> Fire Rate -> Fireball Size -> Multi-Fire
+    // ============================================================
     const upgradeTrees = {
-        // ============================================================
-        // TECH TREE STRUCTURE
-        // ------------------------------------------------------------
-        // Every upgrade node now carries three new fields on top of its original
-        // id/name/desc/cost/effect/value/maxLevel (all of which are untouched, so old saves
-        // still line up 1:1 with these ids):
-        //   - prereq: [{id, level}, ...]  - ALL listed nodes must be at >= that level before
-        //     this node can be purchased. An empty array means "no prerequisite" (a tree root).
-        //     A node can require MULTIPLE prior nodes (a branch merge), and a single node can be
-        //     the parent of several children (a branch split) - this is what turns each former
-        //     flat list into an actual branching skill tree instead of one straight line.
-        //   - lane: horizontal branch offset (0 = center spine, negative/positive = left/right
-        //     branch) used purely for the node-graph layout.
-        //   - depth: how many steps out from the category's root along its spoke, also purely
-        //     for layout.
-        //
-        // OVERALL ABILITY-UNLOCK PROGRESSION (the "which power-up opens up when" tier, spanning
-        // every tree - not just levels within one tree):
-        //   TIER 1 - EARLY (3 power-ups, open with just the always-available Drill):
-        //     Girl Suit (suit_0), Mining Rocket (rkt_1), Fireballs (wpn_fb1)
-        //   TIER 2 - MID (5 power-ups, gated behind the cheapest Tier-1 pick, Nano-Suit
-        //     Activation, so the player has to commit to the Suit branch before the mid-game
-        //     opens up):
-        //     Laser (wpn_laser1), Fire Split (firesplit_1), Attack Drone (drone_1),
-        //     Electric Shock (shock_1), Pulse Core (pulse_1)
-        //   TIER 3 - LATE (2 powerful abilities, gated behind TWO completed Tier-2 branches -
-        //     Drone AND Pulse Core - so they're a real capstone reward, not just an expensive
-        //     purchase):
-        //     Girl Clones (clone_1), Acid Sisters (acid_1)
-        // Within EVERY individual tree, the strongest node (the final capstone - usually the
-        // Overdrive Core, sometimes a top-tier damage upgrade) requires multiple earlier branches
-        // to already be invested in, not just "the previous node in the list" as before.
-        // ============================================================
         drill: [
-            { id: "drill_base", name: "Base Drill", desc: "Standard mining equipment", cost: {}, effect: null, value: 0, maxLevel: 1, baseUnlock: true, prereq: [], lane: 0, depth: 0 },
-            { id: "drill_tungsten", name: "Tungsten Drill", desc: "+ Drill damage", cost: { money: 420 }, effect: "damage", value: 0.1, maxLevel: 20, prereq: [{ id: "drill_base", level: 1 }], lane: 0, depth: 1 },
-            { id: "drill_diamond", name: "Diamond Drill", desc: "+ Higher asteroid damage", cost: { money: 510 }, effect: "damage", value: 0.25, maxLevel: 20, prereq: [{ id: "drill_tungsten", level: 1 }], lane: -1, depth: 2 },
-            { id: "drill_plasma", name: "Plasma Drill", desc: "Adds energy damage", cost: { money: 1810 }, effect: "damage", value: 0.5, maxLevel: 20, prereq: [{ id: "drill_tungsten", level: 1 }], lane: 1, depth: 2 },
-            { id: "drill_od_dur", name: "Drill Storm Core", desc: "+1s Drill Storm overdrive duration", cost: { money: 960 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "drill_tungsten", level: 1 }], lane: 2, depth: 2 },
-            { id: "drill_void", name: "Void Drill", desc: "Massively increases mining power", cost: { money: 8230 }, effect: "damage", value: 1.0, maxLevel: 20, prereq: [{ id: "drill_diamond", level: 1 }, { id: "drill_plasma", level: 1 }], lane: 0, depth: 3 }
-        ],
-        weapon: {
-            laser: [
-                { id: "wpn_laser1", name: "Plasma Laser Cannon", desc: "Unlock Laser Weapon", cost: { money: 2150000 }, effect: "hasLaser", value: true, maxLevel: 1, prereq: [{ id: "suit_0", level: 1 }], lane: 0, depth: 0 },
-                { id: "wpn_laser2", name: "Laser Level 2", desc: "+ Laser damage & fire rate", cost: { money: 4470 }, effect: "damage", value: 0.2, maxLevel: 20, prereq: [{ id: "wpn_laser1", level: 1 }], lane: -1, depth: 1 },
-                { id: "laser_od_dur", name: "Laser Overdrive Core", desc: "+1s Laser Beam overdrive duration", cost: { money: 11700 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "wpn_laser1", level: 1 }], lane: 1, depth: 1 },
-                { id: "wpn_laser3", name: "Laser Level 3", desc: "+ Bigger laser beam", cost: { money: 22060 }, effect: "damage", value: 0.3, maxLevel: 20, prereq: [{ id: "wpn_laser2", level: 3 }], lane: -1, depth: 2 },
-                { id: "wpn_laser4", name: "Quantum Laser", desc: "Extreme Laser Power", cost: { money: 14450 }, effect: "damage", value: 0.5, maxLevel: 20, prereq: [{ id: "wpn_laser3", level: 1 }, { id: "laser_od_dur", level: 1 }], lane: 0, depth: 3 }
-            ],
-            fireball: [
-                { id: "wpn_fb1", name: "Massive Fireballs", desc: "Unlock Fireballs", cost: { money: 500000 }, effect: "hasFireball", value: true, maxLevel: 1, prereq: [{ id: "drill_base", level: 1 }], lane: 0, depth: 0 },
-                { id: "wpn_fb2", name: "Fireball Level 2", desc: "More damage", cost: { money: 5200 }, effect: "damage", value: 0.2, maxLevel: 20, prereq: [{ id: "wpn_fb1", level: 1 }], lane: -1, depth: 1 },
-                { id: "fireball_od_dur", name: "Inferno Overdrive Core", desc: "+1s Inferno overdrive duration", cost: { money: 7690 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "wpn_fb1", level: 1 }], lane: 1, depth: 1 },
-                { id: "wpn_fb3", name: "Solar Flame", desc: "Bigger explosion radius", cost: { money: 7920 }, effect: "damage", value: 0.3, maxLevel: 20, prereq: [{ id: "wpn_fb2", level: 3 }], lane: -1, depth: 2 },
-                { id: "wpn_fb4", name: "Supernova Fireball", desc: "Huge destruction", cost: { money: 11800 }, effect: "damage", value: 0.5, maxLevel: 20, prereq: [{ id: "wpn_fb3", level: 1 }, { id: "fireball_od_dur", level: 1 }], lane: 0, depth: 3 }
-            ]
-        },
-        rocket: [
-            { id: "rkt_1", name: "Mining Rocket", desc: "Unlock Rocket Launcher", cost: { money: 500000 }, effect: "hasRocket", value: true, maxLevel: 1, prereq: [{ id: "mov_1", level: 1 }], lane: 0, depth: 0 },
-            { id: "rkt_2", name: "Rocket Engine II", desc: "Faster reloading", cost: { money: 5340 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "rkt_1", level: 1 }], lane: -1, depth: 1 },
-            { id: "rocket_od_dur", name: "Missile Overdrive Core", desc: "+1s Missile Rain overdrive duration", cost: { money: 4660 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "rkt_1", level: 1 }], lane: 1, depth: 1 },
-            { id: "rkt_3", name: "Multi Rocket", desc: "Launch multiple rockets", cost: { money: 5460 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "rkt_2", level: 3 }], lane: -1, depth: 2 },
-            { id: "rkt_4", name: "Nuclear Mining Rocket", desc: "Large explosion damage", cost: { money: 10770 }, effect: "damage", value: 0.5, maxLevel: 20, prereq: [{ id: "rkt_3", level: 1 }, { id: "rocket_od_dur", level: 1 }], lane: 0, depth: 3 }
-        ],
-        energy: [
-            { id: "en_1", name: "Solar Pack", desc: "Energy regeneration increase", cost: { money: 550 }, effect: "energyRegen", value: 0.005, maxLevel: 20, prereq: [], lane: 0, depth: 0 },
-            { id: "en_2", name: "Energy Tank", desc: "Increase maximum energy", cost: { money: 1660 }, effect: "maxEnergy", value: 2, maxLevel: 20, prereq: [{ id: "en_1", level: 1 }], lane: -1, depth: 1 },
-            { id: "en_3", name: "Advanced Reactor", desc: "Energy drains slower", cost: { money: 3540 }, effect: "energyDrain", value: -0.001, maxLevel: 20, prereq: [{ id: "en_1", level: 1 }], lane: 1, depth: 1 },
-            { id: "en_4", name: "Fusion Core", desc: "Massive power increase", cost: { money: 10590 }, effect: "energyRegen", value: 0.01, maxLevel: 20, prereq: [{ id: "en_2", level: 1 }, { id: "en_3", level: 1 }], lane: 0, depth: 2 }
-        ],
-        movement: [
-            // BUGFIX: these three nodes are the only ones with effect:"speed", so they're the
-            // upgrades responsible for the girl's movement speed (see playerStats.speed and
-            // playerShip.update() below, which multiplies every movement input - keyboard,
-            // joystick, and mouse/touch thrust - by playerStats.speed). purchaseUpgrade() already
-            // adds `value` straight onto playerStats.speed on every purchase with no cap, so the
-            // stacking itself was always correct - the bug was that these `value` amounts were so
-            // tiny relative to the base speed of 2.5 (as little as 0.005, a 0.2% change per level)
-            // that 20 levels of a node barely moved the needle and the increase was effectively
-            // imperceptible. Bumped to values that add up to a clearly noticeable speed gain per
-            // level while keeping the same additive/uncapped stacking and the same base speed.
-            { id: "mov_1", name: "Thruster Boost", desc: "Increase movement speed", cost: { money: 620 }, effect: "speed", value: 0.04, maxLevel: 20, prereq: [], lane: 0, depth: 0 },
-            { id: "mov_2", name: "Jet Engine Backpack", desc: "Higher flying acceleration", cost: { money: 3300 }, effect: "speed", value: 0.04, maxLevel: 20, prereq: [{ id: "mov_1", level: 1 }], lane: -1, depth: 1 },
-            { id: "mov_3", name: "Extended Grapple Wire", desc: "Increase auto-collect distance", cost: { money: 2470 }, effect: "magnetRadius", value: 0.5, maxLevel: 20, prereq: [{ id: "mov_1", level: 1 }], lane: 1, depth: 1 },
-            { id: "mov_4", name: "Quantum Mobility", desc: "Extreme movement speed", cost: { money: 7730 }, effect: "speed", value: 0.06, maxLevel: 20, prereq: [{ id: "mov_2", level: 1 }, { id: "mov_3", level: 1 }], lane: 0, depth: 2 }
+            { id: "drill_base", name: "DRILL", desc: "Standard mining equipment - the default starting drill", cost: {}, effect: null, value: 0, maxLevel: 1, baseUnlock: true, prereq: [], lane: 0, depth: 0 },
+            { id: "drill_tungsten", name: "Drill Power", desc: "Reinforces the drill bit for harder-hitting mining strikes", cost: { money: 20000 }, effect: "damage", value: 0.4, maxLevel: 20, prereq: [{ id: "drill_base", level: 1 }], lane: 0, depth: 1 },
+            { id: "drill_diamond", name: "Drill Speed", desc: "Faster drill flight speed to and from targets", cost: { money: 30000 }, effect: "drillFlySpeed", value: 0.15, maxLevel: 20, prereq: [{ id: "drill_tungsten", level: 1 }], lane: 0, depth: 2 },
+            { id: "drill_plasma", name: "Heavy Drill", desc: "Heavier drill strikes for even more mining damage", cost: { money: 80000 }, effect: "damage", value: 0.6, maxLevel: 20, prereq: [{ id: "drill_diamond", level: 1 }], lane: 0, depth: 3 },
+            { id: "drill_od_dur", name: "Max Drill", desc: "Peak drill tuning - extends Drill Storm Overdrive and adds a final damage boost", cost: { money: 150000 }, effect: "damage", value: 0.3, maxLevel: 20, prereq: [{ id: "drill_plasma", level: 1 }], lane: 0, depth: 4 }
         ],
         suit: [
-            { id: "suit_0", name: "Nano-Suit Activation", desc: "Unlock the Girl Power suit ability", cost: { money: 500000 }, effect: "hasGirlPower", value: true, maxLevel: 1, prereq: [{ id: "drill_base", level: 1 }], lane: 0, depth: 0 },
-            { id: "suit_1", name: "Armor Upgrade", desc: "Reduce space damage", cost: { money: 2420 }, effect: "defense", value: 0.1, maxLevel: 20, prereq: [{ id: "suit_0", level: 1 }], lane: -1, depth: 1 },
-            { id: "suit_2", name: "Magnetic Suit", desc: "Collect minerals from farther distance", cost: { money: 5000 }, effect: "magnetRadius", value: 1.0, maxLevel: 20, prereq: [{ id: "suit_0", level: 1 }], lane: 1, depth: 1 },
-            { id: "suit_3", name: "Pickaxe Deploy", desc: "Unlock Impact Pickaxe", cost: { money: 850000 }, effect: "hasPickaxe", value: true, maxLevel: 1, prereq: [{ id: "suit_1", level: 1 }, { id: "suit_2", level: 1 }], lane: 0, depth: 2 },
-            { id: "suit_4", name: "Cosmic Suit", desc: "Maximum protection", cost: { money: 41893 }, effect: "defense", value: 0.2, maxLevel: 20, prereq: [{ id: "suit_1", level: 5 }], lane: -1, depth: 2 },
-            { id: "pickaxe_od_dur", name: "Axe Fury Core", desc: "+1s Axe Fury overdrive duration", cost: { money: 5360 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "suit_3", level: 1 }], lane: 1, depth: 3 },
-            { id: "suit_od_dur", name: "Girl Power Core", desc: "+1s Girl Power overdrive duration, deepens suit color tier", cost: { money: 4880 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "suit_4", level: 1 }, { id: "suit_3", level: 1 }], lane: 0, depth: 3 }
+            { id: "suit_0", name: "SUIT", desc: "Unlock the Girl Power suit ability", cost: { money: 500000 }, effect: "hasGirlPower", value: true, maxLevel: 1, prereq: [{ id: "drill_base", level: 1 }], lane: 0, depth: 0 },
+            { id: "suit_1", name: "Armor", desc: "Plated suit armor reduces damage taken", cost: { money: 40000 }, effect: "defense", value: 0.5, maxLevel: 20, prereq: [{ id: "suit_0", level: 1 }], lane: 0, depth: 1 },
+            { id: "suit_2", name: "Energy", desc: "Expands the suit's energy reserves and regen", cost: { money: 40000 }, effect: "maxEnergy", value: 15, maxLevel: 20, prereq: [{ id: "suit_1", level: 1 }], lane: 0, depth: 2 },
+            { id: "suit_3", name: "Shield", desc: "Adds a deflective energy shield on top of the suit's armor", cost: { money: 90000 }, effect: "shield", value: 0.5, maxLevel: 20, prereq: [{ id: "suit_2", level: 1 }], lane: 0, depth: 3 },
+            { id: "suit_od_dur", name: "Max Suit", desc: "Peak suit tuning - extends Girl Power Overdrive and adds a final defense boost", cost: { money: 180000 }, effect: "defense", value: 0.5, maxLevel: 20, prereq: [{ id: "suit_3", level: 1 }], lane: 0, depth: 4 }
         ],
-        drone: [
-            { id: "drone_1", name: "Recon Drone", desc: "Unlock a small companion attack drone", cost: { money: 2450000 }, effect: "hasDrone", value: true, maxLevel: 1, prereq: [{ id: "suit_0", level: 1 }], lane: 0, depth: 0 },
-            { id: "drone_2", name: "Twin Cannons", desc: "+ Drone projectile damage", cost: { money: 7040 }, effect: "droneDamage", value: 0.2, maxLevel: 20, prereq: [{ id: "drone_1", level: 1 }], lane: -1, depth: 1 },
-            { id: "drone_3", name: "Rapid Targeting", desc: "+ Drone fire rate", cost: { money: 18920 }, effect: "droneFireRateLevel", value: 1, maxLevel: 20, prereq: [{ id: "drone_1", level: 1 }], lane: 1, depth: 1 },
-            { id: "drone_4", name: "Support Bay", desc: "+1 max attack drone in the air at once (always active, more during Drone Swarm overdrive)", cost: { money: 34290 }, effect: "droneSupportCount", value: 1, maxLevel: 4, prereq: [{ id: "drone_2", level: 3 }], lane: -1, depth: 2 },
-            { id: "drone_od_dur", name: "Drone Overdrive Core", desc: "+1s Drone Swarm overdrive duration", cost: { money: 10970 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "drone_4", level: 1 }, { id: "drone_3", level: 3 }], lane: 0, depth: 3 }
-        ],
-        clone: [
-            { id: "clone_1", name: "Mirror Matrix", desc: "Unlock the Girl Clones ability - kamikaze clones that detonate on contact", cost: { money: 21650000 }, effect: "hasClone", value: true, maxLevel: 1, prereq: [{ id: "drone_1", level: 1 }, { id: "pulse_1", level: 1 }], lane: 0, depth: 0 },
-            { id: "clone_2", name: "Ember Infusion", desc: "+ Clone explosion damage", cost: { money: 6020 }, effect: "cloneDamage", value: 0.2, maxLevel: 20, prereq: [{ id: "clone_1", level: 1 }], lane: -1, depth: 1 },
-            { id: "clone_5", name: "Extended Reach", desc: "+ Clone target-seeking range", cost: { money: 7960 }, effect: "cloneRange", value: 10, maxLevel: 15, prereq: [{ id: "clone_1", level: 1 }], lane: 1, depth: 1 },
-            { id: "clone_3", name: "Rapid Ignition", desc: "+ Faster clone respawn after detonating", cost: { money: 12930 }, effect: "cloneFireRateLevel", value: 1, maxLevel: 20, prereq: [{ id: "clone_2", level: 3 }], lane: -2, depth: 2 },
-            { id: "clone_6", name: "Volatile Payload", desc: "+ Explosion blast radius", cost: { money: 20100 }, effect: "cloneBlastRadius", value: 4, maxLevel: 25, prereq: [{ id: "clone_2", level: 1 }, { id: "clone_5", level: 1 }], lane: 0, depth: 2 },
-            { id: "clone_4", name: "Sisterhood", desc: "+1 Girl Clone (always active, all 5 during Overdrive)", cost: { money: 24850 }, effect: "cloneCount", value: 1, maxLevel: 4, prereq: [{ id: "clone_5", level: 3 }], lane: 2, depth: 2 },
-            { id: "clone_7", name: "Encore Charges", desc: "+ Chance for a bonus Encore Blast dealing extra damage on detonation", cost: { money: 15710 }, effect: "cloneEncoreChance", value: 0.04, maxLevel: 15, prereq: [{ id: "clone_3", level: 1 }, { id: "clone_6", level: 1 }, { id: "clone_4", level: 1 }], lane: 0, depth: 3 },
-            { id: "clone_od_dur", name: "Clone Overdrive Core", desc: "+1s Girl Clones overdrive duration", cost: { money: 7530 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "clone_7", level: 1 }], lane: 0, depth: 4 }
-        ],
-        pulse: [
-            { id: "pulse_1", name: "Pulse Core", desc: "Unlock the Pulse Core - emits damaging energy shockwaves", cost: { money: 1350000 }, effect: "hasPulseCore", value: true, maxLevel: 1, prereq: [{ id: "suit_0", level: 1 }], lane: 0, depth: 0 },
-            { id: "pulse_2", name: "Overcharged Core", desc: "+ Pulse damage", cost: { money: 3540 }, effect: "pulseDamage", value: 0.2, maxLevel: 20, prereq: [{ id: "pulse_1", level: 1 }], lane: -1, depth: 1 },
-            { id: "pulse_3", name: "Amplified Emitter", desc: "+ Pulse shockwave radius", cost: { money: 14360 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "pulse_1", level: 1 }], lane: 1, depth: 1 },
-            { id: "pulse_4", name: "Rapid Discharge", desc: "+ Pulse frequency (fires more often)", cost: { money: 14180 }, effect: null, value: 0, maxLevel: 30, prereq: [{ id: "pulse_2", level: 1 }, { id: "pulse_3", level: 1 }], lane: 0, depth: 2 },
-            { id: "pulse_od_dur", name: "Core Overload Matrix", desc: "+1s Core Overload overdrive duration", cost: { money: 7840 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "pulse_4", level: 1 }], lane: 0, depth: 3 }
-        ],
-        acidsisters: [
-            { id: "acid_1", name: "Acid Coven", desc: "Unlock the Acid Sisters ability", cost: { money: 17550000 }, effect: "hasAcidSisters", value: true, maxLevel: 1, prereq: [{ id: "firesplit_1", level: 1 }, { id: "shock_1", level: 1 }], lane: 0, depth: 0 },
-            { id: "acid_2", name: "Corrosive Mix", desc: "+ Acid Sisters damage", cost: { money: 4900 }, effect: "acidDamage", value: 0.2, maxLevel: 20, prereq: [{ id: "acid_1", level: 1 }], lane: -1, depth: 1 },
-            { id: "acid_3", name: "Rapid Flasks", desc: "+ Acid throwing speed", cost: { money: 19830 }, effect: "acidFireRateLevel", value: 1, maxLevel: 25, prereq: [{ id: "acid_1", level: 1 }], lane: 1, depth: 1 },
-            { id: "acid_od_dur", name: "Acid Overdrive Core", desc: "+1s Acid Sisters overdrive duration", cost: { money: 6420 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "acid_2", level: 1 }, { id: "acid_3", level: 1 }], lane: 0, depth: 2 }
-        ],
-        shock: [
-            { id: "shock_1", name: "Storm Cell", desc: "Unlock the Electric Shock ability", cost: { money: 1100000 }, effect: "hasElectricShock", value: true, maxLevel: 1, prereq: [{ id: "suit_0", level: 1 }], lane: 0, depth: 0 },
-            { id: "shock_2", name: "High Voltage", desc: "+ Electric Shock damage", cost: { money: 7300 }, effect: "shockDamage", value: 0.2, maxLevel: 20, prereq: [{ id: "shock_1", level: 1 }], lane: -1, depth: 1 },
-            { id: "shock_3", name: "Capacitor Bank", desc: "+ Electric Shock attack speed", cost: { money: 25740 }, effect: "shockFireRateLevel", value: 1, maxLevel: 25, prereq: [{ id: "shock_1", level: 1 }], lane: 1, depth: 1 },
-            { id: "shock_4", name: "Long Arc Coils", desc: "+ Electric Shock strike range", cost: { money: 15670 }, effect: "shockRange", value: 15, maxLevel: 20, prereq: [{ id: "shock_2", level: 1 }, { id: "shock_3", level: 1 }], lane: 0, depth: 2 },
-            { id: "shock_od_dur", name: "Storm Core", desc: "+1s Electric Storm overdrive duration", cost: { money: 13140 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "shock_4", level: 1 }], lane: 0, depth: 3 }
-        ],
-        firesplit: [
-            { id: "firesplit_1", name: "Firestorm Split", desc: "Unlock Fire Split - fires 3 independent fire projectiles at once (left/forward/right)", cost: { money: 1400000 }, effect: "hasFireSplit", value: true, maxLevel: 1, prereq: [{ id: "suit_0", level: 1 }], lane: 0, depth: 0 },
-            { id: "firesplit_2", name: "Molten Core", desc: "+ Fire Split damage", cost: { money: 10230 }, effect: "fireSplitDamage", value: 0.22, maxLevel: 20, prereq: [{ id: "firesplit_1", level: 1 }], lane: -1, depth: 1 },
-            { id: "firesplit_3", name: "Rapid Ignition", desc: "+ Fire Split throwing speed (fires more often)", cost: { money: 14680 }, effect: "fireSplitFireRateLevel", value: 1, maxLevel: 25, prereq: [{ id: "firesplit_1", level: 1 }], lane: 1, depth: 1 },
-            { id: "firesplit_4", name: "Accelerant", desc: "+ Fire Split projectile speed", cost: { money: 12490 }, effect: "fireSplitSpeedLevel", value: 1, maxLevel: 20, prereq: [{ id: "firesplit_2", level: 3 }], lane: -2, depth: 2 },
-            { id: "firesplit_6", name: "Extended Fuse", desc: "+ Fire Split projectile lifetime/range", cost: { money: 5500 }, effect: "fireSplitLifetimeLevel", value: 1, maxLevel: 15, prereq: [{ id: "firesplit_3", level: 3 }], lane: 2, depth: 2 },
-            { id: "firesplit_5", name: "Smoldering Burn", desc: "+ Burn damage and duration on anything hit", cost: { money: 5480 }, effect: "fireSplitBurnLevel", value: 1, maxLevel: 20, prereq: [{ id: "firesplit_2", level: 1 }, { id: "firesplit_3", level: 1 }], lane: 0, depth: 2 },
-            { id: "firesplit_7", name: "Chain Combustion", desc: "+ Chance for split projectiles to split again on their next hit", cost: { money: 14650 }, effect: "fireSplitExtraSplitChance", value: 0.03, maxLevel: 15, prereq: [{ id: "firesplit_4", level: 1 }, { id: "firesplit_5", level: 1 }, { id: "firesplit_6", level: 1 }], lane: 0, depth: 3 },
-            { id: "firesplit_od_dur", name: "Firestorm Core", desc: "+1s Firestorm Split overdrive duration", cost: { money: 8190 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "firesplit_7", level: 1 }], lane: 0, depth: 4 }
-        ],
-        // --- COLLECTOR: single unlock node only, deliberately. Per design the Collector's
-        // speed must never change, and it has no damage/range/count of its own to upgrade -
-        // so unlike every other branch above, this tree has no follow-up upgrade nodes.
-        collector: [
-            { id: "collector_1", name: "Automated Collector", desc: "Unlock the Collector - a small companion that automatically flies to and gathers visible minerals/collectibles on screen", cost: { money: 400000 }, effect: "hasCollector", value: true, maxLevel: 1, prereq: [{ id: "en_1", level: 1 }], lane: 0, depth: 0 }
-        ]
+        weapon: {
+            fireball: [
+                { id: "wpn_fb1", name: "FIREBALL", desc: "Unlock Fireballs", cost: { money: 500000 }, effect: "hasFireball", value: true, maxLevel: 1, prereq: [{ id: "suit_0", level: 1 }], lane: 0, depth: 0 },
+                { id: "wpn_fb_power", name: "Fireball Power", desc: "Hotter fireballs hit harder", cost: { money: 40000 }, effect: "damage", value: 0.4, maxLevel: 20, prereq: [{ id: "wpn_fb1", level: 1 }], lane: 0, depth: 1 },
+                { id: "wpn_fb_rate", name: "Fire Rate", desc: "Throws fireballs more often", cost: { money: 50000 }, effect: "fireballFireRateLevel", value: 1, maxLevel: 20, prereq: [{ id: "wpn_fb_power", level: 1 }], lane: 0, depth: 2 },
+                { id: "wpn_fb3", name: "Fireball Size", desc: "Bigger fireballs with a wider orbit", cost: { money: 90000 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "wpn_fb_rate", level: 1 }], lane: 0, depth: 3 },
+                { id: "wpn_fb2", name: "Multi-Fire", desc: "Extra orbiting fireballs during Inferno Overdrive", cost: { money: 200000 }, effect: null, value: 0, maxLevel: 20, prereq: [{ id: "wpn_fb3", level: 1 }], lane: 0, depth: 4 }
+            ]
+        }
     };
 
     function initLevels() {
         Object.values(upgradeTrees).forEach(tree => {
             if(Array.isArray(tree)) { tree.forEach(upg => { if(upgradeLevels[upg.id] === undefined) upgradeLevels[upg.id] = (upg.baseUnlock ? 1 : 0); }); } 
-            else { tree.laser.forEach(upg => { if(upgradeLevels[upg.id] === undefined) upgradeLevels[upg.id] = 0; }); tree.fireball.forEach(upg => { if(upgradeLevels[upg.id] === undefined) upgradeLevels[upg.id] = 0; }); }
+            else { tree.fireball.forEach(upg => { if(upgradeLevels[upg.id] === undefined) upgradeLevels[upg.id] = 0; }); }
         });
 
         // Ability unlock progression: only the Drill starts available. Every other ability
@@ -6395,23 +6029,12 @@ const STORY_IMAGES = {
         if (!storySceneViewed('m2_drill') && (upgradeLevels['drill_tungsten'] || 0) >= 1) storyMarkViewed('m2_drill');
         if (!storySceneViewed('m3_drone') && playerStats.hasDrone) storyMarkViewed('m3_drone');
         if (!storySceneViewed('m4_suit') && playerStats.hasGirlPower) storyMarkViewed('m4_suit');
-        let contRift = worldZones.find(z => z.id === 'rift');
-        if (!storySceneViewed('m5_blackhole') && contRift && isZoneUnlocked(contRift)) storyMarkViewed('m5_blackhole');
-        let contFrozen = worldZones.find(z => z.id === 'frozen');
-        if (!storySceneViewed('m6_station') && contFrozen && isZoneUnlocked(contFrozen)) storyMarkViewed('m6_station');
-        let contVolcanic = worldZones.find(z => z.id === 'volcanic');
-        if (!storySceneViewed('m7_overlord') && contVolcanic && isZoneUnlocked(contVolcanic)) storyMarkViewed('m7_overlord');
         if (!storySceneViewed('final') && playerStats.score >= WIN_SCORE) storyMarkViewed('final');
 
-        // The initial 15 asteroids were spawned for the default (level 1) zone before any save
-        // was loaded - regenerate to match whichever zone the save actually left off in. BUGFIX:
-        // this used to always reseed with the same flat 15 regardless of that zone's real
-        // target - fine for an early zone, but for a save that left off in a later/denser zone
-        // this meant loading in always started far below that zone's actual target population,
-        // then relied on the same slow per-frame top-up as every other under-target case to
-        // climb the rest of the way - i.e. every single load into a later zone looked like
-        // "spawning is slow" for the first several seconds. Seeds to 45% of the correct target
-        // instead, same as travelToZone, so a loaded save's field matches its zone immediately.
+        // The initial 15 asteroids were spawned before any save was loaded - regenerate to match
+        // the save's real target population instead of a flat 15, so a loaded save's field
+        // matches its target density immediately (seeds to 45% of target; the normal per-frame
+        // top-up closes the rest of the gap smoothly).
         asteroidsList = [];
         let loadedZoneInitialTarget = Math.max(15, Math.round(getLevelObjectCountTarget() * 0.45));
         for (let i = 0; i < loadedZoneInitialTarget; i++) produceAsteroidNode();
@@ -6546,6 +6169,67 @@ const STORY_IMAGES = {
     }
 
     // ============================================================
+    // MOBILE GAMEPLAY "EXIT FULLSCREEN" BUTTON (game-side only)
+    // ------------------------------------------------------------
+    // Distinct from exitFullscreenFromMenu() above only in WHEN it is shown and WHAT it must
+    // never do - the actual fullscreen-exit mechanics are identical, so both call the same
+    // getFullscreenElement()/exit-method lookup rather than duplicating that cross-browser logic.
+    //
+    // This control belongs entirely to Girl: The Driller's own gameplay UI. It must never be
+    // confused with, or allowed to affect, any fullscreen/nav/footer/social control that may
+    // belong to a wrapping website (e.g. if this file is hosted inside an iframe on
+    // pixelgaunt.com) - this code only ever touches its own #gameplay-exit-fs-btn element and
+    // the browser's Fullscreen API, nothing else on the page.
+    //
+    // isPhoneDevice deliberately requires BOTH coarse-pointer/touch input AND a small physical
+    // screen (smaller viewport dimension <= 600 CSS px) so tablets - which also have touch/coarse
+    // pointers but a larger screen - are excluded, matching the "PC/Desktop and tablet: do not
+    // add this button" requirement. Re-checked live (not cached at load) since a device can
+    // rotate between portrait/landscape.
+    function isPhoneDevice() {
+        const hasCoarseTouch = (('ontouchstart' in window) || navigator.maxTouchPoints > 0) &&
+            window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        if (!hasCoarseTouch) return false;
+        return Math.min(window.innerWidth, window.innerHeight) <= 600;
+    }
+
+    function exitFullscreenGameplayMobile() {
+        playSound('click');
+        try {
+            if (!getFullscreenElement()) return; // nothing to exit; button shouldn't be visible anyway
+            const exitFn = document.exitFullscreen || document.webkitExitFullscreen ||
+                document.mozCancelFullScreen || document.msExitFullscreen;
+            if (exitFn) {
+                const result = exitFn.call(document);
+                if (result && typeof result.catch === 'function') {
+                    result.catch(err => console.log('[GAMEPLAY EXIT FULLSCREEN] Request failed:', err));
+                }
+            }
+        } catch (e) {
+            console.log('[GAMEPLAY EXIT FULLSCREEN] Request failed:', e);
+        }
+        // Deliberately does nothing else: no menu navigation, no gameState change, no pause -
+        // the game keeps running exactly as it was, just outside the browser's fullscreen mode.
+    }
+
+    // Shows the button only when every condition holds at once: phone-class device, actual
+    // gameplay in progress, and the browser is currently in fullscreen. Re-evaluated on
+    // fullscreenchange (all vendor-prefixed variants), on resize/orientation change (phones can
+    // rotate, and isPhoneDevice's screen-size check depends on current orientation), and on a
+    // light interval as a fallback for gameState transitions (menu/pause/etc.) that don't fire
+    // either of those browser events.
+    function updateGameplayExitFullscreenBtnVisibility() {
+        const btn = document.getElementById('gameplay-exit-fs-btn');
+        if (!btn) return;
+        const show = !!getFullscreenElement() && gameState === "PLAYING" && isPhoneDevice();
+        btn.style.display = show ? 'flex' : 'none';
+    }
+    ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange']
+        .forEach(evt => document.addEventListener(evt, updateGameplayExitFullscreenBtnVisibility));
+    window.addEventListener('resize', updateGameplayExitFullscreenBtnVisibility);
+    setInterval(updateGameplayExitFullscreenBtnVisibility, 500);
+
+    // ============================================================
     // FULL AUTO-SAVE - there is no manual Save button and no action the player has to remember
     // to take. Progress is written to localStorage automatically as the game is played. To avoid
     // hammering localStorage (and any perf hit) from doing that on every single frame or every
@@ -6670,18 +6354,16 @@ const STORY_IMAGES = {
     // Maps each Overdrive-panel key to the upgrade-tree node that unlocks it, so the locked
     // state of that box can show a live tooltip and progress-toward-unlock bar without having
     // to hardcode costs in two places.
+    // Only suit/fireball remain (their unlock nodes still exist in the trimmed skill tree above).
+    // Every other key that used to live here (pickaxe/rocket/laser/drone/clone/pulse/acid/
+    // shock/firesplit) pointed at a skill-tree node that no longer exists, so those entries were
+    // removed rather than left dangling - the code that reads this map already falls back to a
+    // plain "LOCKED" state for any key with no entry (see updateOverdrivePanel below), so those
+    // power-ups' Overdrive boxes simply stay permanently locked, matching them no longer being
+    // reachable from the skill tree at all.
     const abilityUnlockNode = {
         suit: { id: 'suit_0', list: upgradeTrees.suit },
-        pickaxe: { id: 'suit_3', list: upgradeTrees.suit },
-        rocket: { id: 'rkt_1', list: upgradeTrees.rocket },
-        laser: { id: 'wpn_laser1', list: upgradeTrees.weapon.laser },
-        fireball: { id: 'wpn_fb1', list: upgradeTrees.weapon.fireball },
-        drone: { id: 'drone_1', list: upgradeTrees.drone },
-        clone: { id: 'clone_1', list: upgradeTrees.clone },
-        pulse: { id: 'pulse_1', list: upgradeTrees.pulse },
-        acid: { id: 'acid_1', list: upgradeTrees.acidsisters },
-        shock: { id: 'shock_1', list: upgradeTrees.shock },
-        firesplit: { id: 'firesplit_1', list: upgradeTrees.firesplit }
+        fireball: { id: 'wpn_fb1', list: upgradeTrees.weapon.fireball }
     };
 
     function formatNumber(num) {
@@ -6769,8 +6451,8 @@ const STORY_IMAGES = {
     // Foundation trunks (systems the Girl always has) stack vertically on the LEFT, each
     // growing rightward with depth. Power-Up trees stack vertically on the RIGHT in the same
     // way. Order here is purely the row order top-to-bottom in that stack.
-    const FOUNDATION_ORDER = ['energy', 'movement', 'drill', 'suit'];
-    const POWERUP_ORDER = ['rocket', 'laser', 'fireball', 'drone', 'collector', 'pulse', 'shock', 'firesplit', 'acidsisters', 'clone'];
+    const FOUNDATION_ORDER = ['drill', 'suit'];
+    const POWERUP_ORDER = ['fireball'];
     const FOUNDATION_X0 = 40, POWERUP_X0 = 900;
 
     // --- LEGEND / NODE-TYPE COLOR SYSTEM ------------------------------------------------------
@@ -6783,8 +6465,8 @@ const STORY_IMAGES = {
     //   utility      - a passive stat node inside Drill/Suit/Thrust/Solar Pack/Collector (purple)
     //   core         - a capstone/Overdrive-core node, the strongest node on any branch (gold)
     const LEGEND_COLORS = { foundation: '#39ff14', powerup: '#ff5500', upgrade: '#00bfff', utility: '#a855f7', core: '#ffd700' };
-    const POWERUP_CATEGORY_IDS = new Set(['laser', 'fireball', 'rocket', 'drone', 'clone', 'pulse', 'acidsisters', 'shock', 'firesplit']);
-    const FOUNDATION_CATEGORY_IDS = new Set(['drill', 'suit', 'movement', 'energy']);
+    const POWERUP_CATEGORY_IDS = new Set(['fireball']);
+    const FOUNDATION_CATEGORY_IDS = new Set(['drill', 'suit']);
     function nodeLegendKind(upg, cat) {
         let kind = nodeKind(upg, cat);
         if (kind === 'capstone') return 'core';
@@ -6795,24 +6477,16 @@ const STORY_IMAGES = {
     function nodeLegendColor(upg, cat) { return LEGEND_COLORS[nodeLegendKind(upg, cat)]; }
 
     // Icon values are ready-to-insert <img> tags, reusing exactly the same artwork as the
-    // Overdrive HUD/cards for every branch that also has an Overdrive (suit/drill/laser/
-    // fireball/rocket/drone/clone/pulse/acidsisters/shock/firesplit) so a branch reads as the
-    // same ability everywhere it shows up, per the icon pack integration pass.
+    // Overdrive HUD/cards (unchanged - see the Assets/HUD icon definitions elsewhere in the
+    // file). Only 3 categories remain, one per surviving skill-tree node: DRILL -> SUIT ->
+    // FIREBALL. Every other category (Mobility, Energy Sys, Laser Weapon, Missiles, Attack
+    // Drone, Girl Clones, Pulse Core, Acid Sisters, Electric Shock, Fire Split, Collector) has
+    // been fully removed from this list, not hidden - their node/icon/title/color/tab/subTree
+    // data no longer exists here at all.
     const treeCategories = [
-        { id: 'suit',     title: 'Girl Suit',    icon: powerupIcon.suit, color: '#d942ff', nodes: upgradeTrees.suit,            tab: 'suit',     subTree: null },
-        { id: 'movement', title: 'Mobility',      icon: powerupIcon.movement, color: '#00bfff', nodes: upgradeTrees.movement,        tab: 'movement', subTree: null },
-        { id: 'energy',   title: 'Energy Sys',    icon: powerupIcon.energy, color: '#ffd700', nodes: upgradeTrees.energy,          tab: 'energy',   subTree: null },
-        { id: 'drill',    title: 'Drilling',      icon: powerupIcon.drill, color: '#c0c0c8', nodes: upgradeTrees.drill,           tab: 'drill',    subTree: null },
-        { id: 'laser',    title: 'Laser Weapon',  icon: powerupIcon.laser, color: '#ff3366', nodes: upgradeTrees.weapon.laser,    tab: 'weapon',   subTree: 'laser' },
-        { id: 'fireball', title: 'Fireball',      icon: powerupIcon.fireball, color: '#00f3ff', nodes: upgradeTrees.weapon.fireball, tab: 'weapon',   subTree: 'fireball' },
-        { id: 'rocket',   title: 'Missiles',      icon: powerupIcon.rocket, color: '#39ff14', nodes: upgradeTrees.rocket,          tab: 'rocket',   subTree: null },
-        { id: 'drone',    title: 'Attack Drone',  icon: powerupIcon.drone, color: '#00ffcc', nodes: upgradeTrees.drone,           tab: 'drone',    subTree: null },
-        { id: 'clone',    title: 'Girl Clones',   icon: powerupIcon.clone, color: '#ff5500', nodes: upgradeTrees.clone,           tab: 'clone',    subTree: null },
-        { id: 'pulse',    title: 'Pulse Core',    icon: powerupIcon.pulse, color: '#00e5ff', nodes: upgradeTrees.pulse,           tab: 'pulse',    subTree: null },
-        { id: 'acidsisters', title: 'Acid Sisters', icon: powerupIcon.acidsisters, color: '#7cfc00', nodes: upgradeTrees.acidsisters,  tab: 'acidsisters', subTree: null },
-        { id: 'shock',    title: 'Electric Shock', icon: powerupIcon.shock, color: '#66e0ff', nodes: upgradeTrees.shock,        tab: 'shock',    subTree: null },
-        { id: 'firesplit', title: 'Fire Split',   icon: powerupIcon.firesplit, color: '#ff3300', nodes: upgradeTrees.firesplit,    tab: 'firesplit', subTree: null },
-        { id: 'collector', title: 'Collector',    icon: powerupIcon.collector, color: '#ffd23f', nodes: upgradeTrees.collector,    tab: 'collector', subTree: null }
+        { id: 'drill',    title: 'DRILL',    icon: powerupIcon.drill, color: '#c0c0c8', nodes: upgradeTrees.drill,           tab: 'drill',    subTree: null },
+        { id: 'suit',     title: 'SUIT',     icon: powerupIcon.suit, color: '#d942ff', nodes: upgradeTrees.suit,            tab: 'suit',     subTree: null },
+        { id: 'fireball', title: 'FIREBALL', icon: powerupIcon.fireball, color: '#00f3ff', nodes: upgradeTrees.weapon.fireball, tab: 'weapon',   subTree: 'fireball' }
     ];
 
     // --- FINAL DESTROYABLE-OBJECT DURABILITY PROGRESSION ---
@@ -6825,7 +6499,7 @@ const STORY_IMAGES = {
     // Energy Sys, and Collector are passive stat trees with no Overdrive, so they don't count
     // as "a Power-Up" for this check. finalDamageProgressionReached only ever flips true once
     // and is never reset for the rest of the run, matching "reaching it is an achievement."
-    const FINAL_DAMAGE_POWERUP_CATEGORY_IDS = ['suit', 'drill', 'laser', 'fireball', 'rocket', 'drone', 'clone', 'pulse', 'acidsisters', 'shock', 'firesplit'];
+    const FINAL_DAMAGE_POWERUP_CATEGORY_IDS = ['suit', 'drill', 'fireball'];
     function updateFinalDamageProgression() {
         if (finalDamageProgressionReached) return; // already earned - never re-checked/un-set
         for (let i = 0; i < FINAL_DAMAGE_POWERUP_CATEGORY_IDS.length; i++) {
@@ -6838,12 +6512,10 @@ const STORY_IMAGES = {
     }
 
     // --- PER-NODE ICON OVERRIDES ---
-    // Icon-nodes normally just inherit their category's shared icon (see buildTreeDOM below),
-    // which is correct for every unlock node EXCEPT "Pickaxe Deploy" (suit_3): it unlocks the
-    // Axe/Pickaxe ability but lives inside the "Girl Suit" branch, so without an override it
-    // rendered the suit's shield icon instead of an axe. Add any future off-category unlock
-    // nodes here rather than giving them their own branch, to avoid reshaping the tree layout.
-    const nodeIconOverride = { suit_3: powerupIcon.pickaxe };
+    // Icon-nodes normally just inherit their category's shared icon (see buildTreeDOM below).
+    // The one node that used to need an override here, "Pickaxe Deploy" (suit_3), no longer
+    // exists in the trimmed 3-node skill tree, so there is nothing left to override.
+    const nodeIconOverride = {};
 
     function isIconNode(upg) { return upg.maxLevel === 1; } // boolean unlocks get an icon; incremental levels get a dot
 
@@ -7628,7 +7300,7 @@ const STORY_IMAGES = {
         } else { playSound('click'); }
     }
 
-    // Flattens every tree (including the laser/fireball sub-trees) into one plain list of nodes.
+    // Flattens every tree (including the fireball sub-tree) into one plain list of nodes.
     // Used anywhere that needs to scan ALL upgrade nodes uniformly rather than per-category -
     // now that unlocking is prerequisite-based instead of strict list order, a node's position
     // in its own array no longer tells you anything about whether it's reachable.
@@ -7637,7 +7309,7 @@ const STORY_IMAGES = {
         for (let tab in upgradeTrees) {
             let entry = upgradeTrees[tab];
             if (Array.isArray(entry)) all = all.concat(entry);
-            else { all = all.concat(entry.laser); all = all.concat(entry.fireball); }
+            else { all = all.concat(entry.fireball); }
         }
         return all;
     }
@@ -7670,16 +7342,7 @@ const STORY_IMAGES = {
             let valEl = document.getElementById('val-suit-sys');
             if (valEl) { valEl.innerText = suitTier.name; valEl.style.color = suitTier.color || '#d942ff'; }
         }
-        if (playerStats.hasPickaxe) document.getElementById('sys-pickaxe').style.display = 'flex';
-        if (playerStats.hasRocket) document.getElementById('sys-rocket').style.display = 'flex';
-        if (playerStats.hasLaser) document.getElementById('sys-laser').style.display = 'flex';
         if (playerStats.hasFireball) document.getElementById('sys-fireball').style.display = 'flex';
-        if (playerStats.hasDrone) document.getElementById('sys-drone').style.display = 'flex';
-        if (playerStats.hasClone) document.getElementById('sys-clone').style.display = 'flex';
-        if (playerStats.hasPulseCore) document.getElementById('sys-pulse').style.display = 'flex';
-        if (playerStats.hasAcidSisters) document.getElementById('sys-acid').style.display = 'flex';
-        if (playerStats.hasElectricShock) document.getElementById('sys-shock').style.display = 'flex';
-        if (playerStats.hasFireSplit) document.getElementById('sys-firesplit').style.display = 'flex';
         if (playerStats.hasCollector) document.getElementById('sys-collector').style.display = 'flex';
         schedulePositionSidePanels();
 
@@ -7910,7 +7573,7 @@ const STORY_IMAGES = {
 
         // Keep the virtual joystick's visibility in sync with gameState every frame (cheap -
         // just a classList check) rather than hooking every individual pause/resume/menu-open
-        // call site: covers Pause, Settings, Skill Tree, Mining Zones, Win, and returning to
+        // call site: covers Pause, Settings, Skill Tree, Win, and returning to
         // the Main Menu automatically, since all of them move gameState away from "PLAYING".
         applyControllerModeUI();
 
@@ -8085,7 +7748,7 @@ const STORY_IMAGES = {
             if (overdrives.suit.activeTimer > 0) {
                 createParticle(playerShip.x, playerShip.y, '#d942ff', (Math.random()-0.5)*5, (Math.random()-0.5)*5, 0.05, 4);
             } else {
-                playerStats.energy = Math.max(0, playerStats.energy - Math.max(0.5, 3 - playerStats.defense*0.2)); addFloatingText("WARNING! BLACK HOLE DAMAGE!", playerShip.x, playerShip.y - 80, '#ff0000'); playerShip.velocityX = (playerShip.x - blackHole.x) * 0.6; playerShip.velocityY = (playerShip.y - blackHole.y) * 0.6; if (timeNow - lastPlayerHurtSound > 400) { playSound('player_hurt'); lastPlayerHurtSound = timeNow; } refreshLiveUiDisplays(); 
+                playerStats.energy = Math.max(0, playerStats.energy - Math.max(0.5, 3 - (playerStats.defense + playerStats.shield)*0.2)); addFloatingText("WARNING! BLACK HOLE DAMAGE!", playerShip.x, playerShip.y - 80, '#ff0000'); playerShip.velocityX = (playerShip.x - blackHole.x) * 0.6; playerShip.velocityY = (playerShip.y - blackHole.y) * 0.6; if (timeNow - lastPlayerHurtSound > 400) { playSound('player_hurt'); lastPlayerHurtSound = timeNow; } refreshLiveUiDisplays(); 
             }
         }
 
@@ -8549,7 +8212,7 @@ const STORY_IMAGES = {
             // circle instead of the actual asset. Orbit movement/radius/speed/timing unchanged.
             for(let i=0; i<numOrbs; i++) { let angle = orbitSpeed + (i * (Math.PI*2/numOrbs)); let ox = playerShip.x + Math.cos(angle) * orbitRadius; let oy = playerShip.y + Math.sin(angle) * orbitRadius; createParticle(ox, oy, '#ff6600', 0, 0, 0.2, 8); let orbFireFrame = fireballFrames[Math.floor(timeNow / 90) % fireballFrames.length]; if (orbFireFrame.complete && orbFireFrame.naturalWidth !== 0) { ctx.drawImage(orbFireFrame, ox - 22, oy - 22, 44, 44); } else { ctx.beginPath(); ctx.arc(ox, oy, 18, 0, Math.PI*2); ctx.fillStyle = '#ff6600'; ctx.fill(); } }
             
-            let throwCooldown = isFbOd ? 300 : 1500;
+            let throwCooldown = isFbOd ? Math.max(100, 300 - playerStats.fireballFireRateLevel * 8) : Math.max(400, 1500 - playerStats.fireballFireRateLevel * 45);
             // Single-Projectile Rule: the throw isn't explicitly upgraded for extra simultaneous
             // fireballs (Overdrive here only speeds up the reload), so a new one can't launch
             // until the previous thrown fireball has hit, expired, or otherwise resolved.
@@ -9062,21 +8725,12 @@ const STORY_IMAGES = {
         // --- DYNAMIC DIFFICULTY: SPAWN RATE + ON-SCREEN CAP ---
         // Two separate knobs, as requested: DENSITY (maxAsteroidsOnScreen / levelObjectTarget -
         // how many objects may exist at once, capped at 75% screen density) and SPAWN SPEED
-        // (spawnChance + topUpBudget below - how quickly destroyed objects are replaced). Density
-        // is driven by the current Mining Zone level; spawn speed is driven by a COMBINATION of
-        // that same zone level (zoneSpeedFactor) and player level/upgrade progress
-        // (difficultyNow) - so later zones feel more active even at identical upgrade progress,
-        // and stronger upgrades make any given zone feel more active too, exactly as requested
-        // ("Current Level + Power-Up/Upgrade Progression" together drive responsiveness).
+        // (spawnChance + topUpBudget below - how quickly destroyed objects are replaced). Spawn
+        // speed is driven by player level/upgrade progress (difficultyNow) - stronger upgrades
+        // make the field feel more active.
         let difficultyNow = getDifficultyFactor();
         let fullPower = isFullPowerState(); // upgrade tree ~maxed (Overdrive no longer affects this - see isFullPowerState above)
-        let zoneLevelNow = getCurrentLevelNumber();
-        // ZONE SPAWN-SPEED RAMP: +12% responsiveness per zone level above 1 (1.0, 1.12, 1.24,
-        // 1.36, 1.48 across the game's 5 zones) - a gentle, monotonic "later levels replace
-        // objects faster" curve independent of the density target above, capped well short of
-        // anything that could flood the field (density ceiling still governs the hard maximum).
-        let zoneSpeedFactor = 1 + (zoneLevelNow - 1) * 0.12;
-        let spawnChance = (0.02 + (playerStats.level * 0.001) + (difficultyNow * 0.025)) * zoneSpeedFactor;
+        let spawnChance = 0.02 + (playerStats.level * 0.001) + (difficultyNow * 0.025);
         let levelObjectTarget = getLevelObjectCountTarget();
         // At full power, boost on top of the level/plane target instead of replacing it with a
         // flat number - so full-power players still get the same per-level growth, just with an
@@ -9105,15 +8759,13 @@ const STORY_IMAGES = {
         // objects -> keep spawning until the new target is reached" actually visible rather than
         // a slow probabilistic trickle, especially right after a level transition jumps the
         // target up by dozens of objects at once. The per-frame budget scales with how big the
-        // current gap is (bigger gap = more topped up per frame, capped) AND with zoneSpeedFactor
-        // (later zones close a given gap faster than earlier ones, same responsiveness knob as
-        // spawnChance above) so a huge jump fills within a couple seconds without ever dumping
-        // the whole gap in a single frame; full power keeps its own higher, fixed budget exactly
-        // as before.
+        // current gap is (bigger gap = more topped up per frame, capped) so a huge jump fills
+        // within a couple seconds without ever dumping the whole gap in a single frame; full
+        // power keeps its own higher, fixed budget exactly as before.
         if (isMoving) {
             let gapToTarget = maxAsteroidsOnScreen - asteroidsList.length;
             if (gapToTarget > 0) {
-                let topUpBudget = fullPower ? FULL_POWER_TOPUP_PER_FRAME : Math.min(5, Math.ceil((gapToTarget / 20) * zoneSpeedFactor));
+                let topUpBudget = fullPower ? FULL_POWER_TOPUP_PER_FRAME : Math.min(5, Math.ceil(gapToTarget / 20));
                 for (let q = 0; q < topUpBudget && asteroidsList.length < maxAsteroidsOnScreen; q++) produceAsteroidNode();
             }
         }
