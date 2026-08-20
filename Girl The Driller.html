@@ -116,6 +116,48 @@
         #pause-btn { position: absolute; top: calc(var(--ui-scale) * 15px); right: calc(var(--ui-scale) * 15px); z-index: 15; background: rgba(20, 20, 30, 0.9); border: 2px solid #00f3ff; color: #00f3ff; font-family: var(--font-pixel); padding: calc(var(--ui-scale) * 10px) calc(var(--ui-scale) * 25px); border-radius: calc(var(--ui-scale) * 8px); font-weight: bold; cursor: pointer; font-size: calc(var(--ui-scale) * 16px); transition: 0.3s; display: none; }
         #pause-btn:hover { background: #00f3ff; color: #000; box-shadow: 0 0 0 3px #00f3ff; }
 
+        /* ============================================================
+           MOBILE GAMEPLAY "EXIT FULLSCREEN" BUTTON
+           ------------------------------------------------------------
+           This is a GAME-side gameplay UI control (part of Girl: The
+           Driller's own HTML/CSS/JS), NOT a website/site-level control.
+           If this file is ever embedded in a wrapping site (e.g. an
+           iframe on pixelgaunt.com), that outer site's own fullscreen
+           button/nav/footer/social controls must never be touched by
+           this code, and this button must never be confused for them.
+           Scope of this button only:
+             - visible ONLY on phone-class mobile devices (not desktop,
+               not tablets - see isPhoneDevice in the script below)
+             - visible ONLY during actual gameplay (gameState ===
+               "PLAYING"), never over the main menu/pause/settings/etc.
+             - visible ONLY while the browser is actually in fullscreen
+             - exits the browser's Fullscreen API only; never closes
+               the game, never closes the browser/tab, never returns
+               to the main menu, never touches score/save/progression.
+               The game keeps running underneath exactly as before.
+           Positioned top-right, stacked just below #pause-btn so it
+           never overlaps that button or the minimap. */
+        #gameplay-exit-fs-btn {
+            position: absolute;
+            top: calc(var(--ui-scale) * 62px);
+            right: calc(var(--ui-scale) * 15px);
+            z-index: 15;
+            display: none;
+            width: calc(var(--ui-scale) * 38px);
+            height: calc(var(--ui-scale) * 38px);
+            align-items: center;
+            justify-content: center;
+            background: rgba(20, 20, 30, 0.9);
+            border: 2px solid #00f3ff;
+            color: #00f3ff;
+            border-radius: calc(var(--ui-scale) * 8px);
+            font-size: calc(var(--ui-scale) * 16px);
+            line-height: 1;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        #gameplay-exit-fs-btn:active { background: #00f3ff; color: #000; }
+
         .overlay-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 10, 0.9); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: auto; overflow-y: auto; padding: calc(var(--ui-scale) * 20px) 0; }
         /* Main-menu background: the provided artwork already contains the game's title text,
            so it is applied only to #main-menu (never to the gameplay canvas or other overlay
@@ -932,6 +974,10 @@
     </div>
 
     <button id="pause-btn" onclick="pauseGame()"><img class="inline-icon" src="futuristic_sci-fi_pause_contro.png" alt="">PAUSE</button>
+    <!-- GAME-side gameplay-only control (see #gameplay-exit-fs-btn CSS comment above for the
+         full website-vs-game scope rule). Exits browser fullscreen only; never closes the
+         game, never returns to the main menu. -->
+    <button id="gameplay-exit-fs-btn" onclick="exitFullscreenGameplayMobile()" aria-label="Exit Fullscreen" title="Exit Fullscreen">⛶</button>
 
     <div id="score-hud"><img class="inline-icon" src="hud-score.png" alt="">SCORE: <span id="val-combat-score">0</span> <span id="val-combat-score-abbr" style="font-size:0.6em; color:#c8faff; margin-left:8px; opacity:0.85;">(0)</span></div>
     <div id="money-hud">$<span id="val-score">0</span> <span id="val-score-abbr" style="font-size:0.6em; color:#fff3b0; margin-left:8px; opacity:0.85;">(0)</span></div>
@@ -6544,6 +6590,67 @@ const STORY_IMAGES = {
             console.log('[EXIT FULLSCREEN] Request failed:', e);
         }
     }
+
+    // ============================================================
+    // MOBILE GAMEPLAY "EXIT FULLSCREEN" BUTTON (game-side only)
+    // ------------------------------------------------------------
+    // Distinct from exitFullscreenFromMenu() above only in WHEN it is shown and WHAT it must
+    // never do - the actual fullscreen-exit mechanics are identical, so both call the same
+    // getFullscreenElement()/exit-method lookup rather than duplicating that cross-browser logic.
+    //
+    // This control belongs entirely to Girl: The Driller's own gameplay UI. It must never be
+    // confused with, or allowed to affect, any fullscreen/nav/footer/social control that may
+    // belong to a wrapping website (e.g. if this file is hosted inside an iframe on
+    // pixelgaunt.com) - this code only ever touches its own #gameplay-exit-fs-btn element and
+    // the browser's Fullscreen API, nothing else on the page.
+    //
+    // isPhoneDevice deliberately requires BOTH coarse-pointer/touch input AND a small physical
+    // screen (smaller viewport dimension <= 600 CSS px) so tablets - which also have touch/coarse
+    // pointers but a larger screen - are excluded, matching the "PC/Desktop and tablet: do not
+    // add this button" requirement. Re-checked live (not cached at load) since a device can
+    // rotate between portrait/landscape.
+    function isPhoneDevice() {
+        const hasCoarseTouch = (('ontouchstart' in window) || navigator.maxTouchPoints > 0) &&
+            window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        if (!hasCoarseTouch) return false;
+        return Math.min(window.innerWidth, window.innerHeight) <= 600;
+    }
+
+    function exitFullscreenGameplayMobile() {
+        playSound('click');
+        try {
+            if (!getFullscreenElement()) return; // nothing to exit; button shouldn't be visible anyway
+            const exitFn = document.exitFullscreen || document.webkitExitFullscreen ||
+                document.mozCancelFullScreen || document.msExitFullscreen;
+            if (exitFn) {
+                const result = exitFn.call(document);
+                if (result && typeof result.catch === 'function') {
+                    result.catch(err => console.log('[GAMEPLAY EXIT FULLSCREEN] Request failed:', err));
+                }
+            }
+        } catch (e) {
+            console.log('[GAMEPLAY EXIT FULLSCREEN] Request failed:', e);
+        }
+        // Deliberately does nothing else: no menu navigation, no gameState change, no pause -
+        // the game keeps running exactly as it was, just outside the browser's fullscreen mode.
+    }
+
+    // Shows the button only when every condition holds at once: phone-class device, actual
+    // gameplay in progress, and the browser is currently in fullscreen. Re-evaluated on
+    // fullscreenchange (all vendor-prefixed variants), on resize/orientation change (phones can
+    // rotate, and isPhoneDevice's screen-size check depends on current orientation), and on a
+    // light interval as a fallback for gameState transitions (menu/pause/etc.) that don't fire
+    // either of those browser events.
+    function updateGameplayExitFullscreenBtnVisibility() {
+        const btn = document.getElementById('gameplay-exit-fs-btn');
+        if (!btn) return;
+        const show = !!getFullscreenElement() && gameState === "PLAYING" && isPhoneDevice();
+        btn.style.display = show ? 'flex' : 'none';
+    }
+    ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange']
+        .forEach(evt => document.addEventListener(evt, updateGameplayExitFullscreenBtnVisibility));
+    window.addEventListener('resize', updateGameplayExitFullscreenBtnVisibility);
+    setInterval(updateGameplayExitFullscreenBtnVisibility, 500);
 
     // ============================================================
     // FULL AUTO-SAVE - there is no manual Save button and no action the player has to remember
