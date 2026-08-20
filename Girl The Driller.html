@@ -1286,10 +1286,10 @@ const STORY_IMAGES = {
     }
 
     // No on-screen joystick to show/hide anymore (removed per spec) - CONTROLLER = TOUCH now
-    // drives movement via a direct touch-drag gesture on the canvas instead, with no visible
-    // widget (see resetTouchDrag()/the touch-drag handlers near isTouchDevice below). Still
-    // clear out any in-progress drag whenever we leave Touch mode or gameplay isn't actively
-    // running, so a stale drag can never keep driving movement from behind a menu/pause.
+    // drives movement by touching anywhere on the gameplay screen, with no visible widget (see
+    // resetTouchDrag()/the touch-point handlers near isTouchDevice below). Still clear out any
+    // in-progress touch whenever we leave Touch mode or gameplay isn't actively running, so a
+    // stale touch can never keep driving movement from behind a menu/pause.
     function applyControllerModeUI() {
         if (typeof resetTouchDrag === 'function' && (controllerMode !== 'touch' || gameState !== 'PLAYING')) {
             resetTouchDrag();
@@ -4749,61 +4749,65 @@ const STORY_IMAGES = {
 
     const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 
-    // --- MOBILE TOUCH-DRAG CONTROLS (CONTROLLER = TOUCH) ---
+    // --- MOBILE FULL-SCREEN TOUCH-POINT CONTROLS (CONTROLLER = TOUCH) ---
     // No on-screen virtual joystick per spec - instead, while CONTROLLER = TOUCH is selected,
-    // touching and dragging directly on the game canvas moves the Girl. The movement vector
-    // is based on the drag's offset from its own start point (not the finger's raw screen
-    // position), the same relative-drag feel the old joystick had, just with no visible
-    // widget and not anchored to a fixed screen corner - the "joystick center" is simply
-    // wherever the finger first touched down.
+    // the player can touch and hold anywhere on the gameplay screen and the Girl moves toward
+    // that exact point, snapped to the nearest of 8 compass directions. Unlike a joystick (or
+    // the old relative-drag scheme), the target is the finger's absolute position - there is no
+    // "center" the drag is measured from, so the very first touch already has a direction, and
+    // every subsequent move (or a finger lifted and placed somewhere new) immediately points the
+    // Girl at the new spot. playerShip.update() recomputes the direction from the Girl's CURRENT
+    // position to this point every frame (see the CONTROLLER = TOUCH branch there), so the
+    // heading keeps updating live as the Girl moves even if the finger itself stays still.
     //
     // Listeners are attached to the canvas element itself (not window/document), so this only
     // ever reacts to a touch that started directly on the canvas - a touch that starts on any
     // UI element (Pause/Settings/Skill Tree/Overdrive buttons, menus, HUD, etc.) targets that
     // element instead, since those are separate DOM elements layered above the canvas, and
-    // never reaches these handlers at all. That keeps dragging to move the Girl from ever
-    // fighting with tapping UI, without needing to special-case individual button ids.
-    let touchDragVector = { x: 0, y: 0, active: false };
-    let touchDragId = null;
-    let touchDragStartX = 0, touchDragStartY = 0;
-    const TOUCH_DRAG_MAX_RADIUS = 60; // px of drag distance for a fully "pushed" vector (dist>= this clamps to 1.0)
-    const TOUCH_DRAG_DEADZONE = 0.15; // fraction of max radius before movement registers - same threshold the old joystick used
+    // never reaches these handlers at all. Since the canvas fills the entire gameplay viewport,
+    // that still means "anywhere on the gameplay screen" in practice - only actual UI chrome is
+    // excluded. That keeps touching to move the Girl from ever fighting with tapping UI, without
+    // needing to special-case individual button ids.
+    let touchPointer = { x: 0, y: 0, active: false };
+    let touchPointerId = null;
+    // The 8 unit vectors touch movement/facing snaps to, indexed by octant (0 = Right, going
+    // clockwise on-screen since +y is down): 0 Right, 1 Down-Right, 2 Down, 3 Down-Left,
+    // 4 Left, 5 Up-Left, 6 Up, 7 Up-Right. Diagonals use SQRT1_2 on both axes so diagonal speed
+    // matches cardinal speed, same normalization guarantee Keyboard/Gamepad already use.
+    const TOUCH_OCTANT_VECTORS = [
+        { x: 1, y: 0 }, { x: Math.SQRT1_2, y: Math.SQRT1_2 }, { x: 0, y: 1 }, { x: -Math.SQRT1_2, y: Math.SQRT1_2 },
+        { x: -1, y: 0 }, { x: -Math.SQRT1_2, y: -Math.SQRT1_2 }, { x: 0, y: -1 }, { x: Math.SQRT1_2, y: -Math.SQRT1_2 }
+    ];
 
-    function setTouchDragFromPoint(clientX, clientY) {
-        let dx = clientX - touchDragStartX, dy = clientY - touchDragStartY;
-        let dist = Math.hypot(dx, dy);
-        if (dist > TOUCH_DRAG_MAX_RADIUS) { dx = (dx / dist) * TOUCH_DRAG_MAX_RADIUS; dy = (dy / dist) * TOUCH_DRAG_MAX_RADIUS; dist = TOUCH_DRAG_MAX_RADIUS; }
-        touchDragVector.x = dx / TOUCH_DRAG_MAX_RADIUS;
-        touchDragVector.y = dy / TOUCH_DRAG_MAX_RADIUS;
-        touchDragVector.active = (dist / TOUCH_DRAG_MAX_RADIUS) > TOUCH_DRAG_DEADZONE;
+    function setTouchPointerFromPoint(clientX, clientY) {
+        touchPointer.x = clientX; touchPointer.y = clientY; touchPointer.active = true;
     }
 
     function resetTouchDrag() {
-        touchDragId = null; touchDragVector.x = 0; touchDragVector.y = 0; touchDragVector.active = false;
+        touchPointerId = null; touchPointer.active = false;
     }
 
     // Prefers the modern Pointer Events API so one code path covers touch, mouse, and pen; a
     // Touch Events fallback below covers any browser without PointerEvent support. Movement
-    // itself (reading touchDragVector) happens in playerShip.update(), gated on
+    // itself (reading touchPointer) happens in playerShip.update(), gated on
     // controllerMode === 'touch' there too.
     canvas.addEventListener('pointerdown', e => {
         if (controllerMode !== 'touch' || gameState !== 'PLAYING') return;
         if (e.pointerType === 'mouse') return; // real mouse clicks on the canvas shouldn't drive Touch-controller movement
-        if (touchDragId !== null) return; // already tracking a pointer
-        touchDragId = e.pointerId;
-        touchDragStartX = e.clientX; touchDragStartY = e.clientY;
+        if (touchPointerId !== null) return; // already tracking a pointer
+        touchPointerId = e.pointerId;
         if (canvas.setPointerCapture) { try { canvas.setPointerCapture(e.pointerId); } catch (err) {} }
-        setTouchDragFromPoint(e.clientX, e.clientY);
+        setTouchPointerFromPoint(e.clientX, e.clientY);
         initAudio();
         e.preventDefault();
     }, { passive: false });
     canvas.addEventListener('pointermove', e => {
-        if (e.pointerId !== touchDragId) return;
-        setTouchDragFromPoint(e.clientX, e.clientY);
+        if (e.pointerId !== touchPointerId) return;
+        setTouchPointerFromPoint(e.clientX, e.clientY);
         e.preventDefault();
     }, { passive: false });
     function endTouchDragPointer(e) {
-        if (e.pointerId !== touchDragId) return;
+        if (e.pointerId !== touchPointerId) return;
         resetTouchDrag();
     }
     canvas.addEventListener('pointerup', endTouchDragPointer);
@@ -4813,20 +4817,19 @@ const STORY_IMAGES = {
     if (!window.PointerEvent) {
         canvas.addEventListener('touchstart', e => {
             if (controllerMode !== 'touch' || gameState !== 'PLAYING') return;
-            if (touchDragId !== null) return;
+            if (touchPointerId !== null) return;
             let t = e.changedTouches[0];
-            touchDragId = t.identifier;
-            touchDragStartX = t.clientX; touchDragStartY = t.clientY;
-            setTouchDragFromPoint(t.clientX, t.clientY);
+            touchPointerId = t.identifier;
+            setTouchPointerFromPoint(t.clientX, t.clientY);
             initAudio();
             e.preventDefault();
         }, { passive: false });
         canvas.addEventListener('touchmove', e => {
-            for (let t of e.changedTouches) { if (t.identifier === touchDragId) { setTouchDragFromPoint(t.clientX, t.clientY); break; } }
+            for (let t of e.changedTouches) { if (t.identifier === touchPointerId) { setTouchPointerFromPoint(t.clientX, t.clientY); break; } }
             e.preventDefault();
         }, { passive: false });
         function endTouchDragTouch(e) {
-            for (let t of e.changedTouches) { if (t.identifier === touchDragId) { resetTouchDrag(); break; } }
+            for (let t of e.changedTouches) { if (t.identifier === touchPointerId) { resetTouchDrag(); break; } }
         }
         canvas.addEventListener('touchend', endTouchDragTouch);
         canvas.addEventListener('touchcancel', endTouchDragTouch);
@@ -5234,7 +5237,7 @@ const STORY_IMAGES = {
             // chosen solely by the player's Settings > CONTROLLER selection (controllerMode) -
             // no automatic switching, and movement vectors from different controllers are never
             // combined. See the CONTROLLER setting block near startGame() and the input-listener
-            // setup above for where controllerMode/touchDragVector/activeGamepadIndex come from.
+            // setup above for where controllerMode/touchPointer/activeGamepadIndex come from.
 
             if (controllerMode === 'keyboard') {
                 // Each direction tracked independently (not a single "last key" slot) so any
@@ -5306,31 +5309,42 @@ const STORY_IMAGES = {
                     }
                 }
             } else if (controllerMode === 'touch') {
-                // Direct touch-drag on the canvas (no on-screen joystick widget) - see the
+                // Full-screen touch-point movement (no on-screen joystick widget) - see the
                 // pointerdown/move/up/cancel handlers set up near isTouchDevice above.
-                // touchDragVector is only ever populated while CONTROLLER = TOUCH is selected
-                // (those handlers check controllerMode too).
-                if (touchDragVector.active && playerStats.energy > 0) {
-                    let tMag = Math.hypot(touchDragVector.x, touchDragVector.y);
-                    this.velocityX += touchDragVector.x * activeSpeed * 0.04;
-                    this.velocityY += touchDragVector.y * activeSpeed * 0.04;
-                    dx = touchDragVector.x / tMag; dy = touchDragVector.y / tMag;
-                    moving = true;
-                    // Mobile facing: unlike Keyboard/Gamepad's left/right-only snap, the Girl
-                    // faces the full 8-direction compass of the actual drag direction - Left,
-                    // Right, Up, Down, and all 4 diagonals. Each axis is snapped to -1/0/1 first
-                    // so facing always lands on exactly one of those 8 directions rather than a
-                    // continuous angle, then converted to drawAngle with the same
-                    // atan2(dy,dx) + PI/2 mapping the continuous Mouse-look formula below uses
-                    // (dy=-1,dx=0 -> "up" -> drawAngle 0; dy=0,dx=1 -> "right" -> PI/2; etc.).
-                    // Set directly here (not via the shared facingDx snap below, which is
-                    // left/right-only) so this is applied only while a drag is actually active;
-                    // when the touch ends (touchDragVector.active goes false) this block simply
-                    // doesn't run again, so the last facing direction is preserved untouched.
-                    let snapX = touchDragVector.x > 0 ? 1 : (touchDragVector.x < 0 ? -1 : 0);
-                    let snapY = touchDragVector.y > 0 ? 1 : (touchDragVector.y < 0 ? -1 : 0);
-                    if (snapX !== 0 || snapY !== 0) {
-                        this.drawAngle = Math.atan2(snapY, snapX) + Math.PI / 2;
+                // touchPointer holds the finger's raw screen position and is only ever
+                // populated while CONTROLLER = TOUCH is selected (those handlers check
+                // controllerMode too). The direction is recomputed HERE, every frame, from the
+                // Girl's current world position to that screen point (same world-space
+                // conversion the Mouse controller above uses) - never from the touch's start
+                // position or the screen center - so as the Girl moves toward a held finger the
+                // heading keeps updating live, and dragging the finger to a new spot changes
+                // direction immediately.
+                if (touchPointer.active && playerStats.energy > 0) {
+                    let tDx = (touchPointer.x / gameScale + camera.x) - this.x;
+                    let tDy = (touchPointer.y / gameScale + camera.y) - this.y;
+                    // Tiny deadzone only to avoid NaN/jitter if the touch lands exactly on the
+                    // Girl's own position - not a joystick deadzone, movement is otherwise
+                    // instant at any distance from the touch point.
+                    if (Math.hypot(tDx, tDy) > 4) {
+                        // Snap the continuous touch angle to the nearest of 8 compass
+                        // directions (45-degree steps: Right, Down-Right, Down, Down-Left,
+                        // Left, Up-Left, Up, Up-Right - atan2 with +y = down matches how canvas
+                        // Y grows downward). Both movement and facing use this same snapped
+                        // octant, so the Girl always drives and faces in exactly one of the 8
+                        // directions, never a raw in-between angle.
+                        let angle = Math.atan2(tDy, tDx);
+                        let octant = ((Math.round(angle / (Math.PI / 4)) % 8) + 8) % 8;
+                        let ov = TOUCH_OCTANT_VECTORS[octant];
+                        this.velocityX += ov.x * activeSpeed * 0.04;
+                        this.velocityY += ov.y * activeSpeed * 0.04;
+                        dx = ov.x; dy = ov.y;
+                        moving = true;
+                        // Set directly here (not via the shared facingDx snap below, which is
+                        // left/right-only) so this only updates while actively driving toward a
+                        // held touch; when the finger lifts (touchPointer.active goes false)
+                        // this block simply doesn't run again, so the last facing direction is
+                        // preserved untouched, per spec.
+                        this.drawAngle = Math.atan2(ov.y, ov.x) + Math.PI / 2;
                     }
                 }
             }
