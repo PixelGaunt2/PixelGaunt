@@ -2463,10 +2463,14 @@ const STORY_IMAGES = {
     }
 
     // --- RESPONSIVE SCALING ---
-    // The game world/sprites were designed against a desktop-sized viewport. On a smaller
-    // (mobile) viewport we shrink the world-render scale so a comfortable amount of the
-    // world is visible (instead of fixed-pixel sprites eating up most of a small screen),
-    // and we shrink the UI (HUD/buttons/menus) via the --ui-scale CSS variable to match.
+    // 1366x768 is the game's fixed logical/design resolution: every world coordinate,
+    // hitbox, and sprite size is authored against it and NEVER changes with screen size.
+    // What DOES change per-screen is gameScale - a single uniform "how many CSS pixels is
+    // one design pixel" multiplier, applied identically to both axes (so nothing ever
+    // stretches), that maps that fixed design frame onto whatever real container we're
+    // actually running in - a full desktop window, a GitHub Pages tab, or a smaller website
+    // embed. uiScale drives the --ui-scale CSS variable so the DOM HUD/menus scale by that
+    // same factor. See resizeCanvas() below for how both are computed from one shared basis.
     const DESIGN_WIDTH = 1366, DESIGN_HEIGHT = 768;
     let gameScale = 1; // applied to world-space canvas rendering
     let uiScale = 1;   // applied to DOM UI elements via CSS var
@@ -2546,15 +2550,41 @@ const STORY_IMAGES = {
         canvas.height = Math.round(viewportH * dpr);
         canvas.style.width = viewportW + 'px';
         canvas.style.height = viewportH + 'px';
+        // FIT-TO-CONTAINER SCALE (root-cause fix for the "Girl looks too large when
+        // embedded" bug): rawScale is the honest, single-axis-agnostic scale that fits the
+        // fixed 1366x768 design frame into whatever real CSS-pixel space this window/iframe
+        // actually has, preserving the 16:9 aspect ratio (both axes always share this one
+        // number, so the canvas/world/sprites can never stretch independently).
+        //
+        // This USED to be clamped to a flat floor of 0.45 in every context. That floor was
+        // meant to stop sprites becoming illegibly small on genuinely small, physically-held
+        // TOUCH screens - but it was applied unconditionally, so any moderately-sized DESKTOP
+        // container (e.g. an embedded "game viewport" panel on a website, which is normal
+        // mouse/keyboard-driven and simply smaller than a maximized browser tab) could also
+        // fall under that threshold and get force-zoomed in past its honest fit - rendering
+        // the Girl (and everything else) larger than the 1366x768 design actually calls for.
+        // A full local browser window rarely falls under that threshold, so the bug only
+        // ever showed up embedded - the two environments were silently running different
+        // effective zoom levels despite using the same fixed design resolution.
+        //
+        // Fix: only relax the floor for devices where small-screen readability genuinely
+        // matters (isLikelyMobile - touch + coarse pointer), and otherwise trust the honest
+        // fit-to-container scale. The ceiling stays in place so a huge monitor still can't
+        // render things larger than intended either. A generous hard safety floor (0.2)
+        // still guards against a literally zero/near-zero-size container on any device.
         let rawScale = Math.min(viewportW / DESIGN_WIDTH, viewportH / DESIGN_HEIGHT);
-        gameScale = Math.max(0.45, Math.min(1.15, rawScale));
+        let scaleFloor = isLikelyMobile ? 0.45 : 0.2;
+        gameScale = Math.max(scaleFloor, Math.min(1.15, rawScale));
         // RESOLUTION SETTING: cap the UI-scale basis to the chosen resolution (never to
         // more than the real window either) - see the SUPPORTED_RESOLUTIONS comment above.
+        // Uses the same fitScale/floor logic as gameScale above (previously a separate flat
+        // 0.55 floor) so the HUD never drifts out of sync with world/sprite scaling.
         let uiRawScale = Math.min(
             Math.min(viewportW, selectedResolution.w) / DESIGN_WIDTH,
             Math.min(viewportH, selectedResolution.h) / DESIGN_HEIGHT
         );
-        uiScale = Math.max(0.55, Math.min(1, uiRawScale));
+        let uiScaleFloor = isLikelyMobile ? 0.55 : 0.3;
+        uiScale = Math.max(uiScaleFloor, Math.min(1, uiRawScale));
         document.documentElement.style.setProperty('--ui-scale', uiScale);
         if (minimapMobileReady) positionMinimapMobile();
         positionSidePanels();
