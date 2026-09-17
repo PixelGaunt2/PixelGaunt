@@ -3076,7 +3076,35 @@ const STORY_IMAGES = {
     // height (no size popping between frames) using a UNIFORM scale on both axes (no stretch/
     // squash - aspect ratio is preserved exactly).
     const girlFrameBBoxes = [];
-    const GIRL_TARGET_HEIGHT = 128; // in-world pixel height of the girl's visible art. Balance pass: 116 read as slightly too small/lacking presence, so this nudges her up a bit further (was 78 originally, then 116) - still purely a uniform render-scale change (girlBaseScale below applies the same multiplier to both width and height, so her aspect ratio/proportions are completely untouched; her collision radius, movement, and every other gameplay value are separate constants and are unaffected by this).
+    // --- GIRL VISIBLE-SIZE REFERENCE: DERIVED FROM THE SMALLEST DESTROYABLE OBJECT ---
+    // The Girl must read as a small miner among much larger space rocks, so her target height
+    // is computed FROM the smallest destroyable object's actual visible size (never a guessed
+    // pixel value) rather than set independently. Destroyable-object visible size is computed
+    // in produceAsteroidNode() as `radius * 2 * objectScale` (see ast.radius/ast.objectScale
+    // and the `let drawSize = ast.radius * 2 * (ast.objectScale || 1);` draw-time usage), where:
+    //   - radius = (Math.random() * 25 + 30) * tierMultiplier, so the smallest possible base
+    //     radius roll (before any tier multiplier) is 30 - see produceAsteroidNode()'s `radius`
+    //     line.
+    //   - the 'weak' tier (the smallest tier) multiplies that radius DOWN by 0.85 - also from
+    //     produceAsteroidNode()'s `radius` line.
+    //   - objectScale is OBJECT_DEFS[n].scale, the per-object visual-normalization multiplier
+    //     (see the OBJECT_DEFS array above) - the smallest of which is used here.
+    // Multiplying these together gives the smallest visible diameter/height any destroyable
+    // object can ever spawn at. These constants mirror produceAsteroidNode()'s real formula
+    // exactly, so this reference always tracks the actual smallest object in the game world.
+    const SMALLEST_OBJECT_MIN_BASE_RADIUS = 30; // matches produceAsteroidNode()'s radius-roll floor
+    const SMALLEST_OBJECT_WEAK_TIER_MULT = 0.85; // matches produceAsteroidNode()'s weak-tier radius multiplier
+    const SMALLEST_OBJECT_MIN_SCALE = Math.min(...OBJECT_DEFS.map(def => def.scale)); // smallest OBJECT_DEFS visual scale
+    // Smallest possible destroyable-object visible diameter/height (weak tier, minimum radius roll, smallest-scaled object art).
+    const SMALLEST_OBJECT_VISIBLE_HEIGHT = SMALLEST_OBJECT_MIN_BASE_RADIUS * SMALLEST_OBJECT_WEAK_TIER_MULT * 2 * SMALLEST_OBJECT_MIN_SCALE;
+    // Girl's in-world pixel target height: ~88% of the smallest destroyable object's visible
+    // height (within the requested 80-95% range), so she reads as clearly smaller than even the
+    // smallest space rock on screen, on every device/resolution (this is a game-world scale
+    // relationship, not a per-device pixel value). girlBaseScale below applies the same
+    // multiplier to both width and height, so her aspect ratio/proportions stay untouched; her
+    // collision radius, movement, and every other gameplay value are separate constants and are
+    // unaffected by this.
+    const GIRL_TARGET_HEIGHT = SMALLEST_OBJECT_VISIBLE_HEIGHT * 0.88;
     let girlBaseScale = null; // set once every frame's bbox is known; null until then (draw() falls back to the old fixed box so nothing errors/pops before it's ready)
     // Scans a loaded image's alpha channel and returns the tight bounding box {x,y,width,height}
     // of its non-transparent pixels.
@@ -5140,8 +5168,10 @@ const STORY_IMAGES = {
     const playerShip = {
         // drawWidth/drawHeight below are only the fallback used for the brief instant before the
         // async visible-bbox measurement finishes (see GIRL_TARGET_HEIGHT/finalizeGirlScale
-        // above) - already sized close to the final ~92-tall target so there's no visible pop.
-        x: 0, y: 0, lastX: 0, lastY: 0, distanceMoved: 0, radius: 25, drawWidth: 36, drawHeight: 78, drawAngle: 0, velocityX: 0, velocityY: 0, friction: 0.92, currentFrameIndex: 0, frameTimer: 0, isThrusting: false,
+        // above) - derived directly from GIRL_TARGET_HEIGHT (keeping the same ~36:78 width:height
+        // aspect ratio the sprite's tight bbox measures out to) so this fallback box never pops
+        // to a different, larger size once the real measurement lands.
+        x: 0, y: 0, lastX: 0, lastY: 0, distanceMoved: 0, radius: 25, drawWidth: GIRL_TARGET_HEIGHT * (36 / 78), drawHeight: GIRL_TARGET_HEIGHT, drawAngle: 0, velocityX: 0, velocityY: 0, friction: 0.92, currentFrameIndex: 0, frameTimer: 0, isThrusting: false,
         // --- DASH STATE ---
         isDashing: false, dashDirX: 0, dashDirY: 1, dashDurationFrames: 0, dashCooldownFrames: 0, dashGhostSpawnTimer: 0,
         // dashReadyFlashFrames: brief "READY" flash above her head the instant the cooldown
