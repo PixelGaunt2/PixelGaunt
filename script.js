@@ -87,37 +87,19 @@
         // "Top Plays" (hero panel) always shows the single most-played game that has
         // reached the minimum play threshold. It only changes when play counts change.
 
-        window.renderHeroSlide = function(game) {
-            const heroPanel = document.getElementById('hero-panel-bg');
-            if (!game) {
-                // No game has reached the Top Plays threshold yet - hide the panel entirely
-                // rather than showing an arbitrary/placeholder game.
-                if (heroPanel) heroPanel.style.display = 'none';
-                return;
-            }
-            if (heroPanel) heroPanel.style.display = '';
-            const heroBg = document.getElementById('hero-panel-bg');
-            if (heroBg) {
-                heroBg.style.backgroundImage = `linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(99, 102, 241, 0.315)), url('${encodeURI(game.image)}')`;
-                document.getElementById('hero-title-text').innerText = game.title.toUpperCase();
-                document.getElementById('hero-desc-text').innerText = game.howToPlay;
+        // ===== FEATURED HERO — PERMANENTLY FIXED TO GIRL: THE DRILLER =====
+        // The homepage hero used to be dynamically rebuilt from whichever game had the most
+        // plays (see git history), which meant the title/background/art/play-button could
+        // silently swap to a different game as people played things. That behaviour has been
+        // removed entirely: the hero's title, description, artwork, background, and rating
+        // are now defined once, directly in index.html, and nothing in this file is allowed
+        // to touch them again. This function is intentionally inert - kept only so any
+        // remaining call sites don't error - and must not be reworked to re-introduce rotation.
+        window.renderHeroSlide = function() { /* intentionally disabled - hero is static */ }
 
-                let ratingMatch = game.rating.match(/\((.*?)\)/);
-                document.getElementById('hero-rating-text').innerText = ratingMatch ? ratingMatch[1] + " Rating" : "4.8/5 Rating";
-                document.getElementById('hero-play-btn').setAttribute('onclick', `launchViewport(${game.id})`);
-            }
-        }
-
-        // Rebuilds the ranked list from current play counts and redraws the featured panel.
-        // Call this after any play count change (or on page load) - it never runs on a timer.
-        window.updateFeaturedPanels = function() {
-            if (!games || games.length === 0) return;
-
-            const ranked = window.getRankedGames();
-            const topPlay = ranked.find(g => (g.playCount || 0) >= TOP_PLAYS_THRESHOLD) || null;
-
-            window.renderHeroSlide(topPlay);
-        }
+        // getRankedGames() itself is still used (see renderGames) to sort the GAMES GRID by
+        // popularity - that is unrelated to the hero and is kept working as before.
+        window.updateFeaturedPanels = function() { /* intentionally disabled - hero is static */ }
 
         window.setGlobalTheme = function(themeName, element) {
             document.body.className = '';
