@@ -63,5 +63,39 @@ service cloud.firestore {
       allow create: if true;
       allow read, update, delete: if false; // staff only, via the Firebase console
     }
+
+    // ---- user accounts ------------------------------------------------------------------------
+    // Identity fields (email/displayName/photoURL/lastLogin) are written directly by the client
+    // (firebase-auth.js) on every login, same as before.
+    //
+    // plan, role, subscriptionStatus, billingPeriod*, gamesUploadedThisPeriod,
+    // storageUsedThisPeriod, suspended, earnings, payout* are SERVER-ONLY: they can only be
+    // written by the pixelgaunt-backend Worker, which authenticates to Firestore as a Google
+    // Cloud service account and so bypasses these rules entirely (the same way the Admin SDK
+    // would). No rule below ever grants the client write access to those fields - the absence
+    // of a matching allow-write is what keeps them locked, not an explicit "deny" list.
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'lastLogin']);
+
+      allow update: if request.auth != null && request.auth.uid == uid
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['email', 'displayName', 'photoURL', 'lastLogin']);
+
+      allow delete: if false;
+    }
+
+    // ---- manual payment submissions (Pakistan) -------------------------------------------
+    // Same trust model as users/{uid} above: every field here (including the initial
+    // PENDING status) is written by the pixelgaunt-backend Worker via POST /payments/submit
+    // and POST /admin/payments/decision, both of which authenticate to Firestore as the
+    // service account and so bypass these rules entirely. The client never writes here
+    // directly, and can't even read another user's submissions - the Worker's own
+    // GET /payments/mine and GET /admin/payments (admin-only) are the only read paths.
+    match /payments/{paymentId} {
+      allow read, write: if false;
+    }
   }
 }
