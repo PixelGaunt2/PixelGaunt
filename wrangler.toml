@@ -1,0 +1,15 @@
+name = "pixelgaunt-backend"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+# Public, non-secret settings. Your Firebase project ID is not sensitive -
+# it's already visible in firebase-auth.js and every browser network tab.
+[vars]
+FIREBASE_PROJECT_ID = "pixelgaunt-e5235"
+ALLOWED_ORIGIN = "https://pixelgaunt.com"
+
+# Secrets (set with `wrangler secret put <NAME>`, never written to this file
+# or committed to the repo):
+#   FIREBASE_SERVICE_ACCOUNT_JSON   the full JSON key file, as one string
+#   BOOTSTRAP_ADMIN_KEY              a random string only you know, used once
+#                                    to create the first admin account

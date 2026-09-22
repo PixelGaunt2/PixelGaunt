@@ -19,8 +19,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Not referenced anywhere in current code; deferred so it never competes with critical render if it's wired up later -->
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="style.css">
 	<!-- Open Graph / Social Media Meta Tags -->
 <meta property="og:title" content="Pixel Gaunt Studios - Indie Game Developer Portfolio">
@@ -57,8 +55,10 @@
             <div class="nav-menu-links">
                 <a href="#hero-presentation-section" onclick="goHome()">Home</a>
                 <a href="games.html">Games</a>
-                <a onclick="openPageModal('About Us', 'pg-about')">About</a>
-                <a onclick="openPageModal('Contact', 'pg-contact')">Contact</a>
+                <a href="#launch-section">Publish</a>
+                <a href="#tournaments-section">Tournaments</a>
+                <a href="#creator-section">Creator Lab</a>
+                <a href="dashboard.html" id="dashboard-nav-link" class="pg-hidden">Dashboard</a>
             </div>
             <div class="theme-select-container" title="Select Theme Color Core">
                 <div class="theme-dot t-blue active" onclick="setGlobalTheme('blue', this)"></div>
@@ -99,12 +99,88 @@
         <section class="main-content">
         </section>
 
+        <section class="portfolio-section" id="featured-section">
+            <div class="pg-shelf-head">
+                <div>
+                    <h2 class="pixel-font">Trending today</h2>
+                    <p>The 3 most-played games today. Tap a game to find it in the full library.</p>
+                </div>
+                <a class="pg-link" href="games.html">Open the full library</a>
+            </div>
+            <div class="pg-rail" id="featured-strip" aria-label="Trending today"></div>
+        </section>
+
+        <section class="portfolio-section" id="categories-section">
+            <div class="pg-shelf-head">
+                <div><h2 class="pixel-font">Browse by category</h2></div>
+            </div>
+            <div class="pg-cats" id="category-bar" role="group" aria-label="Game categories"></div>
+        </section>
+
         <section class="portfolio-section" id="games-section">
-            <div class="portfolio-section-header">
-                <h2 class="pixel-font portfolio-section-title">All Games</h2>
-                <p class="portfolio-section-subtitle">Free to play, straight in your browser. Tap any game to open the full library.</p>
+            <div class="pg-shelf-head">
+                <div>
+                    <h2 class="pixel-font">All Games</h2>
+                    <p>Free to play, straight in your browser. Tap any game to open the full library.</p>
+                </div>
+                <div class="pg-search"><i class="fas fa-search" aria-hidden="true"></i><input type="search" id="game-search" placeholder="Search games" aria-label="Search games" autocomplete="off"></div>
             </div>
             <div class="game-grid" id="game-grid"></div>
+            <div id="community-shelf" class="pg-hidden">
+                <div class="pg-shelf-head" style="margin-top: 44px;">
+                    <div>
+                        <h2 class="pixel-font">Community games</h2>
+                        <p>Published by players and developers. Every one runs in an isolated sandbox.</p>
+                    </div>
+                    <a class="pg-link" href="#launch-section">Publish yours</a>
+                </div>
+                <div class="game-grid" id="community-grid"></div>
+            </div>
+        </section>
+
+        <section class="portfolio-section" id="launch-section" data-pg-module="launch">
+            <div class="pg-shelf-head">
+                <div>
+                    <h2 class="pixel-font">Publish your game</h2>
+                    <p>Upload a browser game. PixelGaunt checks it, packages it for the platform and lists it in Community Games. Games that fail the check are not published.</p>
+                </div>
+            </div>
+            <div class="pg-split">
+                <ol class="pg-steps">
+                    <li><div><b>Upload</b><span>A .zip, a folder, or a single HTML file.</span></div></li>
+                    <li><div><b>Check</b><span>Files, links, scripts and a test run in a sandbox. Every problem is listed by file.</span></div></li>
+                    <li><div><b>Publish</b><span>Sign in, add a title and cover, and publish once the check passes.</span></div></li>
+                    <li><div><b>Play</b><span>Your game runs isolated from PixelGaunt. It cannot read logins, storage or site data.</span></div></li>
+                </ol>
+                <div id="launch-root" class="pg-panel pg-cut"><p class="pg-muted">Loading the game checker...</p></div>
+            </div>
+        </section>
+
+        <section class="portfolio-section" id="tournaments-section" data-pg-module="tournaments">
+            <div class="pg-shelf-head">
+                <div>
+                    <h2 class="pixel-font">Tournaments</h2>
+                    <p>Score-attack events with live leaderboards. A game can host a tournament once it reports scores to PixelGaunt. Every other game is marked Not Tournament Compatible.</p>
+                </div>
+            </div>
+            <div id="tournaments-root"><p class="pg-muted">Loading tournaments...</p></div>
+        </section>
+
+        <section class="portfolio-section" id="creator-section" data-pg-module="creator">
+            <div class="pg-shelf-head">
+                <div>
+                    <h2 class="pixel-font">Creator Lab</h2>
+                    <p>Turn game art and 3D models into files you can download, print or manufacture. Check them here first, then save a request for the format you want.</p>
+                </div>
+            </div>
+            <div class="pg-formats">
+                <div class="pg-format"><i class="fas fa-image" aria-hidden="true"></i><h3>2D Assets</h3><p>Sprites, characters, backgrounds and UI art.</p><div class="pg-chips"><span>Digital download</span><span>2D print</span></div></div>
+                <div class="pg-format"><i class="fas fa-cube" aria-hidden="true"></i><h3>3D Assets</h3><p>Models for a game engine or a 3D printer.</p><div class="pg-chips"><span>Digital download</span><span>3D print</span></div></div>
+                <div class="pg-format"><i class="fas fa-print" aria-hidden="true"></i><h3>Prints</h3><p>Posters, art prints and stickers from your game artwork.</p><div class="pg-chips"><span>2D print</span></div></div>
+                <div class="pg-format"><i class="fas fa-shirt" aria-hidden="true"></i><h3>Merchandise</h3><p>Apparel and gifts that carry your character art.</p><div class="pg-chips"><span>Merch</span></div></div>
+                <div class="pg-format"><i class="fas fa-user-astronaut" aria-hidden="true"></i><h3>Creator Products</h3><p>Figurines, collectibles and game-themed sets.</p><div class="pg-chips"><span>3D print</span><span>Merch</span></div></div>
+            </div>
+            <div id="creator-root"><p class="pg-muted">Loading the asset studio...</p></div>
         </section>
 
         <section class="portfolio-section" id="our-story-section">
@@ -145,359 +221,6 @@
                 <div class="coming-soon-card"><i class="fas fa-question"></i><span>Stay Tuned</span></div>
             </div>
         </section>
-    </main>
-
-    <!-- STORE PAGE -->
-    <main class="viewport-page" id="store-page">
-        <div class="page-header">
-            <h2 class="page-title-large pixel-font" style="color: var(--neon-purple);">Digital Marketplace</h2>
-        </div>
-        <div class="page-controls-top">
-            <button class="back-btn" onclick="goHome()">← Back to Main Menu</button>
-        </div>
-        <div class="content-box">
-            <div class="store-header-banner">
-                <h3 style="color: #fff; font-size: 1.2rem; margin-bottom: 10px;"><i class="fas fa-lock" style="color:var(--neon-purple);"></i> Pro Creator Economy</h3>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">Unlock the Pro Plan to list and sell your own game assets, 3D models, and official merchandise directly to the community.</p>
-            </div>
-            
-            <h3 class="pixel-font" style="color: var(--neon-cyan); font-size: 1rem; margin-bottom: 20px;"><i class="fas fa-tshirt"></i> Official Merchandise</h3>
-            <div class="store-grid-premium" style="margin-bottom: 40px;">
-                <div class="product-card">
-                    <span class="product-badge">HOT</span>
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_xvl5tuxvl5tuxvl5-removebg-preview.png" alt="Cyber Core Bundle" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">Premium 'Cyber Core' gaming t-shirt bundle. Includes high-quality fabric tee and custom gamer packaging pouch.</p>
-                        </div>
-                    </div>
-                    <h4>Cyber Core Bundle</h4>
-                    <p>Exclusive edition t-shirt package.</p>
-                    <div class="product-price">$35.00</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Added to cart!')">Add to Cart</button>
-                </div>
-                
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_ckmgfjckmgfjckmg-removebg-preview.png" alt="Neon Genesis Tee" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">High-quality neon cyberpunk t-shirt. Features glow-in-the-dark print elements and breathable material for intense gaming sessions.</p>
-                        </div>
-                    </div>
-                    <h4>Neon Genesis Tee</h4>
-                    <p>Cyberpunk graphic printed shirt.</p>
-                    <div class="product-price">$24.99</div>
-                    <button class="action-btn" style="width: 100%; border-color: var(--neon-purple);" onclick="alert('Added to cart!')">Add to Cart</button>
-                </div>
-                
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_bnkam9bnkam9bnka-removebg-preview.png" alt="Pixel Gaunt Hoodie" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">Exclusive dark retro gaming hoodie. Perfect for cold weather, featuring a minimal tech-wear design and custom fit.</p>
-                        </div>
-                    </div>
-                    <h4>Dark Techwear Hoodie</h4>
-                    <p>Comfortable retro gaming hoodie.</p>
-                    <div class="product-price">$45.00</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Added to cart!')">Add to Cart</button>
-                </div>
-            </div>
-
-            <h3 class="pixel-font" style="color: var(--neon-cyan); font-size: 1rem; margin-bottom: 20px;"><i class="fas fa-cubes"></i> Digital Game Assets</h3>
-            <div class="store-grid-premium">
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_cmplj4cmplj4cmpl-removebg-preview.png" alt="Sci-Fi Character Model" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">Fully rigged 3D Sci-Fi character model. Includes 4k textures, idle, walk, run, and attack animation sets for Unity & Unreal.</p>
-                        </div>
-                    </div>
-                    <h4>Sci-Fi Character Pack</h4>
-                    <p>Rigged 3D model with animations.</p>
-                    <div class="product-price">$19.99</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Buy Asset!')">Buy Asset</button>
-                </div>
-                
-                <div class="product-card">
-                    <span class="product-badge">NEW</span>
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_2g0dbu2g0dbu2g0d-removebg-preview.png" alt="Mecha Robot Asset" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">Heavy combat Mecha Robot 3D asset. Optimized low-poly topology with high-res baking. Perfect for mobile or PC strategy games.</p>
-                        </div>
-                    </div>
-                    <h4>Heavy Mecha Model</h4>
-                    <p>Combat ready robot asset.</p>
-                    <div class="product-price">$24.99</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Buy Asset!')">Buy Asset</button>
-                </div>
-                
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_mmgxcommgxcommgx-removebg-preview.jpg" alt="Game Environment Pack" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">High-resolution fantasy environment background pack. Contains skyboxes, mountains, and lighting setups.</p>
-                        </div>
-                    </div>
-                    <h4>Epic Environment Pack</h4>
-                    <p>Beautiful scenery & skyboxes.</p>
-                    <div class="product-price">$14.99</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Buy Asset!')">Buy Asset</button>
-                </div>
-
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_4en5qh4en5qh4en5-removebg-preview.png" alt="Futuristic Weapon" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">Next-gen sci-fi weapon asset. Modular attachments included. Ready for FPS or Top-Down shooter projects.</p>
-                        </div>
-                    </div>
-                    <h4>Sci-Fi Arsenal Pack</h4>
-                    <p>Detailed 3D weapon models.</p>
-                    <div class="product-price">$9.99</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Buy Asset!')">Buy Asset</button>
-                </div>
-
-                <div class="product-card">
-                    <div class="product-img-container">
-                        <img src="Gemini_Generated_Image_4dudwn4dudwn4dud-removebg-preview.png" alt="2D Cyberpunk Tileset" class="product-img">
-                        <div class="product-overlay">
-                            <p class="product-overlay-text">Complete 2D Cyberpunk tileset and sprite sheet. Build your own neon city platformer levels easily.</p>
-                        </div>
-                    </div>
-                    <h4>Neon City 2D Tileset</h4>
-                    <p>Pixel perfect level building blocks.</p>
-                    <div class="product-price">$12.99</div>
-                    <button class="action-btn" style="width: 100%;" onclick="alert('Buy Asset!')">Buy Asset</button>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- TOURNAMENT PAGE UPDATED WITH TOP 10 TOURNAMENTS & AUTO 5-PLAYER BRACKET SYSTEM -->
-    <main class="viewport-page" id="tournament-page">
-        <div class="page-header">
-            <h2 class="page-title-large pixel-font" style="color: var(--neon-cyan);">Live Esports Arena</h2>
-        </div>
-        <div class="page-controls-top">
-            <button class="back-btn" onclick="goHome()">← Back to Main Menu</button>
-        </div>
-
-        <div class="content-box" style="padding: 0; background: transparent; border: none; box-shadow: none;">
-            
-            <div class="tournament-hero">
-                <div class="tourney-content">
-                    <span class="status-badge" style="background: rgba(255, 0, 85, 0.2); color: #ff0055; border-color: #ff0055; margin-bottom: 15px; display: inline-block;">REGISTRATION OPEN</span>
-                    <h2 class="pixel-font" style="color: #fff; text-shadow: 0 0 20px rgba(0,0,0,0.8); margin-bottom: 15px; font-size: 1.8rem;">Pixel Gaunt World Cup 2026</h2>
-                    <p style="color: #e2e8f0; font-size: 1.1rem; margin-bottom: 25px; font-weight: bold;">Game: Cyber Strike & Battle Arenas</p>
-                    <div style="font-size: 2rem; color: #fbbf24; font-weight: 900; text-shadow: 0 5px 15px rgba(0,0,0,0.5); margin-bottom: 25px;">🪙 5,000 COINS PRIZE POOL</div>
-                    <button class="action-btn" onclick="registerSelectedTournament('Pixel Gaunt World Cup')" style="margin: 0 auto; padding: 14px 30px; font-size: 1.1rem; background: var(--neon-cyan); color: #000; border: none; font-weight: bold; text-transform: uppercase;">Register Now (100 Coins)</button>
-                </div>
-            </div>
-
-            <!-- 5-PLAYER AUTO TOURNAMENT BRACKET & CHART SYSTEM -->
-            <div class="bracket-section-container">
-                <h3 class="pixel-font" style="color: var(--neon-purple); font-size: 1.1rem; margin-bottom: 10px;">
-                    <i class="fas fa-sitemap"></i> 5-Player Auto Bracket Simulator & Coins System
-                </h3>
-                <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 15px;">
-                    Agar 5 players tournament mein hissa lete hain: <strong>Single Elimination System</strong> ke tehet jo haray ga wo foran out hoga! Pehle 2 random players ka Play-In match hoga, winner semi-finals mein pohnche ga. Complete winner single award (Winner Takes All) haasil karega.
-                </p>
-
-                <div class="bracket-controls">
-                    <div>
-                        <label style="font-size: 0.8rem; color: #fff; margin-right: 8px;">Match Entry Fee:</label>
-                        <select id="bracket-coin-select" style="background:#0c0c16; border:1px solid var(--neon-cyan); padding:8px 12px; border-radius:6px; color:#fbbf24; font-weight:bold;">
-                            <option value="50">50 Coins / Player</option>
-                            <option value="100" selected>100 Coins / Player</option>
-                            <option value="250">250 Coins / Player</option>
-                            <option value="500">500 Coins / Player</option>
-                        </select>
-                    </div>
-                    <button class="action-btn" style="background: var(--neon-purple); border:none; color:#fff;" onclick="generateAutoBracket()">
-                        ⚡ Auto-Select Matches & Simulate Winner
-                    </button>
-                    <div id="bracket-pool-display" style="margin-left:auto; color:#fbbf24; font-weight:bold; font-size:0.95rem;">
-                        Total Prize Pool: <span id="pool-coins-val">500 Coins</span> (1 Winner)
-                    </div>
-                </div>
-
-                <!-- DYNAMIC BRACKET CHART VISUALIZER -->
-                <div class="bracket-chart-grid" id="bracket-chart-wrapper">
-                    <!-- Dynamic Javascript rendering will populate 5-player chart here -->
-                </div>
-            </div>
-
-            <br><br>
-            <h3 class="pixel-font" style="color: #fff; font-size: 1.1rem; margin-bottom: 20px;"><i class="fas fa-trophy"></i> Top 10 Live Tournaments</h3>
-            
-            <!-- TOP 10 TOURNAMENT CARDS GRID (300PX FIT + HOVER ZOOM) -->
-            <div class="tourney-300-grid">
-
-                <!-- Tournament 1 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag">LIVE NOW</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_1cb2mv1cb2mv1cb2.png" alt="Neon Cyber Strike">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Neon Cyber Strike</h4>
-                        <p>High-stakes 1v1 FPS cyber duel. Master fast reflexes and eliminate opponents to secure victory.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 1,000 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Neon Cyber Strike')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 2 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag" style="background:var(--neon-purple); color:#fff;">UPCOMING</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_dzdieqdzdieqdzdi.png" alt="Shadow Mecha Arena">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Shadow Mecha Arena</h4>
-                        <p>Heavy armor robotic showdown. Tactical positioning and energy weapon timing are key to survive.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 850 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Shadow Mecha Arena')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 3 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag">FEATURED</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_82y03w82y03w82y0.png" alt="Titan Warfare 2026">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Titan Warfare 2026</h4>
-                        <p>Epic battle royale tournament featuring huge multi-player combat zones and instant elimination.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 2,500 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Titan Warfare 2026')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 4 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag" style="background:#10b981; color:#fff;">OPEN</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_w20h7yw20h7yw20h.png" alt="Pixel Brawl Royale">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Pixel Brawl Royale</h4>
-                        <p>Classic retro fighting tournament. Combo system, ultimate powers, and last-man standing rules.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 600 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Pixel Brawl Royale')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 5 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag">ACTIVE</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_8nbqoh8nbqoh8nbq.png" alt="Quantum Glitch League">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Quantum Glitch League</h4>
-                        <p>Mind-bending sci-fi arena battle. Teleport around hazard traps and defeat your rivals.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 750 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Quantum Glitch League')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 6 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag" style="background:#ff0055; color:#fff;">HOT</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_olztdeolztdeolzt.png" alt="Cosmic Drift Showdown">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Cosmic Drift Showdown</h4>
-                        <p>Interstellar racing cup. High speed drifts across cosmic tracks to claim the top trophy.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 500 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Cosmic Drift Showdown')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 7 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag">SQUAD</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_14po0c14po0c14po.png" alt="Iron Tide Supremacy">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Iron Tide Supremacy</h4>
-                        <p>3D Tactical shooter tournament. Assemble your squad, capture control points, and win the prize.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 1,200 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Iron Tide Supremacy')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 8 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag" style="background:var(--neon-purple); color:#fff;">UPCOMING</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_25uabx25uabx25ua.png" alt="Cyber Samurai Duel">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Cyber Samurai Duel</h4>
-                        <p>Precision katana slash duel. Single mistake means defeat in this high intensity reflex tournament.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 900 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Cyber Samurai Duel')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 9 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag">SOLO</span>
-                    <div class="tourney-img-box">
-                        <img src="Gemini_Generated_Image_ksj9dtksj9dtksj9.png" alt="Apex Retro League">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Apex Retro League</h4>
-                        <p>Multi-game retro triathlon. Score points across 3 different retro games to win the crown.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 1,500 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Apex Retro League')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tournament 10 -->
-                <div class="tourney-300-card">
-                    <span class="tourney-badge-tag" style="background:#fbbf24; color:#000;">SPECIAL</span>
-                    <div class="tourney-img-box">
-                        <img src="Stick Man Velocity.png" alt="Stickman Velocity Clash">
-                    </div>
-                    <div class="tourney-card-body">
-                        <h4>Stickman Velocity Clash</h4>
-                        <p>Fast-paced melee combat championship. Execute combos, dash, and defeat opponent stickmen.</p>
-                        <div class="tourney-card-footer">
-                            <span class="tourney-coins">🪙 2,000 Coins</span>
-                            <button class="action-btn" style="padding: 6px 12px; font-size:0.75rem;" onclick="registerSelectedTournament('Stickman Velocity Clash')">Register</button>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-        </div>
     </main>
 
     <main class="viewport-page" id="subscribe-page">
@@ -618,6 +341,7 @@
         <p><br>This explains what data Pixel Gaunt Studios collects and how it's used. We keep this as limited as possible, and you never need an account to play any game.</p>
         <p><br><strong>Signing in:</strong> If you choose to sign in with Google, we receive your name, email address, and profile photo, and store this in our database (Firebase) to identify your account — for example, so likes and bug reports can be linked to you.</p>
         <p><br><strong>Likes & bug reports:</strong> When you like a game or submit a bug report while signed in, that action (game title, report text, and timestamp) is saved to our database so we can track feedback and fix issues.</p>
+        <p><br><strong>Published games, tournaments & creator requests:</strong> If you publish a game, join or create a tournament, or save a creator request, what you submit (game files, title, cover image, your display name, scores and request details) is stored in our database. Games and tournament leaderboards are shown publicly; creator requests are visible only to you and us. Ask us at pixelgaunt@gmail.com to remove anything you submitted.</p>
         <p><br><strong>Analytics:</strong> We use Google Analytics and Firebase Analytics to understand overall site traffic and which games are played most. This data is aggregated and isn't tied to your identity.</p>
         <p><br><strong>Advertising:</strong> This site uses Google AdSense, which may use cookies to serve ads. Google's own privacy policy governs how that data is handled.</p>
         <p><br><strong>Local storage:</strong> To rank games by popularity, play counts are saved in your browser's local storage. This stays on your device and is never sent to us.</p>
@@ -631,6 +355,7 @@
         <p><br>Games are provided "as is." While we test everything before release, browser games can behave differently across devices and browsers, and occasional bugs or downtime may occur. We're not liable for any loss or issue arising from use of this website.</p>
         <p><br>Links to our Discord, WhatsApp, YouTube, and other social channels lead to third-party platforms we don't control, and we're not responsible for their content or availability.</p>
         <p><br>Games on this site may be updated, changed, or removed over time as development continues.</p>
+        <p><br>Community games are published by their creators, not by Pixel Gaunt Studios. They run in an isolated sandbox, but we cannot guarantee their content. To report a game or a copyright concern, email pixelgaunt@gmail.com.</p>
     </div>
 
     <footer>
@@ -665,5 +390,6 @@
     <script src="script.js" defer></script>
 
     <script type="module" src="firebase-auth.js"></script>
+    <script src="account.js" defer></script>
 </body>
 </html>

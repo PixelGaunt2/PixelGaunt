@@ -52,8 +52,10 @@
             <div class="nav-menu-links">
                 <a href="index.html">Home</a>
                 <a href="games.html" style="color:#fff;">Games</a>
-                <a onclick="openPageModal('About Us', 'pg-about')">About</a>
-                <a onclick="openPageModal('Contact', 'pg-contact')">Contact</a>
+                <a href="index.html#launch-section">Publish</a>
+                <a href="index.html#tournaments-section">Tournaments</a>
+                <a href="index.html#creator-section">Creator Lab</a>
+                <a href="dashboard.html" id="dashboard-nav-link" class="pg-hidden">Dashboard</a>
             </div>
             <div class="theme-select-container" title="Select Theme Color Core">
                 <div class="theme-dot t-blue active" onclick="setGlobalTheme('blue', this)"></div>
@@ -67,11 +69,25 @@
 
     <main class="container" id="homepage-page" style="padding-top: 40px;">
         <section class="portfolio-section" id="games-section">
-            <div class="portfolio-section-header">
-                <h2 class="pixel-font portfolio-section-title">Game Library</h2>
-                <p class="portfolio-section-subtitle">Every Pixel Gaunt game, free to play, straight in your browser. No downloads.</p>
+            <div class="pg-shelf-head">
+                <div>
+                    <h2 class="pixel-font">Game Library</h2>
+                    <p>Every Pixel Gaunt game, free to play, straight in your browser. No downloads.</p>
+                </div>
+                <div class="pg-search"><i class="fas fa-search" aria-hidden="true"></i><input type="search" id="game-search" placeholder="Search games" aria-label="Search games" autocomplete="off"></div>
             </div>
+            <div class="pg-cats" id="category-bar" role="group" aria-label="Game categories" style="margin-bottom: 22px;"></div>
             <div class="game-grid" id="game-grid"></div>
+            <div id="community-shelf">
+                <div class="pg-shelf-head" style="margin-top: 44px;">
+                    <div>
+                        <h2 class="pixel-font">Community games</h2>
+                        <p>Published by players and developers. Every one runs in an isolated sandbox.</p>
+                    </div>
+                    <a class="pg-link" href="index.html#launch-section">Publish your game</a>
+                </div>
+                <div class="game-grid" id="community-grid"></div>
+            </div>
         </section>
     </main>
 
@@ -97,6 +113,11 @@
             </div>
         </div>
     </main>
+
+    <div id="community-meta" class="pg-row pg-hidden" style="justify-content: center; margin: 18px auto 0 auto; max-width: 960px; padding: 0 5%;">
+        <span class="pg-muted">Community game by <b id="community-author" style="color: #fff;"></b></span>
+        <button type="button" class="pg-btn sm" id="report-community-btn">Report this game</button>
+    </div>
 
     <div class="modal-overlay" id="login-modal">
         <div class="modal-content">
@@ -151,6 +172,7 @@
         <p><br>This explains what data Pixel Gaunt Studios collects and how it's used. We keep this as limited as possible, and you never need an account to play any game.</p>
         <p><br><strong>Signing in:</strong> If you choose to sign in with Google, we receive your name, email address, and profile photo, and store this in our database (Firebase) to identify your account — for example, so likes and bug reports can be linked to you.</p>
         <p><br><strong>Likes & bug reports:</strong> When you like a game or submit a bug report while signed in, that action (game title, report text, and timestamp) is saved to our database so we can track feedback and fix issues.</p>
+        <p><br><strong>Published games, tournaments & creator requests:</strong> If you publish a game, join or create a tournament, or save a creator request, what you submit (game files, title, cover image, your display name, scores and request details) is stored in our database. Games and tournament leaderboards are shown publicly; creator requests are visible only to you and us. Ask us at pixelgaunt@gmail.com to remove anything you submitted.</p>
         <p><br><strong>Analytics:</strong> We use Google Analytics and Firebase Analytics to understand overall site traffic and which games are played most. This data is aggregated and isn't tied to your identity.</p>
         <p><br><strong>Advertising:</strong> This site uses Google AdSense, which may use cookies to serve ads. Google's own privacy policy governs how that data is handled.</p>
         <p><br><strong>Local storage:</strong> To rank games by popularity, play counts are saved in your browser's local storage. This stays on your device and is never sent to us.</p>
@@ -164,6 +186,7 @@
         <p><br>Games are provided "as is." While we test everything before release, browser games can behave differently across devices and browsers, and occasional bugs or downtime may occur. We're not liable for any loss or issue arising from use of this website.</p>
         <p><br>Links to our Discord, WhatsApp, YouTube, and other social channels lead to third-party platforms we don't control, and we're not responsible for their content or availability.</p>
         <p><br>Games on this site may be updated, changed, or removed over time as development continues.</p>
+        <p><br>Community games are published by their creators, not by Pixel Gaunt Studios. They run in an isolated sandbox, but we cannot guarantee their content. To report a game or a copyright concern, email pixelgaunt@gmail.com.</p>
     </div>
 
     <footer>
@@ -194,5 +217,6 @@
     <script src="script.js" defer></script>
 
     <script type="module" src="firebase-auth.js"></script>
+    <script src="account.js" defer></script>
 </body>
 </html>

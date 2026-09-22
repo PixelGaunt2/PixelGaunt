@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator Dashboard - Pixel Gaunt Studios</title>
+    <meta name="description" content="Manage your PIXELGAUNT creator account: upload limits, storage, subscription and analytics.">
+    <meta name="robots" content="noindex">
+    <link rel="canonical" href="https://pixelgaunt.com/dashboard.html">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Dashboard-specific layout only. Colors/fonts/spacing come from style.css's
+           existing tokens (--neon-cyan, --neon-purple, --text-muted, pixel-font, etc.)
+           so this page stays visually consistent with the rest of PIXELGAUNT. */
+        #dash-loading, #dash-signedout, #dash-error {
+            min-height: 60vh; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; text-align: center; gap: 14px; padding: 40px 20px;
+        }
+        #dash-loading i, #dash-signedout i, #dash-error i {
+            font-size: 2.4rem; color: var(--neon-cyan);
+        }
+        #dash-shell {
+            display: grid; grid-template-columns: 240px 1fr; gap: 28px;
+            max-width: 1180px; margin: 0 auto; padding: 28px 24px 80px;
+            align-items: start;
+        }
+        @media (max-width: 860px) {
+            #dash-shell { grid-template-columns: 1fr; padding: 20px 16px 60px; }
+        }
+        .dash-sidebar {
+            position: sticky; top: 90px; display: flex; flex-direction: column; gap: 4px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px; padding: 14px;
+        }
+        @media (max-width: 860px) {
+            .dash-sidebar {
+                position: static; flex-direction: row; overflow-x: auto; gap: 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+        .dash-nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+            border-radius: 8px; background: none; border: none; color: var(--text-muted);
+            font-family: 'Inter', sans-serif; font-size: 0.92rem; font-weight: 500;
+            text-align: left; cursor: pointer; white-space: nowrap; transition: 0.15s;
+        }
+        .dash-nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+        .dash-nav-item.active { background: rgba(56,189,248,0.12); color: var(--neon-cyan); }
+        .dash-nav-item i { width: 18px; text-align: center; }
+
+        .dash-panel { animation: dashFadeIn 0.2s ease; }
+        @keyframes dashFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .dash-header-row {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 12px; margin-bottom: 22px;
+        }
+        .dash-plan-badge {
+            font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.78rem;
+            letter-spacing: 0.5px; padding: 6px 14px; border-radius: 20px;
+        }
+        .dash-plan-badge.is-free { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+        .dash-plan-badge.is-pro { background: rgba(56,189,248,0.14); color: var(--neon-cyan); }
+
+        #dash-suspended-banner {
+            background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.4);
+            color: #fca5a5; padding: 12px 16px; border-radius: 10px; margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .dash-stat-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 14px; margin-bottom: 26px;
+        }
+        .dash-stat-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 4px;
+        }
+        .dash-stat-label { font-size: 0.78rem; color: var(--text-muted); }
+        .dash-stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 1.6rem; font-weight: 700; color: #fff; }
+        .dash-stat-sub { font-size: 0.72rem; color: var(--text-muted); opacity: 0.8; }
+
+        .dash-limits-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 26px; }
+        @media (max-width: 600px) { .dash-limits-grid { grid-template-columns: 1fr; } }
+        .dash-limit-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: 18px;
+        }
+        .dash-limit-card h4 {
+            font-size: 0.85rem; color: #fff; margin-bottom: 10px; font-weight: 600;
+            display: flex; justify-content: space-between; align-items: baseline;
+        }
+        .dash-limit-card h4 span { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
+        .dash-bar-track {
+            width: 100%; height: 8px; border-radius: 6px; background: rgba(255,255,255,0.08);
+            overflow: hidden; margin-bottom: 8px;
+        }
+        .dash-bar-fill {
+            height: 100%; width: 0%; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+            transition: width 0.4s ease;
+        }
+        .dash-limit-sub { font-size: 0.78rem; color: var(--text-muted); }
+
+        .dash-range-row { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+        .dash-range-btn {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-muted); font-size: 0.8rem; padding: 7px 14px; border-radius: 20px;
+            cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.15s;
+        }
+        .dash-range-btn.active { background: rgba(56,189,248,0.14); border-color: var(--neon-cyan); color: var(--neon-cyan); }
+
+        .dash-chart-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: 16px; margin-bottom: 20px;
+        }
+        .dash-chart-card h4 { font-size: 0.85rem; color: #fff; margin-bottom: 10px; font-weight: 600; }
+        .dash-chart-card svg { width: 100%; height: auto; display: block; }
+
+        .subscription-grid.dash-sub-grid { grid-template-columns: 1fr 1fr; max-width: 640px; }
+        @media (max-width: 600px) { .subscription-grid.dash-sub-grid { grid-template-columns: 1fr; } }
+        .plan-card.is-current { outline: 2px solid var(--neon-cyan); }
+
+        .dash-info-row { display: flex; flex-direction: column; gap: 14px; max-width: 480px; }
+        .dash-info-field { display: flex; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .dash-info-field span:first-child { color: var(--text-muted); font-size: 0.85rem; }
+        .dash-info-field span:last-child { color: #fff; font-size: 0.9rem; font-family: 'Space Grotesk', sans-serif; word-break: break-all; text-align: right; }
+
+        .dash-placeholder {
+            background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.15);
+            border-radius: 14px; padding: 32px 28px; max-width: 560px;
+        }
+        .dash-placeholder i { color: var(--neon-cyan); font-size: 1.4rem; margin-bottom: 10px; display: block; }
+        .dash-placeholder-body { color: var(--text-muted); font-size: 0.92rem; line-height: 1.6; }
+
+        #dash-upgrade-note { font-size: 0.82rem; color: var(--neon-cyan); margin-top: 10px; max-width: 420px; }
+    </style>
+</head>
+<body class="theme-blue">
+    <div class="aurora-bg">
+        <div class="aurora-blob blob1"></div>
+        <div class="aurora-blob blob2"></div>
+        <div class="aurora-blob blob3"></div>
+    </div>
+
+    <header id="main-header">
+        <div class="logo pixel-font" onclick="window.location.href='index.html'">Pixel <span>Gaunt</span> Studios</div>
+        <nav class="nav-links" id="main-nav-links">
+            <div class="nav-menu-links">
+                <a href="index.html">Home</a>
+                <a href="games.html">Games</a>
+                <a href="dashboard.html" style="color:#fff;">Dashboard</a>
+            </div>
+            <button class="nav-btn primary pg-hidden" id="dash-signout-btn">Sign out</button>
+        </nav>
+    </header>
+
+    <main style="padding-top: 30px;">
+
+        <div id="dash-loading">
+            <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+            <p>Loading your dashboard...</p>
+        </div>
+
+        <div id="dash-signedout" class="pg-hidden">
+            <i class="fas fa-lock" aria-hidden="true"></i>
+            <h2 class="pixel-font" style="font-size:1.1rem;">Sign in to view your dashboard</h2>
+            <p style="color: var(--text-muted); max-width: 420px;">Your Creator Dashboard tracks your upload limits, storage, subscription and (soon) your games and earnings.</p>
+            <button class="opt-btn" id="google-login-btn" style="margin-top: 6px;">
+                <span><i class="fab fa-google"></i></span> Login with Google
+            </button>
+        </div>
+
+        <div id="dash-error" class="pg-hidden">
+            <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+            <p style="color: var(--text-muted); max-width: 420px;"></p>
+        </div>
+
+        <div id="dash-app" class="pg-hidden">
+            <div id="dash-shell">
+                <nav class="dash-sidebar" aria-label="Dashboard sections">
+                    <button class="dash-nav-item" data-panel="overview"><i class="fas fa-gauge-high"></i> Overview</button>
+                    <button class="dash-nav-item" data-panel="mygames"><i class="fas fa-gamepad"></i> My Games</button>
+                    <button class="dash-nav-item" data-panel="upload"><i class="fas fa-upload"></i> Upload Game</button>
+                    <button class="dash-nav-item" data-panel="analytics"><i class="fas fa-chart-line"></i> Analytics</button>
+                    <button class="dash-nav-item" data-panel="earnings"><i class="fas fa-sack-dollar"></i> Earnings</button>
+                    <button class="dash-nav-item" data-panel="tournaments"><i class="fas fa-trophy"></i> Tournaments</button>
+                    <button class="dash-nav-item" data-panel="assets"><i class="fas fa-cubes"></i> My Assets</button>
+                    <button class="dash-nav-item" data-panel="assetsales"><i class="fas fa-tags"></i> Asset Sales</button>
+                    <button class="dash-nav-item" data-panel="subscription"><i class="fas fa-crown"></i> Subscription</button>
+                    <button class="dash-nav-item" data-panel="profile"><i class="fas fa-user"></i> Profile</button>
+                    <button class="dash-nav-item" data-panel="settings"><i class="fas fa-gear"></i> Settings</button>
+                </nav>
+
+                <div class="dash-content">
+
+                    <section id="panel-overview" class="dash-panel">
+                        <div class="dash-header-row">
+                            <div>
+                                <h2 class="pixel-font" style="font-size:1.1rem; margin-bottom:6px;">Overview</h2>
+                                <p style="color: var(--text-muted); font-size:0.88rem;" id="dash-user-email">Signed in</p>
+                            </div>
+                            <span class="dash-plan-badge" id="dash-plan-badge">Free Creator</span>
+                        </div>
+
+                        <div id="dash-suspended-banner" class="pg-hidden">
+                            <i class="fas fa-circle-exclamation"></i> Your account is currently suspended. Contact <a href="mailto:pixelgaunt@gmail.com" style="color:#fca5a5; text-decoration: underline;">pixelgaunt@gmail.com</a> if you believe this is a mistake.
+                        </div>
+
+                        <div class="dash-stat-grid" id="dash-stat-grid"></div>
+
+                        <div class="dash-limits-grid">
+                            <div class="dash-limit-card">
+                                <h4>Games <span id="dash-games-used">0 / 1 used</span></h4>
+                                <div class="dash-bar-track"><div class="dash-bar-fill" id="dash-games-bar-fill"></div></div>
+                                <div class="dash-limit-sub" id="dash-max-size">5 MB max per game</div>
+                            </div>
+                            <div class="dash-limit-card">
+                                <h4>Storage <span id="dash-storage-used">0 MB used this period</span></h4>
+                                <div class="dash-bar-track"><div class="dash-bar-fill" id="dash-storage-bar-fill"></div></div>
+                                <div class="dash-limit-sub" id="dash-storage-ceiling">of up to 5 MB possible this period</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="panel-mygames" class="dash-panel pg-hidden">
+                        <h2 class="pixel-font" style="font-size:1.1rem; margin-bottom:16px;">My Games</h2>
+                        <div class="dash-placeholder"><i class="fas fa-gamepad"></i><div class="dash-placeholder-body"></div></div>
+                    </section>
+
+                    <section id="panel-upload" class="dash-panel pg-hidden">
+                        <h2 class="pixel-font" style="font-size:1.1rem; margin-bottom:16px;">Upload Game</h2>
+                        <div class="dash-placeholder"><i class="fas fa-upload"></i><div class="dash-placeholder-body"></div></div>
+                    </section>
+
+                    <section id="panel-analytics" class="dash-panel pg-hidden">
+                        <h2 class="pixel-font" style="font-size:1.1rem; margin-bottom:16px;">Analytics</h2>
+                        <div class="dash-range-row">
+                            <button class="dash-range-btn" data-range="7d">7 Days</button>
+                            <button class="dash-range-btn" data-range="30d">30 Days</button>
+                            <button class="dash-range-btn" data-range="90d">90 Days</button>
+                            <button class="dash-range-btn" data-range="12m">12 Months</button>
+                            <button class="dash-range-btn" data-range="all">All Time</button>
+                        </div>
+                        <div class="dash-stat-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); margin-bottom: 20px;">
+                            <div class="dash-stat-card"><span class="dash-stat-label">Total Plays</span><span class="dash-stat-value">0</span><span class="dash-stat-sub">No data yet</span></div>
+                            <div class="dash-stat-card"><span class="dash-stat-label">Total Games</span><span class="dash-stat-value">0</span><span class="dash-stat-sub">No data yet</span></div>
+                            <div class="dash-stat-card"><span class="dash-stat-label">Total Earnings</span><span class="dash-stat-value">$0.00</span><span class="dash-stat-sub">No data yet</span></div>
+                            <div class="dash-stat-card"><span class="dash-stat-label">This Month</span><span class="dash-stat-value">$0.00</span><span class="dash-stat-sub">No data yet</span></div>
+                            <div class="dash-stat-card"><span class="dash-stat-label">Pending Payout</span><span class="dash-stat-value">$0.00</span><span class="dash-stat-sub">No data yet</span></div>
+                            <div class="dash-stat-card"><span class="dash-stat-label">Tournament Wins</span><span class="dash-stat-value">0</span><span class="dash-stat-sub">No data yet</span></div>
+                        </div>
+                        <div class="dash-chart-card">
+                            <h4>Plays over time</h4>
+                            <svg id="dash-plays-chart" viewBox="0 0 720 180" role="img" aria-label="Plays over time chart"></svg>
+                        </div>
+                        <div class="dash-chart-card">
+                            <h4>Earnings over time</h4>
+                            <svg id="dash-earnings-chart" viewBox="0 0 720 180" role="img" aria-label="Earnings over time chart"></svg>
+                        </div>
+                    </section>
+
+                    <section id="panel-earnings" class="dash-panel pg-hidden">
+                        <h2 class="pixel-font" style="font-size:1.1rem; margin-bottom:16px;">Earnings</h2>
+                        <div class="dash-placeholder"><i class="fas fa-sack-dollar"></i><div class="dash-placeholder-body"></div></div>
+                    </section>
+
+                    <section id="panel-tournaments" class="dash-panel pg-hidden">
+                        <h2 class="pixel-font" style="font-size:1.1rem; margin-bottom:16px;">Tournaments</h2>
+                        <div class="dash-placeholder"><i class="fas fa-trophy"></i><div class="dash-placeholder-body"></div></div>
+                    </section>
+
+                    <section id="panel-assets" class="dash-panel pg-hidden">
+                        <h2 class="pixel-font" style="font-size:1.1rem; margin-bottom:16px;">My Assets</h2>
+                        <div class="dash-placeholder"><i class="fas fa-cubes"></i><div class="dash-placeholder-body"></div></div>
+                    </section>
+
+                    <section id="panel-assetsales" class="dash-panel pg-hidden">
+                        <h2 class="pixel-font" style="font-size:1.1rem; margin-bottom:16px;">Asset Sales</h2>
+                        <div class="dash-placeholder"><i class="fas fa-tags"></i><div class="dash-placeholder-body"></div></div>
+                    </section>
+
+                    <section id="panel-subscription" class="dash-panel pg-hidden">
+                        <h2 class="pixel-font" style="font-size:1.1rem; margin-bottom:16px;">Subscription</h2>
+                        <div class="dash-info-row" style="margin-bottom: 24px;">
+                            <div class="dash-info-field"><span>Current plan</span><span id="dash-sub-current-plan">Free Creator</span></div>
+                            <div class="dash-info-field"><span>Status</span><span id="dash-sub-status">none</span></div>
+                            <div class="dash-info-field"><span>Renews / ends</span><span id="dash-sub-period-end">—</span></div>
+                        </div>
+                        <div class="subscription-grid dash-sub-grid">
+                            <div class="plan-card" id="dash-plan-card-free">
+                                <h4 style="color: #fff; margin-bottom: 10px; font-size: 1.3rem; font-weight: bold;">Free Creator</h4>
+                                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">$0</p>
+                                <div class="plan-features">
+                                    <div class="feature-item"><i class="fas fa-check"></i> 1 game / month</div>
+                                    <div class="feature-item"><i class="fas fa-check"></i> 5 MB max per game</div>
+                                    <div class="feature-item"><i class="fas fa-check"></i> Basic creator dashboard</div>
+                                </div>
+                            </div>
+                            <div class="plan-card" id="dash-plan-card-pro">
+                                <h4 style="color: var(--neon-cyan); margin-bottom: 10px; font-size: 1.3rem; font-weight: bold;">Creator Pro</h4>
+                                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">$1.99/mo</p>
+                                <div class="plan-features">
+                                    <div class="feature-item"><i class="fas fa-check"></i> 10 games / month</div>
+                                    <div class="feature-item"><i class="fas fa-check"></i> 100 MB max per game</div>
+                                    <div class="feature-item"><i class="fas fa-check"></i> Advanced analytics &amp; earnings</div>
+                                </div>
+                                <button class="action-btn" style="width: 100%; justify-content: center; background: rgba(56,189,248,0.1); border-color: var(--neon-cyan); color:#fff; margin-top: 14px;" id="dash-upgrade-btn">Upgrade to Creator Pro</button>
+                            </div>
+                        </div>
+                        <p id="dash-upgrade-note" class="pg-hidden"></p>
+                    </section>
+
+                    <section id="panel-profile" class="dash-panel pg-hidden">
+                        <h2 class="pixel-font" style="font-size:1.1rem; margin-bottom:16px;">Profile</h2>
+                        <div class="dash-info-row">
+                            <div class="dash-info-field"><span>Email</span><span id="dash-profile-email">—</span></div>
+                            <div class="dash-info-field"><span>User ID</span><span id="dash-profile-uid">—</span></div>
+                            <div class="dash-info-field"><span>Role</span><span id="dash-profile-role">user</span></div>
+                            <div class="dash-info-field"><span>Member since</span><span id="dash-profile-since">—</span></div>
+                        </div>
+                    </section>
+
+                    <section id="panel-settings" class="dash-panel pg-hidden">
+                        <h2 class="pixel-font" style="font-size:1.1rem; margin-bottom:16px;">Settings</h2>
+                        <div class="dash-placeholder"><i class="fas fa-gear"></i><div class="dash-placeholder-body"></div></div>
+                    </section>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="firebase-auth.js"></script>
+    <script src="account.js" defer></script>
+    <script type="module" src="dashboard.js"></script>
+</body>
+</html>

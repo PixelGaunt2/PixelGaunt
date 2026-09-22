@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- existing collections (unchanged behaviour) --------------------------------------
+    match /leaderboard/{doc=**} { allow read: if true; allow write: if request.auth != null; }
+    match /plays/{doc=**}       { allow read: if true; allow write: if true; }
+
+    // ---- shared daily play counter (Featured rail: top 3 played today) --------------------
+    match /daily_plays/{date}/games/{gameId} { allow read: if true; allow write: if true; }
+
+    // ---- community games (Publish) --------------------------------------------------------
+    // Anyone can read published games; only the owner can read their own pending/rejected ones.
+    match /community_games/{gameId} {
+      allow read: if resource.data.status == 'published'
+                  || (request.auth != null && request.auth.uid == resource.data.ownerUid);
+      allow create: if request.auth != null
+                    && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.status in ['published', 'pending']
+                    && request.resource.data.title is string && request.resource.data.title.size() <= 60
+                    && request.resource.data.chunkCount is int && request.resource.data.chunkCount <= 8;
+      // Owner can edit their own listing metadata but not re-approve themselves once rejected,
+      // and cannot rewrite ownerUid.
+      allow update: if request.auth != null && request.auth.uid == resource.data.ownerUid
+                    && request.resource.data.ownerUid == resource.data.ownerUid
+                    && request.resource.data.status != 'published';
+      allow delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+
+      match /chunks/{chunkId} {
+        allow read: if get(/databases/$(database)/documents/community_games/$(gameId)).data.status == 'published'
+                    || (request.auth != null && request.auth.uid == get(/databases/$(database)/documents/community_games/$(gameId)).data.ownerUid);
+        allow create: if request.auth != null
+                      && request.auth.uid == get(/databases/$(database)/documents/community_games/$(gameId)).data.ownerUid;
+        allow update, delete: if false; // chunks are immutable once written
+      }
+    }
+
+    // ---- tournaments ------------------------------------------------------------------------
+    match /tournaments/{tid} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.name is string && request.resource.data.name.size() <= 60
+                    && request.resource.data.limit is int && request.resource.data.limit >= 2 && request.resource.data.limit <= 500
+                    && request.resource.data.players.size() == 0;
+      // Join = append exactly one player to the array and touch nothing else; scores are only
+      // ever set by the game's own reporting server (a separate, authenticated integration),
+      // never trusted from an arbitrary client write here.
+      allow update: if request.auth != null
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players'])
+                    && request.resource.data.players.size() == resource.data.players.size() + 1
+                    && request.resource.data.players[request.resource.data.players.size() - 1].uid == request.auth.uid;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+    }
+
+    // ---- creator lab requests (private to the requester) -------------------------------------
+    match /creator_requests/{rid} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+      allow create: if request.auth != null && request.resource.data.ownerUid == request.auth.uid;
+    }
+
+    // ---- game-report / abuse reports ---------------------------------------------------------
+    match /bug_reports/{rid} {
+      allow create: if true;
+      allow read, update, delete: if false; // staff only, via the Firebase console
+    }
+
+    // ---- user accounts ------------------------------------------------------------------------
+    // Identity fields (email/displayName/photoURL/lastLogin) are written directly by the client
+    // (firebase-auth.js) on every login, same as before.
+    //
+    // plan, role, subscriptionStatus, billingPeriod*, gamesUploadedThisPeriod,
+    // storageUsedThisPeriod, suspended, earnings, payout* are SERVER-ONLY: they can only be
+    // written by the pixelgaunt-backend Worker, which authenticates to Firestore as a Google
+    // Cloud service account and so bypasses these rules entirely (the same way the Admin SDK
+    // would). No rule below ever grants the client write access to those fields - the absence
+    // of a matching allow-write is what keeps them locked, not an explicit "deny" list.
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'lastLogin']);
+
+      allow update: if request.auth != null && request.auth.uid == uid
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['email', 'displayName', 'photoURL', 'lastLogin']);
+
+      allow delete: if false;
+    }
+  }
+}
