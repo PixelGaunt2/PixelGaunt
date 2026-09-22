@@ -161,6 +161,37 @@ provided. Worth verifying against your actual copies of those files:
 link, and `account.js` got a few lines to reveal it once someone's actually signed
 in - nothing else on either page was touched.
 
+## Login / dashboard reliability fixes (this delivery)
+
+Addressing the "auto-connected/suspended account" and "stuck on Loading your dashboard"
+reports from the original brief:
+
+- **No hardcoded account, anywhere.** I searched every file in this delivery for a
+  hardcoded email, UID, mock user, or auth bypass — there isn't one. `pixelgaunt@gmail.com`
+  only ever appears as the support contact address, including in the dashboard's suspended
+  banner ("Your account is currently suspended. Contact pixelgaunt@gmail.com..."). If a
+  test account showed as suspended, that's `users/{uid}.suspended: true` in Firestore for
+  *that* account — real state, not a bug — check that doc directly.
+- **The dashboard can no longer hang forever.** Previously, `/me` had no timeout: if the
+  fetch (or the Firebase `getIdToken()` call before it) stalled, `loadAndRender()` never
+  resolved and the page stayed on "Loading your dashboard..." indefinitely. Every backend
+  call in `account.js` (`/me`, `/init-user`, `/payments/*`, `/admin/*`) now aborts and fails
+  with a clear message after 12 seconds — it can never hang past that.
+- **A real error screen with Retry**, not just a stuck spinner. `#dash-error` now shows the
+  *actual* reason (timeout, not signed in, 401, backend not configured, etc. — via the new
+  `PGBackend.meError()`) and a **Retry** button that re-runs the load, instead of requiring a
+  full page refresh.
+- **Sign Out can't hang either.** It now redirects to `index.html` on a 4-second safety
+  timer regardless of whether Firebase's `signOut()` call itself resolves, so a stalled
+  network can't strand someone on a signed-in-looking page after they've clicked Sign Out.
+
+**What I could NOT verify or fix in this phase:** the actual Google-sign-in button/flow,
+session persistence config, and any login-modal logic all live in `firebase-auth.js` and
+`script.js` — neither is in this delivery, so I can't confirm what triggers sign-in on
+`index.html`/`games.html` or audit it for the described bug there. If the auto-connect
+behavior is happening *before* the dashboard (e.g. on the homepage itself), send me those
+two files plus `style.css` and I'll audit them directly.
+
 ## Endpoints reference
 
 | Method | Path                        | Auth                 | Purpose                                   |

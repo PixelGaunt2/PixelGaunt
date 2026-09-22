@@ -15,24 +15,56 @@
     // Set this after `wrangler deploy` (see pixelgaunt-backend/README.md).
     const BACKEND_URL = ''; // e.g. 'https://pixelgaunt-backend.your-subdomain.workers.dev'
 
+    // No request (token fetch or backend call) is allowed to hang forever - that's exactly
+    // how "Loading your dashboard..." used to get stuck permanently. Anything past this
+    // either resolves or fails with a clear error within REQUEST_TIMEOUT_MS.
+    const REQUEST_TIMEOUT_MS = 12000;
+
     let cachedStatus = null;
+    let lastMeError = null;
+
+    function withTimeout(promise, ms, label) {
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                reject(new Error((label || 'Request') + ' timed out. Check your connection and try again.'));
+            }, ms);
+            Promise.resolve(promise).then(
+                (v) => { clearTimeout(timer); resolve(v); },
+                (e) => { clearTimeout(timer); reject(e); }
+            );
+        });
+    }
 
     async function getIdToken() {
         const user = window.pgFB && window.pgFB.auth && window.pgFB.auth.currentUser;
         if (!user) return null;
-        return user.getIdToken();
+        return withTimeout(user.getIdToken(), REQUEST_TIMEOUT_MS, 'Sign-in check');
     }
 
     async function callBackend(path, options) {
         if (!BACKEND_URL) {
-            console.warn('PGBackend: BACKEND_URL is not set yet in account.js.');
-            return null;
+            throw new Error('Backend URL is not configured yet (see account.js / README).');
         }
         const token = await getIdToken();
-        if (!token) return null;
-        const res = await fetch(BACKEND_URL + path, Object.assign({
-            headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }
-        }, options || {}));
+        if (!token) {
+            throw new Error('Not signed in.');
+        }
+
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+        let res;
+        try {
+            res = await fetch(BACKEND_URL + path, Object.assign({
+                signal: controller.signal,
+                headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }
+            }, options || {}));
+        } catch (e) {
+            if (e.name === 'AbortError') throw new Error('Request timed out. Check your connection and try again.');
+            throw new Error('Could not reach the backend. Check your connection and try again.');
+        } finally {
+            clearTimeout(timer);
+        }
+
         if (!res.ok) {
             const body = await res.json().catch(() => ({}));
             throw new Error(body.error || ('Backend request failed (' + res.status + ')'));
@@ -56,11 +88,19 @@
         if (cachedStatus && !(opts && opts.fresh)) return cachedStatus;
         try {
             cachedStatus = await callBackend('/me', { method: 'GET' });
+            lastMeError = null;
             return cachedStatus;
         } catch (e) {
             console.warn('PGBackend: could not load account status:', e.message);
+            lastMeError = e.message;
             return null;
         }
+    }
+
+    // The reason the last me() call returned null (timeout, 401, network, etc.), so the
+    // dashboard's error screen can show something more useful than a generic message.
+    function meError() {
+        return lastMeError;
     }
 
     // Generic authenticated call for any endpoint beyond /me (e.g. the dashboard's manual
@@ -70,7 +110,7 @@
         return callBackend(path, options);
     }
 
-    window.PGBackend = { me, call };
+    window.PGBackend = { me, call, meError };
 
     // Purely cosmetic: reveal the "Dashboard" nav link once someone is actually
     // signed in. Safe no-op on any page that doesn't have that element, and this

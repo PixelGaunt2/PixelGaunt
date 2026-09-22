@@ -130,6 +130,22 @@
     el.querySelector('p').textContent = message;
   }
 
+  function wireRetry() {
+    const btn = $('#dash-retry-btn');
+    if (!btn || btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', () => {
+      if (currentUser) {
+        loadAndRender().catch((e) => {
+          console.error('Dashboard render failed', e);
+          showUnreachable('Something went wrong loading your dashboard. Try refreshing.');
+        });
+      } else {
+        window.location.reload();
+      }
+    });
+  }
+
   // ---- overview panel ---------------------------------------------------------------------
   function renderOverview(me) {
     $('#dash-plan-badge').textContent = planLabel(me.plan);
@@ -359,15 +375,24 @@
 
   function wireSignOut() {
     const btn = $('#dash-signout-btn');
-    if (!btn) return;
+    if (!btn || btn.dataset.wired) return;
+    btn.dataset.wired = '1';
     btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      // Sign-out must always reach the logged-out page, even if Firebase's signOut()
+      // itself hangs (bad network, etc.) - so the redirect fires on a short timeout
+      // regardless of whether signOut() resolved first.
+      const redirect = () => { window.location.href = 'index.html'; };
+      const safetyTimer = setTimeout(redirect, 4000);
       try {
         if (window.pgFB && window.pgFB.auth && window.pgFB.auth.signOut) {
           await window.pgFB.auth.signOut();
         }
-        window.location.href = 'index.html';
       } catch (e) {
         console.warn('Dashboard: sign-out failed', e);
+      } finally {
+        clearTimeout(safetyTimer);
+        redirect();
       }
     });
   }
@@ -469,9 +494,11 @@
   // ---- boot ---------------------------------------------------------------------------------
   async function loadAndRender() {
     showLoading();
+    wireRetry();
     const me = await (window.PGBackend && window.PGBackend.me({ fresh: true }));
     if (!me) {
-      showUnreachable('Could not load your account. This dashboard needs the backend URL configured in account.js and a working sign-in.');
+      const reason = window.PGBackend && window.PGBackend.meError && window.PGBackend.meError();
+      showUnreachable(reason || 'Could not load your account. This dashboard needs the backend URL configured in account.js and a working sign-in.');
       return;
     }
     cachedMe = me;
