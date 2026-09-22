@@ -144,6 +144,20 @@ export async function patchDoc(env, path, partialObj) {
   return res.json();
 }
 
+// Creates a new document with a server-generated ID inside collectionPath.
+// Returns { id, ...fields }.
+export async function createDoc(env, collectionPath, obj) {
+  const token = await getAccessToken(env);
+  const res = await fetch(`${baseUrl(env)}/${collectionPath}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: toFsFields(obj) })
+  });
+  if (!res.ok) throw new Error(`Firestore create failed (${res.status}): ${await res.text()}`);
+  const data = await res.json();
+  return { id: data.name.split('/').pop(), ...fromFsFields(data.fields) };
+}
+
 export async function listCollection(env, collectionPath, pageSize = 50) {
   const token = await getAccessToken(env);
   const res = await fetch(`${baseUrl(env)}/${collectionPath}?pageSize=${pageSize}`, {

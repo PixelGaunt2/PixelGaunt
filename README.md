@@ -163,10 +163,45 @@ in - nothing else on either page was touched.
 
 ## Endpoints reference
 
-| Method | Path              | Auth                 | Purpose                                   |
-|--------|-------------------|-----------------------|--------------------------------------------|
-| POST   | `/init-user`      | signed-in user        | Create account record with safe defaults   |
-| GET    | `/me`             | signed-in user        | Safe plan/quota/role status                |
-| POST   | `/admin/bootstrap`| `X-Bootstrap-Key`     | One-time: create the first admin           |
-| POST   | `/admin/set-role` | admin's ID token       | Promote/demote a user                      |
-| GET    | `/admin/users`    | admin's ID token       | Basic user listing                         |
+| Method | Path                        | Auth                 | Purpose                                   |
+|--------|-----------------------------|-----------------------|--------------------------------------------|
+| POST   | `/init-user`                | signed-in user        | Create account record with safe defaults   |
+| GET    | `/me`                       | signed-in user        | Safe plan/quota/role status                |
+| GET    | `/payment-methods`          | signed-in user        | Manual-payment instructions per method (or "Not yet configured") |
+| POST   | `/payments/submit`          | signed-in user        | Submit a manual-payment reference for review, status `PENDING` |
+| GET    | `/payments/mine`            | signed-in user        | Your own past submissions and their status |
+| GET    | `/admin/payments`           | admin's ID token       | List submissions, optionally `?status=PENDING` |
+| POST   | `/admin/payments/decision`  | admin's ID token       | `{id, decision: APPROVED\|REJECTED, note?}` — approving flips the account to PRO for 30 days |
+| POST   | `/admin/bootstrap`          | `X-Bootstrap-Key`     | One-time: create the first admin           |
+| POST   | `/admin/set-role`           | admin's ID token       | Promote/demote a user                      |
+| GET    | `/admin/users`              | admin's ID token       | Basic user listing                         |
+
+## Manual Payment (Pakistan) — how it works
+
+1. A signed-in creator opens **Dashboard → Subscription → Upgrade to Creator Pro**, which reveals
+   the manual-payment methods (Easypaisa, Meezan Bank, Bank Alfalah, NayaPay, SadaPay) and a form.
+   Each method's instructions come from `PAYMENT_INFO_<METHOD>` secrets (see `wrangler.toml`) —
+   until you set them, the dashboard honestly shows "Not yet configured" instead of a fake number.
+2. They send the payment themselves (outside this system — there's no payment gateway here) and
+   submit the transaction reference, amount, date, and optionally a proof link and notes. This
+   calls `POST /payments/submit`, which creates a `payments/{id}` Firestore doc with `status:
+   PENDING`. **Nothing about their plan changes at this point.**
+3. An admin (someone whose `users/{uid}.role == 'admin'`, set via `/admin/bootstrap` or
+   `/admin/set-role`) opens the new **Admin: Payments** dashboard tab — only visible to admins —
+   and reviews pending submissions against their own bank/wallet records.
+4. Approving calls `POST /admin/payments/decision` with `{id, decision: 'APPROVED'}`. Only then
+   does the Worker set `plan: 'PRO'`, `subscriptionStatus: 'active'`, a 30-day billing period, and
+   reset the period's usage counters — all server-side, via the service account. Rejecting records
+   a `REJECTED` status and an optional note; the creator sees both on their Subscription tab.
+5. A submission can only be decided once (`PENDING`/`UNDER_REVIEW` → `APPROVED`/`REJECTED`) — the
+   Worker refuses to re-decide an already-decided one, so a double-click can't double-extend a plan.
+
+`firestore.rules` denies the client **all** direct read/write access to the `payments` collection
+— every access goes through the Worker (service account), the same trust model already used for
+`users/{uid}`'s plan/role/quota fields. This is deliberately modular: swapping in Stripe later
+means adding a webhook route that also calls the same "approve" logic — the dashboard, rules, and
+data model here don't need to change.
+
+**Known limitation in this phase:** the "proof" field is a pasted link (e.g. to a Drive/Photos
+screenshot), not a direct file upload — this delivery doesn't include `firebase-auth.js`, so I
+can't confirm Firebase Storage is initialized on the client to wire a real upload button yet.

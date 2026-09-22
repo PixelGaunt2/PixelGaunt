@@ -26,8 +26,14 @@
 
   const PANELS = [
     'overview', 'mygames', 'upload', 'analytics', 'earnings',
-    'tournaments', 'assets', 'assetsales', 'subscription', 'profile', 'settings'
+    'tournaments', 'assets', 'assetsales', 'subscription', 'profile', 'settings',
+    'adminpayments'
   ];
+
+  const PAYMENT_METHOD_LABELS = {
+    EASYPAISA: 'Easypaisa', MEEZAN_BANK: 'Meezan Bank', BANK_ALFALAH: 'Bank Alfalah',
+    NAYAPAY: 'NayaPay', SADAPAY: 'SadaPay'
+  };
 
   const NOT_BUILT_YET = {
     mygames: {
@@ -85,6 +91,12 @@
 
   function planLabel(plan) {
     return plan === 'PRO' ? 'PIXELGAUNT CREATOR PRO' : 'Free Creator';
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
   }
 
   // ---- top-level render states -----------------------------------------------------------
@@ -213,6 +225,93 @@
     }
   }
 
+  // ---- manual payment (Pakistan) -----------------------------------------------------------
+  let paymentMethodsLoaded = false;
+
+  async function loadPaymentMethods() {
+    if (paymentMethodsLoaded) return;
+    const el = $('#dash-payment-methods-list');
+    try {
+      const res = await window.PGBackend.call('/payment-methods', { method: 'GET' });
+      if (!res || !res.methods) {
+        el.innerHTML = '<p style="color:var(--text-muted); font-size:0.82rem;">Could not load payment methods right now.</p>';
+        return;
+      }
+      el.innerHTML = res.methods.map((m) => `
+        <div class="dash-pay-method-card">
+          <strong>${esc(m.label)}</strong>
+          <p>${esc(m.instructions)}</p>
+        </div>
+      `).join('');
+      paymentMethodsLoaded = true;
+    } catch (e) {
+      el.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem;">Could not load payment methods: ${esc(e.message)}</p>`;
+    }
+  }
+
+  async function loadMySubmissions() {
+    const el = $('#dash-payment-submissions');
+    try {
+      const res = await window.PGBackend.call('/payments/mine', { method: 'GET' });
+      if (!res) {
+        el.innerHTML = '<p style="color:var(--text-muted); font-size:0.82rem;">Could not load your submissions right now.</p>';
+        return;
+      }
+      const rows = res.payments || [];
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color: var(--text-muted); font-size:0.85rem;">No submissions yet.</p>';
+        return;
+      }
+      el.innerHTML = rows.map((p) => `
+        <div class="dash-pay-submission-card">
+          <div class="row1">
+            <span>${esc(PAYMENT_METHOD_LABELS[p.method] || p.method)} · ${esc(p.currency || 'PKR')} ${esc(p.amount)}</span>
+            <span class="dash-pay-status-pill dash-pay-status-${esc(p.status)}">${esc(p.status).replace('_', ' ')}</span>
+          </div>
+          <div>Ref: ${esc(p.transactionRef)} · Submitted ${fmtDate(p.createdAt)}</div>
+          ${p.reviewNote ? `<div style="margin-top:4px;">Admin note: ${esc(p.reviewNote)}</div>` : ''}
+        </div>
+      `).join('');
+    } catch (e) {
+      el.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem;">Could not load your submissions: ${esc(e.message)}</p>`;
+    }
+  }
+
+  function wirePaymentForm() {
+    const form = $('#dash-payment-form');
+    if (!form || form.dataset.wired) return;
+    form.dataset.wired = '1';
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = $('#dash-pay-submit-btn');
+      const msg = $('#dash-pay-form-msg');
+      const body = {
+        method: $('#dash-pay-method').value,
+        transactionRef: $('#dash-pay-ref').value.trim(),
+        amount: Number($('#dash-pay-amount').value),
+        paymentDate: $('#dash-pay-date').value,
+        proofUrl: $('#dash-pay-proof').value.trim() || undefined,
+        notes: $('#dash-pay-notes').value.trim() || undefined
+      };
+      btn.disabled = true;
+      msg.style.color = 'var(--text-muted)';
+      msg.textContent = 'Submitting…';
+      try {
+        const res = await window.PGBackend.call('/payments/submit', { method: 'POST', body: JSON.stringify(body) });
+        if (!res || !res.ok) throw new Error('Backend unreachable — nothing was submitted.');
+        msg.style.color = '#4ade80';
+        msg.textContent = 'Submitted — an admin will review it shortly.';
+        form.reset();
+        await loadMySubmissions();
+      } catch (err) {
+        msg.style.color = '#f87171';
+        msg.textContent = err.message || 'Could not submit. Try again.';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+
   // ---- profile panel ------------------------------------------------------------------------
   function renderProfile(me) {
     $('#dash-profile-email').textContent = me.email || currentUser.email || '—';
@@ -240,6 +339,7 @@
       if (navBtn) navBtn.classList.toggle('active', p === name);
     });
     if (name === 'analytics') renderAnalytics();
+    if (name === 'adminpayments') loadAdminPayments();
     window.location.hash = name;
   }
 
@@ -274,13 +374,96 @@
 
   function wireUpgradeButton() {
     const btn = $('#dash-upgrade-btn');
-    if (!btn) return;
+    if (!btn || btn.dataset.wired) return;
+    btn.dataset.wired = '1';
     btn.addEventListener('click', () => {
       if (btn.disabled) return;
       const note = $('#dash-upgrade-note');
-      note.textContent = 'Subscription checkout isn\u2019t connected yet - PIXELGAUNT CREATOR PRO ($1.99/mo) will be purchasable here once Stripe billing is wired up.';
+      note.textContent = 'Automated card checkout isn\u2019t connected yet. For now, PIXELGAUNT CREATOR PRO ($1.99/mo) is activated after a manual payment review — see below.';
       note.classList.remove('pg-hidden');
+      $('#dash-manual-payment').classList.remove('pg-hidden');
+      loadPaymentMethods();
+      loadMySubmissions();
+      wirePaymentForm();
     });
+  }
+
+  // ---- admin: payment review -----------------------------------------------------------------
+  let adminPayStatusFilter = 'PENDING';
+
+  async function loadAdminPayments() {
+    const el = $('#dash-admin-payments-list');
+    el.innerHTML = '<p style="color: var(--text-muted); font-size:0.85rem;">Loading…</p>';
+    try {
+      const qs = adminPayStatusFilter ? `?status=${adminPayStatusFilter}` : '';
+      const res = await window.PGBackend.call('/admin/payments' + qs, { method: 'GET' });
+      if (!res) {
+        el.innerHTML = '<p style="color:var(--text-muted); font-size:0.82rem;">Could not load right now.</p>';
+        return;
+      }
+      const rows = res.payments || [];
+      if (rows.length === 0) {
+        el.innerHTML = '<p style="color: var(--text-muted); font-size:0.85rem;">Nothing here.</p>';
+        return;
+      }
+      el.innerHTML = rows.map((p) => `
+        <div class="dash-admin-pay-card" data-id="${esc(p.id)}">
+          <div class="row1">
+            <span>${esc(p.email || p.uid)}</span>
+            <span class="dash-pay-status-pill dash-pay-status-${esc(p.status)}">${esc(p.status).replace('_', ' ')}</span>
+          </div>
+          <div>${esc(PAYMENT_METHOD_LABELS[p.method] || p.method)} · ${esc(p.currency || 'PKR')} ${esc(p.amount)} · Ref: ${esc(p.transactionRef)}</div>
+          <div>Paid ${esc(p.paymentDate)} · Submitted ${fmtDate(p.createdAt)}</div>
+          ${p.proofUrl ? `<div><a href="${esc(p.proofUrl)}" target="_blank" rel="noopener" style="color: var(--neon-cyan);">Proof link</a></div>` : ''}
+          ${p.notes ? `<div>Notes: ${esc(p.notes)}</div>` : ''}
+          ${(p.status === 'PENDING' || p.status === 'UNDER_REVIEW') ? `
+            <div class="admin-pay-actions">
+              <button class="approve" data-decision="APPROVED">Approve → activate Pro</button>
+              <button class="reject" data-decision="REJECTED">Reject</button>
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    } catch (e) {
+      el.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem;">Could not load: ${esc(e.message)}</p>`;
+    }
+  }
+
+  function wireAdminPayments() {
+    $all('.admin-pay-filter').forEach((btn) => {
+      if (btn.dataset.wired) return;
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', () => {
+        adminPayStatusFilter = btn.dataset.status;
+        $all('.admin-pay-filter').forEach((b) => b.classList.toggle('active', b === btn));
+        loadAdminPayments();
+      });
+    });
+
+    const list = $('#dash-admin-payments-list');
+    if (list && !list.dataset.wired) {
+      list.dataset.wired = '1';
+      list.addEventListener('click', async (e) => {
+        const btn = e.target.closest('button[data-decision]');
+        if (!btn) return;
+        const card = btn.closest('.dash-admin-pay-card');
+        const id = card.dataset.id;
+        const decision = btn.dataset.decision;
+        if (decision === 'REJECTED' && !window.confirm('Reject this payment submission?')) return;
+        card.querySelectorAll('button').forEach((b) => (b.disabled = true));
+        try {
+          const res = await window.PGBackend.call('/admin/payments/decision', {
+            method: 'POST',
+            body: JSON.stringify({ id, decision })
+          });
+          if (!res || !res.ok) throw new Error('Backend unreachable — decision was not saved.');
+          loadAdminPayments();
+        } catch (err) {
+          window.alert(err.message || 'Could not save decision.');
+          card.querySelectorAll('button').forEach((b) => (b.disabled = false));
+        }
+      });
+    }
   }
 
   // ---- boot ---------------------------------------------------------------------------------
@@ -299,6 +482,16 @@
     wireNav();
     wireSignOut();
     wireUpgradeButton();
+
+    // Admin-only nav item. Purely cosmetic gating - the real enforcement is
+    // requireAdmin() in the Worker on every /admin/* endpoint, same as
+    // toggleDashboardLink() in account.js is cosmetic and not a security boundary.
+    const adminLink = $('#dash-nav-adminpayments');
+    if (adminLink) {
+      adminLink.classList.toggle('pg-hidden', me.role !== 'admin');
+      if (me.role === 'admin') wireAdminPayments();
+    }
+
     showApp();
   }
 

@@ -13,3 +13,19 @@ ALLOWED_ORIGIN = "https://pixelgaunt.com"
 #   FIREBASE_SERVICE_ACCOUNT_JSON   the full JSON key file, as one string
 #   BOOTSTRAP_ADMIN_KEY              a random string only you know, used once
 #                                    to create the first admin account
+#
+#   Manual payment instructions (all optional - each defaults to "Not yet
+#   configured" in the dashboard until you set it). Put the real account
+#   number/IBAN/phone number plus short instructions as one string, e.g.:
+#     wrangler secret put PAYMENT_INFO_EASYPAISA
+#     > Easypaisa: 03XX-XXXXXXX (Account title: PIXELGAUNT). Send the PKR
+#     > equivalent of $1.99, then submit the transaction ID below.
+#   PAYMENT_INFO_EASYPAISA
+#   PAYMENT_INFO_MEEZAN_BANK
+#   PAYMENT_INFO_BANK_ALFALAH
+#   PAYMENT_INFO_NAYAPAY
+#   PAYMENT_INFO_SADAPAY
+#
+#   These go in as secrets (not [vars]) even though they aren't "secret" in
+#   the security sense, because wrangler.toml is committed to your repo and
+#   real account numbers shouldn't sit in git history.

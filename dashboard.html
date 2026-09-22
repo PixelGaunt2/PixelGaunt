@@ -138,6 +138,36 @@
         .dash-placeholder-body { color: var(--text-muted); font-size: 0.92rem; line-height: 1.6; }
 
         #dash-upgrade-note { font-size: 0.82rem; color: var(--neon-cyan); margin-top: 10px; max-width: 420px; }
+
+        .dash-pay-method-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 12px 14px;
+        }
+        .dash-pay-method-card strong { color: #fff; font-size: 0.85rem; }
+        .dash-pay-method-card p { color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; white-space: pre-wrap; }
+
+        .dash-pay-status-pill {
+            display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 3px 9px;
+            border-radius: 20px; text-transform: uppercase; letter-spacing: 0.03em;
+        }
+        .dash-pay-status-PENDING, .dash-pay-status-UNDER_REVIEW { background: rgba(250,204,21,0.15); color: #facc15; }
+        .dash-pay-status-APPROVED { background: rgba(74,222,128,0.15); color: #4ade80; }
+        .dash-pay-status-REJECTED { background: rgba(248,113,113,0.15); color: #f87171; }
+
+        .dash-pay-submission-card, .dash-admin-pay-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px; padding: 12px 14px; font-size: 0.82rem; color: var(--text-muted);
+        }
+        .dash-pay-submission-card .row1, .dash-admin-pay-card .row1 { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:6px; }
+        .dash-pay-submission-card .row1 span:first-child, .dash-admin-pay-card .row1 span:first-child { color:#fff; font-weight:600; }
+        .dash-admin-pay-card .admin-pay-actions { display:flex; gap:8px; margin-top:10px; }
+        .dash-admin-pay-card .admin-pay-actions button {
+            font-family: 'Inter', sans-serif; font-size: 0.78rem; padding: 6px 14px; border-radius: 8px;
+            cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #fff;
+        }
+        .dash-admin-pay-card .admin-pay-actions button.approve { border-color: #4ade80; color: #4ade80; }
+        .dash-admin-pay-card .admin-pay-actions button.reject { border-color: #f87171; color: #f87171; }
+        .dash-admin-pay-card .admin-pay-actions button:disabled { opacity: 0.5; cursor: default; }
     </style>
 </head>
 <body class="theme-blue">
@@ -194,6 +224,7 @@
                     <button class="dash-nav-item" data-panel="subscription"><i class="fas fa-crown"></i> Subscription</button>
                     <button class="dash-nav-item" data-panel="profile"><i class="fas fa-user"></i> Profile</button>
                     <button class="dash-nav-item" data-panel="settings"><i class="fas fa-gear"></i> Settings</button>
+                    <button class="dash-nav-item pg-hidden" data-panel="adminpayments" id="dash-nav-adminpayments"><i class="fas fa-shield-halved"></i> Admin: Payments</button>
                 </nav>
 
                 <div class="dash-content">
@@ -313,6 +344,69 @@
                             </div>
                         </div>
                         <p id="dash-upgrade-note" class="pg-hidden"></p>
+
+                        <div id="dash-manual-payment" class="pg-hidden" style="margin-top: 28px; max-width: 560px;">
+                            <h3 class="pixel-font" style="font-size: 0.95rem; margin-bottom: 6px; color: var(--neon-cyan);">Manual Payment</h3>
+                            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">
+                                Send your subscription payment using one of the supported methods below, then submit
+                                your payment reference for verification. Your plan will NOT change automatically —
+                                an admin reviews every submission before Creator Pro is activated.
+                            </p>
+
+                            <div id="dash-payment-methods-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;"></div>
+
+                            <form id="dash-payment-form" style="display:flex; flex-direction:column; gap:12px;">
+                                <label style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem; color: var(--text-muted);">
+                                    Payment Method
+                                    <select id="dash-pay-method" required style="padding:9px 10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); color:#fff;">
+                                        <option value="EASYPAISA">Easypaisa</option>
+                                        <option value="MEEZAN_BANK">Meezan Bank</option>
+                                        <option value="BANK_ALFALAH">Bank Alfalah</option>
+                                        <option value="NAYAPAY">NayaPay</option>
+                                        <option value="SADAPAY">SadaPay</option>
+                                    </select>
+                                </label>
+                                <label style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem; color: var(--text-muted);">
+                                    Transaction ID / Reference
+                                    <input id="dash-pay-ref" type="text" maxlength="100" required placeholder="e.g. TXN123456789" style="padding:9px 10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); color:#fff;">
+                                </label>
+                                <label style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem; color: var(--text-muted);">
+                                    Amount Sent (PKR)
+                                    <input id="dash-pay-amount" type="number" min="1" step="1" required placeholder="e.g. 560" style="padding:9px 10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); color:#fff;">
+                                </label>
+                                <label style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem; color: var(--text-muted);">
+                                    Date of Payment
+                                    <input id="dash-pay-date" type="date" required style="padding:9px 10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); color:#fff;">
+                                </label>
+                                <label style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem; color: var(--text-muted);">
+                                    Proof Link (optional — screenshot uploaded elsewhere, e.g. a Drive link)
+                                    <input id="dash-pay-proof" type="url" maxlength="500" placeholder="https://..." style="padding:9px 10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); color:#fff;">
+                                </label>
+                                <label style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem; color: var(--text-muted);">
+                                    Notes (optional)
+                                    <textarea id="dash-pay-notes" maxlength="500" rows="2" style="padding:9px 10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); color:#fff; font-family:inherit;"></textarea>
+                                </label>
+                                <button type="submit" class="action-btn" id="dash-pay-submit-btn" style="justify-content:center;">Submit Payment for Review</button>
+                                <p id="dash-pay-form-msg" style="font-size:0.82rem; margin:0;"></p>
+                            </form>
+
+                            <h4 style="font-size: 0.85rem; color:#fff; margin: 22px 0 10px;">Your submissions</h4>
+                            <div id="dash-payment-submissions" style="display:flex; flex-direction:column; gap:8px;">
+                                <p style="color: var(--text-muted); font-size:0.85rem;">No submissions yet.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="panel-adminpayments" class="dash-panel pg-hidden">
+                        <h2 class="pixel-font" style="font-size:1.1rem; margin-bottom:6px;">Admin · Payment Review</h2>
+                        <p style="color: var(--text-muted); font-size:0.85rem; margin-bottom:16px;">Approving activates Creator Pro immediately for that account. This can't be undone from here — reject and ask the creator to resubmit if something's wrong.</p>
+                        <div class="dash-range-row">
+                            <button class="dash-range-btn admin-pay-filter active" data-status="PENDING">Pending</button>
+                            <button class="dash-range-btn admin-pay-filter" data-status="">All</button>
+                        </div>
+                        <div id="dash-admin-payments-list" style="display:flex; flex-direction:column; gap:12px;">
+                            <p style="color: var(--text-muted); font-size:0.85rem;">Loading…</p>
+                        </div>
                     </section>
 
                     <section id="panel-profile" class="dash-panel pg-hidden">

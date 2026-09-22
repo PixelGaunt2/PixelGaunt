@@ -86,5 +86,16 @@ service cloud.firestore {
 
       allow delete: if false;
     }
+
+    // ---- manual payment submissions (Pakistan) -------------------------------------------
+    // Same trust model as users/{uid} above: every field here (including the initial
+    // PENDING status) is written by the pixelgaunt-backend Worker via POST /payments/submit
+    // and POST /admin/payments/decision, both of which authenticate to Firestore as the
+    // service account and so bypass these rules entirely. The client never writes here
+    // directly, and can't even read another user's submissions - the Worker's own
+    // GET /payments/mine and GET /admin/payments (admin-only) are the only read paths.
+    match /payments/{paymentId} {
+      allow read, write: if false;
+    }
   }
 }

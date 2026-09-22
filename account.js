@@ -63,7 +63,14 @@
         }
     }
 
-    window.PGBackend = { me };
+    // Generic authenticated call for any endpoint beyond /me (e.g. the dashboard's manual
+    // payment flow: /payment-methods, /payments/submit, /payments/mine, /admin/payments*).
+    // Same auth/error handling as initUser()/me() above, just not cached - callers own that.
+    async function call(path, options) {
+        return callBackend(path, options);
+    }
+
+    window.PGBackend = { me, call };
 
     // Purely cosmetic: reveal the "Dashboard" nav link once someone is actually
     // signed in. Safe no-op on any page that doesn't have that element, and this
