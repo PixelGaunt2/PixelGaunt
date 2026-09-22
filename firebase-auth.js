@@ -1,6 +1,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, increment, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, increment, collection, addDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp, Timestamp, Bytes, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
 
         const firebaseConfig = {
@@ -19,6 +19,15 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
+
+        // Shared handles for script.js (community games) and the lazy-loaded platform.js
+        // (publishing, tournaments, creator lab). Nothing secret lives here - Firebase web config
+        // is public by design and is protected by Firestore security rules + authorised domains.
+        window.pgFB = {
+            auth, db,
+            fs: { doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, collection, query, where, orderBy, limit, onSnapshot, serverTimestamp, Timestamp, Bytes, runTransaction, increment }
+        };
+        document.dispatchEvent(new Event('pg-firebase-ready'));
 
         const mainLoginBtn = document.getElementById("main-login-btn");
         const googleLoginBtn = document.getElementById("google-login-btn"); 
@@ -109,6 +118,7 @@
         };
 
         onAuthStateChanged(auth, (user) => {
+            window.dispatchEvent(new CustomEvent('pg-auth', { detail: { user: user || null } }));
             if (user) {
                 window.isLoggedIn = true; 
                 if(typeof window.updatePromptVisibility === 'function') window.updatePromptVisibility(); 

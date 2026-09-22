@@ -44,6 +44,22 @@
         // Seed each game object with its persisted play count
         games.forEach(g => { g.playCount = playCounts[g.id] || 0; });
 
+        /* ================= PLATFORM HELPERS ================= */
+        // Escape anything that did not come from this file (community game titles, names, ...)
+        window.pgEsc = function(v) {
+            return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        };
+        const esc = window.pgEsc;
+
+        // Games published through PixelGaunt Publish. Loaded lazily from Firestore (see below).
+        window.communityGames = [];
+        function findGame(id) {
+            return games.find(g => g.id === id) || window.communityGames.find(g => g.id === id);
+        }
+        function playParam(game) {
+            return game.community ? 'c-' + game.docId : playParam(game);
+        }
+
         // Keeps track of the currently displayed grid list (All Games or a filtered/searched subset)
         // so we can re-render it in the correct order after a ranking update without losing the active filter.
         let currentDisplayedList = games;
@@ -76,12 +92,28 @@
             playCounts[gameId] = (playCounts[gameId] || 0) + 1;
             savePlayCounts(playCounts);
 
-            const game = games.find(g => g.id === gameId);
+            const game = findGame(gameId);
             if (game) game.playCount = playCounts[gameId];
 
             window.updateFeaturedPanels();
             window.renderGames(currentDisplayedList);
+            trackDailyPlay(gameId);
         }
+
+        /* ================= DAILY PLAY COUNTER (shared, for the Featured rail) =================
+           One tiny Firestore doc per game per UTC day: daily_plays/<yyyy-mm-dd>/games/<gameId>.
+           A single best-effort increment() on play - never blocks or slows launching a game. */
+        function todayKey() { return new Date().toISOString().slice(0, 10); }
+        function trackDailyPlay(gameId) {
+            Core_whenFirebase().then(fb => {
+                const { db, fs } = fb;
+                const ref = fs.doc(db, 'daily_plays', todayKey(), 'games', String(gameId));
+                return fs.setDoc(ref, { count: fs.increment(1) }, { merge: true });
+            }).catch(err => console.warn('Daily play count not recorded:', err));
+        }
+        // whenFirebase() is defined later in this file (platform helpers block) - this thin
+        // wrapper lets trackDailyPlay be declared up here next to registerGamePlay.
+        function Core_whenFirebase() { return window.pgWhenFirebase ? window.pgWhenFirebase() : Promise.reject(new Error('Firebase not ready')); }
 
         // ===== POPULARITY-BASED FEATURED PANEL (STATIC - NO AUTO ROTATION) =====
         // "Top Plays" (hero panel) always shows the single most-played game that has
@@ -118,7 +150,9 @@
             
             const gameIframe = document.getElementById('game-canvas');
             const portalBgm = document.getElementById('portal-bgm');
-            if (gameIframe) gameIframe.src = '';
+            if (gameIframe) { gameIframe.removeAttribute('srcdoc'); gameIframe.removeAttribute('sandbox'); gameIframe.src = ''; }
+            const communityMeta = document.getElementById('community-meta');
+            if (communityMeta) communityMeta.classList.add('pg-hidden');
             if (portalBgm) portalBgm.pause();
 
             exitElementFullscreen();
@@ -142,10 +176,6 @@
             const page = document.getElementById(pageId);
             if(page) page.style.display = 'block';
             window.scrollTo(0, 0);
-
-            if(pageId === 'tournament-page') {
-                window.generateAutoBracket();
-            }
         }
 
         // Tracks the ids/order of the last thing actually painted into #game-grid, so a
@@ -161,7 +191,7 @@
 
             if (rankedList.length === 0) {
                 lastRenderedGridKey = 'empty';
-                gameGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px; font-size:0.9rem;">No entries found fitting active matrix fields.</p>';
+                gameGrid.innerHTML = '<div class="pg-empty">No games match. Try another category or clear the search.</div>';
                 return;
             }
 
@@ -171,49 +201,72 @@
             lastRenderedGridKey = gridKey;
 
             gameGrid.innerHTML = '';
-            rankedList.forEach(game => {
-                const card = document.createElement('div');
-                card.className = 'game-card';
-                card.id = 'game-' + game.id;
-                card.onclick = () => {
-                    if (window.SHOWCASE_MODE) {
-                        // Homepage is a showcase only — never launch a game directly from here.
-                        window.location.href = 'games.html#game-' + game.id;
-                    } else {
-                        window.launchViewport(game.id);
-                    }
-                };
-                const safeImg = encodeURI(game.image);
-                const safePreview = encodeURI(game.preview || game.image.replace('.png', '.gif'));
+            rankedList.forEach(game => gameGrid.appendChild(createGameCard(game)));
+        }
+
+        // Builds one game card. First-party cards keep their original markup (hover GIF preview,
+        // stars); community cards show a badge + author and never load anything but their own thumb.
+        function createGameCard(game) {
+            const card = document.createElement('div');
+            card.className = 'game-card';
+            card.id = (game.community ? 'cgame-' + game.docId : 'game-' + game.id);
+            card.onclick = () => {
+                if (window.SHOWCASE_MODE) {
+                    // Homepage is a showcase only - never launch a game directly from here.
+                    window.location.href = 'games.html#' + card.id;
+                } else {
+                    window.launchViewport(game.id);
+                }
+            };
+
+            if (game.community) {
+                const thumb = game.thumb
+                    ? `<img class="card-thumb-img" src="${esc(game.thumb)}" alt="${esc(game.title)}" width="320" height="240" decoding="async">`
+                    : `<div class="pg-thumb-fallback" aria-hidden="true">${esc((game.title || '?').charAt(0).toUpperCase())}</div>`;
+                const tourney = (game.tournament && game.tournament.reporting === 'score') ? '<span class="pg-badge t">Tournament ready</span>' : '';
                 card.innerHTML = `
                     <div class="card-thumb">
-                        <img class="card-thumb-img" src="${safeImg}" alt="${game.title}" loading="lazy" decoding="async" width="400" height="300">
-                        <div class="gif-overlay" data-gif="${safePreview}"></div>
+                        ${thumb}
+                        <span class="pg-badge">Community</span>${tourney}
                         <div class="play-overlay"><div class="play-btn-circle"></div></div>
                     </div>
                     <div class="card-info">
-                        <div class="card-genre">${game.genre}</div>
-                        <div class="card-title">${game.title}</div>
-                        <div class="card-premium-meta">
-                            <div class="card-stars-layer">★★★★★</div>
-                        </div>
+                        <div class="card-genre">${esc(game.genre)}</div>
+                        <div class="card-title">${esc(game.title)}</div>
+                        <div class="card-premium-meta"><span class="pg-muted" style="font-size:0.78rem;">by ${esc(game.studio)}</span></div>
+                    </div>`;
+                return card;
+            }
+
+            const safeImg = encodeURI(game.image);
+            const safePreview = encodeURI(game.preview || game.image.replace('.png', '.gif'));
+            card.innerHTML = `
+                <div class="card-thumb">
+                    <img class="card-thumb-img" src="${esc(safeImg)}" alt="${esc(game.title)}" loading="lazy" decoding="async" width="400" height="300">
+                    <div class="gif-overlay" data-gif="${esc(safePreview)}"></div>
+                    <div class="play-overlay"><div class="play-btn-circle"></div></div>
+                </div>
+                <div class="card-info">
+                    <div class="card-genre">${esc(game.genre)}</div>
+                    <div class="card-title">${esc(game.title)}</div>
+                    <div class="card-premium-meta">
+                        <div class="card-stars-layer">★★★★★</div>
                     </div>
-                `;
+                </div>
+            `;
 
-                // The preview GIF is never fetched on render - only on genuine hover/touch
-                // intent, and only once per card (result is cached by the browser after that).
-                const gifLayer = card.querySelector('.gif-overlay');
-                let gifRequested = false;
-                const loadGifOnce = () => {
-                    if (gifRequested) return;
-                    gifRequested = true;
-                    gifLayer.style.backgroundImage = `url('${gifLayer.dataset.gif}')`;
-                };
-                card.addEventListener('mouseenter', loadGifOnce, { once: true });
-                card.addEventListener('touchstart', loadGifOnce, { once: true, passive: true });
-
-                gameGrid.appendChild(card);
-            });
+            // The preview GIF is never fetched on render - only on genuine hover/touch
+            // intent, and only once per card (result is cached by the browser after that).
+            const gifLayer = card.querySelector('.gif-overlay');
+            let gifRequested = false;
+            const loadGifOnce = () => {
+                if (gifRequested) return;
+                gifRequested = true;
+                gifLayer.style.backgroundImage = `url('${gifLayer.dataset.gif}')`;
+            };
+            card.addEventListener('mouseenter', loadGifOnce, { once: true });
+            card.addEventListener('touchstart', loadGifOnce, { once: true, passive: true });
+            return card;
         }
 
         /* ================= MOBILE / TABLET AUTO FULLSCREEN + ORIENTATION ================= */
@@ -334,7 +387,7 @@
         window.launchViewport = function(gameId, historyMode) {
             historyMode = historyMode || 'push';
 
-            const game = games.find(g => g.id === gameId);
+            const game = findGame(gameId);
             if (!game) return;
 
             const gameplayPage = document.getElementById('gameplay-page');
@@ -345,7 +398,7 @@
             // exactly the "game restarts by itself" symptom this guards against.
             if (alreadyRunning) {
                 if (historyMode === 'push') {
-                    history.pushState({ page: 'game', id: gameId }, game.title, `?play=${encodeURIComponent(game.title.toLowerCase().replace(/ /g, '-'))}`);
+                    history.pushState({ page: 'game', id: gameId }, game.title, `?play=${playParam(game)}`);
                 }
                 return;
             }
@@ -370,7 +423,8 @@
             // Start the game loading as the very first thing we do, before any of the
             // (comparatively unimportant) text/detail panel updates below.
             const gameIframe = document.getElementById('game-canvas');
-            gameIframe.src = encodeURI(game.url);
+            if (game.community) { window.pgLoadCommunityIntoFrame(game, gameIframe, gameId); }
+            else { gameIframe.src = encodeURI(game.url); }
 
             // Apply this game's intended orientation to the container. This controls the
             // container's aspect ratio only - it never touches the iframe's own internal
@@ -383,7 +437,7 @@
             }
 
             document.getElementById('current-game-title').innerText = game.title;
-            const setIfPresent = (id, value) => { const el = document.getElementById(id); if (el) el.innerHTML = value; };
+            const setIfPresent = (id, value) => { const el = document.getElementById(id); if (el) { if (game.community) el.textContent = value; else el.innerHTML = value; } };
             setIfPresent('current-game-studio', game.studio);
             setIfPresent('current-game-releasedate', game.releaseDate);
             setIfPresent('current-game-platform', game.platform);
@@ -391,6 +445,8 @@
             setIfPresent('current-game-rating', game.rating);
             setIfPresent('current-game-howtoplay', game.howToPlay);
             setIfPresent('current-game-controls', game.controls);
+
+            window.pgShowCommunityMeta(game);
 
             const aiBox = document.getElementById('current-game-aiprompt');
             const aiContainer = document.getElementById('ai-prompt-container');
@@ -408,9 +464,9 @@
             }
 
             if (historyMode === 'push') {
-                history.pushState({ page: 'game', id: gameId }, game.title, `?play=${encodeURIComponent(game.title.toLowerCase().replace(/ /g, '-'))}`);
+                history.pushState({ page: 'game', id: gameId }, game.title, `?play=${playParam(game)}`);
             } else if (historyMode === 'replace') {
-                history.replaceState({ page: 'game', id: gameId }, game.title, `?play=${encodeURIComponent(game.title.toLowerCase().replace(/ /g, '-'))}`);
+                history.replaceState({ page: 'game', id: gameId }, game.title, `?play=${playParam(game)}`);
             }
             // historyMode === 'none': popstate already updated the URL/history for us.
 
@@ -498,107 +554,346 @@
             document.getElementById('pg-info-modal').classList.remove('active-modal');
         }
 
-        /* 5-PLAYER AUTOMATIC BRACKET SIMULATION JS LOGIC */
-        window.registerSelectedTournament = function(tourneyTitle) {
-            alert(`Registration query received for "${tourneyTitle}"! 5 Players Bracket system will automatically seed your match.`);
+        /* ================= COMMUNITY GAMES (published through PixelGaunt Publish) ================= */
+        // Every community game runs in a sandboxed iframe with NO allow-same-origin: the game gets an
+        // opaque origin, so it cannot read pixelgaunt.com storage, cookies, Firebase sessions or this
+        // page's DOM, and it cannot navigate the top window, open popups, submit forms or download files.
+        window.PG_SANDBOX = 'allow-scripts allow-pointer-lock';
+
+        function whenFirebase() {
+            if (window.pgFB) return Promise.resolve(window.pgFB);
+            return new Promise((resolve, reject) => {
+                const t = setTimeout(() => reject(new Error('Firebase did not load')), 15000);
+                document.addEventListener('pg-firebase-ready', () => { clearTimeout(t); resolve(window.pgFB); }, { once: true });
+            });
+        }
+        window.pgWhenFirebase = whenFirebase;
+
+        function mapCommunityDoc(id, d) {
+            return {
+                id: 'c_' + id, docId: id, community: true,
+                studio: d.ownerName || 'Community', title: d.title || 'Untitled', genre: d.genre || 'Arcade',
+                controls: d.controls || '', howToPlay: d.description || '', rating: '', releaseDate: '',
+                platform: 'Web Browser', technology: 'HTML5 Web Technologies.', aiPrompt: '',
+                thumb: d.thumb || '', orientation: d.orientation === 'portrait' ? 'portrait' : 'landscape',
+                tournament: d.tournament || null, chunkCount: d.chunkCount || 0, ownerUid: d.ownerUid || '',
+                createdMs: (d.createdAt && d.createdAt.toMillis) ? d.createdAt.toMillis() : 0,
+                playCount: playCounts['c_' + id] || 0
+            };
         }
 
-        window.generateAutoBracket = function() {
-            const coinVal = parseInt(document.getElementById('bracket-coin-select').value) || 100;
-            const totalPool = coinVal * 5;
-            document.getElementById('pool-coins-val').innerText = `${totalPool} Coins`;
+        let communityLoaded = false, communityFailed = false, communityPromise = null, communityHashDone = false;
 
-            const players = ["CyberPro_99", "PixelNinja", "ViperStrike", "ShadowRider", "GhostGamer"];
-            
-            // Random shuffle helper
-            const shuffled = [...players].sort(() => 0.5 - Math.random());
-            
-            // Round 1 (Play-In Match): Player 4 vs Player 5
-            const p4 = shuffled[3];
-            const p5 = shuffled[4];
-            const round1Winner = Math.random() > 0.5 ? p4 : p5;
-            const round1Loser = round1Winner === p4 ? p5 : p4;
+        // Reads at most 24 published games (metadata + small thumbnail only) and caches them for the
+        // session, so browsing costs almost no Firestore reads. Game files are fetched only on play.
+        window.pgLoadCommunityGames = function(force) {
+            if (communityPromise && !force) return communityPromise;
+            communityPromise = (async () => {
+                if (!force) {
+                    try {
+                        const cached = JSON.parse(sessionStorage.getItem('pgCommunityList') || 'null');
+                        if (cached && Date.now() - cached.t < 300000) {
+                            window.communityGames = cached.list;
+                            communityLoaded = true; renderCommunity();
+                            return window.communityGames;
+                        }
+                    } catch (e) { /* cache unusable - fall through to a real read */ }
+                }
+                const fb = await whenFirebase();
+                const { collection, query, where, limit, getDocs } = fb.fs;
+                const snap = await getDocs(query(collection(fb.db, 'community_games'), where('status', '==', 'published'), limit(24)));
+                const list = snap.docs.map(d => mapCommunityDoc(d.id, d.data())).sort((a, b) => b.createdMs - a.createdMs);
+                window.communityGames = list;
+                communityLoaded = true;
+                try { sessionStorage.setItem('pgCommunityList', JSON.stringify({ t: Date.now(), list })); } catch (e) { /* storage full/unavailable */ }
+                renderCommunity();
+                return list;
+            })().catch(err => {
+                console.warn('Community games unavailable:', err);
+                communityLoaded = true; communityFailed = true;
+                renderCommunity();
+                return [];
+            });
+            return communityPromise;
+        };
 
-            // Round 2 (Semi Finals)
-            // Semi 1: Player 1 vs Player 2
-            const p1 = shuffled[0];
-            const p2 = shuffled[1];
-            const semi1Winner = Math.random() > 0.5 ? p1 : p2;
-            const semi1Loser = semi1Winner === p1 ? p2 : p1;
+        function renderCommunity() {
+            const shelf = document.getElementById('community-shelf');
+            const grid = document.getElementById('community-grid');
+            if (!shelf || !grid) return;
+            const isLibrary = !!document.getElementById('game-canvas');
+            if (!communityLoaded) {
+                if (isLibrary) grid.innerHTML = '<div class="pg-empty">Loading community games...</div>';
+                return;
+            }
+            const q = searchQuery.trim().toLowerCase();
+            const list = window.communityGames.filter(g =>
+                (activeGenre === 'All' || g.genre === activeGenre) && (!q || (g.title + ' ' + g.genre + ' ' + g.studio).toLowerCase().includes(q)));
+            if (!list.length) {
+                if (!isLibrary) { shelf.classList.add('pg-hidden'); return; }
+                shelf.classList.remove('pg-hidden');
+                grid.innerHTML = communityFailed
+                    ? '<div class="pg-empty">Community games are unavailable right now. Try again later.</div>'
+                    : (window.communityGames.length
+                        ? '<div class="pg-empty">No community games match.</div>'
+                        : '<div class="pg-empty">No community games yet. <a href="index.html#launch-section">Publish the first one.</a></div>');
+                return;
+            }
+            shelf.classList.remove('pg-hidden');
+            grid.innerHTML = '';
+            list.forEach(g => grid.appendChild(createGameCard(g)));
 
-            // Semi 2: Player 3 vs Round1Winner
-            const p3 = shuffled[2];
-            const semi2Winner = Math.random() > 0.5 ? p3 : round1Winner;
-            const semi2Loser = semi2Winner === p3 ? round1Winner : p3;
-
-            // Round 3 (Grand Finals)
-            const finalChampion = Math.random() > 0.5 ? semi1Winner : semi2Winner;
-            const finalRunnerUp = finalChampion === semi1Winner ? semi2Winner : semi1Winner;
-
-            const bracketWrapper = document.getElementById('bracket-chart-wrapper');
-            bracketWrapper.innerHTML = `
-                <!-- Round 1: Play-In Match -->
-                <div class="bracket-round-col">
-                    <div class="bracket-round-title">ROUND 1 (PLAY-IN)</div>
-                    <div class="bracket-match-node">
-                        <div style="font-size: 0.72rem; color: var(--neon-cyan);">Match #1 (Haar gya to Out)</div>
-                        <div class="bracket-player-row ${round1Winner === p4 ? 'winner' : 'eliminated'}">
-                            <span>${p4}</span> <span>${round1Winner === p4 ? 'ADVANCED' : 'OUT'}</span>
-                        </div>
-                        <div class="bracket-player-row ${round1Winner === p5 ? 'winner' : 'eliminated'}">
-                            <span>${p5}</span> <span>${round1Winner === p5 ? 'ADVANCED' : 'OUT'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Round 2: Semi-Finals -->
-                <div class="bracket-round-col">
-                    <div class="bracket-round-title">SEMI-FINALS (TOP 4)</div>
-                    <div class="bracket-match-node">
-                        <div style="font-size: 0.72rem; color: var(--neon-cyan);">Semi Final 1</div>
-                        <div class="bracket-player-row ${semi1Winner === p1 ? 'winner' : 'eliminated'}">
-                            <span>${p1}</span> <span>${semi1Winner === p1 ? 'WIN' : 'OUT'}</span>
-                        </div>
-                        <div class="bracket-player-row ${semi1Winner === p2 ? 'winner' : 'eliminated'}">
-                            <span>${p2}</span> <span>${semi1Winner === p2 ? 'WIN' : 'OUT'}</span>
-                        </div>
-                    </div>
-                    <div class="bracket-match-node">
-                        <div style="font-size: 0.72rem; color: var(--neon-cyan);">Semi Final 2</div>
-                        <div class="bracket-player-row ${semi2Winner === p3 ? 'winner' : 'eliminated'}">
-                            <span>${p3}</span> <span>${semi2Winner === p3 ? 'WIN' : 'OUT'}</span>
-                        </div>
-                        <div class="bracket-player-row ${semi2Winner === round1Winner ? 'winner' : 'eliminated'}">
-                            <span>${round1Winner}</span> <span>${semi2Winner === round1Winner ? 'WIN' : 'OUT'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Round 3: Grand Final -->
-                <div class="bracket-round-col">
-                    <div class="bracket-round-title" style="color:#fbbf24; border-color:#fbbf24; background:rgba(251, 191, 36, 0.1);">GRAND FINALS</div>
-                    <div class="bracket-match-node" style="border-color:#fbbf24; box-shadow:0 0 15px rgba(251, 191, 36, 0.2);">
-                        <div style="font-size: 0.72rem; color: #fbbf24;">Title Match for ${totalPool} Coins</div>
-                        <div class="bracket-player-row ${finalChampion === semi1Winner ? 'winner' : 'eliminated'}">
-                            <span>${semi1Winner}</span> <span>${finalChampion === semi1Winner ? 'CHAMPION' : 'OUT'}</span>
-                        </div>
-                        <div class="bracket-player-row ${finalChampion === semi2Winner ? 'winner' : 'eliminated'}">
-                            <span>${semi2Winner}</span> <span>${finalChampion === semi2Winner ? 'CHAMPION' : 'OUT'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Champion Card -->
-                <div class="bracket-round-col" style="align-items:center;">
-                    <div class="bracket-round-title" style="background:var(--neon-cyan); color:#000; font-weight:bold; width:100%;">ULTIMATE WINNER</div>
-                    <div style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(99, 102, 241, 0.14)); border:2px solid #fbbf24; padding:20px; border-radius:12px; text-align:center; width:100%;">
-                        <div style="font-size:2rem; margin-bottom:5px;">🏆</div>
-                        <div style="font-size:1.1rem; color:#fff; font-weight:bold; margin-bottom:5px;">${finalChampion}</div>
-                        <div class="bracket-coin-badge" style="font-size:0.9rem; padding:6px 12px;">Won ${totalPool} Coins!</div>
-                    </div>
-                </div>
-            `;
+            // Arriving from a homepage click (games.html#cgame-<id>): scroll to the card, never auto-launch.
+            if (!communityHashDone && window.location.hash.startsWith('#cgame-')) {
+                communityHashDone = true;
+                const card = document.getElementById(window.location.hash.slice(1));
+                if (card) requestAnimationFrame(() => {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.add('showcase-highlight');
+                    setTimeout(() => card.classList.remove('showcase-highlight'), 2200);
+                });
+            }
         }
+
+        const pgFrameDoc = msg => '<!DOCTYPE html><meta charset="utf-8"><body style="margin:0;background:#06080d;color:#cbd5e1;font:16px system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;padding:24px;box-sizing:border-box">' + esc(msg) + '</body>';
+
+        // Game files are stored as gzip chunks (Firestore Spark plan; Cloud Storage needs the paid Blaze plan).
+        const communityHtmlCache = new Map();
+        window.pgFetchCommunityHtml = async function(game) {
+            if (communityHtmlCache.has(game.docId)) return communityHtmlCache.get(game.docId);
+            if (typeof DecompressionStream === 'undefined') throw new Error('This browser is too old to unpack community games. Please update it.');
+            const fb = await whenFirebase();
+            const { collection, getDocs } = fb.fs;
+            const snap = await getDocs(collection(fb.db, 'community_games', game.docId, 'chunks'));
+            const parts = snap.docs.map(d => d.data()).sort((a, b) => a.i - b.i);
+            if (!parts.length || (game.chunkCount && parts.length !== game.chunkCount)) throw new Error('This game\'s files are incomplete.');
+            const bytes = parts.map(p => p.b.toUint8Array());
+            const total = bytes.reduce((n, b) => n + b.length, 0);
+            const all = new Uint8Array(total);
+            let off = 0;
+            bytes.forEach(b => { all.set(b, off); off += b.length; });
+            const html = await new Response(new Blob([all]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+            communityHtmlCache.set(game.docId, html);
+            return html;
+        };
+
+        // Adds the platform's Content-Security-Policy to a community game document. The player applies
+        // it at play time (not only at publish time), so a tampered upload cannot skip it. Assets must be
+        // bundled (data:/blob:); only a few well-known CDNs may serve scripts; the network is closed
+        // except for the multiplayer host a developer explicitly declared.
+        window.pgHarden = function(html, opts) {
+            const host = opts && /^[a-z0-9.-]+(:\d+)?$/i.test(opts.connect || '') ? opts.connect : '';
+            const csp = [
+                "default-src 'none'",
+                "script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+                "style-src 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
+                "img-src data: blob:", "media-src data: blob:",
+                "font-src data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+                "connect-src data: blob:" + (host ? ' https://' + host + ' wss://' + host : ''),
+                "worker-src blob:", "frame-src 'none'", "object-src 'none'", "form-action 'none'", "base-uri 'none'"
+            ].join('; ');
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const meta = doc.createElement('meta');
+            meta.setAttribute('http-equiv', 'Content-Security-Policy');
+            meta.setAttribute('content', csp);
+            doc.head.insertBefore(meta, doc.head.firstChild);
+            return '<!DOCTYPE html>' + doc.documentElement.outerHTML;
+        };
+
+        window.pgLoadCommunityIntoFrame = async function(game, frame, gameId) {
+            frame.setAttribute('sandbox', window.PG_SANDBOX);
+            frame.setAttribute('srcdoc', pgFrameDoc('Loading game...'));
+            try {
+                const html = await window.pgFetchCommunityHtml(game);
+                if (activeGameId !== gameId) return; // player left while it was loading
+                frame.setAttribute('srcdoc', window.pgHarden(html, { connect: game.tournament && game.tournament.server }));
+            } catch (err) {
+                console.warn('Community game failed to load:', err);
+                if (activeGameId === gameId) frame.setAttribute('srcdoc', pgFrameDoc(err.message || 'This game could not be loaded.'));
+            }
+        };
+
+        window.pgShowCommunityMeta = function(game) {
+            const meta = document.getElementById('community-meta');
+            if (!meta) return;
+            if (!game.community) { meta.classList.add('pg-hidden'); return; }
+            document.getElementById('community-author').textContent = game.studio;
+            meta.classList.remove('pg-hidden');
+            document.getElementById('report-community-btn').onclick = async () => {
+                if (!window.isLoggedIn) return window.openModal('login-modal');
+                const text = prompt('What is wrong with this game?');
+                if (!text || !text.trim()) return;
+                try {
+                    const fb = await whenFirebase();
+                    await fb.fs.addDoc(fb.fs.collection(fb.db, 'bug_reports'), { game: game.title, communityId: game.docId, report: text.trim().slice(0, 500), status: 'open', date: new Date() });
+                    alert('Thanks. Your report was sent.');
+                } catch (err) {
+                    console.error('Report failed:', err);
+                    alert('Could not send the report. Please email pixelgaunt@gmail.com.');
+                }
+            };
+        };
+
+        async function openCommunityById(docId) {
+            try {
+                const fb = await whenFirebase();
+                const snap = await fb.fs.getDoc(fb.fs.doc(fb.db, 'community_games', docId));
+                if (!snap.exists() || snap.data().status !== 'published') throw new Error('not published');
+                const game = mapCommunityDoc(snap.id, snap.data());
+                if (!window.communityGames.some(g => g.id === game.id)) window.communityGames.push(game);
+                window.launchViewport(game.id, 'replace');
+            } catch (err) {
+                console.warn('Community game not available:', err);
+                alert('That community game is not available.');
+                window.goHome();
+            }
+        }
+
+        /* ================= FEATURED RAIL, CATEGORIES, SEARCH ================= */
+        // Featured = the 3 games with the most plays across all visitors TODAY (UTC), read from
+        // the shared Firestore daily counter. This curated trio is only the fallback shown before
+        // that loads (or if it's ever unavailable) - not an editorial pick.
+        // (The hero above the rail stays fixed on Girl The Driller regardless of any of this.)
+        const FEATURED_FALLBACK_IDS = [16, 15, 12];
+        const FEATURED_COUNT = 3;
+        const GENRE_ICONS = { Arcade: 'fa-gamepad', Puzzle: 'fa-puzzle-piece', Racing: 'fa-flag-checkered', Action: 'fa-bolt', Adventure: 'fa-compass', Card: 'fa-clone' };
+        let activeGenre = 'All';
+        let searchQuery = '';
+
+        function gameHref(g) { return 'games.html#' + (g.community ? 'cgame-' + g.docId : 'game-' + g.id); }
+
+        function paintFeatured(list) {
+            const rail = document.getElementById('featured-strip');
+            if (!rail) return;
+            rail.innerHTML = '';
+            list.forEach(g => {
+                const a = document.createElement('a');
+                a.className = 'pg-tile';
+                a.href = gameHref(g);
+                a.setAttribute('aria-label', g.title + ', ' + g.genre + ' game');
+                const img = g.community ? (g.thumb ? encodeURI(g.thumb) : '') : encodeURI(g.image);
+                a.innerHTML = (img ? `<img src="${esc(img)}" alt="" loading="lazy" decoding="async" width="310" height="194">` : `<div class="pg-thumb-fallback" aria-hidden="true">${esc((g.title || '?').charAt(0).toUpperCase())}</div>`)
+                    + `<div class="pg-tile-info"><b>${esc(g.title)}</b><span>${esc(g.genre)}</span></div>`;
+                rail.appendChild(a);
+            });
+        }
+
+        function renderFeatured() {
+            // Paint the curated fallback immediately so the section is never empty, then try to
+            // replace it with today's real top 3 once (or if) that loads.
+            paintFeatured(FEATURED_FALLBACK_IDS.map(id => games.find(g => g.id === id)).filter(Boolean));
+            Core_whenFirebase().then(async fb => {
+                const { db, fs } = fb;
+                const snap = await fs.getDocs(fs.query(fs.collection(db, 'daily_plays', todayKey(), 'games'), fs.orderBy('count', 'desc'), fs.limit(FEATURED_COUNT)));
+                if (!snap.docs.length) return; // no plays recorded yet today - keep the fallback
+                const top = snap.docs.map(d => {
+                    const idStr = d.id;
+                    return idStr.indexOf('c_') === 0 ? window.communityGames.find(g => g.id === idStr) : games.find(g => String(g.id) === idStr);
+                }).filter(Boolean);
+                if (top.length) paintFeatured(top);
+            }).catch(err => console.warn('Daily featured ranking unavailable, showing fallback:', err));
+        }
+
+        function syncCategoryButtons() {
+            document.querySelectorAll('#category-bar .pg-cat').forEach(b => b.setAttribute('aria-pressed', b.dataset.genre === activeGenre ? 'true' : 'false'));
+        }
+
+        function renderCategories() {
+            const bar = document.getElementById('category-bar');
+            if (!bar) return;
+            const counts = {};
+            games.forEach(g => { counts[g.genre] = (counts[g.genre] || 0) + 1; });
+            const items = [['All', games.length]].concat(Object.keys(counts).sort().map(k => [k, counts[k]]));
+            bar.innerHTML = '';
+            items.forEach(([name, n]) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'pg-cat';
+                b.dataset.genre = name;
+                b.innerHTML = `<i class="fas ${GENRE_ICONS[name] || 'fa-star'}" aria-hidden="true"></i><span>${esc(name === 'All' ? 'All games' : name)}<small>${n} ${n === 1 ? 'game' : 'games'}</small></span>`;
+                b.addEventListener('click', () => {
+                    activeGenre = name;
+                    syncCategoryButtons();
+                    applyGameFilters();
+                    // On the homepage the category row sits above the grid - bring the results into view.
+                    if (document.getElementById('categories-section')) {
+                        const target = document.getElementById('games-section');
+                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+                bar.appendChild(b);
+            });
+            syncCategoryButtons();
+        }
+
+        function applyGameFilters() {
+            const q = searchQuery.trim().toLowerCase();
+            const list = games.filter(g => (activeGenre === 'All' || g.genre === activeGenre) && (!q || (g.title + ' ' + g.genre).toLowerCase().includes(q)));
+            window.renderGames(list);
+            renderCommunity();
+        }
+
+        function initSearch() {
+            const input = document.getElementById('game-search');
+            if (!input) return;
+            let timer;
+            input.addEventListener('input', () => {
+                clearTimeout(timer);
+                timer = setTimeout(() => { searchQuery = input.value; applyGameFilters(); }, 120);
+            });
+        }
+
+        /* ================= LAZY PLATFORM MODULES (Publish, Tournaments, Creator Lab) ================= */
+        // platform.js is only requested when one of those sections is about to scroll into view, so the
+        // first paint of the homepage never pays for the validator, tournament or creator code.
+        window.pgLoadPlatform = function() {
+            if (!window._pgPlatformPromise) {
+                window._pgPlatformPromise = new Promise((resolve, reject) => {
+                    const tag = document.createElement('script');
+                    tag.src = 'platform.js';
+                    tag.async = true;
+                    tag.onload = () => resolve(window.PG);
+                    tag.onerror = () => { window._pgPlatformPromise = null; reject(new Error('platform.js failed to load')); };
+                    document.head.appendChild(tag);
+                });
+            }
+            return window._pgPlatformPromise;
+        };
+
+        function initLazyModules() {
+            const roots = document.querySelectorAll('[data-pg-module]');
+            if (!roots.length) return;
+            const load = () => window.pgLoadPlatform().catch(() => {
+                roots.forEach(r => {
+                    const box = r.querySelector('[id$="-root"]');
+                    if (box) box.innerHTML = '<div class="pg-empty">This section could not be loaded. Check your connection and <a href="#" class="pg-retry">try again</a>.</div>';
+                });
+                document.querySelectorAll('.pg-retry').forEach(a => a.addEventListener('click', e => { e.preventDefault(); load(); }));
+            });
+            if ('IntersectionObserver' in window) {
+                const io = new IntersectionObserver(entries => {
+                    if (entries.some(e => e.isIntersecting)) { io.disconnect(); load(); }
+                }, { rootMargin: '700px 0px' });
+                roots.forEach(r => io.observe(r));
+            } else {
+                load();
+            }
+        }
+
+        // Handles the older ?page=tournament / ?page=store links: those fake pages are gone, the real sections replace them.
+        const LEGACY_SECTIONS = { tournament: 'tournaments-section', store: 'creator-section' };
+
+        // Small surface for platform.js
+        window.PGCore = {
+            games, esc, whenFirebase,
+            loadCommunityGames: window.pgLoadCommunityGames,
+            fetchCommunityHtml: window.pgFetchCommunityHtml,
+            harden: window.pgHarden,
+            sandbox: window.PG_SANDBOX,
+            frameDoc: pgFrameDoc,
+            createGameCard, playCounts,
+            invalidateCommunity: () => { try { sessionStorage.removeItem('pgCommunityList'); } catch (e) {} communityPromise = null; communityLoaded = false; }
+        };
 
         window.addEventListener('popstate', function(event) {
             if (event.state && event.state.page === 'game') { window.launchViewport(event.state.id, 'none'); } 
@@ -622,9 +917,22 @@
             });
         }
 
-        window.onload = () => {
+        const pgInit = () => {
             window.renderGames(games);
             window.updateFeaturedPanels();
+            renderFeatured();
+            renderCategories();
+            initSearch();
+            initLazyModules();
+            // Community shelf: read Firestore only once the Games section is about to be seen.
+            const gamesSection = document.getElementById('games-section');
+            if (gamesSection && document.getElementById('community-shelf')) {
+                if ('IntersectionObserver' in window) {
+                    const cio = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { cio.disconnect(); window.pgLoadCommunityGames(); } }, { rootMargin: '500px 0px' });
+                    cio.observe(gamesSection);
+                } else { window.pgLoadCommunityGames(); }
+                renderCommunity();
+            }
             
             const urlParams = new URLSearchParams(window.location.search);
             const playQuery = urlParams.get('play');
@@ -637,12 +945,18 @@
                 return;
             }
             
-            if (playQuery) {
+            if (playQuery && playQuery.indexOf('c-') === 0) {
+                window.goHome();
+                openCommunityById(playQuery.slice(2));
+            } else if (playQuery) {
                 const game = games.find(g => g.title.toLowerCase().replace(/ /g, '-') === playQuery);
                 // 'replace' - the URL already reflects this game, so attach the correct
                 // history state without pushing a second, redundant back-entry.
                 if (game) window.launchViewport(game.id, 'replace');
                 else window.goHome();
+            } else if (pageQuery && LEGACY_SECTIONS[pageQuery]) {
+                 window.goHome();
+                 requestAnimationFrame(() => { const t = document.getElementById(LEGACY_SECTIONS[pageQuery]); if (t) t.scrollIntoView(); });
             } else if (pageQuery) {
                  const targetPage = pageQuery + '-page';
                  if(document.getElementById(targetPage)) window.openPage(targetPage);
@@ -664,6 +978,12 @@
                 }
             }
 
+            // Section links (index.html#launch-section ...): the games grid above has just been filled,
+            // so jump again now that the page height is final.
+            if (window.location.hash && !/^#c?game-/.test(window.location.hash)) {
+                try { const sec = document.querySelector(window.location.hash); if (sec) requestAnimationFrame(() => sec.scrollIntoView()); } catch (e) { /* not a valid selector */ }
+            }
+
             // Hide the loader once the critical content has actually been painted, rather
             // than after a fixed guess-timeout. Two rAFs = wait for the next real frame.
             requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -671,6 +991,7 @@
                 if(loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 300); }
             }));
         };
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pgInit); else pgInit();
         
         window.onclick = (e) => { 
             if (e.target.classList.contains('modal-overlay')) window.closeModals(); 
