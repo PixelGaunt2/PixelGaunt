@@ -12,26 +12,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pixel Gaunt Studios - Indie Game Developer Portfolio</title>
-    <meta name="description" content="Pixel Gaunt Studios is an indie game development studio. Explore our debut release Girl The Driller, browse our past prototypes, and see what's coming next.">
-    <link rel="canonical" href="https://pixelgaunt.com/">
+    <meta name="description" content="Pixel Gaunt Studios is an indie game development studio. Explore our debut release Girl The Driller, the demos, and see what we are building next.">
+    <link rel="canonical" href="https://pixelgaunt.com/index.html">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-	<!-- Open Graph / Social Media Meta Tags -->
-<meta property="og:title" content="Pixel Gaunt Studios - Indie Game Developer Portfolio">
-<meta property="og:description" content="Pixel Gaunt Studios is an indie game development studio. Explore our debut release Girl The Driller, browse our past prototypes, and see what's coming next.">
-<meta property="og:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
-<meta property="og:url" content="https://pixelgaunt.com/">
-<meta property="og:type" content="website">
-
-<!-- Twitter Card Tags -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Pixel Gaunt Studios - Indie Game Developer Portfolio">
-<meta name="twitter:description" content="Pixel Gaunt Studios is an indie game development studio. Explore our debut release Girl The Driller, browse our past prototypes, and see what's coming next.">
-<meta name="twitter:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
+    <style>
+        /* Home-page-only layout. Uses the site's existing colour tokens from style.css. */
+        .pg-banner-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1180px; margin: 24px auto 0; padding: 0 24px; }
+        @media (max-width: 760px) { .pg-banner-row { grid-template-columns: 1fr; padding: 0 16px; } }
+        .pg-banner {
+            position: relative; display: flex; flex-direction: column; justify-content: flex-end; min-height: 300px;
+            padding: 26px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;
+            background: linear-gradient(180deg, rgba(8,8,15,0.15), rgba(8,8,15,0.92)), var(--banner-img) center/cover no-repeat;
+            text-decoration: none; color: #fff; transition: transform 0.2s, border-color 0.2s;
+        }
+        .pg-banner:hover { transform: translateY(-3px); border-color: var(--neon-cyan); }
+        .pg-banner .hero-tag { align-self: flex-start; margin-bottom: 10px; }
+        .pg-banner h2 { font-size: 1.05rem; line-height: 1.5; margin-bottom: 10px; text-shadow: 0 3px 12px rgba(0,0,0,0.9); }
+        .pg-banner p { color: #e2e8f0; font-size: 0.95rem; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
+        .pg-banner .pg-banner-cta { margin-top: 14px; color: var(--neon-cyan); font-weight: 600; font-size: 0.9rem; }
+        .pg-explore { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
+        .pg-explore a {
+            display: flex; flex-direction: column; gap: 6px; padding: 20px; border-radius: 12px; text-decoration: none;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #fff; transition: 0.2s;
+        }
+        .pg-explore a:hover { border-color: var(--neon-cyan); background: rgba(56,189,248,0.07); }
+        .pg-explore i { font-size: 1.4rem; color: var(--neon-cyan); }
+        .pg-explore b { font-family: 'Space Grotesk', sans-serif; font-size: 1.05rem; }
+        .pg-explore span { color: var(--text-muted); font-size: 0.85rem; }
+    </style>
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:title" content="Pixel Gaunt Studios - Indie Game Developer Portfolio">
+    <meta property="og:description" content="Pixel Gaunt Studios is an indie game development studio. Explore our debut release Girl The Driller, the demos, and see what we are building next.">
+    <meta property="og:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
+    <meta property="og:url" content="https://pixelgaunt.com/index.html">
+    <meta property="og:type" content="website">
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Pixel Gaunt Studios - Indie Game Developer Portfolio">
+    <meta name="twitter:description" content="Pixel Gaunt Studios is an indie game development studio. Explore our debut release Girl The Driller, the demos, and see what we are building next.">
+    <meta name="twitter:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
 </head>
 <body class="theme-blue">
     <div id="scroll-progress"></div>
@@ -42,22 +66,21 @@
     </div>
 
     <audio id="portal-bgm" loop style="display:none;"></audio>
+
     <div id="loader" style="display: none !important;"></div>
-        <p class="pixel-font" style="font-size: 0.68rem; color: var(--neon-cyan); letter-spacing: 3px; margin-top:15px; animation: pxlFly 0.5s forwards;"></p>
-    </div>
 
     <header id="main-header">
-        <div class="logo pixel-font" onclick="goHome()">Pixel <span>Gaunt</span> Studios</div>
+        <div class="logo pixel-font" onclick="window.location.href='index.html'">Pixel <span>Gaunt</span> Studios</div>
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false">
             <i class="fas fa-bars"></i>
         </button>
         <nav class="nav-links" id="main-nav-links">
             <div class="nav-menu-links">
-                <a href="#hero-presentation-section" onclick="goHome()">Home</a>
+                <a href="index.html" style="color:#fff;">Home</a>
                 <a href="games.html">Games</a>
-                <a href="#launch-section">Publish</a>
-                <a href="#tournaments-section">Tournaments</a>
-                <a href="#creator-section">Creator Lab</a>
+                <a href="publish.html">Publish</a>
+                <a href="tournaments.html">Tournaments</a>
+                <a href="merch.html">Merch</a>
                 <a href="dashboard.html" id="dashboard-nav-link" class="pg-hidden">Dashboard</a>
             </div>
             <div class="theme-select-container" title="Select Theme Color Core">
@@ -70,13 +93,13 @@
         </nav>
     </header>
 
+    <!-- BANNER 1: Debut Release. Element ids below are kept from the old hero in case script.js updates them. -->
     <section class="premium-hero" id="hero-presentation-section">
         <div class="hero-info-panel" id="hero-panel-bg" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(99, 102, 241, 0.315)), url('Girl%20The%20Driller.png') bottom center/cover no-repeat;">
-            <span class="hero-tag" id="hero-tag-label" style="color: var(--neon-cyan); text-shadow: 0 0 10px rgba(56, 189, 248, 0.325);" onclick="document.getElementById('hero-play-btn').click()" title="View in the Game Library">OUR DEBUT RELEASE</span>
+            <span class="hero-tag" id="hero-tag-label" style="color: var(--neon-cyan); text-shadow: 0 0 10px rgba(56, 189, 248, 0.325);">OUR DEBUT RELEASE</span>
             <h1 class="hero-title pixel-font" id="hero-title-text" style="text-shadow: 0 4px 15px rgba(0,0,0,0.9);">GIRL: THE DRILLER</h1>
             <p class="hero-desc" id="hero-desc-text" style="color: #e2e8f0; font-weight: 500; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Collect all Energy Orbs to unlock the Portal and reach it. Experience highly polished commercial-quality physics action gameplay.</p>
             <p class="hero-release-status" style="color: var(--neon-cyan); font-weight: 600; font-size: 0.95rem; margin-top: 4px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Demo Release &amp; Full Release Soon on Steam and Android</p>
-
             <div class="hero-stats-row">
                 <button class="nav-btn primary pixel-font" id="hero-play-btn" onclick="window.location.href='games.html#game-16'" style="font-size: 0.8rem; padding: 14px 28px; box-shadow: 0 5px 20px rgba(99, 102, 241, 0.35);">
                     ▶ VIEW IN GAME LIBRARY
@@ -86,101 +109,38 @@
                     <span class="stat-label" style="color: #fff;">4.8/5 Rating</span>
                 </div>
             </div>
-
-            <div class="driller-gallery-grid" style="margin-top: 24px;">
-                <div class="driller-gallery-item"><img src="Girl The Driller Gallery 1.png" alt="Girl The Driller gallery artwork 1" loading="lazy"></div>
-                <div class="driller-gallery-item"><img src="Girl The Driller Gallery 2.png" alt="Girl The Driller gallery artwork 2" loading="lazy"></div>
-                <div class="driller-gallery-item"><img src="Girl The Driller Gallery 3.png" alt="Girl The Driller gallery artwork 3" loading="lazy"></div>
-            </div>
         </div>
+    </section>
+
+    <!-- BANNERS 2 + 3: Demo Girl and The Driller Demo. Swap the --banner-img files here if you want different pictures. -->
+    <section class="pg-banner-row" id="demo-banners" aria-label="Demos">
+        <a class="pg-banner" href="games.html" style="--banner-img: url('Girl%20The%20Driller%20Gallery%201.png');">
+            <span class="hero-tag" style="color: var(--neon-cyan);">DEMO</span>
+            <h2 class="pixel-font">DEMO GIRL</h2>
+            <span class="pg-banner-cta">View in the Games page &rarr;</span>
+        </a>
+        <a class="pg-banner" href="games.html#game-16" style="--banner-img: url('Girl%20The%20Driller%20Gallery%202.png');">
+            <span class="hero-tag" style="color: var(--neon-cyan);">DEMO</span>
+            <h2 class="pixel-font">THE DRILLER DEMO</h2>
+            <span class="pg-banner-cta">View in the Games page &rarr;</span>
+        </a>
     </section>
 
     <main class="container" id="homepage-page">
         <section class="main-content">
         </section>
 
-        <section class="portfolio-section" id="featured-section">
-            <div class="pg-shelf-head">
-                <div>
-                    <h2 class="pixel-font">Trending today</h2>
-                    <p>The 3 most-played games today. Tap a game to find it in the full library.</p>
-                </div>
-                <a class="pg-link" href="games.html">Open the full library</a>
+        <section class="portfolio-section" id="explore-section">
+            <div class="portfolio-section-header">
+                <h2 class="pixel-font portfolio-section-title">Explore Pixel Gaunt</h2>
+                <p class="portfolio-section-subtitle">Everything on the site, one page each.</p>
             </div>
-            <div class="pg-rail" id="featured-strip" aria-label="Trending today"></div>
-        </section>
-
-        <section class="portfolio-section" id="categories-section">
-            <div class="pg-shelf-head">
-                <div><h2 class="pixel-font">Browse by category</h2></div>
+            <div class="pg-explore">
+                <a href="games.html"><i class="fas fa-gamepad" aria-hidden="true"></i><b>Games</b><span>Top 3 and the full library.</span></a>
+                <a href="publish.html"><i class="fas fa-upload" aria-hidden="true"></i><b>Publish</b><span>Upload your own browser game.</span></a>
+                <a href="tournaments.html"><i class="fas fa-trophy" aria-hidden="true"></i><b>Tournaments</b><span>Score-attack events and leaderboards.</span></a>
+                <a href="merch.html"><i class="fas fa-shirt" aria-hidden="true"></i><b>Merch</b><span>Store, prints and custom requests.</span></a>
             </div>
-            <div class="pg-cats" id="category-bar" role="group" aria-label="Game categories"></div>
-        </section>
-
-        <section class="portfolio-section" id="games-section">
-            <div class="pg-shelf-head">
-                <div>
-                    <h2 class="pixel-font">All Games</h2>
-                    <p>Free to play, straight in your browser. Tap any game to open the full library.</p>
-                </div>
-                <div class="pg-search"><i class="fas fa-search" aria-hidden="true"></i><input type="search" id="game-search" placeholder="Search games" aria-label="Search games" autocomplete="off"></div>
-            </div>
-            <div class="game-grid" id="game-grid"></div>
-            <div id="community-shelf" class="pg-hidden">
-                <div class="pg-shelf-head" style="margin-top: 44px;">
-                    <div>
-                        <h2 class="pixel-font">Community games</h2>
-                        <p>Published by players and developers. Every one runs in an isolated sandbox.</p>
-                    </div>
-                    <a class="pg-link" href="#launch-section">Publish yours</a>
-                </div>
-                <div class="game-grid" id="community-grid"></div>
-            </div>
-        </section>
-
-        <section class="portfolio-section" id="launch-section" data-pg-module="launch">
-            <div class="pg-shelf-head">
-                <div>
-                    <h2 class="pixel-font">Publish your game</h2>
-                    <p>Upload a browser game. PixelGaunt checks it, packages it for the platform and lists it in Community Games. Games that fail the check are not published.</p>
-                </div>
-            </div>
-            <div class="pg-split">
-                <ol class="pg-steps">
-                    <li><div><b>Upload</b><span>A .zip, a folder, or a single HTML file.</span></div></li>
-                    <li><div><b>Check</b><span>Files, links, scripts and a test run in a sandbox. Every problem is listed by file.</span></div></li>
-                    <li><div><b>Publish</b><span>Sign in, add a title and cover, and publish once the check passes.</span></div></li>
-                    <li><div><b>Play</b><span>Your game runs isolated from PixelGaunt. It cannot read logins, storage or site data.</span></div></li>
-                </ol>
-                <div id="launch-root" class="pg-panel pg-cut"><p class="pg-muted">Loading the game checker...</p></div>
-            </div>
-        </section>
-
-        <section class="portfolio-section" id="tournaments-section" data-pg-module="tournaments">
-            <div class="pg-shelf-head">
-                <div>
-                    <h2 class="pixel-font">Tournaments</h2>
-                    <p>Score-attack events with live leaderboards. A game can host a tournament once it reports scores to PixelGaunt. Every other game is marked Not Tournament Compatible.</p>
-                </div>
-            </div>
-            <div id="tournaments-root"><p class="pg-muted">Loading tournaments...</p></div>
-        </section>
-
-        <section class="portfolio-section" id="creator-section" data-pg-module="creator">
-            <div class="pg-shelf-head">
-                <div>
-                    <h2 class="pixel-font">Creator Lab</h2>
-                    <p>Turn game art and 3D models into files you can download, print or manufacture. Check them here first, then save a request for the format you want.</p>
-                </div>
-            </div>
-            <div class="pg-formats">
-                <div class="pg-format"><i class="fas fa-image" aria-hidden="true"></i><h3>2D Assets</h3><p>Sprites, characters, backgrounds and UI art.</p><div class="pg-chips"><span>Digital download</span><span>2D print</span></div></div>
-                <div class="pg-format"><i class="fas fa-cube" aria-hidden="true"></i><h3>3D Assets</h3><p>Models for a game engine or a 3D printer.</p><div class="pg-chips"><span>Digital download</span><span>3D print</span></div></div>
-                <div class="pg-format"><i class="fas fa-print" aria-hidden="true"></i><h3>Prints</h3><p>Posters, art prints and stickers from your game artwork.</p><div class="pg-chips"><span>2D print</span></div></div>
-                <div class="pg-format"><i class="fas fa-shirt" aria-hidden="true"></i><h3>Merchandise</h3><p>Apparel and gifts that carry your character art.</p><div class="pg-chips"><span>Merch</span></div></div>
-                <div class="pg-format"><i class="fas fa-user-astronaut" aria-hidden="true"></i><h3>Creator Products</h3><p>Figurines, collectibles and game-themed sets.</p><div class="pg-chips"><span>3D print</span><span>Merch</span></div></div>
-            </div>
-            <div id="creator-root"><p class="pg-muted">Loading the asset studio...</p></div>
         </section>
 
         <section class="portfolio-section" id="our-story-section">
@@ -221,7 +181,7 @@
                 <div class="coming-soon-card"><i class="fas fa-question"></i><span>Stay Tuned</span></div>
             </div>
         </section>
-    </main>
+        </main>
 
     <main class="viewport-page" id="subscribe-page">
         <div class="page-header">
@@ -382,7 +342,6 @@
     </footer>
 
     <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
-
     <script>
         // Homepage is a showcase only: game cards must link to the Games page, never launch a game directly.
         window.SHOWCASE_MODE = true;

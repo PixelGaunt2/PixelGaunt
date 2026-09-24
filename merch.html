@@ -11,25 +11,38 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Games Library - Pixel Gaunt Studios</title>
-    <meta name="description" content="Play every Pixel Gaunt Studios game free in your browser - including our debut release Girl The Driller and all of our prototypes. No downloads required.">
-    <link rel="canonical" href="https://pixelgaunt.com/games.html">
+    <title>Merch Store - Pixel Gaunt Studios</title>
+    <meta name="description" content="Pixel Gaunt merchandise, prints and custom creator products.">
+    <link rel="canonical" href="https://pixelgaunt.com/merch.html">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        .merch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
+        .merch-card { display: flex; flex-direction: column; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; overflow: hidden; }
+        .merch-img { aspect-ratio: 1 / 1; background: rgba(255,255,255,0.04) center/cover no-repeat; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 2.2rem; }
+        .merch-body { display: flex; flex-direction: column; gap: 6px; padding: 16px; flex: 1; }
+        .merch-body h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.05rem; color: #fff; }
+        .merch-body p { color: var(--text-muted); font-size: 0.85rem; flex: 1; }
+        .merch-price { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: #fff; font-size: 1.15rem; }
+        .merch-btn { margin-top: 8px; display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 11px 14px; border-radius: 8px; border: 1px solid var(--neon-cyan); background: rgba(56,189,248,0.12); color: #fff; font-weight: 600; font-size: 0.9rem; text-decoration: none; cursor: pointer; }
+        .merch-btn[aria-disabled="true"] { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--text-muted); cursor: default; }
+        .merch-empty { text-align: center; padding: 40px 20px; border: 1px dashed rgba(255,255,255,0.15); border-radius: 14px; color: var(--text-muted); }
+        .merch-empty i { font-size: 2.2rem; color: var(--neon-cyan); margin-bottom: 10px; display: block; }
+    </style>
     <!-- Open Graph / Social Media Meta Tags -->
-    <meta property="og:title" content="Games Library - Pixel Gaunt Studios">
-    <meta property="og:description" content="Play every Pixel Gaunt Studios game free in your browser - including our debut release Girl The Driller and all of our prototypes. No downloads required.">
+    <meta property="og:title" content="Merch Store - Pixel Gaunt Studios">
+    <meta property="og:description" content="Pixel Gaunt merchandise, prints and custom creator products.">
     <meta property="og:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
-    <meta property="og:url" content="https://pixelgaunt.com/games.html">
+    <meta property="og:url" content="https://pixelgaunt.com/merch.html">
     <meta property="og:type" content="website">
     <!-- Twitter Card Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Games Library - Pixel Gaunt Studios">
-    <meta name="twitter:description" content="Play every Pixel Gaunt Studios game free in your browser - including our debut release Girl The Driller and all of our prototypes. No downloads required.">
+    <meta name="twitter:title" content="Merch Store - Pixel Gaunt Studios">
+    <meta name="twitter:description" content="Pixel Gaunt merchandise, prints and custom creator products.">
     <meta name="twitter:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
 </head>
 <body class="theme-blue">
@@ -50,10 +63,10 @@
         <nav class="nav-links" id="main-nav-links">
             <div class="nav-menu-links">
                 <a href="index.html">Home</a>
-                <a href="games.html" style="color:#fff;">Games</a>
+                <a href="games.html">Games</a>
                 <a href="publish.html">Publish</a>
                 <a href="tournaments.html">Tournaments</a>
-                <a href="merch.html">Merch</a>
+                <a href="merch.html" style="color:#fff;">Merch</a>
                 <a href="dashboard.html" id="dashboard-nav-link" class="pg-hidden">Dashboard</a>
             </div>
             <div class="theme-select-container" title="Select Theme Color Core">
@@ -66,69 +79,37 @@
         </nav>
     </header>
 
-<main class="container" id="homepage-page" style="padding-top: 40px;">
-        <section class="portfolio-section" id="featured-section">
+    <main class="container" id="homepage-page" style="padding-top: 40px;">
+        <section class="portfolio-section" id="merch-store-section">
             <div class="pg-shelf-head">
                 <div>
-                    <h2 class="pixel-font">Top 3 Games</h2>
-                    <p>The 3 most-played games today.</p>
+                    <h2 class="pixel-font">Merch Store</h2>
+                    <p>Official Pixel Gaunt merchandise. Pick an item and check out securely.</p>
                 </div>
             </div>
-            <div class="pg-rail" id="featured-strip" aria-label="Top 3 games"></div>
+            <div id="merch-root"><p class="pg-muted">Loading the store...</p></div>
         </section>
 
-        <section class="portfolio-section" id="games-section">
+        <section class="portfolio-section" id="creator-section" data-pg-module="creator">
             <div class="pg-shelf-head">
                 <div>
-                    <h2 class="pixel-font">All Games</h2>
-                    <p>Every Pixel Gaunt game, free to play, straight in your browser. No downloads.</p>
+                    <h2 class="pixel-font">Custom merch &amp; prints</h2>
+                    <p>Turn game art and 3D models into files you can download, print or manufacture. Check them here first, then save a request for the format you want.</p>
                 </div>
-                <div class="pg-search"><i class="fas fa-search" aria-hidden="true"></i><input type="search" id="game-search" placeholder="Search games" aria-label="Search games" autocomplete="off"></div>
             </div>
-            <div class="pg-cats" id="category-bar" role="group" aria-label="Game categories" style="margin-bottom: 22px;"></div>
-            <div class="game-grid" id="game-grid"></div>
-            <div id="community-shelf">
-                <div class="pg-shelf-head" style="margin-top: 44px;">
-                    <div>
-                        <h2 class="pixel-font">Community games</h2>
-                        <p>Published by players and developers. Every one runs in an isolated sandbox.</p>
-                    </div>
-                    <a class="pg-link" href="publish.html">Publish your game</a>
-                </div>
-                <div class="game-grid" id="community-grid"></div>
+            <div class="pg-formats">
+                <div class="pg-format"><i class="fas fa-image" aria-hidden="true"></i><h3>2D Assets</h3><p>Sprites, characters, backgrounds and UI art.</p><div class="pg-chips"><span>Digital download</span><span>2D print</span></div></div>
+                <div class="pg-format"><i class="fas fa-cube" aria-hidden="true"></i><h3>3D Assets</h3><p>Models for a game engine or a 3D printer.</p><div class="pg-chips"><span>Digital download</span><span>3D print</span></div></div>
+                <div class="pg-format"><i class="fas fa-print" aria-hidden="true"></i><h3>Prints</h3><p>Posters, art prints and stickers from your game artwork.</p><div class="pg-chips"><span>2D print</span></div></div>
+                <div class="pg-format"><i class="fas fa-shirt" aria-hidden="true"></i><h3>Merchandise</h3><p>Apparel and gifts that carry your character art.</p><div class="pg-chips"><span>Merch</span></div></div>
+                <div class="pg-format"><i class="fas fa-user-astronaut" aria-hidden="true"></i><h3>Creator Products</h3><p>Figurines, collectibles and game-themed sets.</p><div class="pg-chips"><span>3D print</span><span>Merch</span></div></div>
             </div>
+            <div id="creator-root"><p class="pg-muted">Loading the asset studio...</p></div>
         </section>
-    </main>
 
-    <main class="viewport-page" id="gameplay-page">
-        <div class="page-header">
-            <h2 class="page-title-large pixel-font" id="current-game-title">Game Viewport</h2>
-        </div>
-        <div class="page-controls-top">
-            <button class="back-btn" onclick="goHome()">← Back to Game Library</button>
-        </div>
-        <div class="gameplay-layout">
-            <div class="game-container-wrapper">
-                <div class="game-container" id="game-container-element">
-                    <div class="rotate-hint">🔄 Rotate your device for the best experience</div>
-                    <iframe src="" id="game-canvas" allowfullscreen allow="autoplay; fullscreen"></iframe>
-                    <button type="button" id="mobile-exit-fullscreen-btn" class="mobile-exit-fullscreen-btn" onclick="toggleFullscreen()" aria-label="Exit Fullscreen" title="Exit Fullscreen">⛶</button>
-                </div>
-                <div class="game-fullscreen-controls" id="game-fullscreen-controls">
-                    <button type="button" class="action-btn" id="desktop-fullscreen-btn" onclick="toggleFullscreen()">
-                        <i class="fas fa-expand" id="fullscreen-btn-icon"></i> <span id="fullscreen-btn-label">Fullscreen</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </main>
+            </main>
 
-    <div id="community-meta" class="pg-row pg-hidden" style="justify-content: center; margin: 18px auto 0 auto; max-width: 960px; padding: 0 5%;">
-        <span class="pg-muted">Community game by <b id="community-author" style="color: #fff;"></b></span>
-        <button type="button" class="pg-btn sm" id="report-community-btn">Report this game</button>
-    </div>
-
-    <div class="modal-overlay" id="login-modal">
+<div class="modal-overlay" id="login-modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModals()">&times;</span>
             <div class="modal-step active">
@@ -222,7 +203,7 @@
     </footer>
 
     <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
-
+    <script src="merch.js" defer></script>
     <script src="script.js" defer></script>
 
     <script type="module" src="firebase-auth.js"></script>
