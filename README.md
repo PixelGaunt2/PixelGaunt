@@ -236,3 +236,20 @@ data model here don't need to change.
 **Known limitation in this phase:** the "proof" field is a pasted link (e.g. to a Drive/Photos
 screenshot), not a direct file upload — this delivery doesn't include `firebase-auth.js`, so I
 can't confirm Firebase Storage is initialized on the client to wire a real upload button yet.
+
+## Site structure: one page per section (this delivery)
+
+| Page | File | What's on it |
+|------|------|--------------|
+| Home | `index.html` | Three banners (Debut Release, Demo Girl, The Driller Demo), Explore tiles, Our Story, More Games Coming Soon |
+| Games | `games.html` | Top 3 Games (`#featured-strip`), then All Games (search, categories, grid, Community games) and the in-page game player |
+| Publish | `publish.html` | The game checker/uploader (`#launch-root`, `data-pg-module="launch"`) |
+| Tournaments | `tournaments.html` | The tournaments module (`#tournaments-root`, `data-pg-module="tournaments"`) |
+| Merch | `merch.html` + `merch.js` | Product grid from the list in `merch.js`, plus the Creator Lab request form for custom merch/prints (`#creator-root`) |
+| Dashboard | `dashboard.html` | Unchanged except the nav. Content loads only after sign-in (signed-out visitors see a login prompt) |
+
+Notes:
+- Links use `.html` filenames so the site also works from a local folder. On GitHub Pages and Cloudflare Pages, `/games`, `/publish` etc. also resolve to the same files.
+- Every page keeps the same element ids and `data-pg-module` hooks the old sections had, so `script.js` / the platform scripts should mount each module on its new page unchanged. Open each page's browser console after deploying to confirm there are no errors.
+- The store is empty until you add products to `MERCH_ITEMS` in `merch.js`. Checkout is a hosted payment link per item (`buyUrl`); no card data touches this site.
+- The Premium Portal (`#subscribe-page`) stays in `index.html` unchanged and hidden, because it wasn't part of the requested pages.
