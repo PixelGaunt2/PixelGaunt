@@ -491,14 +491,42 @@
     }
   }
 
+  // ---- account data (backend-free: read directly from Firestore) --------------------------
+  // Without the pixelgaunt-backend Worker deployed, plan/role/quota fields on the user's
+  // Firestore doc were never set by a trusted server, so they may not exist yet. Rather
+  // than invent numbers, unset fields fall back to the same safe FREE-plan defaults the
+  // Worker itself would set on /init-user - real defaults, not fake usage stats.
+  async function fetchMe() {
+    if (!window.pgFB || !window.pgFB.db || !currentUser) {
+      throw new Error('Not signed in.');
+    }
+    const snap = await window.pgFB.db.collection('users').doc(currentUser.uid).get();
+    const data = snap.exists ? snap.data() : {};
+    return {
+      uid: currentUser.uid,
+      email: data.email || currentUser.email,
+      createdAt: data.createdAt || null,
+      role: data.role || 'user',
+      plan: data.plan || 'FREE',
+      subscriptionStatus: data.subscriptionStatus || 'none',
+      billingPeriodStart: data.billingPeriodStart || null,
+      billingPeriodEnd: data.billingPeriodEnd || null,
+      gamesUploadedThisPeriod: data.gamesUploadedThisPeriod || 0,
+      storageUsedThisPeriod: data.storageUsedThisPeriod || 0,
+      suspended: !!data.suspended,
+      limits: data.limits || { maxGamesPerPeriod: 1, maxGameSizeMB: 5 }
+    };
+  }
+
   // ---- boot ---------------------------------------------------------------------------------
   async function loadAndRender() {
     showLoading();
     wireRetry();
-    const me = await (window.PGBackend && window.PGBackend.me({ fresh: true }));
-    if (!me) {
-      const reason = window.PGBackend && window.PGBackend.meError && window.PGBackend.meError();
-      showUnreachable(reason || 'Could not load your account. This dashboard needs the backend URL configured in account.js and a working sign-in.');
+    let me;
+    try {
+      me = await fetchMe();
+    } catch (e) {
+      showUnreachable(e.message || 'Could not load your account. Check your Firebase config in firebase-client.js.');
       return;
     }
     cachedMe = me;
