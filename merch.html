@@ -1,212 +1,55 @@
+<!doctype html>
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3455772439100679" crossorigin="anonymous"></script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LRDNJ69KD1"></script>
-    <script>
+<html><head>
+<script async="" crossorigin="anonymous" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3455772439100679"></script>
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-LRDNJ69KD1"></script>
+<script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
         gtag('config', 'G-LRDNJ69KD1');
     </script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Merch Store - Pixel Gaunt Studios</title>
-    <meta name="description" content="Pixel Gaunt merchandise, prints and custom creator products.">
-    <link rel="canonical" href="https://pixelgaunt.com/merch.html">
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <style>
-        .merch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
-        .merch-card { display: flex; flex-direction: column; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; overflow: hidden; }
-        .merch-img { aspect-ratio: 1 / 1; background: rgba(255,255,255,0.04) center/cover no-repeat; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 2.2rem; }
-        .merch-body { display: flex; flex-direction: column; gap: 6px; padding: 16px; flex: 1; }
-        .merch-body h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.05rem; color: #fff; }
-        .merch-body p { color: var(--text-muted); font-size: 0.85rem; flex: 1; }
-        .merch-price { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: #fff; font-size: 1.15rem; }
-        .merch-btn { margin-top: 8px; display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 11px 14px; border-radius: 8px; border: 1px solid var(--neon-cyan); background: rgba(56,189,248,0.12); color: #fff; font-weight: 600; font-size: 0.9rem; text-decoration: none; cursor: pointer; }
-        .merch-btn[aria-disabled="true"] { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--text-muted); cursor: default; }
-        .merch-empty { text-align: center; padding: 40px 20px; border: 1px dashed rgba(255,255,255,0.15); border-radius: 14px; color: var(--text-muted); }
-        .merch-empty i { font-size: 2.2rem; color: var(--neon-cyan); margin-bottom: 10px; display: block; }
-    </style>
-    <!-- Open Graph / Social Media Meta Tags -->
-    <meta property="og:title" content="Merch Store - Pixel Gaunt Studios">
-    <meta property="og:description" content="Pixel Gaunt merchandise, prints and custom creator products.">
-    <meta property="og:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
-    <meta property="og:url" content="https://pixelgaunt.com/merch.html">
-    <meta property="og:type" content="website">
-    <!-- Twitter Card Tags -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Merch Store - Pixel Gaunt Studios">
-    <meta name="twitter:description" content="Pixel Gaunt merchandise, prints and custom creator products.">
-    <meta name="twitter:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
-</head>
-<body class="theme-blue">
-    <div id="scroll-progress"></div>
-    <div class="aurora-bg">
-        <div class="aurora-blob blob1"></div>
-        <div class="aurora-blob blob2"></div>
-        <div class="aurora-blob blob3"></div>
-    </div>
-
-    <audio id="portal-bgm" loop style="display:none;"></audio>
-
-    <header id="main-header">
-        <div class="logo pixel-font" onclick="window.location.href='index.html'">Pixel <span>Gaunt</span> Studios</div>
-        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false">
-            <i class="fas fa-bars"></i>
-        </button>
-        <nav class="nav-links" id="main-nav-links">
-            <div class="nav-menu-links">
-                <a href="index.html">Home</a>
-                <a href="games.html">Games</a>
-                <a href="publish.html">Publish</a>
-                <a href="tournaments.html">Tournaments</a>
-                <a href="merch.html" style="color:#fff;">Merch</a>
-                <a href="dashboard.html" id="dashboard-nav-link" class="pg-hidden">Dashboard</a>
-            </div>
-            <div class="theme-select-container" title="Select Theme Color Core">
-                <div class="theme-dot t-blue active" onclick="setGlobalTheme('blue', this)"></div>
-                <div class="theme-dot t-purple" onclick="setGlobalTheme('purple', this)"></div>
-                <div class="theme-dot t-emerald" onclick="setGlobalTheme('emerald', this)"></div>
-                <div class="theme-dot t-cyber" onclick="setGlobalTheme('cyber', this)"></div>
-            </div>
-            <button class="nav-btn primary" id="main-login-btn" onclick="openModal('login-modal')">Login</button>
-        </nav>
-    </header>
-
-    <main class="container" id="homepage-page" style="padding-top: 40px;">
-        <section class="portfolio-section" id="merch-store-section">
-            <div class="pg-shelf-head">
-                <div>
-                    <h2 class="pixel-font">Merch Store</h2>
-                    <p>Official Pixel Gaunt merchandise. Pick an item and check out securely.</p>
-                </div>
-            </div>
-            <div id="merch-root"><p class="pg-muted">Loading the store...</p></div>
-        </section>
-
-        <section class="portfolio-section" id="creator-section" data-pg-module="creator">
-            <div class="pg-shelf-head">
-                <div>
-                    <h2 class="pixel-font">Custom merch &amp; prints</h2>
-                    <p>Turn game art and 3D models into files you can download, print or manufacture. Check them here first, then save a request for the format you want.</p>
-                </div>
-            </div>
-            <div class="pg-formats">
-                <div class="pg-format"><i class="fas fa-image" aria-hidden="true"></i><h3>2D Assets</h3><p>Sprites, characters, backgrounds and UI art.</p><div class="pg-chips"><span>Digital download</span><span>2D print</span></div></div>
-                <div class="pg-format"><i class="fas fa-cube" aria-hidden="true"></i><h3>3D Assets</h3><p>Models for a game engine or a 3D printer.</p><div class="pg-chips"><span>Digital download</span><span>3D print</span></div></div>
-                <div class="pg-format"><i class="fas fa-print" aria-hidden="true"></i><h3>Prints</h3><p>Posters, art prints and stickers from your game artwork.</p><div class="pg-chips"><span>2D print</span></div></div>
-                <div class="pg-format"><i class="fas fa-shirt" aria-hidden="true"></i><h3>Merchandise</h3><p>Apparel and gifts that carry your character art.</p><div class="pg-chips"><span>Merch</span></div></div>
-                <div class="pg-format"><i class="fas fa-user-astronaut" aria-hidden="true"></i><h3>Creator Products</h3><p>Figurines, collectibles and game-themed sets.</p><div class="pg-chips"><span>3D print</span><span>Merch</span></div></div>
-            </div>
-            <div id="creator-root"><p class="pg-muted">Loading the asset studio...</p></div>
-        </section>
-
-            </main>
-
-<div class="modal-overlay" id="login-modal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModals()">&times;</span>
-            <div class="modal-step active">
-                <h3 class="modal-title pixel-font">Authentication</h3>
-                <div class="option-grid">
-                    <button class="opt-btn" id="google-login-btn">
-                        <span><i class="fab fa-google"></i></span> Login with Google
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="pg-info-modal">
-        <div class="info-modal-wrapper">
-            <span onclick="closePageModal()" style="position: absolute; right: 24px; top: 20px; color: #64748b; font-size: 35px; cursor: pointer; font-weight: bold; line-height: 1; transition: 0.2s;">&times;</span>
-            <h2 id="pg-info-title" style="color: var(--neon-cyan); text-transform: uppercase; font-family: 'Press Start 2P', cursive; font-size: 1.2rem; text-align: center; margin-bottom: 25px;">Title</h2>
-            <div id="pg-info-body" style="color: #e2e8f0; font-size: 1.05rem; line-height: 1.7; font-family: 'Inter', sans-serif;"></div>
-        </div>
-    </div>
-
-    <div id="pg-comingsoon" style="display:none;">
-        <p style="text-align:center; font-size: 3rem; color: var(--neon-cyan); text-shadow: 0 0 20px rgba(56, 189, 248, 0.325); margin-bottom: 10px;"><i class="fas fa-hourglass-half"></i></p>
-        <p style="text-align:center;">This section is currently under construction. We're working hard to bring you an amazing experience — check back soon!</p>
-    </div>
-
-    <div id="pg-about" style="display:none;">
-        <p><strong>Pixel Gaunt Studios</strong> is an independent game development studio. It started as a solo project — learning game development from scratch by building small HTML5 browser games one at a time — and has since grown into a real body of work, including our debut commercial release, <strong>Girl The Driller</strong>.</p>
-        <p><br>Along the way we've shipped more than a dozen free prototypes across genres — fighting, puzzle, racing, 3D shooting, and more — each one teaching us something new about game feel, physics, and polish.</p>
-        <p><br>Every game is built with HTML5, CSS3, JavaScript, and Three.js/WebGL, and designed to run straight from the browser on PC, Android, iOS, Mac, and Linux — no installs, no downloads.</p>
-        <p><br>Pixel Gaunt stays small and independent on purpose. We'd rather ship fewer games and make them good than chase volume, and there's always something new in the works.</p>
-    </div>
-
-    <div id="pg-contact" style="display:none;">
-        <p>Got feedback on <strong>Girl The Driller</strong>, spotted a bug, or have a question about one of our prototypes? We read everything that comes in — it's what shapes what we fix and build next.</p>
-        <p><br>You can also report a bug directly from inside a game while signed in, using the <strong>Report Bug</strong> button on the game screen.</p>
-        <p><br>For business inquiries, collaborations, or copyright/content concerns, email us directly and we'll get back to you.</p>
-        <p><br><strong>Email:</strong> pixelgaunt@gmail.com</p>
-        <p><br><strong>Community:</strong> Join our <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" style="color: var(--neon-cyan); text-decoration: underline;">WhatsApp Group</a> or <a href="https://discord.gg/DfHFVNMBQF" target="_blank" style="color: var(--neon-cyan); text-decoration: underline;">Discord</a> for quick discussion and updates.</p>
-    </div>
-
-    <div id="pg-faq" style="display:none;">
-        <p><strong>Q: Are the games free to play?</strong><br>A: Yes, all games on Pixel Gaunt are 100% free to play directly in your browser.</p>
-        <p><br><strong>Q: Do I need to download anything?</strong><br>A: No downloads are required. Just click and play!</p>
-        <p><br><strong>Q: Can I play on my phone?</strong><br>A: Absolutely! Our games are fully optimized for mobile devices (Android & iOS) as well as PC, Mac, and Linux.</p>
-    </div>
-
-    <div id="pg-privacy" style="display:none;">
-        <p><strong>Privacy Policy</strong></p>
-        <p><br>This explains what data Pixel Gaunt Studios collects and how it's used. We keep this as limited as possible, and you never need an account to play any game.</p>
-        <p><br><strong>Signing in:</strong> If you choose to sign in with Google, we receive your name, email address, and profile photo, and store this in our database (Firebase) to identify your account — for example, so likes and bug reports can be linked to you.</p>
-        <p><br><strong>Likes & bug reports:</strong> When you like a game or submit a bug report while signed in, that action (game title, report text, and timestamp) is saved to our database so we can track feedback and fix issues.</p>
-        <p><br><strong>Published games, tournaments & creator requests:</strong> If you publish a game, join or create a tournament, or save a creator request, what you submit (game files, title, cover image, your display name, scores and request details) is stored in our database. Games and tournament leaderboards are shown publicly; creator requests are visible only to you and us. Ask us at pixelgaunt@gmail.com to remove anything you submitted.</p>
-        <p><br><strong>Analytics:</strong> We use Google Analytics and Firebase Analytics to understand overall site traffic and which games are played most. This data is aggregated and isn't tied to your identity.</p>
-        <p><br><strong>Advertising:</strong> This site uses Google AdSense, which may use cookies to serve ads. Google's own privacy policy governs how that data is handled.</p>
-        <p><br><strong>Local storage:</strong> To rank games by popularity, play counts are saved in your browser's local storage. This stays on your device and is never sent to us.</p>
-        <p><br><strong>What we don't do:</strong> We don't sell your data, and we don't collect personal information beyond what's described above.</p>
-        <p><br>Questions about your data? Contact us at pixelgaunt@gmail.com.</p>
-    </div>
-
-    <div id="pg-disclaimer" style="display:none;">
-        <p><strong>Disclaimer</strong></p>
-        <p><br>All games, logos, and assets on this site — including the Pixel Gaunt branding — belong to Pixel Gaunt Studios unless stated otherwise.</p>
-        <p><br>Games are provided "as is." While we test everything before release, browser games can behave differently across devices and browsers, and occasional bugs or downtime may occur. We're not liable for any loss or issue arising from use of this website.</p>
-        <p><br>Links to our Discord, WhatsApp, YouTube, and other social channels lead to third-party platforms we don't control, and we're not responsible for their content or availability.</p>
-        <p><br>Games on this site may be updated, changed, or removed over time as development continues.</p>
-        <p><br>Community games are published by their creators, not by Pixel Gaunt Studios. They run in an isolated sandbox, but we cannot guarantee their content. To report a game or a copyright concern, email pixelgaunt@gmail.com.</p>
-    </div>
-
-    <footer>
-        <div class="footer-content">
-            <div class="social-icons">
-                <a href="https://www.youtube.com/channel/UCmCPkHm7yRadCKcv_ugE4uQ" target="_blank" class="yt" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
-                <a href="https://www.facebook.com/profile.php?id=61583034586770" target="_blank" class="fb" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-                <a href="https://www.reddit.com/user/Real_Network860/" target="_blank" class="rd" title="Reddit"><i class="fa-brands fa-reddit-alien"></i></a>
-                <a href="https://discord.gg/DfHFVNMBQF" target="_blank" class="dc" title="Discord"><i class="fa-brands fa-discord"></i></a>
-                <a href="https://www.tiktok.com/@pixelgaunt" target="_blank" class="tk" title="TikTok"><i class="fa-brands fa-tiktok"></i></a>
-                <a href="mailto:pixelgaunt@gmail.com" class="gm" title="Gmail"><i class="fa-solid fa-envelope"></i></a>
-                <a href="https://whatsapp.com/channel/0029VbBo20lLo4hmsAJODc2u" target="_blank" class="wa-channel" title="WhatsApp Channel"><i class="fa-brands fa-whatsapp"></i></a>
-                <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" class="wa-group" title="WhatsApp Group"><i class="fa-solid fa-user-group"></i></a>
-            </div>
-            <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt Studios. All Rights Reserved.</p>
-            <div class="footer-links">
-                <a onclick="openPageModal('FAQ', 'pg-faq')">FAQ</a>
-                <a onclick="openPageModal('Contact', 'pg-contact')">Contact</a>
-                <a onclick="openPageModal('About Us', 'pg-about')">About Us</a>
-                <a onclick="openPageModal('Privacy Policy', 'pg-privacy')">Privacy Policy</a>
-                <a onclick="openPageModal('Disclaimer', 'pg-disclaimer')">Disclaimer</a>
-            </div>
-        </div>
-    </footer>
-
-    <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
-    <script src="merch.js" defer></script>
-    <script src="script.js" defer></script>
-
-    <script type="module" src="firebase-auth.js"></script>
-    <script src="account.js" defer></script>
-</body>
-</html>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Merch - Pixel Gaunt Studios</title>
+<meta content="Pixel Gaunt Studios is an indie game development studio. Explore our debut release Girl The Driller, browse our past prototypes, and see what's coming next." name="description"/>
+<link href="https://pixelgaunt.com/merch.html" rel="canonical"/>
+<link crossorigin="" href="https://cdnjs.cloudflare.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="style.css" rel="stylesheet"/>
+<!-- Open Graph / Social Media Meta Tags -->
+<meta content="Pixel Gaunt Studios - Indie Game Developer Portfolio" property="og:title"/>
+<meta content="Pixel Gaunt Studios is an indie game development studio. Explore our debut release Girl The Driller, browse our past prototypes, and see what's coming next." property="og:description"/>
+<meta content="https://pixelgaunt.com/pixelgaunt%20share%20image.png" property="og:image"/>
+<meta content="https://pixelgaunt.com/" property="og:url"/>
+<meta content="website" property="og:type"/>
+<!-- Twitter Card Tags -->
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="Pixel Gaunt Studios - Indie Game Developer Portfolio" name="twitter:title"/>
+<meta content="Pixel Gaunt Studios is an indie game development studio. Explore our debut release Girl The Driller, browse our past prototypes, and see what's coming next." name="twitter:description"/>
+<meta content="https://pixelgaunt.com/pixelgaunt%20share%20image.png" name="twitter:image"/>
+</head><body><header id="main-header"><div class="header-content"><a class="logo" href="index.html">PIXEL<span>GAUNT</span></a><button aria-label="Open menu" class="mobile-menu-toggle" id="mobile-menu-toggle">☰</button><nav class="nav-links" id="main-nav-links"><div class="nav-menu-links"><a data-nav="home" href="index.html">Home</a><a data-nav="games" href="games.html">Games</a><a data-nav="publish" href="publish.html">Publish Game</a><a data-nav="tournaments" href="tournaments.html">Tournaments</a><a class="active" data-nav="merch" href="merch.html">Merch</a><a class="pg-hidden" data-nav="dashboard" href="dashboard.html" id="dashboard-nav-link">Dashboard</a></div><button class="nav-btn primary" id="main-login-btn" onclick="window.location.href='index.html#login'">Login</button></nav></div></header><main class="page-shell"><section class="page-intro"><span class="eyebrow">PIXELGAUNT STORE</span><h1 class="pixel-font">Merch</h1><p>Game art, prints, collectibles and creator products.</p></section><section class="merch-grid"><article class="merch-card"><div class="merch-art">2D</div><h2>Art Prints</h2><p>Posters, stickers and downloadable artwork.</p></article><article class="merch-card"><div class="merch-art">3D</div><h2>3D Assets</h2><p>Game-ready models and printable collectibles.</p></article><article class="merch-card"><div class="merch-art">PG</div><h2>Merchandise</h2><p>Apparel and physical products built around Pixel Gaunt games.</p></article><article class="merch-card"><div class="merch-art">★</div><h2>Creator Products</h2><p>Future creator marketplace products and game-themed collections.</p></article></section><section class="notice-card"><h2>Store Coming Soon</h2><p>The original project contains the Creator Lab concept, but no completed commerce/catalog backend or product inventory was included in the uploaded ZIP. This page is ready for that system without inventing products or prices.</p></section></main><footer>
+<div class="footer-content">
+<div class="social-icons">
+<a class="yt" href="https://www.youtube.com/channel/UCmCPkHm7yRadCKcv_ugE4uQ" target="_blank" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+<a class="fb" href="https://www.facebook.com/profile.php?id=61583034586770" target="_blank" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+<a class="rd" href="https://www.reddit.com/user/Real_Network860/" target="_blank" title="Reddit"><i class="fa-brands fa-reddit-alien"></i></a>
+<a class="dc" href="https://discord.gg/DfHFVNMBQF" target="_blank" title="Discord"><i class="fa-brands fa-discord"></i></a>
+<a class="tk" href="https://www.tiktok.com/@pixelgaunt" target="_blank" title="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+<a class="gm" href="mailto:pixelgaunt@gmail.com" title="Gmail"><i class="fa-solid fa-envelope"></i></a>
+<a class="wa-channel" href="https://whatsapp.com/channel/0029VbBo20lLo4hmsAJODc2u" target="_blank" title="WhatsApp Channel"><i class="fa-brands fa-whatsapp"></i></a>
+<a class="wa-group" href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" title="WhatsApp Group"><i class="fa-solid fa-user-group"></i></a>
+</div>
+<p class="pixel-font footer-copyright">© 2026 Pixel Gaunt Studios. All Rights Reserved.</p>
+<div class="footer-links">
+<a href="#faq">FAQ</a>
+<a href="#contact">Contact</a>
+<a href="#about">About Us</a>
+<a href="#privacy">Privacy Policy</a>
+<a href="#disclaimer">Disclaimer</a>
+</div>
+</div>
+</footer><script defer="" src="site-pages.js"></script><script src="firebaseAuth.js" type="module"></script><script defer="" src="account.js"></script></body></html>
