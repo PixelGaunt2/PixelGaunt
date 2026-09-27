@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Girl: The Driller DEMO</title>
+<!-- ============================================================================
+         PIXEL-PERFECT RENDERING (global, page-wide patch)
+         ----------------------------------------------------------------------------
+         The game's ~128x128 pixel-art assets need STRICT nearest-neighbour scaling on
+         every canvas, everywhere, forever - no bilinear/blur smoothing, ever, on any
+         context, including ones created dynamically later (offscreen buffers, the
+         minimap, the Dragon Skull layer, the character-preview canvas, etc.) and even
+         if some other code (present now or added later) tries to turn smoothing back
+         on for some effect. Doing this once, globally, as the very first script in
+         <head> - before a single canvas context exists anywhere on the page - is far
+         more reliable than hunting down every individual
+         `ctx.imageSmoothingEnabled = ...` call site in game.js: it can't be missed,
+         and it can't be silently re-enabled by a future edit.
+
+         1) Lock imageSmoothingEnabled itself: redefine the property on
+            CanvasRenderingContext2D.prototype so every context's getter always
+            reports false and every setter silently ignores attempts to turn it on.
+            This covers the main gameplay ctx, skullCtx, the minimap context, every
+            offscreen/scratch canvas, and anything created after this point.
+         2) Pixel-snap drawImage: wrap drawImage so the DESTINATION rectangle (the
+            x/y/width/height a sprite is actually painted at) is always rounded to
+            whole pixels before the real draw happens. Combined with (1), this
+            guarantees hard, non-blurred, integer-aligned pixel edges for every
+            sprite draw in the game - backgrounds, the Girl, enemies, destroyable
+            objects, minerals, projectiles, UI icons, animations, and sprite sheets
+            alike - regardless of gameScale/DPR/rotation math anywhere else in the
+            code, without needing to touch those call sites individually. Source-
+            rectangle args (the sx/sy/sw/sh sprite-sheet lookup, when present) are
+            left untouched since those select which source pixels to sample, not
+            where the output lands on screen.
+    -->
+<script>
+        (function () {
+            if (typeof CanvasRenderingContext2D === 'undefined') return;
+            var proto = CanvasRenderingContext2D.prototype;
+
+            // --- (1) Force-disable smoothing on every 2D context, permanently ---
+            try {
+                Object.defineProperty(proto, 'imageSmoothingEnabled', {
+                    configurable: true,
+                    enumerable: true,
+                    get: function () { return false; },
+                    set: function (_value) { /* pixel-perfect mode: always stays false */ }
+                });
+            } catch (e) { /* very old browser without a configurable prototype accessor - ignore */ }
+
+            // --- (2) Snap every drawImage destination rect to integer pixels ---
+            var origDrawImage = proto.drawImage;
+            proto.drawImage = function (img) {
+                var args = arguments, n = args.length;
+                if (n === 3) {
+                    // drawImage(image, dx, dy)
+                    return origDrawImage.call(this, img, Math.round(args[1]), Math.round(args[2]));
+                }
+                if (n === 5) {
+                    // drawImage(image, dx, dy, dWidth, dHeight)
+                    return origDrawImage.call(this, img,
+                        Math.round(args[1]), Math.round(args[2]),
+                        Math.round(args[3]), Math.round(args[4]));
+                }
+                if (n === 9) {
+                    // drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+                    // Source rect (args[1..4]) is left exactly as given - it selects which
+                    // source pixels to sample, not where the output lands.
+                    return origDrawImage.call(this, img, args[1], args[2], args[3], args[4],
+                        Math.round(args[5]), Math.round(args[6]),
+                        Math.round(args[7]), Math.round(args[8]));
+                }
+                // Unexpected arg count - fall through unmodified rather than guess.
+                return origDrawImage.apply(this, args);
+            };
+        })();
+    </script>
+<!-- TEXT-CONSISTENCY FIX (initial-load text looking thin, then jumping bold/thick once
+         gameplay starts): root cause was NOT a bug in the font files or sizing math - it was a
+         FOUT (Flash Of Unstyled Text) race. The Google Fonts stylesheet below is intentionally
+         loaded async (media=print swapped to all on load - see "HOSTING PERF FIX" comment) so it
+         never blocks first paint. That's correct for performance, but it means the very first
+         frame (menu buttons, HUD, canvas text) paints BEFORE 'Press Start 2P'/'VT323' have
+         finished downloading, so the browser is forced to use the CSS fallback chain's last
+         resort - 'Courier New'/generic monospace - which is visibly thinner/smaller than the
+         blocky Press Start 2P face. A few hundred ms to ~1-2s later (right around when the
+         player has clicked past the menu and gameplay is active), the web fonts finish loading
+         and every piece of text - including canvas text, which is redrawn fresh every frame and
+         so picks up the new font on its very next frame - swaps to the real, chunkier pixel
+         font. That swap is what reads as text suddenly "getting thicker/bolder".
+         FIX: this inline script (must run before anything paints, so it's first in <head>,
+         before even the font <link>) tags <html> "fonts-loading" immediately. CSS below (in
+         css/styles.css) keeps <body> invisible (opacity:0, not display:none - layout, canvas
+         sizing, resizeCanvas(), asset preloading and all game init logic still run completely
+         normally in the background, nothing about game behavior/timing changes) until this
+         script confirms - via the real Font Loading API (document.fonts.load +
+         document.fonts.ready), not a guess or a fixed delay - that both 'Press Start 2P' and
+         'VT323' are actually parsed and usable. Only then does it swap to "fonts-ready", which
+         CSS fades in over 0.18s. A hard 1.5s safety timeout guarantees the game is never blocked
+         waiting on a font that fails to load (offline, blocked domain, etc.) - it just reveals
+         with whatever font is available at that point and, because nothing paints before then,
+         still does so with zero visible swap. Net effect: the game still starts painting within
+         a couple hundred ms on any normal connection (same perf win as before), but the very
+         first pixel of text anyone ever sees is already the final, correct, consistent font -
+         so there is nothing left to "jump" to once gameplay starts. -->
+<script>
+        (function () {
+            var root = document.documentElement;
+            root.classList.add('fonts-loading');
+            var revealed = false;
+            function reveal() {
+                if (revealed) return;
+                revealed = true;
+                root.classList.remove('fonts-loading');
+                root.classList.add('fonts-ready');
+                // Lets js/startup-splash.js start its exact 3s+3s timers at the same moment the
+                // page actually becomes visible (body opacity 0 -> 1 above), instead of during
+                // the invisible font-loading wait - so the two logo animations are always shown
+                // on-screen for their full, real duration.
+                try { document.dispatchEvent(new Event('gtd-startup-reveal')); } catch (e) {}
+            }
+            // Hard safety net FIRST: whatever else happens, never leave the game invisible.
+            setTimeout(reveal, 1500);
+            try {
+                if (document.fonts && document.fonts.load) {
+                    Promise.all([
+                        document.fonts.load("400 16px 'Press Start 2P'"),
+                        document.fonts.load("400 16px 'VT323'")
+                    ]).then(function () {
+                        // Belt-and-braces: some engines resolve load() a tick before the font is
+                        // actually usable for layout/paint - document.fonts.ready is the browser's
+                        // own signal that pending font loads have settled.
+                        return document.fonts.ready;
+                    }).then(reveal, reveal);
+                } else {
+                    // No Font Loading API (very old browser) - nothing to gate on.
+                    reveal();
+                }
+            } catch (e) {
+                reveal();
+            }
+        })();
+    </script>
+<!-- HOSTING PERF FIX: on file:// there is no network round-trip, so this stylesheet loaded
+         instantly and never blocked anything. Once hosted on a real server (pixelgaunt.com) or
+         on mobile data, the browser must pay a DNS+TLS+request round-trip to fonts.googleapis.com
+         before it can continue parsing the page, delaying first paint and the start of the game
+         script itself - this is pure network latency, invisible when testing locally. preconnect
+         warms the connection early, and loading the stylesheet as non-render-blocking (media=print
+         swapped to all on load, with a <noscript> fallback) lets the page/script start immediately
+         instead of stalling on the font request. -->
+<!-- FONT: Press Start 2P - blockier, more classic-arcade "8-bit" look than the previous
+         VT323 (which is a thinner, more condensed pixel font). VT323 is kept as the second
+         fallback in --font-pixel / every canvas ctx.font string below, so if this new font
+         ever fails to load for any reason, text falls back to the other clean pixel font
+         instead of a generic system font. -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;family=VT323&amp;display=swap" media="print" onload="this.media='all'" rel="stylesheet"/>
+<noscript><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;family=VT323&amp;display=swap" rel="stylesheet"/></noscript>
+<link href="styles.css" rel="stylesheet"/>
+<!-- ADDITIVE: New Game tutorial/spotlight system. Purely additional styling, scoped to
+         #gtd-tutorial-root - does not override or modify any existing rule in styles.css. -->
+<link href="tutorial.css" rel="stylesheet"/>
+</head>
+<body>
+<audio id="bgMusic" loop="" src="The_Silver_Path.mp3"></audio>
+<canvas id="gameCanvas"></canvas>
+<!-- TOPMOST DRAGON SKULL LAYER: dedicated overlay canvas the Antique Power Up's Dragon
+         Skull sprite is drawn onto (see drawAntiqueSkullTopLayer in game.js), stacked above
+         every HUD panel/button (z-index 16 in styles.css) instead of raising the main
+         gameplay canvas's own z-index. pointer-events is off in CSS so it never blocks clicks
+         to anything beneath it - purely visual. -->
+
+<div id="info-toast"></div>
+<!-- STARTUP SPLASH SEQUENCE: runs once automatically on every fresh page load, BEFORE the
+         Main Menu is ever interactive. Sits on its own overlay above #main-menu (which is
+         already present/initialized underneath, completely unchanged) at a higher z-index, so
+         it simply visually + input-blocks the menu until the player advances past it, rather
+         than delaying/gating any game init logic. Stage 1 (Pixel Gaunt studio logo) loops
+         indefinitely until the player left-clicks/any-clicks or presses ENTER, then Stage 2
+         (Girl: The Driller title logo) does the same, then this entire overlay hides itself
+         (see js/startup-splash.js) revealing the Main Menu beneath it. Reuses the exact same
+         main-menu-bg.png background (see #startup-splash rule in css/styles.css, grouped with
+         #main-menu) so the backdrop never changes across the whole startup flow. -->
+<div aria-hidden="false" id="startup-splash">
+<img alt="" draggable="false" id="startup-splash-frame" oncontextmenu="return false;" src=""/>
+<div id="startup-splash-hint">Click / Enter to continue</div>
+</div>
+<div class="overlay-menu" id="main-menu">
+<button class="menu-btn" id="btn-continue" onclick="continueGame()" style="display:none; color: #39ff14;"><img alt="" class="inline-icon" src="futuristic_sci-fi_data_save_de.png"/>CONTINUE</button>
+<button class="menu-btn" id="btn-play-now" onclick="newGameFromMenuOrStart()"><img alt="" class="inline-icon" src="futuristic_sci-fi_arcade_game_1_.png"/>PLAY NOW</button>
+<button class="menu-btn" id="btn-characters" onclick="showCharacterSelect()"><img alt="" class="inline-icon" src="char-select-icon.png"/>CHARACTERS</button>
+<button class="menu-btn" onclick="showReadme()"><img alt="" class="guide-icon" src="game-guide-icon.png"/>GAME GUIDE</button>
+<button class="menu-btn" onclick="openUpgradesFromMenu()"><img alt="" class="inline-icon" src="futuristic_sci-fi_skill_tree_o.png"/>SKILL TREE</button>
+<button class="menu-btn" onclick="showSettings()"><img alt="" class="inline-icon" src="futuristic_sci-fi_pause_contro.png"/>SETTINGS</button>
+<button class="menu-btn" id="btn-exit-game" onclick="exitFullscreenFromMenu()"><img alt="" class="inline-icon" src="futuristic_sci-fi_command_cent.png"/>EXIT FULLSCREEN</button>
+<!-- MAIN MENU EXIT GAME: shares the single exitGame() implementation in js/game.js with
+             the Extra Level Pause Menu's own EXIT GAME button below (#pause-exit-game-btn) - not
+             two separate exit-game systems. See exitGame()'s own comment for why (no Electron/
+             app-close path exists in this browser build to reuse). -->
+<button class="menu-btn" id="btn-exit-game-app" onclick="exitGame()"><img alt="" class="inline-icon" src="exit-icon-unused.png"/>EXIT GAME</button>
+<button class="menu-btn" id="btn-reset-progress" onclick="resetProgressFromMenu()" style="display:none; color: #ff3333;"><img alt="" class="inline-icon" src="btn-resetprogress.png"/>RESET PROGRESS</button>
+</div>
+<!-- CHARACTER SELECTION: reuses the existing .overlay-menu look (same as Settings/Game
+         Guide). #char-preview-canvas is a dedicated small canvas the character-select preview
+         (js/game.js: charSelectDraw/charSelectTick) draws directly onto - completely separate
+         from the main #gameCanvas, so it never touches gameplay rendering/resolution/scaling. -->
+<div class="overlay-menu" id="character-menu" style="display: none; z-index: 60;">
+<div class="overlay-title" style="font-size: calc(var(--ui-scale) * 34px); margin-bottom: calc(var(--ui-scale) * 26px);">CHARACTERS</div>
+<div class="char-select-stage">
+<canvas height="260" id="char-preview-canvas" width="260"></canvas>
+<img alt="Locked" class="char-select-lock-icon" id="char-select-lock-icon" src="lock.png" style="display:none;"/>
+</div>
+<div class="char-select-nav-row">
+<button aria-label="Previous character" class="char-nav-arrow" onclick="charSelectPrev()">◀</button>
+<div class="char-select-name" id="char-select-name">NOVA</div>
+<button aria-label="Next character" class="char-nav-arrow" onclick="charSelectNext()">▶</button>
+</div>
+<button class="menu-btn" onclick="closeCharacterSelect()" style="margin-top: calc(var(--ui-scale) * 20px);"><img alt="" class="inline-icon" src="btn-back.png"/>BACK</button>
+</div>
+<!-- SETTINGS: reuses the existing .overlay-menu look (same as Game Guide/Mining Zones).
+         The MUSIC row simply relocates the pre-existing #btn-music-toggle button and its
+         toggleMusic() handler - same id, same label span, same behavior, just parented here
+         instead of directly in #main-menu. RESOLUTION lists only the four supported 16:9
+         resolutions (1280x720 up to 1920x1080 - see SUPPORTED_RESOLUTIONS in the script);
+         no 2K/4K option exists anywhere in this list. -->
+<div class="overlay-menu" id="settings-menu" style="display: none; z-index: 60; background: rgba(5, 5, 8, 0.93);">
+<div class="overlay-title" style="font-size: calc(var(--ui-scale) * 34px);">SETTINGS</div>
+<div class="settings-row">
+<span class="settings-label">MUSIC</span>
+<button class="menu-btn" id="btn-music-toggle" onclick="toggleMusic()" style="margin: 0; width: calc(var(--ui-scale) * 210px);"><img alt="" class="inline-icon" src="futuristic_sci-fi_audio_speake.png"/><span id="btn-music-toggle-label">MUSIC: ON</span></button>
+</div>
+<div class="settings-row">
+<span class="settings-label">SFX</span>
+<button class="menu-btn" id="btn-sfx-toggle" onclick="toggleSfx()" style="margin: 0; width: calc(var(--ui-scale) * 210px);"><img alt="" class="inline-icon" src="futuristic_sci-fi_audio_speake.png"/><span id="btn-sfx-toggle-label">SFX: ON</span></button>
+</div>
+<div class="settings-row">
+<span class="settings-label">RESOLUTION</span>
+<select class="settings-select" id="resolution-select" onchange="changeResolution(this.value)" style="opacity: 1; cursor: pointer;">
+<option value="1280x720">1280 x 720</option>
+<option selected="" value="1366x768">1366 x 768 (Default)</option>
+<option value="1600x900">1600 x 900</option>
+<option value="1920x1080">1920 x 1080 (Max)</option>
+</select>
+</div>
+<div class="settings-row">
+<span class="settings-label">CONTROLLER</span>
+<select class="settings-select" id="controller-select" onchange="changeController(this.value)" style="opacity: 1; cursor: pointer;">
+<option value="keyboard">KEYBOARD</option>
+<option value="mouse">MOUSE</option>
+<option value="gamepad">JOYPAD</option>
+<option value="touch">TOUCH</option>
+</select>
+</div>
+<button class="menu-btn" onclick="closeSettings()" style="margin-top: calc(var(--ui-scale) * 20px);"><img alt="" class="inline-icon" src="btn-back.png"/>BACK</button>
+</div>
+<div class="overlay-menu" id="readme-menu" style="display: none; z-index: 60;">
+<div class="overlay-title" style="font-size: calc(var(--ui-scale) * 34px); margin-bottom: calc(var(--ui-scale) * 6px);">Game Guide</div>
+<div class="guide-page-indicator" id="guide-page-indicator">Page 1 / 11</div>
+<div class="guide-scroll-hint">Mouse Wheel / Trackpad: Scroll Guide</div>
+<div class="guide-content">
+<div class="guide-page" data-page="1">
+<h2>Game Overview</h2>
+<p>You play as the <strong>Girl Driller</strong>, a lone space miner drilling deeper and deeper into a series of asteroid mining zones. Your goal is simple: fly around, destroy mineable objects (asteroids), collect the minerals and Antique Power Up they drop, and use the money to unlock and upgrade an ever-growing arsenal of Power-Ups and Overdrive abilities.</p>
+<p>As you spend Money in the Skill Tree to unlock more Power-Ups, new Mining Zones unlock further out from Earth, each one adding tougher, denser fields of mineable objects - see the Zones page for exactly how many Power-Ups each zone needs, and the Extra Survival Levels page for the survival challenge that stands between each pair of zones. Progression is driven entirely by the Skill Tree: money earned from mining and combat is spent there to unlock new Power-Ups, boost their damage/fire rate, and extend how long each Overdrive stays active.</p>
+<h2>Player Controls</h2>
+<ul>
+<li><strong>Move:</strong> Arrow Keys or <span class="guide-tag">W / A / S / D</span>. Movement steadily drains your Energy meter - you can only move while you have Energy left.</li>
+<li><strong>Move (mouse/touch):</strong> Press and hold the left mouse button, or touch and hold the screen, and the ship thrusts toward that point. On touch devices you can also drag anywhere to move.</li>
+<li><strong>Attacking:</strong> There is no manual fire button - every unlocked Power-Up (Drill, Laser, Fireball, Rocket, Drone, etc.) fires automatically on its own, at its own pace, once you've unlocked it in the Skill Tree.</li>
+<li><strong>Overdrive buttons:</strong> Each unlocked Power-Up gets its own Overdrive button in the on-screen Active Systems panel. Tap/click a button once it reads <strong>READY</strong> to activate that Overdrive.</li>
+<li><strong>Pause:</strong> Click/tap the Pause button in the HUD, or press <span class="guide-tag">Escape</span>.</li>
+<li><strong>Menus:</strong> <span class="guide-tag">Enter</span> confirms/continues on menu and story screens; <span class="guide-tag">Escape</span> backs out of the Skill Tree or closes the pause menu.</li>
+<li><strong>Mobile:</strong> All of the above works the same way with on-screen taps - the Overdrive buttons and Pause button are always visible in the HUD, and touch-and-hold anywhere on the play area to move.</li>
+</ul>
+</div>
+<div class="guide-page" data-page="2">
+<h2>Mining &amp; Destroyable Objects</h2>
+<p>Every Mining Zone is filled with destroyable objects (asteroids). They sit in place until a Power-Up's projectile or effect strikes them.</p>
+<ul>
+<li><strong>Spawning:</strong> Objects continually spawn back into the zone as they're destroyed, drawn from that zone's own pool of mineral types.</li>
+<li><strong>Movement:</strong> Objects are stationary - they don't chase or move toward you; you fly out to them.</li>
+<li><strong>Damage from Power-Ups:</strong> Any hit from any active Power-Up's projectile registers as exactly one hit against that object's fixed hit requirement (see the durability table below) - a Power-Up's damage/upgrade level does not let a single hit count as more than one hit.</li>
+<li><strong>HP / hit system:</strong> Each object has a fixed number of hits it can take before being destroyed, based purely on its mineral type (Iron/Bronze/Gold/Diamond/Uranium) - see below.</li>
+<li><strong>5 damage frames:</strong> Every object's art has 5 stages, from full health down to almost destroyed, so you get a clear visual cue of how close an object is to breaking apart as you keep landing hits.</li>
+<li><strong>On destruction:</strong> The object breaks apart and is removed, and a batch of that mineral is released for you to fly over and collect (see Minerals &amp; Rewards below), and a new object eventually spawns to replace it.</li>
+</ul>
+<h3>Destroyable Object Durability</h3>
+<table class="guide-table">
+<tr><th>Mineral</th><th>Hits to Destroy (Basic Power-Up)</th><th>Hits to Destroy (Fully Upgraded)</th></tr>
+<tr><td>Iron</td><td>3</td><td>2</td></tr>
+<tr><td>Bronze</td><td>6</td><td>4</td></tr>
+<tr><td>Gold</td><td>9</td><td>6</td></tr>
+<tr><td>Diamond</td><td>10</td><td>8</td></tr>
+<tr><td>Uranium</td><td>12</td><td>10</td></tr>
+</table>
+<div class="guide-note">Power-Up upgrades make your attacks hit <strong>harder per hit</strong> and fire <strong>faster</strong>, but they do not let one hit count as multiple hits - every object still needs its full hit requirement for your Power-Up's current upgrade tier to be destroyed. A brand-new Power-Up needs the "Basic" column above; a fully maxed-out one needs only the "Fully Upgraded" column - upgrades progressively reduce that number in between.</div>
+</div>
+<div class="guide-page" data-page="3">
+<h2>Minerals &amp; Rewards</h2>
+<p>Destroying an object releases its mineral reward, which you collect simply by flying close enough to touch it - it's then added to your running Money total automatically. Each mineral type has its own Money value per unit and its own yield per destroy, and rarer minerals tend to take more hits to break loose - see the tables below.</p>
+<p>Money is the currency spent on every Skill Tree unlock and upgrade, so mining efficiently (using the right Power-Ups for the zone you're in, and popping Overdrives on cooldown) directly speeds up your progression.</p>
+<h3>Mineral Yield per Destroy</h3>
+<table class="guide-table">
+<tr><th>Mineral</th><th>Units per Destroy</th></tr>
+<tr><td>Iron</td><td>1-2</td></tr>
+<tr><td>Bronze</td><td>1-3</td></tr>
+<tr><td>Gold</td><td>2-5</td></tr>
+<tr><td>Diamond</td><td>4</td></tr>
+<tr><td>Uranium</td><td>5</td></tr>
+</table>
+<div class="guide-note">As your progression climbs, destroying objects also banks a growing bonus pile of extra minerals straight into your inventory on top of the base amounts above - so your real yield per destroy keeps climbing well past these numbers the further you get.</div>
+<h3>Antique Power Up</h3>
+<p>Separate from ordinary mineral drops, rare <strong>Antique Power Up</strong> collectibles occasionally spawn out in the zone as their own glowing pickups. Fly into one to collect it - it's instantly added to your Antique Power Up tally, shown as its own icon grid in the HUD with a running count for each type collected. There are 2 different Antique Power Up types to find and collect: <strong>Dragon Skull</strong> and <strong>Flower</strong>.</p>
+<p>This isn't just a passive tally: the first time you've collected 100 of <strong>both</strong> types, a powerful <strong>Dragon Skull Fire Attack</strong> triggers automatically - twin dragon skulls appear and breathe fire across the zone on their own for a short time, with no button or Overdrive slot of its own. Once unlocked this way, it keeps firing again automatically every 15 minutes for the rest of the game, and every Dragon Skull/Flower you collect afterward keeps counting - it never stops or resets.</p>
+</div>
+<div class="guide-page" data-page="4">
+<h2>Power-Ups</h2>
+<p>Power-Ups are unlocked one at a time from the Skill Tree by spending Money. Once unlocked, a Power-Up fires automatically for the rest of the run/session - you never have to aim or trigger it manually. Every combat Power-Up also has its own paired Overdrive (see the Overdrives section below) and its own upgrade nodes that boost its damage, fire rate, or other stats.</p>
+<h3>Drilling (starting Power-Up)</h3>
+<p>Your basic mining tool, available from the very start with no unlock cost. Automatically drills into nearby objects. Upgraded through the Drilling tree (Tungsten/Plasma/Diamond/Void Drill nodes) for more damage. Its Overdrive is <strong>Drill Storm</strong>.</p>
+<h3>Girl Suit / Nano-Suit</h3>
+<p>Unlocks the "Girl Power" suit ability and is also the gateway node most other Power-Ups are unlocked behind. Suit upgrades add Armor (reduced damage taken), a Magnetic Suit (collect minerals from farther away without flying right up to them), and a late-game Cosmic Suit for maximum protection. Its Overdrive is <strong>Girl Power</strong>.</p>
+<h3>Impact Pickaxe</h3>
+<p>A melee-range hand weapon unlocked from the Suit tree. Its Overdrive, <strong>Axe Fury</strong>, spawns two Pixel Axes that swing and strike nearby objects for the duration of the Overdrive.</p>
+<h3>Missiles (Mining Rocket)</h3>
+<p>Fires homing rockets automatically at nearby objects at a steady reload rate (upgradeable for faster reloading). Its Overdrive is <strong>Missile Rain</strong>.</p>
+<h3>Laser Weapon (Plasma Laser Cannon)</h3>
+<p>Fires a directional laser beam automatically at objects. Its Overdrive, <strong>Laser Beam</strong>, summons four Plasma Laser Cannons positioned diagonally around you (up-left, up-right, down-left, down-right), all firing simultaneously at every object in range for the Overdrive's duration.</p>
+<h3>Fireball</h3>
+<p>Auto-fires fireball projectiles at objects. Its Overdrive is <strong>Inferno</strong>.</p>
+<h3>Attack Drone</h3>
+<p>A companion drone that flies alongside you and fires its own shots automatically. Upgradeable for more projectile damage (Twin Cannons) and faster fire rate (Rapid Targeting). Its Overdrive is <strong>Drone Swarm</strong>.</p>
+</div>
+<div class="guide-page" data-page="5">
+<h2>Power-Ups (continued)</h2>
+<h3>Flower Bomb</h3>
+<p>A rotating flower bomb that seeks out nearby objects and detonates on contact for explosion damage. Upgradeable for more explosion damage and a longer target-seeking range. Its Overdrive is also named <strong>Flower Bomb</strong>.</p>
+<h3>Pulse Core</h3>
+<p>Emits damaging energy shockwaves outward from your ship automatically. Upgradeable for more damage and a larger shockwave radius. Its Overdrive is <strong>Core Overload</strong>.</p>
+<h3>Electric Shock</h3>
+<p>Automatically zaps nearby objects with electricity. Upgradeable for more damage and faster attack speed. Its Overdrive is <strong>Electric Storm</strong>.</p>
+<h3>Fire Split</h3>
+<p>Fires three independent fire projectiles at once - one left, one forward, one right - each traveling and hitting separately. Upgradeable for more damage and a faster throwing rate. Its Overdrive, <strong>Firestorm Split</strong>, repeatedly fires bursts of nine independent projectiles (three groups of three) for as long as the Overdrive is active.</p>
+<h3>Laser Drone</h3>
+<p>Deploys a Drone that automatically fires Laser bolts at objects. Upgradeable for more damage and faster firing speed. Its Overdrive is <strong>Laser Drone</strong>.</p>
+<h3>Collector</h3>
+<p>Not a weapon - this unlocks a small autonomous companion that automatically flies to and gathers whatever minerals/Antique Power Up collectibles are currently visible on screen, then moves on to the next one. It never attacks and has no Overdrive; it just saves you legwork on pickups.</p>
+<h2>Power-Up Upgrades</h2>
+<p>Every combat Power-Up has its own branch in the Skill Tree with numbered upgrade nodes (most go up to level 20 or 25). Spending Money on these nodes increases that Power-Up's damage, fire rate, throwing/attack speed, or a similar stat depending on the Power-Up. A fully upgraded Power-Up hits harder and fires faster than a freshly-unlocked one.</p>
+<div class="guide-note">Important: upgrading a Power-Up never bypasses a destroyable object's hit requirement. A fresh, unupgraded Power-Up needs 3 hits to break Iron, 6 for Bronze, 9 for Gold, 10 for Diamond, and 12 for Uranium; a fully maxed-out Power-Up needs only 2/4/6/8/10 respectively - upgrades progressively get you there faster and let you fight tougher zones more comfortably.</div>
+</div>
+<div class="guide-page" data-page="6">
+<h2>Overdrives</h2>
+<p>Every unlocked Power-Up has a matching Overdrive - a temporary, supercharged burst of that ability. Overdrives are entirely time-based: they do <strong>not</strong> cost minerals or Money to activate. Instead each one cycles through a Wait phase and an Active phase on its own timer.</p>
+<ul>
+<li><strong>Wait:</strong> After an Overdrive ends (or when a Power-Up is first unlocked), its button shows a countdown, e.g. "WAIT: 5s". You cannot activate it during this phase.</li>
+<li><strong>Ready:</strong> Once the wait timer hits zero the button turns to <strong>READY</strong> - the Overdrive does not fire on its own. You must tap/click its button to activate it.</li>
+<li><strong>Active:</strong> Once activated, that Power-Up gets a temporary boost (extra projectiles, extra companions, larger effects, etc. - see the per-Overdrive notes above) for exactly 10 seconds, every single activation.</li>
+<li><strong>Next cycle:</strong> When the Active phase ends, that Overdrive's use count increases by one and a new, longer Wait phase begins immediately.</li>
+<li><strong>Multiple ready at once:</strong> If more than one Overdrive becomes READY at the same time, pressing any of their buttons opens a selection screen listing every ready Overdrive as a card - you pick exactly one to activate, and the others stay fully charged and ready until you activate them next.</li>
+<li><strong>Overdrive Core upgrades:</strong> Each Power-Up has its own Overdrive Core upgrade node in the Skill Tree that adds a flat +1 second to that Overdrive's Active phase, on top of the base 10 seconds, for every level purchased.</li>
+</ul>
+<h3>Overdrive Timing</h3>
+<p>The Active phase is always exactly 10 seconds, on every activation - it never grows. Only the Wait/recharge phase that follows grows, by 5 seconds every time you use that Overdrive:</p>
+<ul>
+<li><strong>1st use:</strong> Wait 5s (base) → Active 10s</li>
+<li><strong>2nd use:</strong> Wait 10s → Active 10s</li>
+<li><strong>3rd use:</strong> Wait 15s → Active 10s</li>
+<li>...and so on - Wait keeps growing by 5 seconds per use, Active always stays 10s.</li>
+</ul>
+<p>Overdrive Core upgrade levels add flat bonus seconds on top of the 10-second Active phase shown above (not the Wait phase).</p>
+</div>
+<div class="guide-page" data-page="7">
+<h2>Hazards</h2>
+<p>Mining Zones aren't just full of destroyable objects - a roaming <strong>Black Hole</strong> drifts through every zone as an environmental hazard.</p>
+<ul>
+<li><strong>Behavior:</strong> The Black Hole drifts slowly around the zone on its own. It never chases you outright, but its pull grows the closer you get.</li>
+<li><strong>Capture:</strong> Fly too close and it can pull your ship in, dragging you into a helpless orbit around it for a few seconds before releasing you at a safe location elsewhere in the zone.</li>
+<li><strong>Warning:</strong> A "DANGER: BLACK HOLE" label appears above it, so you always have a visual cue to steer clear.</li>
+<li>It deals no direct damage - the danger is losing control of your ship and being repositioned mid-fight, not health loss.</li>
+</ul>
+<div class="guide-note">This is separate from the Antique Power Up's Dragon Skull Fire Attack (see Minerals &amp; Rewards) and from the giant Black Hole boss fought at the end of each Extra Survival Level (see the next page) - all three use similar art, but are independent systems.</div>
+</div>
+<div class="guide-page" data-page="8">
+<h2>Zones</h2>
+<p>There are 5 main Mining Zones, plus a 6th final zone unlocked much later. Zones unlock based on how many Power-Ups you've unlocked in total (not Depth or Money) - and every zone after the first also requires clearing that zone's preceding <strong>Extra Survival Level</strong> (see the next page). Each zone adds its own set of destroyable objects into the mix, and every object unlocked in an earlier zone stays available in every later zone too - so later zones have a larger, more varied mix of objects rather than replacing what came before.</p>
+<table class="guide-table">
+<tr><th>Zone</th><th>Name</th><th>Power-Ups Required</th><th>New Objects Added</th></tr>
+<tr><td>Zone 1</td><td>Asteroid Belt</td><td>0</td><td>5</td></tr>
+<tr><td>Zone 2</td><td>Crimson Rift</td><td>4</td><td>10 (cumulative)</td></tr>
+<tr><td>Zone 3</td><td>Frozen Expanse</td><td>7</td><td>15 (cumulative)</td></tr>
+<tr><td>Zone 4</td><td>Volcanic Core</td><td>10</td><td>20 (cumulative)</td></tr>
+<tr><td>Zone 5</td><td>Void Nexus</td><td>12 (all Power-Ups)</td><td>25 (cumulative)</td></tr>
+<tr><td>Zone 6</td><td>The Infinite Core</td><td>All 12, fully upgraded, plus $100,000,000 lifetime earned</td><td>Reuses Void Nexus's object mix</td></tr>
+</table>
+<p>Zone 6, The Infinite Core, is the game's final destination: it only opens up once you've unlocked every Power-Up, maxed every node in the entire Skill Tree, and earned $100,000,000 in lifetime Money - a true "post-game" zone for a fully-built loadout.</p>
+<p>You can travel between unlocked zones from the Mining Zones menu (accessible from the Pause menu). A zone whose Power-Up requirement is met but whose Extra Survival Level isn't finished yet shows a "Complete the Extra Level Survival Challenge" requirement instead of a Travel button.</p>
+</div>
+<div class="guide-page" data-page="9">
+<h2>Extra Survival Levels</h2>
+<p>Between each pair of Mining Zones sits a mandatory <strong>Extra Survival Level</strong> - a separate, self-contained combat challenge that launches automatically the moment you reach the Power-Up requirement for the next zone. There are 5 Extra Survival Levels in total, one built from each of Zones 1-5's own destroyable objects.</p>
+<ul>
+<li><strong>You fly a Jet, not the Girl:</strong> this mode temporarily swaps you into a fighter jet with its own auto-firing forward bolts and homing wing missiles - none of your normal Power-Ups, Overdrives, or the Skill Tree are used here.</li>
+<li><strong>Hearts:</strong> you have 3 Hearts. Colliding with a hazard costs a Heart (with a brief invulnerability window afterward); losing all 3 fails the level.</li>
+<li><strong>Survive phase:</strong> destroy the incoming objects and dodge hazards for a set time that grows by 5 minutes with every Extra Level (Extra Level 1 = 5 minutes, Level 2 = 10 minutes, and so on).</li>
+<li><strong>Boss phase:</strong> once the survive timer ends, a giant Black Hole boss appears with no time limit of its own - its Power doubles with every Extra Level (1,000 on Level 1, then 2,000, 4,000, 8,000, 16,000). Land enough jet-fire hits to bring its Power to 0 to win.</li>
+<li><strong>Reward:</strong> completing an Extra Survival Level pays out Money directly - $100,000 x that level's number (Level 1 = $100,000, Level 2 = $200,000, and so on) - and immediately sends you into the newly-unlocked next zone.</li>
+<li><strong>Not missable:</strong> if you exit without finishing, it isn't lost - a "⚔ SURVIVAL CHALLENGE" button appears next to that zone in the Mining Zones menu so you can retry it any time.</li>
+</ul>
+</div>
+<div class="guide-page" data-page="10">
+<h2>Collector System</h2>
+<p>Once unlocked from the Skill Tree, the Collector is a small companion ship that flies alongside you. It automatically seeks out whichever minerals/Antique Power Up collectibles are currently visible on screen and gathers them one after another, moving on to the next target once it grabs one. It never attacks or damages anything, and its own travel speed is fixed - no upgrade makes it faster. Its only job is to save you the trouble of flying over to every drop yourself, letting you focus on fighting and moving on to the next target.</p>
+<h2>Game Progression</h2>
+<ul>
+<li>Mine objects and collect minerals/Antique Power Up to build up Money.</li>
+<li>Spend Money in the Skill Tree to unlock new Power-Ups, upgrade existing ones, and add levels to Overdrive Cores.</li>
+<li>As your Power-Up count grows, new Mining Zones unlock - each one (after Zone 1) also requires beating that zone's preceding Extra Survival Level first.</li>
+<li>Every unlocked combat Power-Up gets its own Overdrive, which strengthens on a growing wait/active cycle every time you use it.</li>
+<li>Rewards (Money from minerals, Antique Power Up pickups, Extra Survival Level payouts, and Skill Tree progress) all build on each other - better Power-Ups let you clear tougher zones faster, which earns more Money, which funds more upgrades.</li>
+<li>Fully unlocking and upgrading everything, alongside earning $100,000,000 lifetime, opens the final Zone 6: The Infinite Core.</li>
+</ul>
+<h2>Save System</h2>
+<p>The game uses full <strong>auto-save</strong> - there is no manual Save button and nothing you need to remember to do.</p>
+<ul>
+<li>Your progress (Money, unlocked Power-Ups, upgrade levels, unlocked zones, completed Extra Survival Levels, Antique Power Up counts, and more) is saved automatically at key moments - pausing, leaving to the main menu, reaching a milestone, or traveling to a zone - and periodically during play.</li>
+<li>Saved progress is loaded automatically the next time you open the game.</li>
+<li>From the main menu, <strong>Continue</strong> resumes your saved game exactly where you left off.</li>
+<li><strong>New Game</strong> (shown once a save exists) and <strong>Reset Progress</strong> both wipe your saved progression back to a fresh start - use these only if you actually want to start over.</li>
+</ul>
+</div>
+<div class="guide-page" data-page="11">
+<h2>UI</h2>
+<ul>
+<li><strong>Money:</strong> Your current spendable currency, shown in the HUD and used for every Skill Tree purchase.</li>
+<li><strong>Depth:</strong> How far you've mined/traveled, shown in the HUD and on the Mining Zones screen - a progress readout, but it does not by itself unlock new zones (that's based on your Power-Up count and Extra Survival Level completion instead).</li>
+<li><strong>Score:</strong> A running combat/progress score shown at the top of the HUD.</li>
+<li><strong>Power-Up / Overdrive buttons:</strong> The Active Systems panel lists every unlocked Power-Up with its own Overdrive button, showing WAIT/READY status and a countdown.</li>
+<li><strong>Antique Power Up panel:</strong> Shows one icon per Antique Power Up type with your collected count for each.</li>
+<li><strong>Energy bar:</strong> Shows your remaining Energy, which drains as you move and limits how long you can fly before needing to let it recover.</li>
+<li><strong>Pause button:</strong> Opens the pause menu, giving access to the Skill Tree, Mining Zones, and Main Menu.</li>
+</ul>
+<h2>Tips</h2>
+<ul>
+<li>Don't let Overdrives sit idle once they're READY - activating them regularly is the fastest way to clear tougher objects and keep their cycle (and their duration) growing.</li>
+<li>If several Overdrives are ready at once, use the selection screen to pick the one that best matches what's in front of you right now (e.g. a wide area effect for a crowded field) - the rest stay charged for later.</li>
+<li>Remember hits are fixed per mineral type (3/6/9/12) - upgrading damage speeds up how fast you land those hits, but tougher minerals will always take more hits than weaker ones.</li>
+<li>Unlock the Collector early if you can afford it - letting it handle pickups frees you up to keep moving and fighting instead of detouring for every drop.</li>
+<li>Watch your Energy bar while moving - running out mid-flight leaves you stranded until it recovers, so don't stray too far from the action.</li>
+<li>Prioritize unlocking a couple of Power-Ups you like over spreading Money thin across many - a well-upgraded Power-Up and its Overdrive will carry you through a zone faster than several barely-upgraded ones.</li>
+<li>Progress through zones as your current loadout allows - each new zone's objects stack on top of the previous zone's, so a stronger loadout makes earlier objects trivial while you focus on the newest threats.</li>
+<li>Don't put off a Survival Challenge - the Extra Survival Level standing between you and the next zone only gets tougher (longer survive timer, tankier Black Hole boss) if you wait, and it's never removed from the Mining Zones menu.</li>
+</ul>
+</div>
+</div>
+<div class="guide-nav-row">
+<button class="menu-btn guide-nav-btn" id="guide-back-btn" onclick="guidePrevPage()"><img alt="" class="inline-icon" src="btn-back.png"/>BACK</button>
+<button class="menu-btn guide-nav-btn" id="guide-next-btn" onclick="guideNextPage()">NEXT</button>
+</div>
+</div>
+<div class="overlay-menu" id="pause-menu" style="display: none; background: rgba(5, 5, 8, 0.85);">
+<div class="overlay-title" style="color: #ffea00;">PAUSED</div>
+<button class="menu-btn" onclick="resumeGame()" style="color: #ffea00;"><img alt="" class="inline-icon" src="futuristic_sci-fi_arcade_game.png"/>RESUME</button>
+<button class="menu-btn" onclick="showSettingsFromPause()"><img alt="" class="inline-icon" src="futuristic_sci-fi_pause_contro.png"/>SETTINGS</button>
+<button class="menu-btn" onclick="showReadmeFromPause()"><img alt="" class="guide-icon" src="game-guide-icon.png"/>GAME GUIDE</button>
+<button class="menu-btn" onclick="openUpgradesFromPause()"><img alt="" class="inline-icon" src="futuristic_sci-fi_skill_tree_o.png"/>SKILL TREE</button>
+<button class="menu-btn" onclick="openZonesMenu()"><img alt="" class="inline-icon" src="futuristic_space_mining_zone_i.png"/>MINING ZONES</button>
+<!-- NEW GAME / RESET PROGRESS: wired straight to the exact same functions the Main
+             Menu's own NEW GAME/PLAY NOW (#btn-play-now) and RESET PROGRESS (#btn-reset-progress)
+             buttons already use - newGameFromMenuOrStart() and resetProgressFromMenu() are
+             completely unmodified, so there is no second New Game system and no second save/
+             reset system here, just a second doorway into each. Deliberately given their own new
+             ids (not #btn-play-now/#btn-reset-progress - an id must be unique in the document)
+             purely for identification; neither function is ever called with these ids, so nothing
+             about the confirm-and-arm behavior below reads them.
+             Same .menu-btn class as every other button in this menu, so style/font/size/hover/
+             click/sound are all identical to the rest - no separate styling and no separate SFX
+             wiring (see the shared SFX_HOVER_SELECTOR in game.js, which already matches
+             ".menu-btn").
+             EXTRA LEVEL: both fully work while paused mid-Extra-Level - deliberately NOT gated by
+             the Extra Level lock the way MAIN MENU right below is, since a New Game/Reset
+             Progress is an explicit full restart the player is asking for. See
+             beginNewGameFlow()'s and resetToFreshGameState()'s own comments in game.js for how
+             the Extra Level lock and its runtime state get fully cleared either way. -->
+<button class="menu-btn" id="pause-new-game-btn" onclick="newGameFromMenuOrStart()"><img alt="" class="inline-icon" src="futuristic_sci-fi_arcade_game_1_.png"/>NEW GAME</button>
+<button class="menu-btn" id="pause-reset-progress-btn" onclick="resetProgressFromMenu()" style="color: #ff3333;"><img alt="" class="inline-icon" src="btn-resetprogress.png"/>RESET PROGRESS</button>
+<!-- EXIT FULL SCREEN / EXIT GAME: available from the Pause Menu during BOTH a Normal
+             Level and an Extra Level (this single #pause-menu is shared by both - see
+             pauseGame()'s own comment). Unlike MAIN MENU just below, neither button is hidden
+             during an owed Extra Level: closing the game or leaving fullscreen doesn't let the
+             player skip the run (goToMainMenu() is what actually enforces that lock, and neither
+             button here calls it), and continueGame()'s existing "an owed Extra Level always wins"
+             priority check already sends the player straight back into the same Extra Level on
+             their next Continue - see exitGame()'s own comment. Both reuse the game's existing
+             functions as-is: exitFullscreenFromMenu() (same function as the Main Menu's EXIT
+             FULLSCREEN button) and exitGame() (same function as the Main Menu's new EXIT GAME
+             button, #btn-exit-game-app) - no duplicate fullscreen or exit-game system. -->
+<button class="menu-btn" onclick="exitFullscreenFromMenu()"><img alt="" class="inline-icon" src="futuristic_sci-fi_command_cent.png"/>EXIT FULL SCREEN</button>
+<button class="menu-btn" id="pause-exit-game-btn" onclick="exitGame()"><img alt="" class="inline-icon" src="exit-icon-unused.png"/>EXIT GAME</button>
+<button class="menu-btn" id="pause-main-menu-btn" onclick="goToMainMenu()" style="color: #ff3333;"><img alt="" class="inline-icon" src="futuristic_sci-fi_command_cent.png"/>MAIN MENU</button>
+</div>
+<div class="overlay-menu" id="zones-menu" style="display: none; z-index: 60; background: rgba(5, 5, 8, 0.93);">
+<div id="zones-panel">
+<div class="overlay-title"><img alt="" class="inline-icon" src="futuristic_space_mining_zone_i.png"/>MINING ZONES</div>
+<div class="readme-text" id="zones-depth-readout">Depth: 0m</div>
+<div id="zones-list" style="display:flex; flex-direction:column; gap: calc(var(--ui-scale) * 10px); overflow-y:auto; padding: calc(var(--ui-scale) * 4px);"></div>
+<button class="menu-btn" onclick="closeZonesMenu()"><img alt="" class="inline-icon" src="btn-back.png"/>BACK</button>
+</div>
+</div>
+<div class="overlay-menu" id="od-select-menu" style="display: none;">
+<div class="overlay-title" style="color: #ffea00; font-size: calc(var(--ui-scale) * 32px);">OVERDRIVE READY</div>
+<div class="od-select-sub">Multiple systems are charged - choose one to activate!</div>
+<div id="od-select-timer-wrap">
+<div id="od-select-timer-bar"><div id="od-select-timer-fill"></div></div>
+<div id="od-select-countdown">5.0s</div>
+</div>
+<div id="od-select-cards-container"></div>
+</div>
+<div class="overlay-menu" id="win-menu" style="display: none; background: rgba(4, 10, 6, 0.93); z-index: 55;">
+<div class="overlay-title" style="color: #39ff14;">MISSION COMPLETE!</div>
+<div class="readme-text" style="max-width: min(520px, 85vw);">The girl has mined <strong style="color:#ffcc00;">$1 Trillion</strong> in resources and shipped it all back to Earth. Her cargo runs have supercharged humanity's technology for generations to come.</div>
+<div class="readme-text" style="font-size: calc(var(--ui-scale) * 22px); color: #ffcc00; font-weight: bold; margin-top: calc(var(--ui-scale) * -10px);">TOTAL MONEY EARNED: <span id="win-final-score">$0</span></div>
+<button class="menu-btn" onclick="restartGame()" style="color: #39ff14;"><img alt="" class="inline-icon" src="btn-playagain.png"/>PLAY AGAIN</button>
+</div>
+<!-- GAMEPLAY HUD SKILL TREE BUTTON: additional direct access to the same Skill Tree system
+         opened by the Pause Menu's "SKILL TREE" button below - not a separate/duplicate system,
+         just a second entry point (see openUpgradesFromGameplay() in game.js). Sits between the
+         Pause button and the Score display; its exact horizontal position is set at runtime by
+         positionSkillTreeHudBtn() (measured off #pause-btn's real rendered edge, same pattern
+         already used for #minimap-container below) so it can never overlap Pause at any
+         resolution/ui-scale/device, including mobile. Same icon/visual style as the Pause
+         button (its direct HUD neighbor) and the existing Skill Tree icon used in the Pause Menu. -->
+<button id="skilltree-hud-btn" onclick="openUpgradesFromGameplay()"><img alt="" class="inline-icon" src="futuristic_sci-fi_skill_tree_o.png"/>SKILLS</button>
+<button id="pause-btn" onclick="pauseGame()"><img alt="" class="inline-icon" src="futuristic_sci-fi_pause_contro.png"/>PAUSE</button>
+<div class="hud-badge" id="score-hud">
+<div class="hud-badge-label">SCORE</div>
+<div class="hud-badge-value"><span id="val-combat-score">0</span> <span id="val-combat-score-abbr" style="font-size:0.6em; color:#c8faff; margin-left:6px; opacity:0.85;">(0)</span></div>
+</div>
+<div class="hud-badge" id="money-hud">
+<div class="hud-badge-label">CASH</div>
+<div class="hud-badge-value">$<span id="val-score">0</span> <span id="val-score-abbr" style="font-size:0.6em; color:#fff3b0; margin-left:6px; opacity:0.85;">(0)</span></div>
+</div>
+<div class="hud-badge" id="zone-hud">
+<div class="hud-badge-label"><span id="val-zone-icon"><img alt="" class="inline-icon" src="zone-asteroidbelt.png"/></span><span id="val-zone-name">Asteroid Belt</span></div>
+<div class="hud-badge-value">DEPTH <span id="val-zone-depth">0</span>m</div>
+</div>
+<div class="hud-badge" id="distance-hud">
+<div class="hud-badge-label">DISTANCE</div>
+<div class="hud-badge-value"><span id="val-distance">0</span>m</div>
+</div>
+<!-- GIRL FACE HUD: small full-body Girl portrait display, inserted between the Cash cluster
+         (#score-hud/#money-hud/#zone-hud/#distance-hud, top-center) and the Minerals panel
+         (#hud, top-left) directly below. Those two live in different screen regions at every
+         resolution - positionGirlFaceHud() (called from positionSidePanels() in game.js, same
+         "measure the live rects every frame, never hardcode" pattern already used for every
+         other panel there) centers this panel in the real horizontal gap between them, clamped
+         so it can never overlap either. Deliberately NOT a new character/animation system: the
+         canvas below is redrawn by updateGirlFaceHud() in game.js using the SAME live
+         girlFrames/girlFrameBBoxes array and playerShip.currentFrameIndex the main gameplay
+         sprite already uses elsewhere - the full hair-to-feet frame, never a duplicated/separate
+         character. Kept in the DOM (not duplicated) for Extra Levels too: Extra Levels swap the
+         playable character to the Jet, but never touch girlFrames/playerShip, so this panel keeps
+         showing Girl there exactly as in Normal Levels, with no Jet art ever drawn into it. -->
+<div id="girl-face-hud"><canvas id="girl-face-hud-canvas"></canvas></div>
+<div id="hud">
+<div class="resource-row"><img alt="" class="res-icon icon-iron" src="mineral-icon-iron.png"/> Iron: <span id="val-iron">0</span></div>
+<div class="resource-row"><img alt="" class="res-icon icon-bronze" src="mineral-icon-bronze.png"/> Bronze: <span id="val-bronze">0</span></div>
+<div class="resource-row"><img alt="" class="res-icon icon-gold" src="mineral-icon-gold.png"/> Gold: <span id="val-gold">0</span></div>
+<div class="resource-row"><img alt="" class="res-icon icon-diamond" src="mineral-icon-diamond.png"/> Diamond: <span id="val-diamond">0</span></div>
+<div class="resource-row"><img alt="" class="res-icon icon-uranium" src="mineral-icon-uranium.png"/> Uranium: <span id="val-uranium">0</span></div>
+</div>
+<div id="tool-status-hud">
+<div style="color: #fff; font-size: calc(var(--ui-scale) * 12px); text-align: center; margin-bottom: 8px; border-bottom: 1px solid #444; padding-bottom: 4px;">ACTIVE SYSTEMS</div>
+<!-- sys-icon spans below start empty and are filled in by populateSysIcons() in
+             js/game.js, which reuses the exact same icon <img> markup/asset files as the
+             Overdrives HUD (odIconMap) - see that function for the full explanation. Kept
+             empty here (rather than duplicating the asset paths in markup) so there is a
+             single source of truth for "which icon belongs to which power-up".
+             CLEANUP PASS: the old .sys-dot colour swatch (a small circle with a 1px
+             box-shadow ring) that used to sit here before each row had a real icon has been
+             removed - it was a leftover "duplicate icon container" now that the actual
+             power-up icon does that identification job. Each row's .sys-icon is left as a
+             plain, borderless/background-less slot (see its CSS) so the icon art sits
+             directly on the main Active Systems panel with nothing drawn around it. -->
+<div class="sys-row" id="sys-suit" style="color: #d942ff; display: none;"><span class="sys-icon" id="sys-icon-suit"></span><span class="sys-name">Girl Suit</span><span class="sys-val" id="val-suit-sys">Normal</span></div>
+<div class="sys-row" id="sys-drill" style="color: #aaa;"><span class="sys-icon" id="sys-icon-drill"></span><span class="sys-name">Auto-Drill</span><span class="sys-val" id="val-drill-sys">ON</span></div>
+<div class="sys-row" id="sys-pickaxe" style="color: #ff9900; display: none;"><span class="sys-icon" id="sys-icon-pickaxe"></span><span class="sys-name">Pickaxe</span><span class="sys-val" id="val-pickaxe-sys">Orbit</span></div>
+<div class="sys-row" id="sys-rocket" style="color: #39ff14; display: none;"><span class="sys-icon" id="sys-icon-rocket"></span><span class="sys-name">Missiles</span><span class="sys-val" id="val-rocket-sys">Ready</span></div>
+
+
+
+
+
+
+
+
+
+</div>
+<div id="special-items-hud">
+<div class="special-items-title"><img alt="" class="inline-icon" src="hud-earthcargo.png"/>Antique Power Up</div>
+<div id="special-items-art">
+<!-- DRAGON SKULL HUD ANIMATION: sits inside the big decorative hex/diamond shape at
+                 the top-center of this panel's own frame artwork (hud-antique-powerup.png) -
+                 empty space above/between the Dragon Skull and Flower icon sockets in
+                 #special-items-grid below. Continuously loops the game's existing 5-frame Dragon
+                 Skull animation (see tickDragonSkullHudAnimation() in game.js, which drives this
+                 element's src on a timer) - positioned/sized in CSS to stay fully inside that hex
+                 outline. Static markup (not rebuilt by updateSpecialItemsHud()), so it is
+                 completely independent of the Dragon Skull/Flower pickup counts in the grid
+                 below - purely decorative, always animating. -->
+
+<div id="special-items-grid"></div>
+</div>
+</div>
+<div id="overdrives-container">
+<div class="od-hud-title">OVERDRIVES</div>
+<div class="od-box" id="od-box-suit"><span class="od-key">1</span>
+<div class="od-icon" id="od-icon-suit"><img alt="" class="icon-fill icon-locked" src="lock.png"/></div>
+<div class="od-name" style="color:#d942ff;"><span class="od-tier">T1</span>Girl Power</div>
+<div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-suit" style="background:#d942ff;"></div></div>
+<button class="od-btn" id="od-btn-suit" onclick="activateOverdrive('suit')">WAIT: 5s</button>
+</div>
+<div class="od-box" id="od-box-drill"><span class="od-key">2</span>
+<div class="od-icon" id="od-icon-drill"><img alt="" class="icon-fill icon-locked" src="lock.png"/></div>
+<div class="od-name" style="color:#aaa;"><span class="od-tier">START</span>Drill Storm</div>
+<div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-drill" style="background:#aaa;"></div></div>
+<button class="od-btn" id="od-btn-drill" onclick="activateOverdrive('drill')">WAIT: 5s</button>
+</div>
+<div class="od-box" id="od-box-pickaxe"><span class="od-key">3</span>
+<div class="od-icon" id="od-icon-pickaxe"><img alt="" class="icon-fill icon-locked" src="lock.png"/></div>
+<div class="od-name" style="color:#ff9900;"><span class="od-tier">T2</span>Axe Fury</div>
+<div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-pickaxe" style="background:#ff9900;"></div></div>
+<button class="od-btn" id="od-btn-pickaxe" onclick="activateOverdrive('pickaxe')">WAIT: 5s</button>
+</div>
+<div class="od-box" id="od-box-rocket"><span class="od-key">4</span>
+<div class="od-icon" id="od-icon-rocket"><img alt="" class="icon-fill icon-locked" src="lock.png"/></div>
+<div class="od-name" style="color:#39ff14;"><span class="od-tier">T1</span>Missile Rain</div>
+<div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-rocket" style="background:#39ff14;"></div></div>
+<button class="od-btn" id="od-btn-rocket" onclick="activateOverdrive('rocket')">WAIT: 5s</button>
+</div>
+<div class="od-box" id="od-box-laser"><span class="od-key">5</span>
+<div class="od-icon" id="od-icon-laser"><img alt="" class="icon-fill icon-locked" src="lock.png"/></div>
+<div class="od-name" style="color:#ff3366;"><span class="od-tier">T2</span>Laser Beam</div>
+<div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-laser" style="background:#ff3366;"></div></div>
+<button class="od-btn" id="od-btn-laser" onclick="activateOverdrive('laser')">WAIT: 5s</button>
+</div>
+<div class="od-box" id="od-box-fireball"><span class="od-key">6</span>
+<div class="od-icon" id="od-icon-fireball"><img alt="" class="icon-fill icon-locked" src="lock.png"/></div>
+<div class="od-name" style="color:#00f3ff;"><span class="od-tier">T1</span>Inferno</div>
+<div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-fireball" style="background:#00f3ff;"></div></div>
+<button class="od-btn" id="od-btn-fireball" onclick="activateOverdrive('fireball')">WAIT: 5s</button>
+</div>
+<div class="od-box" id="od-box-drone"><span class="od-key">7</span>
+<div class="od-icon" id="od-icon-drone"><img alt="" class="icon-fill icon-locked" src="lock.png"/></div>
+<div class="od-name" style="color:#00ffcc;"><span class="od-tier">T3</span>Drone Swarm</div>
+<div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-drone" style="background:#00ffcc;"></div></div>
+<button class="od-btn" id="od-btn-drone" onclick="activateOverdrive('drone')">WAIT: 5s</button>
+</div>
+<div class="od-box" id="od-box-clone"><span class="od-key">8</span>
+<div class="od-icon" id="od-icon-clone"><img alt="" class="icon-fill icon-locked" src="lock.png"/></div>
+<div class="od-name" style="color:#ff5500;"><span class="od-tier">T4</span>Flower Bomb</div>
+<div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-clone" style="background:#ff5500;"></div></div>
+<button class="od-btn" id="od-btn-clone" onclick="activateOverdrive('clone')">WAIT: 5s</button>
+</div>
+<div class="od-box" id="od-box-pulse"><span class="od-key">9</span>
+<div class="od-icon" id="od-icon-pulse"><img alt="" class="icon-fill icon-locked" src="lock.png"/></div>
+<div class="od-name" style="color:#00e5ff;"><span class="od-tier">T3</span>Core Overload</div>
+<div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-pulse" style="background:#00e5ff;"></div></div>
+<button class="od-btn" id="od-btn-pulse" onclick="activateOverdrive('pulse')">WAIT: 5s</button>
+</div>
+<div class="od-box" id="od-box-acid"><span class="od-key">0</span>
+<div class="od-icon" id="od-icon-acid"><img alt="" class="icon-fill icon-locked" src="lock.png"/></div>
+<div class="od-name" style="color:#7cfc00;"><span class="od-tier">T4</span>Laser Drone</div>
+<div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-acid" style="background:#7cfc00;"></div></div>
+<button class="od-btn" id="od-btn-acid" onclick="activateOverdrive('acid')">WAIT: 5s</button>
+</div>
+<div class="od-box" id="od-box-shock"><span class="od-key">-</span>
+<div class="od-icon" id="od-icon-shock"><img alt="" class="icon-fill icon-locked" src="lock.png"/></div>
+<div class="od-name" style="color:#66e0ff;"><span class="od-tier">T3</span>Electric Storm</div>
+<div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-shock" style="background:#66e0ff;"></div></div>
+<button class="od-btn" id="od-btn-shock" onclick="activateOverdrive('shock')">WAIT: 5s</button>
+</div>
+<div class="od-box" id="od-box-firesplit"><span class="od-key">=</span>
+<div class="od-icon" id="od-icon-firesplit"><img alt="" class="icon-fill icon-locked" src="lock.png"/></div>
+<div class="od-name" style="color:#ff3300;"><span class="od-tier">T2</span>Firestorm Split</div>
+<div class="bar-container od-bar"><div class="bar-fill od-fill" id="od-fill-firesplit" style="background:#ff3300;"></div></div>
+<button class="od-btn" id="od-btn-firesplit" onclick="activateOverdrive('firesplit')">WAIT: 5s</button>
+</div>
+</div>
+<div id="minimap-container">
+<canvas height="130" id="minimap" width="130"></canvas>
+</div>
+<!-- DASH ABILITY: bottom-center HUD, styled like the existing .od-box Overdrive slots
+         (reuses .bar-container/.bar-fill for the cooldown sweep) so it reads as part of the
+         same UI language, but kept in its own free corner (bottom-center) so it never overlaps
+         the Overdrive panel (top-left), minimap (bottom-right), or level HUD (bottom-left).
+         DISPLAY-ONLY IN NORMAL LEVELS: this is a status readout only - the dash `onclick` and
+         `title` (tooltip) attributes it used to carry have been removed, and #dash-hud's own
+         CSS now sets `pointer-events: none` (see styles.css), so it is never a click/tap target
+         and shows no hover cursor/highlight of any kind. window.performGirlDash still exists in
+         js/game.js for compatibility but nothing calls it anymore. The one real, intended dash
+         control is unchanged: the SPACE key (see the keydown listener in js/game.js). -->
+<div id="dash-hud">
+<div class="dash-hud-content">
+<div class="dash-hud-label">DASH <span class="dash-hud-key">SPACE</span></div>
+<div class="bar-container dash-bar"><div class="bar-fill dash-fill" id="dash-fill"></div></div>
+<div class="dash-hud-status" id="dash-status">READY</div>
+</div>
+</div>
+<!-- SHIP LEVEL / ENERGY HUD: reskinned onto the new pill-shaped frame art
+         (hud-ship-level-energy.png) instead of the old plain dark box.
+         Same IDs as before (lbl-level/lbl-xp/xp-bar/lbl-energy/energy-bar) so none of the
+         existing JS that reads/writes them (see refreshLiveUiDisplays()) needed to change -
+         only the visual container and its internal layout are new. All text/bars now live
+         inside .level-hud-content, which is inset to sit inside the frame art's hollow dark
+         interior (see #level-hud/.level-hud-content in styles.css for the exact insets). -->
+<div id="level-hud">
+<div class="level-hud-content">
+<div class="level-hud-row">
+<span>LV <span id="lbl-level">1</span></span>
+<span id="lbl-xp">0/100 XP</span>
+</div>
+<div class="level-bar-container"><div class="level-bar-fill" id="xp-bar"></div></div>
+<div class="level-hud-row level-hud-energy">
+<span>ENERGY</span>
+<span id="lbl-energy">100%</span>
+</div>
+<div class="level-bar-container"><div class="level-bar-fill level-energy-fill" id="energy-bar"></div></div>
+</div>
+</div>
+<!-- Mobile virtual joystick removed per spec - CONTROLLER = TOUCH now uses direct
+         touch-drag on the canvas instead (see the touch-drag handlers near isTouchDevice). -->
+<div data-tree-theme="new" id="menu-upgrades">
+<div class="modal-header">
+<div>
+<div class="modal-title">Driller Progression</div>
+<div class="modal-subtitle">Build your ultimate miner</div>
+</div>
+<div id="tree-currency-chip">$ 0</div>
+<button class="tree-theme-btn" id="tree-theme-toggle" onclick="toggleTreeTheme()" title="Switch skill tree look">OLD LOOK</button>
+<button class="close-btn" onclick="closeUpgradesMenu()">CLOSE X</button>
+</div>
+<div id="tree-container">
+<div id="tree-world">
+<svg id="tree-svg"></svg>
+<div id="tree-nodes"></div>
+<div id="tree-fx-layer"></div>
+</div>
+<div class="tree-legend-panel">
+<div class="tree-panel-title">Legend</div>
+<div class="tree-legend-row"><span class="tree-legend-swatch" style="background:#39ff14"></span>Foundation</div>
+<div class="tree-legend-row"><span class="tree-legend-swatch" style="background:#ff5500"></span>Power-Up</div>
+<div class="tree-legend-row"><span class="tree-legend-swatch" style="background:#00bfff"></span>Upgrade</div>
+<div class="tree-legend-row"><span class="tree-legend-swatch" style="background:#a855f7"></span>Utility</div>
+<div class="tree-legend-row"><span class="tree-legend-swatch" style="background:#ffd700"></span>Core / Overdrive</div>
+<div class="tree-legend-divider"></div>
+<div class="tree-legend-row"><span class="tree-legend-state state-unlocked"></span>Unlocked</div>
+<div class="tree-legend-row"><span class="tree-legend-state state-available"></span>Available</div>
+<div class="tree-legend-row"><span class="tree-legend-state state-locked"></span>Locked</div>
+<div class="tree-legend-row"><span class="tree-legend-state state-maxed">★</span>Maxed</div>
+</div>
+<div class="tree-controls-panel">
+<div class="tree-panel-title">Controls</div>
+<div class="tree-legend-row"><span class="tree-key">✋</span>Drag: Pan</div>
+<div class="tree-legend-row"><span class="tree-key">⟲</span>Scroll: Zoom</div>
+<div class="tree-legend-row"><span class="tree-key">R</span>Reset View</div>
+<div class="tree-legend-row"><span class="tree-key">F</span>Focus (Selected)</div>
+<div class="tree-legend-row"><span class="tree-key">Esc</span>Close</div>
+</div>
+<div class="tree-minimap-panel">
+<canvas height="130" id="tree-minimap" onclick="minimapClick(event)" width="180"></canvas>
+</div>
+<div class="tree-zoom-controls">
+<button aria-label="Zoom in" onclick="zoomTree(1.25)" type="button">+</button>
+<span id="tree-zoom-pct">100%</span>
+<button aria-label="Zoom out" onclick="zoomTree(0.8)" type="button">−</button>
+<button aria-label="Reset view" onclick="resetTreeView()" type="button">⤢</button>
+</div>
+<div id="node-info-card"></div>
+</div>
+<div id="tree-bottombar">
+<div class="tree-hint-group">
+<div class="tree-hint"><span class="hint-icon">✋</span>Pan Tree</div>
+<div class="tree-hint"><span class="hint-icon">👆</span>Buy Upgrade</div>
+</div>
+<div class="tree-currency-row" id="tree-currency-row"></div>
+<button class="tree-continue-btn" onclick="closeUpgradesMenu()">Continue</button>
+</div>
+</div>
+<!-- ============================================================
+         STORY / VISUAL NOVEL OVERLAY
+         ============================================================ -->
+<div id="story-overlay">
+<div id="story-image-layer">
+<img alt="" class="story-img" draggable="false" id="story-img-a" oncontextmenu="return false;"/>
+<img alt="" class="story-img" draggable="false" id="story-img-b" oncontextmenu="return false;"/>
+</div>
+<!-- Lightweight, non-blocking loading state (see storySetImage in js/game.js): shown
+             only if a scene's artwork genuinely isn't ready yet (slow first load or a failed
+             image), so the player sees "Loading scene..." instead of a silent black screen -
+             never blocks dialogue/input, just an overlay label. -->
+<div id="story-loading" style="display:none;">Loading scene...</div>
+<div id="story-particles"></div>
+<div id="story-vignette"></div>
+<div id="story-click-layer" onclick="storyAdvance()" oncontextmenu="return false;"></div>
+<div id="story-controls">
+<button class="story-btn" id="story-btn-auto" onclick="storyToggleAuto(event)" type="button">▶▶ AUTO</button>
+<button class="story-btn" id="story-btn-hide" onclick="storyToggleHideUI(event)" type="button">👁 HIDE UI</button>
+<button class="story-btn" onclick="storySkip(event)" type="button">⏭ SKIP</button>
+</div>
+<button class="story-btn" id="story-nav-prev" onclick="storyPrev(event)" style="position:absolute; z-index:6;" type="button"><img alt="" class="inline-icon" src="btn-back.png"/>PREV</button>
+<div id="story-dialogue-wrap">
+<div id="story-dialogue-box">
+<div id="story-speaker-name"></div>
+<div id="story-dialogue-text"></div>
+<div id="story-continue-hint">Click / Tap / Enter to continue</div>
+</div>
+</div>
+<button class="story-btn" id="story-show-ui-hint" onclick="storyToggleHideUI(event)" type="button">👁 SHOW UI</button>
+</div>
+<!-- STARTUP SPLASH: drives #startup-splash (Pixel Gaunt -> Girl: The Driller -> Main Menu).
+     Independent of game.js's own globals/init - only ever touches the #startup-splash overlay,
+     its one <img> and its hint line, so it's safe to load first. Each stage loops its animation
+     forever and waits for the player to left/any-click or press ENTER before advancing. -->
+<script src="startup-splash.js"></script>
+<script src="story-images-data.js"></script>
+<!-- ADDITIVE: New Game tutorial/spotlight system. Must load BEFORE js/game.js: it only
+     defines functions here (nothing runs yet), and js/game.js calls
+     maybeStartNewGameTutorial() defensively at its two real "New Game" start points. Placing
+     this first guarantees that function already exists by the time game.js's own top-level
+     "resume a pending New Game after reload" code (near the bottom of game.js) can call it. -->
+<script src="game-tutorial.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+/* ============================================================
+   GIRL: THE DRILLER — NEW GAME TUTORIAL / SPOTLIGHT SYSTEM (CSS)
+   Pure ADDITION on top of the existing game. Nothing here overrides
+   or removes any existing selector — every rule below is scoped to
+   the #gtd-tutorial-root subtree so it cannot affect the game's own
+   UI, HUD, menus, or gameplay styling in any way.
+   Visually matches the existing pixel-art theme (var(--font-pixel),
+   var(--px-cyan)/--px-gold/--px-green tokens, sharp 0-radius panels,
+   already-global `* { border-radius: 0 !important; }`).
+   ============================================================ */
+
+#gtd-tutorial-root {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    pointer-events: none;
+    font-family: var(--font-pixel), sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* The glowing "hole" box. Its huge spread box-shadow IS the darkened
+   backdrop covering the rest of the screen - a single element gives
+   us the dim overlay + the bright cutout + the glow outline together,
+   so the highlighted target underneath renders completely normally
+   (full brightness, no filter/opacity applied to it at all). */
+#gtd-tutorial-root.gtd-tutorial-active { pointer-events: auto; }
+
+#gtd-tut-spotlight {
+    position: fixed;
+    pointer-events: none;
+    border: calc(var(--ui-scale, 1) * 3px) solid var(--px-cyan, #00f3ff);
+    box-shadow:
+        0 0 0 calc(var(--ui-scale, 1) * 4px) rgba(0, 243, 255, 0.35),
+        0 0 calc(var(--ui-scale, 1) * 26px) calc(var(--ui-scale, 1) * 6px) rgba(0, 243, 255, 0.55),
+        0 0 0 9999px rgba(4, 5, 10, 0.82);
+    transition: top 0.35s cubic-bezier(.4,0,.2,1), left 0.35s cubic-bezier(.4,0,.2,1),
+                width 0.35s cubic-bezier(.4,0,.2,1), height 0.35s cubic-bezier(.4,0,.2,1),
+                opacity 0.25s ease;
+    z-index: 99999;
+    opacity: 0;
+}
+#gtd-tut-spotlight.gtd-tut-visible { opacity: 1; }
+/* Used only for the virtual "Girl / player ship" target, which has no DOM box of its own -
+   a circular hole around the ship's on-screen point instead of a rectangular one. */
+#gtd-tut-spotlight.gtd-tut-circle { border-radius: 50% !important; }
+/* Gentle pulse on the glow ring so the target reads as "alive"/important,
+   without moving or resizing the box itself. */
+#gtd-tut-spotlight.gtd-tut-pulse {
+    animation: gtdTutPulse 1.6s ease-in-out infinite;
+}
+@keyframes gtdTutPulse {
+    0%, 100% { box-shadow: 0 0 0 calc(var(--ui-scale, 1) * 4px) rgba(0, 243, 255, 0.35), 0 0 calc(var(--ui-scale, 1) * 22px) calc(var(--ui-scale, 1) * 4px) rgba(0, 243, 255, 0.45), 0 0 0 9999px rgba(4, 5, 10, 0.82); }
+    50%      { box-shadow: 0 0 0 calc(var(--ui-scale, 1) * 6px) rgba(0, 243, 255, 0.55), 0 0 calc(var(--ui-scale, 1) * 34px) calc(var(--ui-scale, 1) * 10px) rgba(0, 243, 255, 0.75), 0 0 0 9999px rgba(4, 5, 10, 0.82); }
+}
+
+/* Slight zoom applied directly to a highlighted real DOM element (never
+   to the canvas) so it visually "pops" toward the player without
+   touching its layout siblings. Purely additive/temporary class. */
+.gtd-tut-zoomed {
+    position: relative;
+    z-index: 99998 !important;
+    transform: scale(1.08);
+    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+}
+
+#gtd-tut-panel {
+    pointer-events: auto;
+    position: fixed;
+    z-index: 100000;
+    width: min(calc(var(--ui-scale, 1) * 340px), 88vw);
+    background: rgba(9, 10, 18, 0.97);
+    border: calc(var(--ui-scale, 1) * 3px) solid var(--px-cyan, #00f3ff);
+    box-shadow: 0 0 0 4px rgba(0, 243, 255, 0.18), 0 10px 34px rgba(0,0,0,0.65);
+    padding: calc(var(--ui-scale, 1) * 16px) calc(var(--ui-scale, 1) * 18px);
+    color: #eef3ff;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.25s ease, transform 0.25s ease, top 0.35s cubic-bezier(.4,0,.2,1), left 0.35s cubic-bezier(.4,0,.2,1);
+}
+#gtd-tut-panel.gtd-tut-visible { opacity: 1; transform: translateY(0); }
+
+#gtd-tut-panel .gtd-tut-eyebrow {
+    font-size: calc(var(--ui-scale, 1) * 11px);
+    letter-spacing: 1.5px;
+    color: var(--px-gold, #ffcc00);
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: calc(var(--ui-scale, 1) * 6px);
+}
+#gtd-tut-panel .gtd-tut-title {
+    font-size: calc(var(--ui-scale, 1) * 20px);
+    color: var(--px-cyan, #00f3ff);
+    font-weight: bold;
+    margin-bottom: calc(var(--ui-scale, 1) * 10px);
+    line-height: 1.25;
+}
+#gtd-tut-panel .gtd-tut-body { font-size: calc(var(--ui-scale, 1) * 13.5px); line-height: 1.5; }
+#gtd-tut-panel .gtd-tut-body p { margin: 0 0 calc(var(--ui-scale, 1) * 8px) 0; }
+#gtd-tut-panel .gtd-tut-body p:last-child { margin-bottom: 0; }
+#gtd-tut-panel .gtd-tut-body strong { color: var(--px-gold, #ffcc00); }
+#gtd-tut-panel .gtd-tut-key {
+    display: inline-block;
+    font-weight: bold;
+    background: #1a1a24;
+    border: calc(var(--ui-scale, 1) * 2px) solid var(--px-green, #39ff14);
+    color: var(--px-green, #39ff14);
+    padding: 1px calc(var(--ui-scale, 1) * 7px);
+    font-size: calc(var(--ui-scale, 1) * 12px);
+    margin: 0 2px;
+    white-space: nowrap;
+}
+
+#gtd-tut-panel .gtd-tut-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: calc(var(--ui-scale, 1) * 14px);
+    gap: calc(var(--ui-scale, 1) * 10px);
+}
+#gtd-tut-panel .gtd-tut-progress {
+    font-size: calc(var(--ui-scale, 1) * 11px);
+    color: #8fa0b8;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+#gtd-tut-panel .gtd-tut-dots, #gtd-tut-welcome .gtd-tut-dots { display: flex; gap: calc(var(--ui-scale, 1) * 4px); margin-top: calc(var(--ui-scale, 1) * 6px); }
+#gtd-tut-panel .gtd-tut-dot, #gtd-tut-welcome .gtd-tut-dot { width: calc(var(--ui-scale, 1) * 6px); height: calc(var(--ui-scale, 1) * 6px); background: #333c4d; }
+#gtd-tut-panel .gtd-tut-dot.gtd-tut-dot-done, #gtd-tut-welcome .gtd-tut-dot.gtd-tut-dot-done { background: var(--px-cyan, #00f3ff); }
+
+/* Intro-dialogue card (pre-tour): speaker tag + short line, same visual language as the
+   spotlight panel, but centered as its own full-screen card - no story artwork of any kind. */
+#gtd-tut-welcome .gtd-tut-eyebrow {
+    font-size: calc(var(--ui-scale, 1) * 11px);
+    letter-spacing: 1.5px;
+    color: var(--px-gold, #ffcc00);
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: calc(var(--ui-scale, 1) * 6px);
+}
+
+.gtd-tut-btn {
+    font-family: var(--font-pixel), sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+    border: calc(var(--ui-scale, 1) * 2px) solid var(--px-cyan, #00f3ff);
+    background: #1a1a24;
+    color: var(--px-cyan, #00f3ff);
+    padding: calc(var(--ui-scale, 1) * 9px) calc(var(--ui-scale, 1) * 18px);
+    font-size: calc(var(--ui-scale, 1) * 14px);
+    transition: 0.2s;
+    touch-action: manipulation;
+    min-height: 40px;
+}
+.gtd-tut-btn:hover, .gtd-tut-btn:active { background: var(--px-cyan, #00f3ff); color: #000; box-shadow: 0 0 0 3px rgba(0,243,255,0.35); }
+.gtd-tut-btn-next {
+    background: #0f3d1f;
+    border-color: var(--px-green, #39ff14);
+    color: var(--px-green, #39ff14);
+    flex-shrink: 0;
+}
+.gtd-tut-btn-next:hover, .gtd-tut-btn-next:active { background: var(--px-green, #39ff14); color: #000; box-shadow: 0 0 0 3px rgba(57,255,20,0.35); }
+
+#gtd-tut-skip {
+    pointer-events: auto;
+    position: fixed;
+    z-index: 100000;
+    top: calc(var(--ui-scale, 1) * 16px);
+    right: calc(var(--ui-scale, 1) * 16px);
+    font-family: var(--font-pixel), sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+    border: calc(var(--ui-scale, 1) * 2px) solid #ff3333;
+    background: rgba(26, 10, 10, 0.9);
+    color: #ff6b6b;
+    padding: calc(var(--ui-scale, 1) * 8px) calc(var(--ui-scale, 1) * 14px);
+    font-size: calc(var(--ui-scale, 1) * 12px);
+    touch-action: manipulation;
+    min-height: 38px;
+    width: max-content;
+    max-width: 180px;
+    box-sizing: border-box;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+#gtd-tut-skip.gtd-tut-visible { opacity: 1; }
+#gtd-tut-skip:hover { background: #ff3333; color: #fff; }
+
+#gtd-tut-welcome, #gtd-tut-done {
+    position: fixed;
+    inset: 0;
+    z-index: 100001;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    background: rgba(4, 5, 10, 0.93);
+    padding: calc(var(--ui-scale, 1) * 20px);
+}
+#gtd-tut-welcome.gtd-tut-visible, #gtd-tut-done.gtd-tut-visible { display: flex; }
+#gtd-tut-welcome .gtd-tut-card, #gtd-tut-done .gtd-tut-card {
+    width: min(calc(var(--ui-scale, 1) * 420px), 92vw);
+    background: rgba(9, 10, 18, 0.97);
+    border: calc(var(--ui-scale, 1) * 3px) solid var(--px-cyan, #00f3ff);
+    box-shadow: 0 0 0 4px rgba(0, 243, 255, 0.18), 0 10px 34px rgba(0,0,0,0.65);
+    padding: calc(var(--ui-scale, 1) * 30px) calc(var(--ui-scale, 1) * 26px);
+}
+#gtd-tut-welcome h2, #gtd-tut-done h2 {
+    font-size: calc(var(--ui-scale, 1) * 26px);
+    color: var(--px-cyan, #00f3ff);
+    margin: 0 0 calc(var(--ui-scale, 1) * 14px) 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+#gtd-tut-welcome p, #gtd-tut-done p {
+    font-size: calc(var(--ui-scale, 1) * 14px);
+    color: #cfd8ea;
+    line-height: 1.5;
+    margin: 0 0 calc(var(--ui-scale, 1) * 20px) 0;
+}
+#gtd-tut-welcome .gtd-tut-row, #gtd-tut-done .gtd-tut-row { display: flex; justify-content: center; gap: calc(var(--ui-scale, 1) * 12px); flex-wrap: wrap; }
+
+/* --- MOBILE ADAPTATION --- */
+@media (max-width: 760px) {
+    #gtd-tut-panel { width: min(calc(var(--ui-scale, 1) * 300px), 92vw); padding: 14px 16px; }
+    #gtd-tut-panel .gtd-tut-title { font-size: 17px; }
+    #gtd-tut-panel .gtd-tut-body { font-size: 13px; }
+    .gtd-tut-btn { padding: 12px 18px; font-size: 14px; min-height: 46px; }
+    #gtd-tut-skip { top: auto; bottom: calc(var(--ui-scale, 1) * 16px); right: calc(var(--ui-scale, 1) * 16px); padding: 10px 14px; min-height: 44px; }
+}

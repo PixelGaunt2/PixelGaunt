@@ -1,0 +1,2094 @@
+
+        /* ============================================================
+           PIXEL-ART VISUAL OVERHAUL - DESIGN TOKENS
+           Central palette/typography tokens for the HD pixel-art style.
+           FONT FIX: 'Pixelify Sans' (a variable font interpolating weights
+           400-700 from one file) used to be the single face used
+           everywhere (HUD, buttons, menus, guide, tree). Variable-font
+           weight interpolation is exactly the kind of thing that can
+           silently produce self-intersecting/malformed glyph outlines on
+           some browsers/OS font renderers - digits are especially prone
+           to it because of their tighter curves and counters - which is
+           what was showing up as flipped/mirrored/rotated/distorted/
+           overlapping numbers (cash counter, damage numbers, timers,
+           Skill Tree values, etc). 'VT323' replaced it everywhere as a
+           static (single-weight, non-interpolated) monospace pixel/
+           terminal font with clean, unambiguous digits at any size.
+           FONT STYLE UPDATE: 'Press Start 2P' now replaces VT323 as the
+           primary face - a blockier, more classic-arcade "8-bit" look
+           (VT323 is a thinner, more condensed terminal-style pixel font;
+           Press Start 2P is the square, chunky NES-cabinet look). It's
+           also static/single-weight (same reasoning as above: no
+           variable-weight interpolation, so no risk of the malformed-
+           digit bug returning), and every digit glyph is drawn as clean
+           full pixel blocks with no ambiguous strokes. VT323 is kept as
+           the second fallback (both here and in every canvas ctx.font
+           string in game.js) rather than dropping straight to Courier
+           New, so a failed/slow load of the new font still lands on
+           another clean pixel face instead of a generic system font.
+           Press Start 2P's glyphs are noticeably wider/blockier than
+           VT323's at the same font-size - most UI containers here are
+           auto-width (white-space:nowrap + centering transforms) so
+           this doesn't clip anything, but text does sit visually larger
+           than before at a given px value; the one place small enough
+           to actually need a size bump for legibility (the 6.5px Skill
+           Tree node-badge level numbers) was bumped to 8px accordingly.
+           'Courier New'/monospace remains the final fallback since it
+           shares roughly similar monospaced metrics to both pixel fonts.
+           ============================================================ */
+        :root {
+            --ui-scale: 1;
+            /* ACTIVE SYSTEMS HUD SIZE FIX: the panel had grown too large and was overlapping the
+               Map HUD sitting below it. --active-sys-scale is a SEPARATE, dedicated multiplier
+               (independent of --ui-scale) applied as a single CSS transform: scale() to the
+               whole #tool-status-hud panel below - shrinking the frame art, title, and every
+               system row together as one proportional unit rather than resizing any individual
+               element. Original fix used 0.68 (~150px wide). SLIGHT ENLARGE PASS: bumped to
+               0.73 - a small, uniform ~7% bump to both the panel's width and height together,
+               since a single transform:scale() always grows both axes in lockstep - to make the
+               panel a bit more legible/prominent without undoing the earlier shrink pass. Now
+               renders at ~180px wide (reflects the 245px base layout width - see
+               #tool-status-hud below) - still noticeably smaller than its original 175px-wide,
+               unscaled footprint - while the panel's own internal layout width (see
+               #tool-status-hud below) was widened first so that shrink never has to fight for
+               room with the text inside it (see the TEXT-CROPPING FIX note on
+               #tool-status-hud/.sys-val). No manual vertical repositioning was needed for this
+               bump: transform-origin is top right (see #tool-status-hud below), so the extra
+               height/width is added downward/leftward from the panel's existing anchored
+               top-right corner rather than shifting its top edge, and positionSidePanels() in
+               game.js already re-measures this panel's real rect every frame - both to stack it
+               under Pause/Skill Tree and to shrink it further at runtime (never below a sane
+               floor) if it would otherwise reach down far enough to touch the Map HUD's real
+               measured top edge - so the taller box stays automatically clear of both neighbors
+               at any resolution/unlock count. The baseActiveSysScale constant in game.js (see
+               "ACTIVE SYSTEMS PANEL vs MAP" block there) must be kept in sync with this value. */
+            --active-sys-scale: 0.73;
+            --font-pixel: 'Press Start 2P', 'VT323', 'Courier New', monospace;
+            /* Deep-space sci-fi pixel palette */
+            --px-bg-void: #06060c;
+            --px-bg-panel: #0c0d16;
+            --px-bg-panel-2: #12131f;
+            --px-navy: #161a2e;
+            --px-cyan: #00f3ff;
+            --px-cyan-dim: #0891a3;
+            --px-white: #eef3ff;
+            --px-gold: #ffcc00;
+            --px-green: #39ff14;
+            --px-red: #ff3333;
+            --px-outline: #05050a;
+            --px-border-w: 3px;
+        }
+        /* Smooth scaling on every raster asset in the game - the source art is detailed
+           illustration-style art (not authored as low-res pixel art), so letting the browser's
+           normal smoothing render it keeps that detail instead of forcing hard block edges. */
+        /* Pixel-art panels/buttons read as sharp rectangles, not soft rounded cards -
+           every border-radius in the game is flattened to 0 in one place rather than
+           hand-editing 50+ individual rules (small circular dots/swatches become tiny
+           squares, which is the correct pixel-art simplification of a circle). */
+        * { border-radius: 0 !important; }
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; background-color: #050508;
+            overflow: hidden; font-family: var(--font-pixel), sans-serif; color: #e0e0e8;
+            /* FONT CLARITY FIX: force the sharpest available anti-aliasing/hinting path in every
+               engine instead of leaving it to whatever the OS/browser defaults to (which on some
+               WebKit/macOS combinations is a lighter, slightly softer subpixel-AA render). This
+               only changes *how* the existing glyphs are rasterized - not their family, size,
+               weight, or color - so the typography is untouched, just sharper. */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            /* STILL-BOLD FIX: 'Press Start 2P' and 'VT323' (the two pixel fonts loaded above)
+               each ship exactly ONE weight - regular/400. Google Fonts never generated a real
+               bold face for either. The FOUT fix above solved the "thin, then jumps thick when
+               fonts finish loading" race, but every one of the 40+ font-weight:bold/700 rules
+               throughout this file and tutorial.css was still asking for a weight that doesn't
+               exist - so once the real webfont loaded, the browser fell back to SYNTHETIC bold:
+               it algorithmically smears/thickens the regular glyph's strokes to fake a bold
+               look. That synthesis is inconsistent between engines (Chrome/Firefox/Safari all
+               fake it slightly differently) and on a blocky pixel font it reads as smudgy,
+               uneven "still bold" text - which is exactly what persisted after the last fix,
+               because that fix never touched font-weight at all. font-synthesis: none tells
+               every engine to stop faking a missing weight and just render the one real (400)
+               weight that actually exists, so all the font-weight:bold/700 declarations below
+               now render as clean, consistent regular-weight glyphs instead of fake-thickened
+               ones - text keeps its size/color/spacing, it just isn't artificially embolded. */
+            font-synthesis: none;
+        }
+        /* PIXEL-PERFECT RENDERING: every gameplay canvas (gameCanvas, dragonSkullCanvas,
+           minimap, and any future one) must stay crisp/nearest-neighbour if the browser ever
+           has to stretch its backing store to its CSS box - e.g. a fractional devicePixelRatio
+           on a given monitor, or the user zooming the page in/out. The JS-side fixes
+           (ctx.imageSmoothingEnabled forced false, drawImage destination-rect rounding - see
+           the pixel-perfect patch at the top of <head> in Girl_The_Driller.html) control how
+           the canvas's own pixels get PAINTED; this controls how the browser COMPOSITES that
+           canvas onto the page, which is a separate stage the JS-side fix can't reach. Both
+           are needed together for guaranteed hard edges on every display. */
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; background: transparent; touch-action: none; image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; }
+
+        /* TEXT-CONSISTENCY FIX (see the inline script at the top of <head> in
+           Girl_The_Driller.html for the full explanation): keeps the whole page invisible - a
+           pure opacity toggle, nothing is display:none, so layout/canvas sizing/resizeCanvas()/
+           asset preloading/game init all still run exactly as before, completely unaffected -
+           until that script confirms 'Press Start 2P' and 'VT323' are actually loaded and usable.
+           This guarantees the very first frame anyone sees (menu text, HUD text, and canvas text,
+           which is redrawn every frame and would otherwise pick up the real font mid-game) is
+           already in the final, correct font, so there is no later swap/thickness jump to see.
+           html.fonts-loading is added synchronously before first paint, so this never causes a
+           flash of visible fallback-font content first. */
+        html.fonts-loading body { opacity: 0; pointer-events: none; }
+        html.fonts-ready body { opacity: 1; pointer-events: auto; transition: opacity 0.18s ease-out; }
+
+        /* OPAQUE FIX: was z-index 16, deliberately ABOVE every gameplay HUD element (pause-btn/
+           info-toast topped out at 15) so the Dragon Skull sprite would draw over the UI. That
+           is exactly the "gameplay object rendered in front of UI" case that must never happen
+           now, so this layer is dropped below the lowest HUD z-index (10) instead - it still
+           renders above the base #gameCanvas (z-index 1), it just can no longer cover any HUD
+           panel or button. pointer-events stays off; this is still a purely visual layer. */
+        #dragonSkullCanvas { z-index: 5; pointer-events: none; }
+
+        /* Dragon Skull occlusion for DOM UI (see updateAntiqueSkullUiOcclusion in game.js).
+           !important so this always wins over the pre-existing object-occlusion system's own
+           inline 0.5 opacity override on the same panel (see UI_OCCLUSION_TARGET_IDS /
+           updateUiObjectOcclusion) - the Dragon Skull's 35% is the more prominent effect of the
+           two. Toggled as a class, never an inline style, so removing it always hands the
+           element back to whatever its normal/locked CSS opacity (or the other system's own
+           override) already was - nothing is ever permanently changed. */
+        /* OPAQUE FIX: no longer toggled by JS (updateAntiqueSkullUiOcclusion is now a no-op),
+           kept only as a hard backstop - even if this class were ever added again, it no
+           longer changes anything. */
+        .antique-skull-dim { opacity: 1 !important; }
+
+        /* --- ICON ASSET SYSTEM ---
+           Two reusable, generic classes cover every replaced icon in the game so we don't need
+           a bespoke CSS rule per icon location:
+             .inline-icon  - for icons that sit inline with text (menu buttons, zone rows, HUD
+                              titles). Sized in `em` units so it automatically matches whatever
+                              font-size its surrounding text/context already uses.
+             .icon-fill    - for icons that are the sole content of a fixed-size slot (Overdrive
+                              HUD boxes, skill-tree nodes/accents, selection cards). Fills 100%
+                              of its parent container and is never stretched/squashed. */
+        .inline-icon { height: 1em; width: 1em; object-fit: contain; vertical-align: -0.15em; margin-right: 0.32em; flex-shrink: 0; }
+        /* GAME GUIDE icon: the supplied book asset is not square (250x166), so it can't reuse
+           .inline-icon's width:1em (that would squash it into a square and distort the art).
+           Matches .inline-icon's actual on-screen size instead (height:1em, same vertical-align/
+           margin as the other button icons) with width:auto so the aspect ratio is preserved -
+           same visual size as every other button icon, just not force-cropped to a square box.
+           Used ONLY on the two GAME GUIDE buttons. */
+        .guide-icon { height: 1em; width: auto; object-fit: contain; vertical-align: -0.15em; margin-right: 0.32em; flex-shrink: 0; }
+        .icon-fill { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
+
+        /* Small white pixel-dot accent in the bottom-right corner of every icon/pixel-art image
+           in the UI (menu buttons, HUD icons, resource icons, Overdrive/skill-tree icons). A
+           background-image (not a real border/box, so it never affects layout or sizing) that
+           only becomes visible through each icon's own transparent corner padding - every
+           source PNG here is a square canvas with the actual art inset, leaving that corner
+           transparent, so this reads as a tiny pixel accent sitting just past the art rather
+           than a shape drawn over it. Hard-edged (no gradient/blur) by design - this one small
+           accent stays deliberately crisp even though the icons themselves now render smooth. */
+        .inline-icon, .guide-icon, .res-icon, .icon-fill {
+            background-image: linear-gradient(#fff, #fff);
+            background-repeat: no-repeat;
+            background-position: bottom right;
+            background-size: 3px 3px;
+        }
+
+        /* --- HUD --- */
+        /* --- HUD (Minerals panel) ---
+           Its height grows with however many resource rows are shown (currently 5:
+           Iron/Bronze/Gold/Uranium/Diamond), so a fixed CSS top offset for the Overdrives panel
+           below it can't stay correct at every resolution/ui-scale. See positionSidePanels() in
+           JS, which measures this panel's real bottom edge and stacks #overdrives-container a
+           fixed gap below it every frame the layout can change. */
+        /* OPAQUE FIX: gameplay HUD panel backgrounds were rgba(...,<1) - moving/falling
+           destroyable objects rendered on #gameCanvas underneath could show through the panel.
+           Alpha bumped to 1 (fully solid) on every live-gameplay HUD panel/button below; color,
+           border, box-shadow, and layout are otherwise unchanged. */
+        /* Old flat panel (solid fill + plain 2px cyan border + cyan glow box-shadow) fully
+           removed. The supplied hud-minerals.png pixel-art frame now supplies the entire visual
+           border via border-image, same technique as the Active Systems panel/Overdrive boxes
+           elsewhere in this file: border-image-slice/-width share one base (measured off the
+           source PNG's own ~21px-thick border ring) so the frame's corner rivets/hinges always
+           render at native pixel size and only the straight edges stretch - it scales UNIFORMLY
+           with --ui-scale (never non-uniformly), with image-rendering: pixelated keeping every
+           pixel crisp. Height still grows with however many resource rows are shown (currently
+           5: Iron/Bronze/Gold/Uranium/Diamond) - see positionSidePanels() in JS, which measures
+           this panel's real bottom edge and stacks #overdrives-container a fixed gap below it
+           every frame the layout can change. */
+        /* SMALLER-HUD PASS: Minerals panel scaled down ~15% (border 21->18, padding 12/16->10/13,
+           row font 15->13, icon 22->19) to match the same compactness pass done on the
+           Overdrives HUD - the pixel-art frame itself still scales as one uniform border-image
+           (never redrawn/distorted), it's just a smaller uniform scale now. */
+        #hud {
+            position: absolute; top: calc(var(--ui-scale) * 15px); left: calc(var(--ui-scale) * 15px); z-index: 10;
+            background: rgb(10, 10, 15);
+            border-style: solid;
+            border-width: calc(var(--ui-scale) * 15px);
+            border-image-source: url('hud-minerals.png');
+            border-image-slice: 21;
+            border-image-width: calc(var(--ui-scale) * 15px);
+            border-image-repeat: stretch;
+            image-rendering: pixelated;
+            padding: calc(var(--ui-scale) * 10px) calc(var(--ui-scale) * 13px); pointer-events: auto;
+        }
+        .resource-row { display: flex; align-items: center; margin: calc(var(--ui-scale) * 5px) 0; font-weight: bold; font-size: calc(var(--ui-scale) * 13px); }
+        /* MINERAL ICON OUTLINE CLEANUP: .res-icon previously carried a border-radius (rounded
+           corners) left over from before real mineral pixel-art existed, back when each row's
+           icon was a flat colored square swatch that needed rounding to look presentable. Real
+           icon artwork (assets/ui/minerals/*.png, transparent PNGs) replaced those swatches
+           long ago, but this rule was never cleaned up - since <img> content is clipped to its
+           own border-radius, it was still rounding/clipping the corners of the real icon art on
+           every mineral row, reading as a leftover "old" frame/outline effect around each icon.
+           Removed here - .res-icon is used ONLY by the 5 mineral icons (never by #hud, the
+           panel frame above, or any other HUD element in this file), so this is scoped
+           precisely to the individual icons and leaves the Minerals HUD frame (#hud's own
+           border-image/background) and .icon-iron/.icon-bronze/etc (still needed so the real
+           art shows with no CSS background behind it) completely untouched. No border/outline/
+           box-shadow is added in its place - the icon art now sits directly in the HUD with
+           nothing drawn around it, same size/position/spacing as before. */
+        .res-icon { width: calc(var(--ui-scale) * 19px); height: calc(var(--ui-scale) * 19px); margin-right: calc(var(--ui-scale) * 8px); display: inline-block; object-fit: contain; border: none; outline: none; box-shadow: none; }
+        .icon-iron, .icon-bronze, .icon-gold, .icon-uranium, .icon-diamond { background: transparent; }
+
+        /* --- SCORE BOARD (sci-fi badge artwork) ---
+           Stack order (top to bottom): Money (#money-hud, the $$$ currency), real Score
+           (#score-hud, combat points), Zone/Depth (#zone-hud), Distance (#distance-hud).
+           (Money and Score were swapped from their original order - see the HUD ORDER SWAP
+           notes on #score-hud/#money-hud below and in positionSidePanels() in game.js.)
+           Each badge is a shared .hud-badge shape (flex column: small label line on top of a
+           bigger value line) painted with one of the 4 sci-fi panel PNGs as a stretchable
+           background (background-size:100% 100%).
+           #zone-hud/#distance-hud tops are set at runtime by positionSidePanels() (measured off
+           the real rendered edge of the box above), so raising #score-hud/#money-hud's heights
+           here can never cause an overlap further down - only #money-hud's fixed top (below)
+           had to be pushed down to clear the new taller #score-hud box.
+           OVERFLOW FIX (frame + text): these 4 badges used a fixed `height` with 0 vertical
+           padding, relying on the label+value text fitting that exact pixel value, and an
+           auto-width box that just kept growing to match however long the value text got. Two
+           problems with that: (1) 'Press Start 2P' (see the FONT STYLE UPDATE note top of file)
+           renders noticeably chunkier/taller glyphs than the box was tuned for, so it could
+           render taller than the fixed height and spill out above/below the badge artwork
+           instead of staying inside it; (2) an auto-growing width meant the badge artwork itself
+           kept stretching wider and wider (an unstable, unpredictable frame) as Score/Cash/
+           Depth/Distance climbed into the thousands/millions/billions, and at some lengths the
+           text could still outrun that growth and clip past the frame's own edge entirely.
+           Fix: `height` -> `min-height` plus a small vertical padding lets the box grow taller
+           if real rendered text ever needs more vertical room, at any font/OS/ui-scale - and
+           each badge now gets a FIXED width (below) instead of an auto-growing one, so the
+           frame/artwork itself always stays the same stable, designed shape at any value length.
+           The value line inside is a "safe content area" (width:100% of the padded box, so it
+           can never cross the frame's border) whose font-size is scaled DOWN by
+           fitHudBadgeValue() in game.js - see that function - only when the current value's
+           rendered width would otherwise overflow that safe area, e.g. long combo values like
+           "999,999,999,999 (999.99 B)". Short/normal values keep rendering at the same font
+           size as before; nothing changes for them. */
+        .hud-badge { position: absolute; left: 50%; transform: translateX(-50%); z-index: 10; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; background-repeat: no-repeat; background-size: 100% 100%; font-family: var(--font-pixel); pointer-events: none; text-shadow: 0 2px 0 rgba(0,0,0,0.6); }
+        .hud-badge-label { letter-spacing: calc(var(--ui-scale) * 1px); color: #a9d8ff; opacity: 0.9; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+        /* Safe content area for the value line: always exactly the padded width of its (fixed-
+           width) parent badge, never wider - so however far fitHudBadgeValue() in game.js has to
+           shrink the font-size for a long value, the rendered text can only ever get NARROWER
+           than this box, never wider than it. Combined with `overflow: hidden` this is a hard
+           guarantee that no digit/character can ever render outside the HUD frame, even for a
+           value so large the JS fit pass hasn't run yet (e.g. the very first paint). */
+        .hud-badge-value { font-weight: bold; display: block; width: 100%; max-width: 100%; white-space: nowrap; overflow: hidden; text-align: center; }
+        /* SMALLER-HUD PASS: all 4 badges scaled down ~15% (width/min-height/padding/fonts) to
+           match the compactness pass done on the other gameplay HUD panels. Every top offset
+           below is a first-paint fallback only - positionSidePanels() in JS (see comments above)
+           re-measures each badge's real rendered edge every frame regardless of these values, so
+           shrinking them can never cause an overlap. fitHudBadge()'s base font constants in
+           game.js (HUD_BADGE_BASE_FONT) were updated to match these new value font-sizes. */
+        /* HUD ORDER SWAP: Score and Cash swapped places (Cash now on top, Score below it) -
+           purely a stacking-order change. Neither badge's own artwork, width, padding, font
+           size/color, or the value-fit logic touching them was altered - only which one anchors
+           the group and which one is measured/stacked beneath the other (see the matching swap
+           in positionSidePanels() in game.js, and the fallback top values below). */
+        #score-hud { top: calc(var(--ui-scale) * 66px); width: calc(var(--ui-scale) * 187px); min-height: calc(var(--ui-scale) * 46px); padding: calc(var(--ui-scale) * 3px) calc(var(--ui-scale) * 13px); background-image: url('badge-score.png'); }
+        #score-hud .hud-badge-label { font-size: calc(var(--ui-scale) * 8px); }
+        #score-hud .hud-badge-value { font-size: calc(var(--ui-scale) * 14px); color: #eafcff; }
+        /* Fixed top is a fallback only for the very first paint - positionSidePanels() in JS
+           re-measures #score-hud's real bottom edge every frame and keeps this clear of it.
+           TIGHTER HUD GROUP: this fallback was nudged up from 69 to 66 (ui-scale units) to match
+           the same 3px-smaller gap positionSidePanels() now uses at runtime (see game.js) -
+           box size/padding/fonts/artwork untouched. */
+        #money-hud { top: calc(var(--ui-scale) * 15px); width: calc(var(--ui-scale) * 196px); min-height: calc(var(--ui-scale) * 49px); padding: calc(var(--ui-scale) * 3px) calc(var(--ui-scale) * 13px); background-image: url('badge-cash.png'); }
+        #money-hud .hud-badge-label { font-size: calc(var(--ui-scale) * 9px); }
+        #money-hud .hud-badge-value { font-size: calc(var(--ui-scale) * 16px); color: #ffdb7a; }
+        /* top is a fallback only - positionSidePanels() in JS overrides it every frame with the
+           real measured bottom edge of #money-hud plus a gap, so it can never overlap it.
+           TIGHTER HUD GROUP: nudged up from 126 to 120 (ui-scale units) to match the tighter
+           runtime gap - box size/padding/fonts/artwork untouched. */
+        #zone-hud { top: calc(var(--ui-scale) * 120px); width: calc(var(--ui-scale) * 145px); min-height: calc(var(--ui-scale) * 31px); padding: calc(var(--ui-scale) * 2px) calc(var(--ui-scale) * 8px); background-image: url('badge-depth.png'); }
+        #zone-hud .hud-badge-label { font-size: calc(var(--ui-scale) * 6px); display: flex; align-items: center; justify-content: center; gap: calc(var(--ui-scale) * 3px); }
+        #zone-hud .hud-badge-label .inline-icon { width: calc(var(--ui-scale) * 8px); height: calc(var(--ui-scale) * 8px); flex: none; }
+        #zone-hud .hud-badge-label span { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #zone-hud .hud-badge-value { font-size: calc(var(--ui-scale) * 10px); color: #9cffec; }
+        /* Distance HUD: stacked directly below the Zone/Depth readout. Top offset is set at
+           runtime by positionSidePanels() (measured from zone-hud's real bottom edge) so it can
+           never overlap the panels above it at any resolution or ui-scale.
+           TIGHTER HUD GROUP: nudged up from 170 to 161 (ui-scale units) - two 3px gap
+           reductions have accumulated by this point in the stack (Score->Cash, Cash->Depth) -
+           to match the tighter runtime gaps - box size/padding/fonts/artwork untouched. */
+        #distance-hud { top: calc(var(--ui-scale) * 155px); width: calc(var(--ui-scale) * 130px); min-height: calc(var(--ui-scale) * 31px); padding: calc(var(--ui-scale) * 2px) calc(var(--ui-scale) * 9px); background-image: url('badge-distance.png'); }
+        #distance-hud .hud-badge-label { font-size: calc(var(--ui-scale) * 6px); }
+        #distance-hud .hud-badge-value { font-size: calc(var(--ui-scale) * 10px); color: #9cffcf; }
+
+        /* --- GIRL FACE HUD ---
+           Small full-body Girl portrait panel sitting between the Cash cluster (top-center) and
+           the Minerals panel (top-left) - see the HTML comment above #girl-face-hud and
+           positionGirlFaceHud() in game.js for how "between" is resolved given those two live in
+           different screen regions. NOT a .hud-badge (those are fixed-width text badges centered
+           at left:50%) - this is a small portrait frame, deliberately kept noticeably smaller
+           than #money-hud (196x49 ui-scale px) and #hud (which grows with 5 resource rows), so it
+           reads as a compact character/status display rather than another large HUD panel.
+           Sized as a portrait rectangle (taller than wide) rather than a square, to match her
+           actual full-body proportions (hair to feet - see updateGirlFaceHud() in game.js) without
+           wasting empty side margin the way a square box would. Uses the same border-image
+           pixel-art-frame technique as #hud's own border (hud-minerals.png) and the 4 badge
+           backgrounds above, just with the NEW supplied portrait frame art instead of the old
+           hud-girlface.png (that old frame is fully removed - this one panel is the only Girl
+           HUD, shared by Normal Levels and Extra Levels alike) - same crisp
+           image-rendering: pixelated, no blur/glow/gradient/3D.
+           FRAME ART: the supplied PNG, trimmed to its own opaque bounds (82x114, an 8px side/
+           bottom band and a 9px top band, with ~16px ornate corner brackets) and inlined as a
+           data: URI so no new asset file/folder is introduced and it resolves identically on
+           file:// and over http. border-image-slice: 21 is measured off that art - comfortably
+           past the 16px corner brackets - and border-image-width/border-width are the SAME
+           value, so the corner tiles only ever scale UNIFORMLY with --ui-scale and the panel
+           keeps the art's own 82:114 aspect (52x72 here = 0.634x native, giving the same 26px-
+           wide inner canvas the previous frame had, so the Girl's rendered size is unchanged). top/left below are only a
+           safe first-paint fallback; positionGirlFaceHud() overrides both every pass once the two
+           panels it sits between are actually laid out. */
+        #girl-face-hud {
+            position: absolute; z-index: 10; top: calc(var(--ui-scale) * 35px); left: calc(var(--ui-scale) * 225px);
+            width: calc(var(--ui-scale) * 52px); height: calc(var(--ui-scale) * 72px);
+            box-sizing: border-box; overflow: hidden; pointer-events: none;
+            background: rgb(10, 10, 15);
+            border-style: solid;
+            border-width: calc(var(--ui-scale) * 13px);
+            border-image-source: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFIAAAByCAYAAADAgIatAAARp0lEQVR42u1de3AUdZ7/9Mx0ZnoemckwIQQmCkl4SHj5iMtDjHrmhDKlcipaIJ6vWwXqPL0VXSjLqlWPLR4uJ7fIce6Cpx614LKuHhRUcbcrsKdo8DRollxMQjCzTkKGeSQ909PpmfT90enf9GsmCfoX05+qqUx6fv3r7m9/37/v7/ejoABtoUVfYCrcHhc5xqYGlE3AJhLku9vrhRZWPgkAyNpdcDtLSR/yd1WfWStgzUp9OUvJcW1bt7MUlJUBAIhZTn0/mr6U5yp/z3cvuj4AXT+0sxTCSBs2NQA2kUBWSGFI4Ci5DflioeyilRrGfXt+Db6tDQCQEDOqC1p4QfV/NBSHr6Zcd9zjYMj5g5D68MCmauNiHOR7kksDAGmrhXhpEJXBSiS5NCy8AMbnARcf1LVL2Cl4eRGFMGynDZ9F/m0QGfR+9DWm37IAFl7AsJ1GlbdMet4hDkkuDS9lw+GdOzAkcISGFACU0IxopZ144IXn8PFvjyLWFyacouIcxV+3xwV2MAlYsxDTQ6BohrxNJQinKbhPB5kTxgr5XkZro+FE1XPIL0kiBiiakZ5JI4FG97pgSQM81RNxeOcOZDLDGBZ5ysY4J4hZIYXGZ9cDAGKREJaueRA1kyvxwVvvYXiAQ4KLk4svWHgbOltbce+Tq/DBW+/B7nSi46tmuEZupiwQVF138nPrkPo2jPjB93X3FOsLo6yiUnpxIw9F0Qxgzer6uRxkeAEzXtsE9psuXNx3SHdtGc5ps8GFO3Dfusfx0Yf/DZ8/kLfPCx3t+OKjY7h28v1Y9eJL2P/qywAYkSqvrBYXPfYQ/CUMTrx9ALXzbsCFjnZkeAG2ETEoBCE1gN5wD1x2Bv5gtVoVzJ+HhdtfxMmbV+TtK9YXhscXQDjUjqqaOvzQyPACGo+8hz/+zSrd8cF4BADgZXywlDKq3wxVTJaDOzAJkyYH0XH2DKrv/mu4GAeO79gFi9zoyK69qJ13A+LRCOxOJwCgu60ZPZ2tqk93W7PhRYhoj8Dr92Ph5r/HiSXLCr6QsopK2Ow0qmrqVFwyVvR0to7o6y5DIgLAHzZuxfS9r6sIZLPTEAUOosCpiAgAofNfInT+S4RD7aoPO5iEw+HAhY52BIJT0bJvP/wlDNxeL2zIWmFLZ8CyUUlhR6W/3d/8L+75x59IN+SQDMXxHbtgpZ05boqEgKwVLjuDsopKcrx68wYAQG9LO65+6acS5w5Juqd/57sFiTpWyER3u/2I9YVB0QyioS4iFRMfvZe0Xbj+MUT6vgP39s/Af9WN8LZ9sNlplJZXYaC/h7wE+Vwr7URWSGHxU4/DS+WM5NHde/B18ylUBmdg2JczQABAlVdWi0tXPYiju/egafUjaDktceHytU/m3qzDhqM//zl8gankYWUiahW2StcZKP/xGha579EkIJ9BkhnE7faPqW9/sBoZXoCY5fCXb/8Py57fAFs6502c3Ps2/MFqCKkBDEYjaHpmPY7865san8RIxzhsOLx5C66uriO+XCwSIv5i1dxFSKfT4FOpvKKl9f1UBLEyqt+1/iJlVSt+IzVhpNPk8z2+AMQsR/rVwman4fX78XXzKcLdErPQKHVPwOHNW9C06QUVMQFgMBpBkucIR9qUoqslIAB8+E8vo7yyGvSIGyGJlBUXY3EMizzVe+L3uFLApS6JjHMCUTP+YDUomsGxrduw7PkNBSXBAkDn3LrsDGzpDI5t3YbyidOJKyLrpf6L32BY5ClceaC41CWwbJQ8a1lFJbxlQRzbuk0nAS47Q6I5i7KXeEQK/5I8h8M7d2DqrPqcThzp+FL/t6qI6EolpsrXtGYx5aqZOLZ1G0SBg81OE8PkL5GIaVHGlB1nz5DvwWkLCOXlOPMK5kQdMfsvfgNR4CSdGQiCdpZiylUzkeTV+l7WkRatAgWAqpo62Ow0bHYasb4w2NRAMXCijpiRWIgQU05eVNXUIcMLqL25IRc12l2wFIotY5EQyfgUCSfqiCkbl9GCBYvbWYphO60L8WJ9YbCJBFg2Ci51qRiJKKszKqHhzMF4BF9/8imSPEfcIps2bpbFW+ESUOWV1WJ/uKtoiTkkcFSS50SXIiRFOKvKwdoAkDCoN9yjc4O4lJSK6kdxw+32kyhJm+DO2l0SIRNiBkmey2W8s1aUVVSSGHTUHF0RgGWjqKqpQzTUBcpRIkVP6SE1R8oULwtUwkRhyHYkTTuQOv9nEgFagFza37dyhUmpMWDio/fiqofulIzMiLFR+ZGRdw5i8nPrTErlS+DwAnwrV8A9vRoX9x0icXfW7lIT0man8d32N1C9eQMs8+eZlNNgWtNSlLgs6Nq0TZfcsRj6Tr/6HSY0zBs951dEcNkZZOdfh8SBo+SYMp9pY1MDulwb07AAtpJSk3oKaGNsQEqpyUPJFgAYTHOqoVLRw8DhzxUJaAfUixUOvwsT1j2SP0SMs2zBIYDznV9SJhkLw5Lvh8ebmkzqGNDENXumoY60AMBwXK0jaY1+nFazQDTJCHw6xOqN0IgPbgGAudfNUOnIrtf34tMhVlVMVezICimcO9uB9i378ov2wIB6zGblJ4fw5xNfS7U9JqR4mnaivMKJJb9Yr7bmSqutHEWcvvd1RGJJnFu7Nu+YcrHi4zv/DijxYvGRN5GmHXrRlgdwbv3dfgDAiSXLkPVOzGU+zOwP3G4/hNQATt68Ar0t7bjt9/+i9yNl9HzyFc6tlmLtSSuWm5GNSrazKH/kb2Gz0+jatA3df/xCIuDIAKFKR5772UYAwNUv/RTxg++boq2yNlZEf7UfvpUrIKQG8N32N/TuDwl5rAxmvLYJ321/wySckWUuZRB55yBm/vMrZKh6ysSJGkJmrZj1y1+oMhsmoHO+ZdEOrFkJAGjt6tJzZMdPXtAF5SaMIVcg+9zuwiGiCYyJqUhxP6CfvWAUS5owhsqPHO9bMJEnspF9ocup4S5GZHhBRStS1td5/LRJnTFASTxlvfuoRVRER453QtEVHN0AINNKdBxZds2sMXVgRjdWRY252oZISYugzzQ2Y4THZzwrzKId2JJrIpUo5ko0LfJNvrIAudms2glDph9ZmBtFgVP7kUbTQ5Qwx2wkol3fsFin+lR+pPyP1szLOtJM7I5uL1QOOYAfZHrvlYqW082FCTmsUaDjmVxZ7OJOHHItR5q4PHFXWe18MGt/RvdgCqbRTIwOlfvjYhymz3gZVlummZVP5pIWhRqa7k+BSCed0Zc+53sLpo7MryNltWjokJsYP8zBr+8Z2bgYB9zOUvU8m3wwK3aNRVuOtdnUQC6NVshqm0mLAmtZKGt/klzaTOL+EA65cpEg0/0ZH3FHLRAwypSbKBDZsKkBQ44sCwRNP3IMyFv6PB69UIzGRpZUbTGFRQ5zjETaaNpYsRubskDQsCJFN4qYr6HJkfm9Gt1KVDLLenwBxPrCZMkq2tSRamarqNQVTViMGmlLMtq/OmmOa2uhKOMh2Z98xsZ00gtzJUUzxOOx5GVdE+OC5fuERSaAdNqac8iN8pEmV47NJeLtvLH7Y+rI8YO4Py7GYdZAfl8dyaYGyNKwtRs2mhQZi16kHajevAEUzcDCC5L7o1zTou3Vl3H900/kVms2jY0h5u7Zgkvbf53HaluzELMc/mf3u5j81IN5l9kvZmR4AZOfW4dzq9ehbzAFlo2q85E+txseTwVm/2YfHEIaf9m1DyU3Xm9STmVRsgisWYnvtr8BC59B1dr74PZ69ROWxCyHa+bVYvre1wEA/Cd/Mq22JiSMvHMQAHDTqXcx/Q5pjV3dxHc2NYBDs5fimnm1mPYfW2HN0KaO1FpmPoPgmy8iUDFZWpYha80NfinHY9yBSTi46F5cNXUean/5ksmRGsz87b/humsX4cMb7iTGWNaRNuKQZ63gUynYeAG9zc2wTjIrd7UI+spx+PGNhWNt5cRuiz2A8gqnSTlNOHh77RRMarzJUH9aACDOsioxHuYjJuUMwuUjfX2643JUaAGA7qMf6Rr0trSb1FOAZaOwD2bIBkda2IgzPrKCMQCw33SZlNNynp3BhbYv4PzynGFSxwIAS1c9aGyhzUSGIdGUSHLpnI4cTHOqMAiQFuM0pxerjU06mswb9eRmNYxw34RFcyB6GIS37TMdciVHOkpw6Y23kFpwDbSeDhFtsnLx/HmYcN9d6N/57pj2RCy2EJFPpdC/811Ub96ANO0ARTNkm1bVmM3C6VPw+Y//YVS9UKxJCxldm7Zh0i1z9A65LZ0BslacePsAkLWaKbQxIH78jGp6iGpAW96ijmWjqAzOMKmlNDYj7mFPZytcdgYULX08sOmnh1x9cyNuukParyEcMh1yLXo6W+F2++HxB3ST4NV7fnV14kJHO5pWPwK316vav6XYkeQ5uOwMpl5TB9pZqivrUREy1hdGhhfQcroZCxbehtq59SihmaIvxC+vrBbn1C/FtbcsI3vrGro/SodcxoWOdkyaHERD0+qiJiZtocVbmlZg2FeGCx3txkkLGJSs2Ow0oqEuZHgBHWfPIB6NYP7iO4qSmBbKLgan1aHldDNi59qI1AK5IirZalvy6YNwqB20sxTd51rh8wfQ0LQaAMRi4sTaOT9CIDiVuIM9na157QbJR2ozHTL1Pb4AOlulndcaVzwBC2UXi4ETFyy9E/MX1uNSuE/lxci00elINjVAVuVUcuTipx5HIhYiHcjE/Kt71lzRnGmh7GLtnB9h6owafH7iY4hZSTqzQgo3PfowqauXuZTsHZuvQy9lQ9PTz0pu0WAfxCxH9patb7jniiSmhbKLE8qvwvyF9Wg53Qwxy6E33IOskELDj58qfO5ond/06MNgEwmyZ+KXp/+AqTNqUN9wDxjnhCuGmCU0I9bdeCtuufsutJxuRoYXCBGbnn4WHgejWo1GTurkNipX5ByNaiI9DgbL1z6J/9yxDb3hHkyqrMLnJz5GTV0dqmrq0NPZKsp6g0xwGtksgwz1jlxDFDipjZwAGC3fac1edk5U1l8k8TIyCkA5SlT3Q9pYs5g1r46s7SOrtGXPbwDkneYK5CAMi8fn1C/F4Z07CDt7HAyWb9yIY1slYlYGZ6CztRWzGm9HrC8MUeBU+87WvrYFE2f5gRIv+nvCSJw6SX67uO/QZXNNNNSF0vIqDMYjuZeShwl8K1egxCUJXJWnDFMeXoEzvzkCJ+VF26svE67q6WyFC8C1S5YRIna3NcNKO7F87ZNAOoPBNAePg8Gf9r2N2Y13YbCrExleAEUz8JcwyNpdoMonTheXrrkfR3fvUW3Ea3c60fGV8cpLyoTGrMbb8dl+aWsS+dwMLyCwZiVufv4JfHjDnRBSA6CsjEokvi+ioS7VyysE73UzUbflFXx+9yNIxhI5sRzZifTW+x5A29lW8KkUMryQN88wu/EuyZs510Ze5uJ1j+Gz3Xtgk8Ws8dn1OL5jF5Ijm8zWzq1H7dx6OBwOpNPq0mg+lQKQ28DcyKmPH3wfH7Scx5LjB3HxlV1oO/5f0IajWi6KRUJjXlJsrEQEAM/a+/Fx40rdi6Rohoi3/Ew2O43aufWkjcOhWBQgHsP5s2dI3N30zHpEhzgk0hnJ2BzdvQf+EgYPvPAc8ZPYSC96v21HIhoFG+lFMpYgH3mxXuUKLRTN6GaMZb44iY79BzC87EYdEeW/0VAXoqGu3LEfeFZu+dMPoaSf1x3X3musL0w+vec7wadSYCO9iIS6JXFvP4tIqJuok6ZnpH1tPtu9B5n0gLSDu4Wyi8FrG7Bg+UL4Sxgc2LJd53zKHWjHcbTKu1BWfbTfRzMcRpykvT/d9RT3N97rGM3FdLv9WLrmfgDAqXfeQzzSDWFYoChlSOSrqMKixx6CLZ1BQsz8oGumxVkW6QvdmFQ3Z0ztfUMWxEuGdX0A0AUQcZY1PGbUNt+9KdspIz35+LCdJvQYttNofevfcSkehTAsUABAaX0pb6ByTPOzyTZWSlfGmh3X3G42NaBqL6sK+Zj297H0J59/uefqONDg/qx8Eol0BlzqEqHf/wMjH03cUicWYAAAAABJRU5ErkJggg==');
+            border-image-slice: 21;
+            border-image-width: calc(var(--ui-scale) * 13px);
+            border-image-repeat: stretch;
+            image-rendering: pixelated;
+        }
+        #girl-face-hud-canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+        /* HUD STABILITY: gameplay camera shake is applied only to the world render transform.
+           These HUD surfaces are explicitly isolated so their screen-space position never
+           inherits any gameplay shake/juice transform. */
+        #girl-face-hud, #girl-face-hud-canvas, #level-hud, #special-items-hud, #overdrives-container, #minimap-container, #tool-status-hud { transform-style: flat; }
+        /* Brief landing pulse the instant a coin or mineral flyer reaches its HUD counter (see
+           updateResourceHudFlyers()/pulseGirlFaceHud() in game.js) - purely additive, fires
+           alongside (never instead of) the existing .resource-hud-counter-pulse on the actual
+           Cash/Mineral counter, so neither one changes what the other already does. Same short
+           auto-removed-by-duration pattern as that existing pulse, just a smaller scale bump to
+           stay "subtle" per spec (no bounce/shake, no exaggerated effects). */
+        @keyframes girlFaceHudPulse { 0% { filter: brightness(1); } 45% { filter: brightness(1.28); } 100% { filter: brightness(1); } }
+        /* HUD JUICE STABILITY: the Girl HUD may still flash on resource landing, but it never
+           scales/translates. This keeps the top HUD visually locked while preserving the cue. */
+        .girl-face-hud-pulse { animation: girlFaceHudPulse 0.22s ease-out; transform: none !important; }
+
+        /* --- ACTIVE SYSTEMS HUD ---
+           Old flat panel (solid fill + plain 2px border) fully removed. The panel border is now
+           the supplied hud-active-systems.png pixel-art frame, applied with border-image (NOT
+           redrawn with CSS shapes/gradients) so the source PNG is used exactly as delivered.
+           border-image-slice/-width are both driven by the same 20px base (measured off the
+           source PNG's actual border thickness), so the four corner
+           tiles are always rendered at their true native pixel size and only ever scale
+           UNIFORMLY (both axes together, via --ui-scale) - never stretched non-uniformly and
+           never resampled/blurred (image-rendering: pixelated). Only the thin straight edge
+           segments between corners repeat/stretch to cover this panel's variable height (it
+           grows/shrinks with however many systems are currently unlocked) - the artwork's
+           corner motifs themselves are untouched. Sizing uses var(--ui-scale), the same factor
+           every other HUD element uses, which resizeCanvas() in game.js recomputes from the
+           real canvas/viewport size every resize - so this frame automatically rescales and
+           repositions with the canvas without any resolution being hard-coded here. All
+           existing gameplay hooks (#sys-suit/#sys-drill/etc. and their .sys-row children) are
+           untouched - only this panel's own background/border chrome changed. */
+        /* top is a fallback only (used for the instant before layout runs) - positionSidePanels()
+           in JS overrides it every time with Pause/Skill Tree's real measured bottom edge, so
+           this panel and the Pause button can never collide. Fallback bumped from the old 70px
+           (which sat under Pause's bottom edge and caused a visible overlap) to clear Pause's
+           168x87 frame (top 15 + height 87) plus a gap. */
+        #tool-status-hud {
+            position: absolute; right: calc(var(--ui-scale) * 15px); top: calc(var(--ui-scale) * 112px); z-index: 10;
+            background: rgb(10, 10, 15);
+            border-style: solid;
+            border-width: calc(var(--ui-scale) * 20px);
+            border-image-source: url('hud-active-systems.png');
+            border-image-slice: 20;
+            border-image-width: calc(var(--ui-scale) * 20px);
+            border-image-repeat: stretch;
+            image-rendering: pixelated;
+            /* TEXT-CROPPING FIX: box-sizing:border-box (set globally on this page) means the
+               20px border + this padding both eat into the box's own declared `width` rather
+               than adding to it - at the old 175px width that left only ~115px of actual
+               content room for the name/dot/value row content. Against this panel's pixel font
+               (chunky, wide-per-character), that was too narrow for even single common system-
+               name/status words ("Fireballs", "Collector", "Overclocked", etc.) to fit on one
+               line, so word-break:break-word (below) was slicing them apart mid-word (e.g.
+               "Pickax"/"e") - reading as cropped/cut-off text rather than a clean wrap. Fix:
+               widen the panel's own internal layout width (independent of the --active-sys-
+               scale shrink above, which is a purely visual transform applied afterward - so
+               this widening does NOT fight the "make it smaller" requirement; see
+               --active-sys-scale's own comment for how the two combine) and trim padding
+               slightly to hand more of that width straight to content. Paired with the eased
+               .sys-val max-width below, every system name/status word now has enough room to
+               wrap cleanly at a space (or not wrap at all) instead of being cut mid-word. */
+            /* WIDTH BUMP: base layout width increased 220px -> 245px (independent of the
+               --active-sys-scale shrink applied afterward below - see that variable's own
+               comment for how the two combine) to give the name/dot/value row content more
+               breathing room. This only grows the panel's WIDTH - its height still comes purely
+               from its content/padding/border, so it isn't affected by this change - and the
+               border-image frame keeps scaling uniformly with it (never stretched
+               non-uniformly) since border-image-width/-slice are unchanged. */
+            padding: calc(var(--ui-scale) * 8px); pointer-events: none; width: calc(var(--ui-scale) * 245px);
+            /* SIZE FIX (see --active-sys-scale above): shrink the whole panel - border-image
+               frame, title, and every row - as a single proportional unit. transform-origin is
+               top right (matching this panel's own right/top anchor position above) so it
+               shrinks IN PLACE toward the corner it's already positioned from, instead of
+               drifting away from the Pause/Skill Tree buttons it's stacked under. Pixel art
+               stays crisp (uniform scale of the whole already-rasterized box, not a stretch of
+               individual slices) and nothing here is a duplicate element - the original panel
+               is just rendered smaller. positionSidePanels() may override this same variable
+               at runtime with an even smaller value (never larger) to guarantee zero overlap
+               with the Map HUD below it at any resolution/unlock count.  */
+            transform: scale(var(--active-sys-scale));
+            transform-origin: top right;
+        }
+        /* OVERFLOW FIX: rows use flex with .sys-name flex-grow:1 and .sys-val at the end, but
+           neither had any width/wrap constraint - a long single-word status value ("Overclocked",
+           "OVERDRIVE", "Standby") is an unbreakable run of characters, and flexbox can't shrink
+           an item's content narrower than that run without somewhere to break it. With no
+           overflow-wrap on either span, that value (or a long system name) could render wider
+           than the panel's actual content width and spill out past the border-image frame's
+           right/left edge instead of staying inside it. min-width:0 lets these flex children
+           actually shrink below their content's intrinsic width (the flexbox default is
+           min-width:auto, which otherwise blocks shrinking/wrapping entirely), and
+           overflow-wrap/word-break:break-word let any run that still doesn't fit break onto a
+           second line - same "wrap, don't clip/truncate" approach already used for the
+           Overdrive box names above - so every system name and status value is always fully
+           contained inside this panel at any resolution, ui-scale, or status text length.
+           These two rules are a SAFETY NET for the rare word neither the widened panel (see
+           #tool-status-hud) nor the eased .sys-val max-width below fully accommodates - not the
+           primary fix for the mid-word "cropping" look, which is the extra room those two
+           provide. */
+        .sys-row { font-size: calc(var(--ui-scale) * 11px); margin: calc(var(--ui-scale) * 6px) 0; display: flex; align-items: center; justify-content: space-between; }
+        /* REMOVED: .sys-dot - a small circle with a 1px box-shadow ring that used to sit in
+           front of each row's name as a colour-coded "swatch" before real power-up icons
+           existed here. Now that .sys-icon (below) shows each power-up's actual icon, the dot
+           was a redundant colored/outlined shape sitting next to it, so the rule and its
+           markup (span.sys-dot in the HTML) have both been deleted outright rather than just
+           hidden. Text colour-coding is untouched - .sys-name/.sys-val still inherit their
+           colour from each row's own inline `style="color:..."`, which was never on the dot. */
+        /* ACTIVE SYSTEMS POWER-UP ICONS: each sys-row's .sys-icon slot is filled by
+           populateSysIcons() in game.js with the exact same <img class="icon-fill" ...> markup
+           already used by that power-up's Overdrive HUD box (.od-icon below) - same asset
+           files, nothing redrawn. Sized as its own small fixed square (like .od-icon) so the
+           existing artwork scales down proportionally via .icon-fill's object-fit:contain
+           instead of stretching/cropping, and stays perfectly undistorted at any ui-scale.
+           INTENTIONALLY has no background/border/outline/box-shadow of its own - the icon
+           artwork (already transparent PNG art via .icon-fill) sits directly on the main
+           Active Systems panel with nothing drawn around it, only spacing/sizing rules. */
+        .sys-icon { width: calc(var(--ui-scale) * 14px); height: calc(var(--ui-scale) * 14px); line-height: 1; margin-right: calc(var(--ui-scale) * 6px); flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: none; border: none; outline: none; box-shadow: none; }
+        .sys-name { flex-grow: 1; min-width: 0; overflow-wrap: break-word; word-break: break-word; }
+        /* TEXT-CROPPING FIX: max-width eased from 45% to 58% of the (now wider) content box -
+           45% was capping this column below the pixel width of common single-word status
+           values ("Overclocked" etc.), forcing a mid-word break even when the panel had room to
+           spare. 58% comfortably fits those words on one line while still reliably leaving
+           .sys-name (flex-grow:1) enough of the remaining width for the longest single-word
+           system names on the same row. */
+        .sys-val { font-weight: bold; flex-shrink: 0; max-width: 58%; margin-left: calc(var(--ui-scale) * 6px); overflow-wrap: break-word; word-break: break-word; text-align: right; }
+
+        /* --- OVERLAYS & MENUS --- */
+        /* GAMEPLAY HUD PAUSE BUTTON - sci-fi frame art (hud-frame-pause.png) replaces the old
+           flat-color/solid-border box. The frame image already contains its own border/bevel
+           art and a flat dark inner panel, so the button itself goes borderless/transparent and
+           just sizes to the frame's native aspect ratio (~1.93:1). Content is centered with
+           text-align + a line-height equal to the button's own height (not flexbox) because
+           js/game.js toggles visibility via `el.style.display = 'block'` at many call sites -
+           an inline `display:block` would stomp a `display:flex` set here, so centering is done
+           with a technique that still works under plain `display:block`. */
+        /* SMALLER-HUD PASS: scaled down ~15% (168x87 -> 143x74, same ~1.93:1 aspect ratio so the
+           frame art isn't stretched) to match the compactness pass on the other gameplay HUD
+           panels. line-height stays equal to the new height so the label stays vertically
+           centered in the smaller frame. */
+        #pause-btn {
+            position: absolute; top: calc(var(--ui-scale) * 15px); right: calc(var(--ui-scale) * 15px); z-index: 15;
+            width: calc(var(--ui-scale) * 143px); height: calc(var(--ui-scale) * 74px);
+            background-color: transparent;
+            background-image: url('hud-frame-pause.png');
+            background-size: 100% 100%; background-repeat: no-repeat; background-position: center;
+            image-rendering: pixelated;
+            border: none; outline: none; -webkit-appearance: none; appearance: none;
+            color: #bdf3ff; font-family: var(--font-pixel); font-weight: bold; cursor: pointer;
+            font-size: calc(var(--ui-scale) * 12px); letter-spacing: 1px; white-space: nowrap;
+            text-align: center; line-height: calc(var(--ui-scale) * 74px); padding: 0;
+            transition: 0.2s; display: none;
+        }
+        #pause-btn:hover { filter: brightness(1.25); transform: scale(1.04); }
+
+        /* GAMEPLAY HUD SKILL TREE BUTTON: same treatment as #pause-btn (its direct HUD
+           neighbor) using hud-frame-skilltree.png, so it reads as a natural part of the existing
+           HUD chrome rather than a bolted-on extra. `right` here is only a safe fallback for the
+           instant before positionSkillTreeHudBtn() (js/game.js) runs its first real measurement -
+           that function overrides `right` at runtime, positioned a small gap to the LEFT of
+           #pause-btn's real rendered edge, so the two buttons can never overlap regardless of
+           resolution, ui-scale, button label length, or device (including mobile touch layouts).
+           The fallback (170px) is sized for #pause-btn's new 143px-wide frame plus its own gap.
+           SMALLER-HUD PASS: 172x84 -> 146x71 (same ~2.05:1 aspect ratio), matching #pause-btn's
+           own ~15% reduction above. */
+        #skilltree-hud-btn {
+            position: absolute; top: calc(var(--ui-scale) * 15px); right: calc(var(--ui-scale) * 170px); z-index: 15;
+            width: calc(var(--ui-scale) * 146px); height: calc(var(--ui-scale) * 71px);
+            background-color: transparent;
+            background-image: url('hud-frame-skilltree.png');
+            background-size: 100% 100%; background-repeat: no-repeat; background-position: center;
+            image-rendering: pixelated;
+            border: none; outline: none; -webkit-appearance: none; appearance: none;
+            color: #c9fff0; font-family: var(--font-pixel); font-weight: bold; cursor: pointer;
+            font-size: calc(var(--ui-scale) * 11px); letter-spacing: 1px; white-space: nowrap;
+            text-align: center; line-height: calc(var(--ui-scale) * 71px); padding: 0;
+            transition: 0.2s; display: none;
+        }
+        #skilltree-hud-btn:hover { filter: brightness(1.25); transform: scale(1.04); }
+
+        /* Two sparse layers of hard-edged white dots (no blur/glow) tiled across every overlay
+           menu background - a pure-CSS echo of the gameplay canvas's own white pixel starfield
+           (see the `stars` array in game.js), so menus/pause/settings/skill-tree keep the same
+           pixel-art space backdrop instead of a flat void. Free (no JS, no extra draw calls). */
+        .overlay-menu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(5, 5, 10, 0.9);
+            background-image:
+                radial-gradient(circle, #fff 1px, transparent 1px),
+                radial-gradient(circle, rgba(255, 255, 255, 0.6) 1px, transparent 1px);
+            background-size: 90px 90px, 140px 140px;
+            background-position: 0 0, 45px 70px;
+            z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: auto; overflow-y: hidden; padding: calc(var(--ui-scale) * 20px) 0;
+        }
+        /* Main-menu background: the provided artwork already contains the game's title text,
+           so it is applied only to #main-menu (never to the gameplay canvas or other overlay
+           menus). A translucent dark layer is kept (matching the existing overlay-menu tint)
+           purely so the menu buttons stay readable, exactly like the other overlay menus. The
+           image is referenced once via CSS background-image, so the browser loads/caches it a
+           single time instead of being re-fetched or duplicated via JS. */
+        #main-menu, #startup-splash {
+            background-image: linear-gradient(rgba(5, 5, 10, 0.55), rgba(5, 5, 10, 0.55)), url('main-menu-bg.png');
+            background-size: cover;
+            /* Anchored to the TOP (not center): the "Girl: The Driller" title sits right at the
+               very top edge of the artwork, so any vertical cropping from a centered position
+               (on wide/short viewports where cover overflows vertically) sliced straight through
+               it. Pinning the top of the image to the top of the menu means cover only ever
+               crops from the bottom of the artwork (the lower rocks/minerals), never the title
+               or the Girl's face, on any screen size. Horizontally it stays centered. */
+            background-position: center top;
+            background-repeat: no-repeat;
+        }
+        /* STARTUP SPLASH OVERLAY: identical full-screen positioning/background language to
+           .overlay-menu (absolute, fills the viewport) but kept as its own rule (not the
+           .overlay-menu class) since it must sit ABOVE #main-menu (z-index 50) at all times -
+           #main-menu is already live/interactive underneath it the instant the page loads.
+           pointer-events:auto blocks clicks/taps from reaching the Main Menu until the sequence
+           finishes and js/startup-splash.js sets display:none on this element. */
+        #startup-splash {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 200;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        /* The two supplied logo animations (Pixel Gaunt / Girl: The Driller) are square,
+           pre-rendered pixel-art frame sequences - displayed as-is, no added text/effects.
+           image-rendering: pixelated keeps the frame's hard pixel edges crisp when the browser
+           scales it up instead of letting it blur. */
+        #startup-splash-frame {
+            width: min(46vw, 340px);
+            height: auto;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        /* Advance prompt for each splash stage - purely informational (both mouse click,
+           any button, and the ENTER key already advance from anywhere on the overlay; this is
+           not a required button/target, just a hint so the player knows input is needed).
+           Styled after the existing #story-continue-hint pulse treatment for visual consistency
+           with the rest of the game's "click/tap/enter to continue" UI language. */
+        #startup-splash-hint {
+            margin-top: calc(var(--ui-scale) * 22px);
+            font-family: var(--font-pixel), sans-serif;
+            font-size: calc(var(--ui-scale) * 13px);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: rgba(0, 243, 255, 0.75);
+            animation: storyHintPulse 1.6s ease-in-out infinite;
+        }
+        .overlay-title { font-size: calc(var(--ui-scale) * 50px); color: #00f3ff; margin-bottom: calc(var(--ui-scale) * 40px); text-transform: uppercase; letter-spacing: 2px; }
+
+        /* --- MINING ZONES HUD FRAME ---
+           Wraps the ENTIRE Mining Zones menu (title, depth readout, zone list, Back button) in
+           the supplied hud-mining-zones.png pixel-art frame - used exactly as delivered, never
+           redrawn/recolored - via border-image, same technique as the Minerals/Active Systems
+           HUD panels above: border-image-slice/-width share one base (21px, measured off the
+           source PNG's own border ring) so the frame's rounded corners/rivets always render at
+           native pixel size and only the straight edges stretch to fit however much content is
+           inside - it scales UNIFORMLY with --ui-scale (never non-uniformly) and is never
+           resampled/blurred (image-rendering: pixelated). The panel's own background-color
+           (#3a3d41) matches the frame artwork's inset-screen color exactly, so the border-image
+           ring and the fill it encloses read as one continuous surface with no seam.
+           The panel sizes to its content (width driven by #zones-list below, not a fixed
+           number) with generous padding on every side, so title/readout/rows/Back button all
+           sit fully inside the frame with breathing room - none of it touches or crosses the
+           border art. Only #zones-list scrolls internally (see its own max-height) so the
+           title/readout/Back button stay pinned in view above and below the scrolling rows,
+           however many zones are shown. No other overlay menu, HUD panel, or game system is
+           touched by this rule - it applies to #zones-panel only. */
+        #zones-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: min(560px, 90vw);
+            max-width: 100%;
+            background-color: #3a3d41;
+            border-style: solid;
+            border-width: calc(var(--ui-scale) * 21px);
+            border-image-source: url('hud-mining-zones.png');
+            border-image-slice: 21;
+            border-image-width: calc(var(--ui-scale) * 21px);
+            border-image-repeat: stretch;
+            image-rendering: pixelated;
+            padding: calc(var(--ui-scale) * 18px) calc(var(--ui-scale) * 22px);
+            box-sizing: border-box;
+        }
+        /* Title/readout sized down slightly from the generic .overlay-title/.readme-text
+           defaults (which assume a full-viewport overlay, not a compact framed panel) and
+           widened to the panel's own content width so long lines wrap inside the frame instead
+           of relying on the viewport's edge. */
+        #zones-panel .overlay-title { font-size: calc(var(--ui-scale) * 24px); margin-bottom: calc(var(--ui-scale) * 12px); text-align: center; }
+        #zones-panel #zones-depth-readout { max-width: 100%; width: 100%; padding: 0; margin-bottom: calc(var(--ui-scale) * 14px); text-align: center; }
+        #zones-panel #zones-list { width: 100%; max-height: 48vh; }
+        #zones-panel .menu-btn { margin-top: calc(var(--ui-scale) * 14px); margin-bottom: 0; }
+        /* SCI-FI BUTTON FRAME: renders the supplied pixel-art HUD button card (btn-frame-menu.png)
+           as the button's entire visual - frame AND its own baked-in navy interior - with no
+           separate flat CSS fill color behind it.
+           HUD VISIBILITY FIX (root cause, found by inspecting the actual PNG): the source file is
+           a 96x96 canvas, but the visible pill-shaped card only occupies a 86x39 band in the
+           middle (the rest is transparent padding - looks like the asset generator could only
+           output a square canvas). border-image slices from the four EDGES of the source image,
+           so it was slicing mostly transparent padding, rendering the real card art as a thin
+           squashed strip while the button's own background-color (default navy, or the old
+           per-button green/teal/red set via inline style="background:...") filled the rest of the
+           box - that mismatched flat color is exactly the "extra layer" hiding the HUD.
+           Fix: use background-image instead of border-image, with background-size/position set
+           to the standard CSS sprite-crop percentages (100*96/86, 100*96/39 size; 5/(96-86),
+           27/(96-39) position) so only the real 86x39 card art is shown, scaled to exactly fill
+           the button's border-box - no transparent padding, no leftover flat color. background-
+           color is transparent and border-color is transparent (border-width is kept only to
+           preserve the box model so background-clip:border-box has a border area to paint under).
+           WIDTH/FONT: bumped from 250px/20px to 290px/15px, and padding trimmed slightly, so the
+           longest labels (EXIT FULLSCREEN, RESET PROGRESS, the NEW GAME state) sit fully inside
+           the card at one line - confirmed by rendering test, not guessed. display:flex just
+           centers the icon+text combo inside the (now director-agnostic) card. Applies to every
+           .menu-btn everywhere (Main Menu, Pause Menu, Settings, Character Select, Game Guide,
+           Mining Zones, Win/Game-Over) since they all share this one class. */
+        .menu-btn { background-color: transparent; color: #00f3ff; font-family: var(--font-pixel); font-size: calc(var(--ui-scale) * 15px); font-weight: bold; letter-spacing: 0.5px; padding: calc(var(--ui-scale) * 14px) calc(var(--ui-scale) * 20px); border-style: solid; border-width: calc(var(--ui-scale) * 6px); border-color: transparent; border-image: none; background-image: url('btn-frame-menu.png'); background-repeat: no-repeat; background-origin: border-box; background-clip: border-box; background-size: 111.63% 246.15%; background-position: 50% 47.37%; image-rendering: pixelated; border-radius: 0; cursor: pointer; margin: calc(var(--ui-scale) * 10px); width: calc(var(--ui-scale) * 290px); max-width: 80vw; transition: 0.2s; box-shadow: none; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+        /* Destructive-action confirm state (New Game / Reset Progress): replaces the old native
+           confirm() popup - the button pulses for 1.5s while armed, tapping again cancels it. */
+        .menu-btn.btn-arming { animation: btnArmPulse 0.6s ease-in-out infinite; font-size: calc(var(--ui-scale) * 15px); }
+        /* --- SETTINGS SCREEN ---
+           Rows lay out a label on the left and its control on the right, sized/padded to match
+           the existing .menu-btn / .overlay-title look so the panel feels native rather than a
+           bolted-on design. */
+        .settings-row { display: flex; align-items: center; justify-content: space-between; gap: calc(var(--ui-scale) * 24px); width: min(420px, 85vw); margin: calc(var(--ui-scale) * 10px) 0; }
+        .settings-label { font-family: var(--font-pixel); font-weight: bold; font-size: calc(var(--ui-scale) * 16px); color: #e0e0e8; letter-spacing: 1px; text-transform: uppercase; }
+        /* Same HUD-card treatment as .menu-btn (see that rule for the full explanation of the
+           crop math) so RESOLUTION/CONTROLLER match the rest of the Settings screen instead of
+           the old flat navy-box-with-cyan-glow look. */
+        .settings-select { background-color: transparent; border-style: solid; border-width: calc(var(--ui-scale) * 6px); border-color: transparent; background-image: url('btn-frame-menu.png'); background-repeat: no-repeat; background-origin: border-box; background-clip: border-box; background-size: 111.63% 246.15%; background-position: 50% 47.37%; image-rendering: pixelated; color: #00f3ff; font-family: var(--font-pixel); font-weight: bold; font-size: calc(var(--ui-scale) * 14px); padding: calc(var(--ui-scale) * 10px) calc(var(--ui-scale) * 14px); border-radius: 0; width: calc(var(--ui-scale) * 210px); max-width: 50vw; box-shadow: none; }
+        .settings-select:disabled { opacity: 0.6; cursor: not-allowed; }
+        @keyframes btnArmPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+        /* HOVER: was an inverted solid-cyan fill (worked for the old flat border look) - swapping
+           background color would now fight with the new frame art's own dark-navy inner panel,
+           so hover instead brightens+scales the whole button, the same treatment already used
+           for the other pixel-art-framed buttons in this file (#pause-btn, #skilltree-hud-btn). */
+        .menu-btn:hover { filter: brightness(1.25); transform: scale(1.05); }
+        /* Keyboard-navigation focus indicator, reused across every menu (Main Menu, Pause Menu,
+           Settings - including the resolution <select>, Game Guide, Zones, Win, Skill Tree node
+           action button). Purely a visual highlight layered on top of the existing button look -
+           doesn't redesign or resize anything, and coexists fine with :hover since it's a
+           separate class rather than an inverted background. */
+        .kb-focus { outline: 3px solid #00f3ff; outline-offset: 2px; box-shadow: 0 0 0 3px #00f3ff; }
+        /* OLD-OUTLINE REMOVAL: .menu-btn now has its own thick pixel-art frame (btn-frame-menu.png,
+           see .menu-btn above), so the old flat-border-era .kb-focus treatment - a separate outline
+           ring sitting outside that frame - just reads as a redundant extra rectangle around
+           whichever button keyboard nav has selected. Overriding it here (scoped to .menu-btn only,
+           so every OTHER .kb-focus use - the resolution <select>, skill-tree nodes, etc. - is
+           untouched) drops the outline/box-shadow entirely and reuses the same brightness+scale
+           treatment as :hover above, so the frame art itself communicates the highlight instead of
+           a bolted-on ring. */
+        .menu-btn.kb-focus { outline: none; box-shadow: none; filter: brightness(1.25); transform: scale(1.05); }
+
+        /* --- CHARACTER SELECTION SCREEN --- */
+        /* Same dark panel/cyan-border language as every other overlay (.overlay-menu/.menu-btn)
+           so this reads as a native part of the existing UI rather than a bolted-on screen. The
+           preview canvas itself is sized in raw pixels (matches its width/height attributes in
+           the HTML) and scaled up via CSS using --ui-scale, same as every other UI element, so
+           it stays consistent across all four supported resolutions without ever stretching the
+           pixel art unevenly (canvas internal resolution is untouched - only its CSS box size
+           changes, and image-rendering below keeps the upscale crisp/nearest-neighbour). */
+        /* --- CHARACTER SELECT FRAME (reuses the existing hud-active-systems.png HUD frame) ---
+           The old ad-hoc box (flat rgba background + plain 2px CSS border + box-shadow glow)
+           is replaced with the SAME pixel-art frame technique already used for the Active
+           Systems HUD (#tool-status-hud below) - the supplied hud-active-systems.png border-
+           image, not a new/duplicate asset. border-image-slice/-width use the same 20px base
+           (the frame art's own real border thickness), scaled uniformly by --ui-scale exactly
+           like every other HUD element, and image-rendering: pixelated keeps every corner/edge
+           crisp - no blur/glow/gradient, no anti-aliasing, no fractional scaling.
+           No explicit width/height is set here, so this box sizes itself around its content
+           (the 260x260 #char-preview-canvas below plus the padding underneath) - the frame
+           wraps AROUND Nova's existing preview area rather than resizing or cropping it, and
+           the existing padding (unchanged) keeps a small, even gap between Nova and the frame
+           on all sides. background is a near-opaque fill (matching #tool-status-hud) sitting
+           entirely inside the frame, behind Nova - it's the existing HUD's own inner panel
+           color, not a new overlay added on top of anything. */
+        .char-select-stage { position: relative; z-index: 2; background: rgb(10, 10, 15); border-style: solid; border-width: calc(var(--ui-scale) * 20px); border-image-source: url('hud-active-systems.png'); border-image-slice: 20; border-image-width: calc(var(--ui-scale) * 20px); border-image-repeat: stretch; image-rendering: pixelated; padding: calc(var(--ui-scale) * 14px) calc(var(--ui-scale) * 14px) calc(var(--ui-scale) * 28px); margin-bottom: calc(var(--ui-scale) * 28px); }
+        .char-select-stage.locked canvas { filter: grayscale(100%) brightness(0.4); }
+        .char-select-lock-icon { position: absolute; top: 41%; left: 50%; transform: translate(-50%, -50%); width: calc(var(--ui-scale) * 56px); height: calc(var(--ui-scale) * 56px); opacity: 0.9; filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.9)); pointer-events: none; }
+        /* BUGFIX (character sprite overlapping the nav arrows / BACK button): the global
+           `canvas { position: absolute; top: 0; left: 0; ... }` rule above exists for the
+           full-screen gameplay canvases (gameCanvas, dragonSkullCanvas, minimap), but it was
+           also silently applying to THIS canvas since it's a <canvas> element too. That pulled
+           it out of normal document flow entirely, so .char-select-stage (its parent) had
+           nothing left to size itself around and collapsed to a few px, while the canvas itself
+           got anchored to that collapsed box's top-left corner and rendered 260px down/right of
+           it - overflowing straight across the name, arrows, and BACK button below. Forcing
+           `position: static` here puts it back in normal flow as a plain block box inside
+           .char-select-stage, so the stage sizes around it correctly and every spacing/margin
+           rule on .char-select-stage / .char-select-nav-row below actually applies as written. */
+        #char-preview-canvas { position: static; width: calc(var(--ui-scale) * 260px); height: calc(var(--ui-scale) * 260px); image-rendering: pixelated; image-rendering: crisp-edges; display: block; margin: 0 auto; }
+        /* Fixed height + no-wrap: the animation stage above (.char-select-stage, z-index 2) and
+           this name row (z-index 1) are always kept a full margin-bottom apart with no dynamic
+           sizing between them, so appending the "LOCKED" tag for a locked character can never
+           grow this row, wrap to a second line, or otherwise creep upward into the animation -
+           the two can never visually merge, for every character, locked or unlocked. */
+        .char-select-nav-row { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: calc(var(--ui-scale) * 24px); height: calc(var(--ui-scale) * 46px); margin: calc(var(--ui-scale) * 6px) 0; }
+        .char-select-name { font-family: var(--font-pixel); font-weight: bold; font-size: calc(var(--ui-scale) * 20px); color: #00f3ff; letter-spacing: 2px; min-width: calc(var(--ui-scale) * 160px); text-align: center; text-shadow: 0 0 10px rgba(0, 243, 255, 0.6); white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: calc(var(--ui-scale) * 8px); }
+        .char-select-name.locked { color: #888; text-shadow: none; }
+        .char-select-locked-tag { font-size: calc(var(--ui-scale) * 12px); color: #ff6161; letter-spacing: 1px; }
+        .char-nav-arrow { background: #1a1a24; border: 2px solid #00f3ff; color: #00f3ff; font-size: calc(var(--ui-scale) * 22px); font-weight: bold; width: calc(var(--ui-scale) * 46px); height: calc(var(--ui-scale) * 46px); border-radius: 50%; cursor: pointer; transition: 0.2s; box-shadow: 0 0 0 2px rgba(0, 243, 255, 0.2); display: flex; align-items: center; justify-content: center; }
+        .char-nav-arrow:hover { background: #00f3ff; color: #000; transform: scale(1.1); }
+
+        @keyframes alertGlow {
+            0% { box-shadow: 0 0 0 1px #ffea00, inset 0 0 0 1px #ffea00; border-color: #ffea00; color: #ffea00; }
+            50% { box-shadow: 0 0 0 4px #ffea00, inset 0 0 0 3px #ffea00; border-color: #fff; color: #fff; }
+            100% { box-shadow: 0 0 0 1px #ffea00, inset 0 0 0 1px #ffea00; border-color: #ffea00; color: #ffea00; }
+        }
+        /* "Can afford an upgrade" yellow pulse - disabled per request. .glow-active is still
+           toggled by checkUpgradeGlow() in game.js on #pause-btn/#skilltree-hud-btn (the only
+           two elements that ever receive this class), so this override just makes that toggle a
+           visual no-op instead of removing the JS logic, in case the cue is wanted back later. */
+        .glow-active { animation: none !important; box-shadow: none !important; border-color: inherit !important; }
+
+        /* --- README MODAL --- */
+        .readme-text { font-size: calc(var(--ui-scale) * 15px); line-height: 1.6; color: #e0e0e8; max-width: min(600px, 85vw); margin-bottom: calc(var(--ui-scale) * 30px); padding: 0 calc(var(--ui-scale) * 10px); }
+
+        /* --- GAME GUIDE CONTENT ---
+           The Game Guide reuses the existing .overlay-menu (centered flex column, already
+           scrollable via overflow-y:auto) but its own text needs to read left-to-right like a
+           document instead of being center-aligned, so it's wrapped in .guide-content: a capped-
+           width, left-aligned column that sits inside the overlay. Kept as pure CSS (no new
+           libraries/canvas work) so it can never cost a frame of gameplay performance - this
+           menu is only ever visible while gameplay itself is paused/hidden behind it. */
+        .guide-content { text-align: left; max-width: clamp(min(640px, 92vw), 74vw, 1180px); width: 100%; color: #e0e0e8; font-size: calc(var(--ui-scale) * 14px); line-height: 1.55; padding: 0 calc(var(--ui-scale) * 12px) calc(var(--ui-scale) * 10px); flex: 1 1 auto; min-height: 0; max-height: calc(100vh - calc(var(--ui-scale) * 150px)); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: #00f3ff rgba(0,0,0,0.35); }
+        .guide-content::-webkit-scrollbar { width: calc(var(--ui-scale) * 8px); }
+        .guide-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.35); }
+        .guide-content::-webkit-scrollbar-thumb { background: #00f3ff; border-radius: calc(var(--ui-scale) * 4px); }
+        .guide-scroll-hint { color: #66e0ff; font-family: var(--font-pixel); font-size: calc(var(--ui-scale) * 10px); letter-spacing: 1px; margin: calc(var(--ui-scale) * 2px) 0 calc(var(--ui-scale) * 6px); opacity: 0.82; text-transform: uppercase; }
+        .guide-content h2 { color: #00f3ff; font-family: var(--font-pixel); font-size: calc(var(--ui-scale) * 19px); text-transform: uppercase; letter-spacing: 1px; margin: calc(var(--ui-scale) * 26px) 0 calc(var(--ui-scale) * 10px); border-bottom: 2px solid rgba(0, 243, 255, 0.35); padding-bottom: calc(var(--ui-scale) * 6px); }
+        .guide-content h2:first-child { margin-top: 0; }
+        .guide-content h3 { color: #ffd23f; font-family: var(--font-pixel); font-size: calc(var(--ui-scale) * 15px); margin: calc(var(--ui-scale) * 16px) 0 calc(var(--ui-scale) * 6px); }
+        .guide-content p { margin: 0 0 calc(var(--ui-scale) * 10px); }
+        .guide-content ul, .guide-content ol { margin: 0 0 calc(var(--ui-scale) * 10px); padding-left: calc(var(--ui-scale) * 20px); }
+        .guide-content li { margin-bottom: calc(var(--ui-scale) * 4px); }
+        .guide-content strong { color: #ffffff; }
+        .guide-content .guide-tag { color: #39ff14; }
+        .guide-table { width: 100%; border-collapse: collapse; margin: 0 0 calc(var(--ui-scale) * 14px); font-size: calc(var(--ui-scale) * 13px); }
+        .guide-table th, .guide-table td { border: 1px solid rgba(0, 243, 255, 0.3); padding: calc(var(--ui-scale) * 6px) calc(var(--ui-scale) * 8px); text-align: left; }
+        .guide-table th { background: rgba(0, 243, 255, 0.12); color: #00f3ff; font-family: var(--font-pixel); font-weight: bold; }
+        .guide-table tr:nth-child(even) td { background: rgba(255, 255, 255, 0.03); }
+        .guide-note { border-left: 3px solid #ffd23f; padding: calc(var(--ui-scale) * 8px) calc(var(--ui-scale) * 12px); background: rgba(255, 210, 63, 0.08); margin: 0 0 calc(var(--ui-scale) * 14px); border-radius: 0 calc(var(--ui-scale) * 4px) calc(var(--ui-scale) * 4px) 0; }
+
+        /* --- GAME GUIDE PAGINATION ---
+           The guide's content was previously one long scroll of every section at once. It's now
+           split into logical .guide-page groups (still the exact same markup/text - nothing
+           removed) and only the current page is shown at a time via the .active class, toggled
+           by guideGoToPage()/guideNextPage()/guidePrevPage(). Layout/typography (.guide-content,
+           .guide-content h2/h3/table/etc, --ui-scale sizing) is completely unchanged, so paged
+           content still uses the same crisp, responsive text rendering as before. */
+        .guide-page { display: none; }
+        .guide-page.active { display: block; }
+        .guide-page-indicator { text-align: center; color: #66e0ff; font-family: var(--font-pixel); font-weight: bold; font-size: calc(var(--ui-scale) * 13px); letter-spacing: 1px; text-transform: uppercase; margin-bottom: calc(var(--ui-scale) * 10px); }
+        .guide-nav-row { display: flex; justify-content: center; align-items: center; gap: calc(var(--ui-scale) * 20px); margin-top: calc(var(--ui-scale) * 6px); flex-wrap: nowrap; }
+        .guide-nav-btn { width: calc(var(--ui-scale) * 160px); margin: calc(var(--ui-scale) * 10px) 0; }
+        .guide-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+        .guide-nav-btn:disabled:hover { background: #1a1a24; color: #00f3ff; box-shadow: none; transform: none; }
+
+        /* ============================================================================================
+   SKILL TREE REDESIGN - "MINING CORE" TECHNOLOGY MATRIX
+   Visual-only overhaul of the node-graph Skill Tree. Every selector below is the exact same
+   id/class the JS in buildTreeDOM()/updateTreeNodeStates()/showNodeInfoCard() already reads or
+   toggles (.locked/.unlocked/.maxed/.affordable/.activated/.revealed/.just-revealed/
+   .tree-node-selected/.tree-node-intro/.panning, data-kind, data-dot-i, --nc) - nothing here
+   renames or removes a hook the game logic depends on. Node box sizes (width/height/margin per
+   data-kind) are also left exactly as before, since buildTreeDOM()'s collision-relaxation pass
+   (minGap constants) was tuned against those exact footprints - only the shape (clip-path),
+   material (gradients/borders/glow) and motion changed.
+   Palette: near-black void + electric cyan (primary tech) + violet (secondary/utility) + warm
+   gold (reward/maxed) + muted steel gray (locked) - see the tree-* custom properties below. ===*/
+        #menu-upgrades {
+            --tree-void: #050409; --tree-panel: #0a0c14; --tree-cyan: #00e5ff; --tree-cyan-dim: #0891a3;
+            --tree-violet: #a855f7; --tree-gold: #ffcc33; --tree-locked: #5a5f6e; --tree-steel: #232734;
+            display: none; position: absolute; top: 5%; left: 5%; width: 90%; height: 85%;
+            background: linear-gradient(175deg, #0b0d16 0%, #07080f 60%, #050409 100%);
+            border: 1px solid rgba(0, 229, 255, 0.5);
+            clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px);
+            z-index: 100; box-shadow: 0 0 0 1px rgba(0,0,0,0.9), 0 0 40px rgba(0, 229, 255, 0.18), inset 0 0 60px rgba(0, 229, 255, 0.04);
+            flex-direction: column; pointer-events: auto;
+        }
+        /* --- HEADER: reads as a diagnostic console strip rather than a plain title bar - a
+           bright cyan->violet accent edge, a chamfered gold rank chip, faint circuit ticks. --- */
+        .modal-header { position: relative; display: flex; justify-content: space-between; align-items: center;
+            padding: calc(var(--ui-scale) * 14px) calc(var(--ui-scale) * 22px);
+            border-bottom: 1px solid rgba(0, 229, 255, 0.4);
+            background: linear-gradient(90deg, rgba(0,229,255,0.10), rgba(168,85,247,0.06) 55%, transparent 100%);
+            overflow: hidden;
+        }
+        .modal-header::before { content:''; position:absolute; left:0; top:0; bottom:0; width: 4px;
+            background: linear-gradient(180deg, var(--tree-cyan), var(--tree-violet));
+            box-shadow: 0 0 10px rgba(0,229,255,0.8); }
+        .modal-header::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px;
+            background: repeating-linear-gradient(90deg, rgba(0,229,255,0.5) 0 10px, transparent 10px 22px); opacity: 0.5; }
+        .modal-title { position: relative; padding-left: calc(var(--ui-scale) * 14px); font-size: calc(var(--ui-scale) * 22px);
+            font-weight: bold; color: #eafcff; text-transform: uppercase; letter-spacing: 1.5px; }
+        .modal-title::before { content:'◆'; color: var(--tree-cyan); font-size: 0.55em; vertical-align: middle;
+            margin-right: 8px; }
+        .modal-subtitle { padding-left: calc(var(--ui-scale) * 14px); font-size: calc(var(--ui-scale) * 11px);
+            color: var(--tree-cyan); opacity: 0.75; margin-top: 3px; letter-spacing: 0.5px; text-transform: uppercase; }
+        #tree-currency-chip { position: relative; font-family: var(--font-pixel); font-weight: bold;
+            font-size: calc(var(--ui-scale) * 16px); color: #1a1300; background: linear-gradient(180deg, #ffe89a, var(--tree-gold));
+            clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+            padding: calc(var(--ui-scale) * 6px) calc(var(--ui-scale) * 16px);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 0 14px rgba(255, 204, 51, 0.55); }
+        .close-btn { position: relative; background: rgba(255,51,51,0.08); color: #ff5c5c; border: 1px solid #ff3333;
+            clip-path: polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+            padding: calc(var(--ui-scale) * 5px) calc(var(--ui-scale) * 16px) calc(var(--ui-scale) * 5px) calc(var(--ui-scale) * 20px);
+            cursor: pointer; font-family: var(--font-pixel); font-weight: bold; letter-spacing: 1px; transition: 0.2s;}
+        .close-btn:hover { background: #ff3333; color: #1a0000; box-shadow: 0 0 16px rgba(255,51,51,0.7); }
+        .tree-theme-btn { position: relative; background: rgba(0,229,255,0.08); color: var(--tree-cyan); border: 1px solid var(--tree-cyan);
+            clip-path: polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+            padding: calc(var(--ui-scale) * 5px) calc(var(--ui-scale) * 14px);
+            margin-right: calc(var(--ui-scale) * 8px);
+            cursor: pointer; font-family: var(--font-pixel); font-weight: bold; letter-spacing: 1px;
+            font-size: calc(var(--ui-scale) * 11px); transition: 0.2s; }
+        .tree-theme-btn:hover { background: var(--tree-cyan); color: #001318; box-shadow: 0 0 16px rgba(0,229,255,0.5); }
+
+        /* --- TREE VISUALS: "mining technology network" pannable canvas ------------------------
+           Layered like a starfield + engineering schematic: deep void base, soft branch-colored
+           nebula glows (kept subtle per "premium not noisy"), a fine circuit grid, and a set of
+           concentric "orbital ring" traces radiating from the Mining Core's world position
+           (FOUNDATION_X0-90, 0 in world space -> translated +4000 by #tree-world's own origin
+           offset, same coordinate system buildTreeDOM() already draws into) so the rings line up
+           with the actual core element without any JS involvement. --- */
+        /* PERF: background used to stack FOUR independently-tiled CSS gradient layers (a
+           repeating-radial-gradient dot lattice + 2 grid-line gradients + a dotted texture, all
+           tiled at 27x27px) across the whole panel. Because this panel is `display:none` until
+           opened, none of that paint can be cached across opens - the browser has to re-evaluate
+           every one of those ~1,600+ tiles x 4 layers from scratch, synchronously, on EVERY open,
+           before the tree itself can even start drawing. That's the "opens very slowly" cause.
+           Replaced the 4 tiled gradient layers with a single small pre-rendered SVG tile
+           (data URI below) that's repeated as an IMAGE instead of recomputed as gradient math -
+           same faint circuit-grid look, but the browser decodes it once and blits copies of it,
+           instead of running a gradient formula thousands of times on every open. The 3 soft
+           nebula glows are untouched (they're single, non-tiled gradients - cheap either way). */
+        #tree-container { flex: 1; position: relative; overflow: hidden;
+            background:
+                radial-gradient(ellipse 950px 650px at 18% 24%, rgba(168,85,247,0.09), transparent 60%),
+                radial-gradient(ellipse 850px 750px at 80% 72%, rgba(0,229,255,0.10), transparent 60%),
+                radial-gradient(ellipse 700px 500px at 50% 95%, rgba(255,204,51,0.045), transparent 65%),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='27' height='27'%3E%3Crect width='27' height='1' fill='rgba(0,229,255,0.05)'/%3E%3Crect width='1' height='27' fill='rgba(0,229,255,0.05)'/%3E%3Ccircle cx='1' cy='1' r='1' fill='rgba(0,229,255,0.12)'/%3E%3C/svg%3E"),
+                var(--tree-void);
+            background-size: auto, auto, auto, 27px 27px, auto;
+            touch-action: none; cursor: grab; }
+        #tree-container.panning { cursor: grabbing; }
+        /* Corner HUD brackets + inner vignette, purely decorative framing for the viewport. */
+        #tree-container::before { content:''; position:absolute; inset:0; pointer-events:none; z-index:6;
+            background:
+                linear-gradient(to right, rgba(0,229,255,0.55) 2px, transparent 2px) 0 0/22px 22px no-repeat,
+                linear-gradient(to bottom, rgba(0,229,255,0.55) 2px, transparent 2px) 0 0/22px 22px no-repeat,
+                linear-gradient(to left, rgba(0,229,255,0.55) 2px, transparent 2px) 100% 0/22px 22px no-repeat,
+                linear-gradient(to bottom, rgba(0,229,255,0.55) 2px, transparent 2px) 100% 0/22px 22px no-repeat,
+                linear-gradient(to right, rgba(0,229,255,0.55) 2px, transparent 2px) 0 100%/22px 22px no-repeat,
+                linear-gradient(to top, rgba(0,229,255,0.55) 2px, transparent 2px) 0 100%/22px 22px no-repeat,
+                linear-gradient(to left, rgba(0,229,255,0.55) 2px, transparent 2px) 100% 100%/22px 22px no-repeat,
+                linear-gradient(to top, rgba(0,229,255,0.55) 2px, transparent 2px) 100% 100%/22px 22px no-repeat;
+            opacity: 0.7; }
+        #tree-container::after { content:''; position:absolute; inset:0; pointer-events:none; z-index:6;
+            box-shadow: inset 0 0 0 4px rgba(0,0,0,0.75), inset 0 0 90px rgba(0,0,0,0.55); }
+        #tree-world { position: absolute; top: 0; left: 0; width: 0; height: 0; transform-origin: 0 0; }
+        #tree-svg { position: absolute; top: -4000px; left: -4000px; width: 8000px; height: 8000px; pointer-events: none; overflow: visible; }
+
+        /* --- ENERGY CONNECTIONS: locked path -> activation dots -------------------------------
+           Geometry is still computed exactly once in buildTreeDOM() and never touched again
+           (see the extensive comment there) - only the material changed here:
+             locked  : a thin, muted steel-gray DASHED conduit (reads as an unpowered pipe/rail
+                       rather than a bright line - "controlled glow", per spec section 8).
+             active  : the line fades out and a row of small energy-dot images (.edge-dot,
+                       energy-dot.png) glow in along the same path.
+                       Each dot gets a staggered animation-delay driven purely by its own
+                       data-dot-i attribute (see the generated block below, no JS/per-frame
+                       cost) so the very first activation reveal - and every idle loop
+                       afterward - reads as a slow current travelling from the prerequisite
+                       toward the newly-unlocked node, exactly the "Technology -> Power ->
+                       Upgrade" feeling asked for. Cross-category edges use a slightly smaller
+                       dot size than same-branch edges (JS sets dotSize=10 vs 13). */
+        .tree-edge { }
+        .edge-line { stroke: var(--tree-locked); stroke-width: 2; stroke-dasharray: 5 4; fill: none; opacity: 0.55;
+            shape-rendering: geometricPrecision; transition: opacity 0.2s ease; }
+        .tree-edge.activated .edge-line { opacity: 0; }
+        /* PERF: no animated `filter` here - a per-dot drop-shadow blur that re-animates on
+           potentially hundreds of simultaneously-revealed dots late-game would reintroduce
+           exactly the full-repaint cost the rest of this file goes out of its way to avoid (see
+           the .tree-node.affordable::after comment). Only `opacity` tweens (compositor-only,
+           effectively free at any dot count), which is enough to sell the dots as current
+           flowing along the conduit. Dots are now the provided energy-dot.png artwork (an SVG
+           <image>, not a filled <circle>), so there's no `fill` to set here. */
+        .edge-dot { opacity: 0; transition: opacity 0.2s ease; }
+        .edge-dot.revealed { opacity: 1; animation: energyFlow 2.6s ease-in-out infinite; }
+        @keyframes energyFlow { 0%, 100% { opacity: 0.65; } 50% { opacity: 1; } }
+        /* Staggered per-dot delay (source -> target order matches JS's reveal order) - purely
+           declarative, generated once for the common dot-count range; edges longer than 34 dots
+           simply repeat/settle on the base rule for their tail, which is a harmless cosmetic
+           truncation, never a functional one. */
+        .edge-dot.revealed[data-dot-i="0"] { animation-delay: 0.0s; }
+        .edge-dot.revealed[data-dot-i="1"] { animation-delay: 0.045s; }
+        .edge-dot.revealed[data-dot-i="2"] { animation-delay: 0.09s; }
+        .edge-dot.revealed[data-dot-i="3"] { animation-delay: 0.135s; }
+        .edge-dot.revealed[data-dot-i="4"] { animation-delay: 0.18s; }
+        .edge-dot.revealed[data-dot-i="5"] { animation-delay: 0.225s; }
+        .edge-dot.revealed[data-dot-i="6"] { animation-delay: 0.27s; }
+        .edge-dot.revealed[data-dot-i="7"] { animation-delay: 0.315s; }
+        .edge-dot.revealed[data-dot-i="8"] { animation-delay: 0.36s; }
+        .edge-dot.revealed[data-dot-i="9"] { animation-delay: 0.405s; }
+        .edge-dot.revealed[data-dot-i="10"] { animation-delay: 0.45s; }
+        .edge-dot.revealed[data-dot-i="11"] { animation-delay: 0.495s; }
+        .edge-dot.revealed[data-dot-i="12"] { animation-delay: 0.54s; }
+        .edge-dot.revealed[data-dot-i="13"] { animation-delay: 0.585s; }
+        .edge-dot.revealed[data-dot-i="14"] { animation-delay: 0.63s; }
+        .edge-dot.revealed[data-dot-i="15"] { animation-delay: 0.675s; }
+        .edge-dot.revealed[data-dot-i="16"] { animation-delay: 0.72s; }
+        .edge-dot.revealed[data-dot-i="17"] { animation-delay: 0.765s; }
+        .edge-dot.revealed[data-dot-i="18"] { animation-delay: 0.81s; }
+        .edge-dot.revealed[data-dot-i="19"] { animation-delay: 0.855s; }
+        .edge-dot.revealed[data-dot-i="20"] { animation-delay: 0.9s; }
+        .edge-dot.revealed[data-dot-i="21"] { animation-delay: 0.945s; }
+        .edge-dot.revealed[data-dot-i="22"] { animation-delay: 0.99s; }
+        .edge-dot.revealed[data-dot-i="23"] { animation-delay: 1.035s; }
+        .edge-dot.revealed[data-dot-i="24"] { animation-delay: 1.08s; }
+        .edge-dot.revealed[data-dot-i="25"] { animation-delay: 1.125s; }
+        .edge-dot.revealed[data-dot-i="26"] { animation-delay: 1.17s; }
+        .edge-dot.revealed[data-dot-i="27"] { animation-delay: 1.215s; }
+        .edge-dot.revealed[data-dot-i="28"] { animation-delay: 1.26s; }
+        .edge-dot.revealed[data-dot-i="29"] { animation-delay: 1.305s; }
+        .edge-dot.revealed[data-dot-i="30"] { animation-delay: 1.35s; }
+        .edge-dot.revealed[data-dot-i="31"] { animation-delay: 1.395s; }
+        .edge-dot.revealed[data-dot-i="32"] { animation-delay: 1.44s; }
+        .edge-dot.revealed[data-dot-i="33"] { animation-delay: 1.485s; }
+        #tree-fx-layer { position: absolute; top: -4000px; left: -4000px; width: 8000px; height: 8000px; pointer-events: none; z-index: 8; overflow: visible; }
+
+        /* --- THE MINING CORE ------------------------------------------------------------------
+           FINAL CLEANUP: .tree-origin is not one of the provided skill icons and not a Skill
+           Tree dot, so per the "only dots + icons + plain text" rule its entire decorative
+           reactor-core rendering (gradient plate, glow, both rotating ring pseudo-elements,
+           breathing animation) is removed. The element is kept in the DOM at the exact same
+           position/size (nothing about layout, connections, or the Foundation trunks' anchor
+           point changes) - it now simply paints nothing. --- */
+        .tree-origin { position: absolute; left: 0; top: 0; width: 46px; height: 46px; margin: -23px; z-index: 4;
+            background: none; box-shadow: none; animation: none; }
+        .tree-origin::before, .tree-origin::after { content: none; }
+        /* PERF: was `filter: brightness()/saturate()`, which forces a full repaint of this
+           element every frame for as long as the tree is open. Swapped to `opacity`, which is
+           compositor-only (same class of fix as the .edge-dot/.affordable comments elsewhere in
+           this file) - reads as the same soft "breathing" glow since the core already sits on a
+           dark void background, at a fraction of the paint cost. */
+        @keyframes corePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.82; } }
+        @keyframes coreRingCW { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes coreRingCCW { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+
+        .tree-cat-label { position: absolute; font-size: calc(var(--ui-scale) * 11px); font-weight: bold;
+            letter-spacing: 1.5px; white-space: nowrap; pointer-events: none; z-index: 4; opacity: 0.9; }
+        .tree-cat-label::before { content: '// '; opacity: 0.6; }
+
+        .tree-zoom-controls { position: absolute; right: calc(var(--ui-scale) * 14px); bottom: calc(var(--ui-scale) * 14px);
+            z-index: 12; display: flex; flex-direction: column; align-items: center; gap: calc(var(--ui-scale) * 6px); pointer-events: auto; }
+        .tree-zoom-controls button { width: calc(var(--ui-scale) * 34px); height: calc(var(--ui-scale) * 34px);
+            clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+            border: 1px solid var(--tree-cyan); background: rgba(6, 10, 16, 0.92); color: var(--tree-cyan);
+            font-family: var(--font-pixel); font-size: calc(var(--ui-scale) * 16px); font-weight: bold; cursor: pointer; line-height: 1;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.25); transition: 0.15s; }
+        .tree-zoom-controls button:active { background: rgba(0, 229, 255, 0.28); box-shadow: 0 0 14px rgba(0,229,255,0.6); }
+        #tree-zoom-pct { font-family: var(--font-pixel); font-size: calc(var(--ui-scale) * 10px); color: var(--tree-cyan); opacity: 0.85; }
+
+        /* --- OVERLAY HUD PANELS: legend / controls hints / minimap - each a small chamfered
+           diagnostic readout floating over the pannable canvas, matching the console theme. --- */
+        .tree-legend-panel, .tree-controls-panel { position: absolute; left: calc(var(--ui-scale) * 14px); z-index: 11;
+            background: linear-gradient(160deg, rgba(12,15,24,0.92), rgba(6,7,12,0.92));
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            padding: calc(var(--ui-scale) * 10px) calc(var(--ui-scale) * 12px); pointer-events: auto;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 18px rgba(0,229,255,0.12); }
+        .tree-legend-panel { top: calc(var(--ui-scale) * 14px); }
+        .tree-controls-panel { bottom: calc(var(--ui-scale) * 14px); }
+        .tree-panel-title { font-family: var(--font-pixel); font-size: calc(var(--ui-scale) * 11px); font-weight: bold;
+            letter-spacing: 1.5px; color: var(--tree-cyan); text-transform: uppercase; margin-bottom: calc(var(--ui-scale) * 6px); }
+        .tree-legend-row { display: flex; align-items: center; gap: calc(var(--ui-scale) * 7px); font-size: calc(var(--ui-scale) * 11px);
+            color: #c9d6e0; margin-bottom: calc(var(--ui-scale) * 4px); white-space: nowrap; }
+        .tree-legend-swatch { width: calc(var(--ui-scale) * 10px); height: calc(var(--ui-scale) * 10px);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); flex-shrink: 0; box-shadow: 0 0 5px currentColor; }
+        .tree-legend-divider { height: 1px; background: linear-gradient(90deg, rgba(0,229,255,0.5), transparent); margin: calc(var(--ui-scale) * 6px) 0; }
+        .tree-legend-state { width: calc(var(--ui-scale) * 10px); height: calc(var(--ui-scale) * 10px);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: calc(var(--ui-scale) * 8px); }
+        .tree-legend-state.state-unlocked { background: #39ff14; box-shadow: 0 0 6px #39ff14; }
+        .tree-legend-state.state-available { background: transparent; border: 2px solid var(--tree-cyan); box-shadow: 0 0 6px var(--tree-cyan); }
+        .tree-legend-state.state-locked { background: var(--tree-steel); }
+        .tree-legend-state.state-maxed { background: transparent; color: var(--tree-gold); }
+        .tree-key { display: inline-flex; align-items: center; justify-content: center; min-width: calc(var(--ui-scale) * 18px);
+            height: calc(var(--ui-scale) * 18px); padding: 0 4px; border: 1px solid var(--tree-cyan-dim);
+            clip-path: polygon(4px 0, 100% 0, 100% 100%, 4px 100%, 0 calc(100% - 4px), 0 4px);
+            color: var(--tree-cyan); font-family: var(--font-pixel); font-size: calc(var(--ui-scale) * 9px); font-weight: bold; }
+        .tree-minimap-panel { position: absolute; right: calc(var(--ui-scale) * 14px); top: calc(var(--ui-scale) * 14px); z-index: 11;
+            border: 1px solid rgba(0, 229, 255, 0.45);
+            clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+            overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 0 18px rgba(0,229,255,0.15); pointer-events: auto; line-height: 0; }
+        /* This minimap draws only vector dots/lines (tree nodes + edges), never any 128x128
+           pixel-art sprite, so it's explicitly opted OUT of the page-wide pixel-perfect
+           `canvas { image-rendering: pixelated }` rule above - pixelated would make its thin
+           lines/circles look chunky instead of clean when CSS-scaled by --ui-scale. */
+        .tree-minimap-panel canvas { display: block; cursor: pointer; width: calc(var(--ui-scale) * 180px); height: calc(var(--ui-scale) * 130px); image-rendering: auto; }
+        @media (max-width: 760px) { .tree-legend-panel, .tree-controls-panel { transform: scale(0.85); transform-origin: bottom left; } .tree-legend-panel { transform-origin: top left; } .tree-minimap-panel { display: none; } }
+
+        /* --- NODE DESIGN SYSTEM -----------------------------------------------------------------
+           Box footprint (width/height/margin) per data-kind is UNCHANGED from the previous build
+           on purpose - buildTreeDOM()'s collision-relaxation pass sizes its minGap per kind
+           against these exact numbers, so resizing here would silently reintroduce overlap. Only
+           the shape/material changed, per spec section 4 ("do not make every node a plain
+           square"):
+             minor    - small HEXAGON: a plain incremental level-up, the most common node.
+             major    - DIAMOND: a branch split/merge point.
+             ability  - ROUNDED REACTOR MODULE (10-gon, near-circular) with a thin containment
+                        ring: unlocks a whole new power-up.
+             capstone - LARGEST reactor module with a double containment ring: the strongest
+                        node on a branch / an Overdrive core.
+           ----------------------------------------------------------------------------------- */
+        .tree-node { position: absolute; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 4; line-height: 1; user-select: none;
+            /* ICON-ONLY NODES: per the final cleanup pass, a Skill Tree node renders NOTHING
+               but the icon itself - no background tile, no border ring, no box-shadow rim/glow
+               of any color, in any state (locked/available/unlocked/purchased/hover/selected).
+               State is still tracked via classes/data attributes for game logic and for the
+               node-badge text + icon filter (grayscale when locked), it just no longer paints
+               any extra shape around the icon. */
+            background: transparent; border: none; box-shadow: none; outline: none;
+            color: #cfd6e0;
+            /* PERF: only `transform` transitions now (compositor-only). This used to also
+               transition box-shadow/filter/background - all repaint properties - and because
+               updateTreeNodeStates() toggles locked/unlocked/maxed/affordable on every node at
+               once (on every tree open, and after every purchase), that meant every node whose
+               state changed would repaint-animate simultaneously for 0.25s. State now changes
+               instantly (still one paint, just not an animated one) instead of an animated burst
+               across dozens of nodes at once. */
+            transition: transform 0.18s cubic-bezier(.34,1.56,.64,1);
+        }
+        .tree-node[data-kind="minor"]   { width: 22px; height: 22px; margin: -11px; font-size: 10px;
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
+        .tree-node[data-kind="major"]   { width: 34px; height: 34px; margin: -17px; font-size: 16px;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
+        /* BUGFIX: the Mobility (mov_1 "Thruster Boost") and Drilling (drill_base "Base Drill")
+           root nodes both happen to land in the shared "major" kind above, whose diamond
+           clip-path slices off all four corners of a node's icon. Their icon art
+           (movement.png/drill.png) is a fully-framed square that extends corner brackets all
+           the way to its edges, so that diamond clip was cropping those brackets clean off -
+           the exact "cropped icon" bug reported for these two. Removing the clip-path for just
+           these two nodes (by id, so no other "major" node's diamond shape changes) shows the
+           complete original artwork at its full, correct proportions. Box width/height/margin
+           (i.e. size and position in the tree layout) are untouched. */
+        .tree-node[data-node-id="mov_1"], .tree-node[data-node-id="drill_base"] { clip-path: none; }
+        .tree-node[data-kind="ability"] { width: 38px; height: 38px; margin: -19px; font-size: 18px;
+            clip-path: polygon(50% 0%, 85% 8%, 100% 35%, 100% 65%, 85% 92%, 50% 100%, 15% 92%, 0% 65%, 0% 35%, 15% 8%); }
+        /* Containment-ring ::before pseudo-elements removed for both ability and capstone
+           kinds - they painted an extra bordered/dashed ring shape around the icon. The node's
+           own size/clip-path already distinguishes ability/capstone from minor/major nodes, so
+           no replacement decoration is needed. */
+        .tree-node[data-kind="capstone"]{ width: 50px; height: 50px; margin: -25px; font-size: 24px;
+            clip-path: polygon(50% 0%, 85% 8%, 100% 35%, 100% 65%, 85% 92%, 50% 100%, 15% 92%, 0% 65%, 0% 35%, 15% 8%); }
+
+        .tree-node .node-visual { width: 100%; height: 100%; display: flex; align-items: center;
+            justify-content: center; position: relative; }
+        /* FINAL CLEANUP: the corner accent badge (a second icon layered on the node) is
+           removed for good - nodeAccent() in game.js no longer emits this element at all, and
+           this selector is kept only as a hard backstop in case that markup is ever re-added. */
+        .tree-node .node-accent { display: none !important; }
+        .node-visual > img.icon-fill { width: 80%; height: 80%; }
+        /* BUGFIX: the small white corner-dot accent (see the shared `.icon-fill` background-
+           image rule near the top of this file) reads as a stray white graphic glitch sitting
+           on top of every Skill Tree node's icon/frame artwork. Removed for Skill Tree node
+           icons specifically (scoped to #tree-nodes) - the same accent is left untouched
+           everywhere else it's used (HUD, Overdrive boxes, menu buttons, etc), and nothing
+           about the icon artwork, box size, border, or position changes here. */
+        #tree-nodes .icon-fill { background-image: none; }
+
+        /* FINAL CLEANUP: the level badge is now plain text with no background/border/box
+           behind it - "normal UI text only", no colored shape of any kind. */
+        .tree-node .node-badge { position:absolute; bottom:-8px; left:50%; transform: translateX(-50%);
+            /* FONT-FIX: bumped from 6.5px to 8px - Press Start 2P is a much blockier/wider
+               face than VT323, and its glyphs (this badge shows the node's level, e.g. "3/5")
+               stop being legible below ~8px. The badge is already auto-width/auto-centered
+               (white-space:nowrap + translateX(-50%)), so growing it doesn't clip or overlap
+               anything - it just sits slightly lower (bottom -8px vs -7px) to clear the node. */
+            font-size: 8px; font-weight: bold; letter-spacing: 0.5px;
+            background: none; border: none; box-shadow: none; text-shadow: none;
+            color: var(--nc); white-space: nowrap;
+            pointer-events:none; opacity: 0; transition: opacity 0.2s ease; }
+        .tree-node:hover .node-badge, .tree-node.unlocked .node-badge { opacity: 0.9; }
+        .tree-node[data-kind="minor"] .node-badge { display: none; }
+
+        /* TEXT-FIX: every `filter:` below now targets `.node-visual` (icon + accent glyph only)
+           instead of `.tree-node` itself. `.tree-node` is the element the node-badge's numeric
+           level text (e.g. "3/5") is a DIRECT CHILD of - applying `filter: brightness()/
+           grayscale()` to `.tree-node` used to also silently recolor/dim that text every time a
+           node was hovered, locked, selected, or revealed. Scoping the filter to the
+           icon-only wrapper keeps the exact same "powered up/dormant module" look for the
+           icon while the Skill Tree level number next to it stays flat, undistorted, and at
+           its real color. `transform: scale()` stays on `.tree-node` (unchanged) - uniform
+           scaling doesn't distort digits the way a color/brightness filter does, so the badge
+           scaling up together with the node on hover is still fine to keep. */
+        .tree-node:hover .node-visual { filter: brightness(1.3); }
+        .tree-node:hover { transform: scale(1.28); z-index: 9; }
+        /* LOCKED: dark, dormant metal - a dim, near-inert module (spec section 3/8). */
+        .tree-node.locked .node-visual { filter: grayscale(85%) brightness(0.72); }
+        .tree-node.locked { opacity: 0.35; }
+        .tree-node.locked:hover .node-visual { filter: grayscale(60%) brightness(1.05); }
+        .tree-node.locked:hover { transform: scale(1.08); }
+        /* UNLOCKED / MAXED: state is carried purely by the icon itself (full color + a subtle
+           breathing opacity on maxed/ability/capstone/major, see nodeBreathe below) - no rim,
+           ring, glow, or fill of any color is painted around the node in either state. */
+        .tree-node.unlocked { color: #fff; }
+        .tree-node.maxed {
+            color: #fff;
+            animation: nodeBreathe 2.8s ease-in-out infinite;
+        }
+        /* Slow breathing glow, unlocked ability/capstone/major nodes only - minor dots stay
+           static so this never becomes dozens of animating elements at once (spec section 15).
+           PERF: this used to animate `filter: brightness()/saturate()`, which is a repaint-heavy
+           property - fine for one element (see .tree-origin), but late-game a run can easily
+           have dozens of major/ability/capstone/maxed nodes unlocked and breathing at once, and
+           a `filter` animation forces the browser to repaint *each of those nodes' full
+           multi-layer box-shadow stack* every single frame, forever, while the tree is open -
+           this was the main source of the reported in-game lag. Switched to `opacity`, which is
+           compositor-only (same fix pattern as .edge-dot/.affordable::after above): the node's
+           box-shadow glow is already static/painted once, so a subtle opacity dip still reads as
+           the module "breathing" without re-painting anything, at any node count. */
+        @keyframes nodeBreathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.86; } }
+        .tree-node[data-kind="ability"].unlocked, .tree-node[data-kind="capstone"].unlocked, .tree-node[data-kind="major"].unlocked {
+            animation: nodeBreathe 3.4s ease-in-out infinite;
+        }
+        /* "Available to buy" no longer paints an extra pulsing ring around the node - the
+           node-badge (cost/level text) and the icon's own full-color/hover state are enough to
+           read as purchasable, with no CSS-generated shape layered around the icon. */
+
+        /* --- REVEAL: a node that just became available pops in with a bright flash (spec
+           section 10's "node activates" beat continues here even before the player taps it).
+           TEXT-FIX: split into two animations - `nodeReveal` (scale only) still runs on
+           `.tree-node` itself so the whole node (icon + badge) pops in together uniformly;
+           `nodeRevealFlash` (the brightness flash) now runs only on `.node-visual`, so the
+           badge's level number never gets blown out/flashed along with the icon. */
+        @keyframes nodeReveal { 0% { transform: scale(0.3); } 55% { transform: scale(1.4); } 75% { transform: scale(0.92); } 100% { transform: scale(1); } }
+        .tree-node.just-revealed { animation: nodeReveal 0.75s cubic-bezier(.34,1.56,.64,1); }
+        @keyframes nodeRevealFlash { 0% { filter: brightness(2.8); } 100% { filter: none; } }
+        .tree-node.just-revealed .node-visual { animation: nodeRevealFlash 0.75s cubic-bezier(.34,1.56,.64,1); }
+
+        /* --- SELECTED: tapping a node brightens it with an animated containment ring.
+           TEXT-FIX: filter moved to `.node-visual` - see the comment above `.tree-node:hover
+           .node-visual` for why. The outline/animation stay on `.tree-node` so the selection
+           ring still traces the whole node's outer edge as before. */
+        .tree-node.tree-node-selected .node-visual { filter: brightness(1.35); }
+        .tree-node.tree-node-selected { z-index: 8; }
+
+        /* --- OPENING ANIMATION: the graph grows in node-by-node from the Core outward. --- */
+        @keyframes treeNodeIntro { 0% { opacity: 0; transform: scale(0.2); } 100% { opacity: 1; transform: scale(1); } }
+        .tree-node.tree-node-intro { animation: treeNodeIntro 0.45s ease-out backwards; }
+
+        /* --- CLICK/TAP FEEDBACK: a short squash-and-bounce whenever a node is tapped (mouse
+           click or touch - both fire the same 'click' event the JS listener below reacts to).
+           Position never moves - only `transform: scale()` animates, matching every other
+           node animation in this file (hover/reveal/pulse) which all stay purely transform-
+           based for compositor-only repaints. Toggled by JS (see the [data-node-id] click
+           listener in buildTreeDOM()): the class is added on click and removed once the
+           animation ends, so clicking the same node again always restarts it cleanly. Purely
+           visual - doesn't touch/gate the actual selectTreeNode()/purchaseUpgrade() calls. */
+        @keyframes nodeClickBounce {
+            0%   { transform: scale(1); }
+            35%  { transform: scale(0.90); }
+            65%  { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+        .tree-node.tree-node-clicked { animation: nodeClickBounce 200ms cubic-bezier(.34,1.56,.64,1); }
+
+        /* --- PURCHASE FEEDBACK: mineral-shard burst + soft bloom flash on unlock (spec section
+           10) - diamond-cut shards rather than plain dots, reading as chipped-off ore/energy
+           crystal rather than generic confetti. Created on demand in #tree-fx-layer and
+           discarded once their one-shot animation ends (see burstParticles() in game.js). --- */
+        .tree-particle { position: absolute; width: 6px; height: 6px;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            background: var(--pc, #fff); box-shadow: 0 0 6px var(--pc, #fff); pointer-events: none;
+            animation: particleFly 0.65s cubic-bezier(.2,.8,.3,1) forwards; }
+        @keyframes particleFly { 0% { transform: translate(0,0) scale(1) rotate(0deg); opacity: 1; } 100% { transform: translate(var(--px), var(--py)) scale(0.2) rotate(90deg); opacity: 0; } }
+        .tree-bloom { position: absolute; width: 10px; height: 10px; margin: -5px;
+            background: radial-gradient(circle, var(--pc, #fff) 0%, transparent 70%); pointer-events: none;
+            animation: bloomPop 0.6s ease-out forwards; }
+        @keyframes bloomPop { 0% { transform: scale(0.3); opacity: 0.95; } 100% { transform: scale(9); opacity: 0; } }
+
+        /* --- SKILL INFORMATION HUD: a "technology diagnostic" readout rather than a plain
+           popup (spec section 9) - chamfered corners, a scanning top edge, and a left accent
+           spine tying it visually to the modal header. Structure/ids are untouched: JS only
+           ever replaces #node-info-card's innerHTML and toggles its display. --- */
+        #node-info-card { position: absolute; bottom: calc(var(--ui-scale) * 16px); left: 50%; transform: translateX(-50%);
+            width: calc(var(--ui-scale) * 270px); max-width: 82vw;
+            background: linear-gradient(165deg, #10131e, #07080d);
+            border: 1px solid rgba(0, 229, 255, 0.55);
+            clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+            padding: calc(var(--ui-scale) * 16px) calc(var(--ui-scale) * 14px) calc(var(--ui-scale) * 14px);
+            z-index: 20; box-shadow: 0 0 0 1px rgba(0,0,0,0.7), 0 0 26px rgba(0,229,255,0.3), 0 8px 30px rgba(0,0,0,0.6);
+            display: none; text-align: center; animation: cardIn 0.18s ease-out; overflow: hidden; }
+        /* PERF: was a `background-position` animation, which repaints the gradient every frame.
+           Rebuilt as a fixed-size gradient bar that instead animates `transform: translateX()`
+           (compositor-only, matches the fix pattern used elsewhere in this file) - same visible
+           scan-line sweep across the card's top edge, with no per-frame repaint cost. */
+        #node-info-card::before { content:''; position:absolute; left:-40%; top:0; width:40%; height:2px;
+            background: linear-gradient(90deg, transparent, var(--tree-cyan), transparent);
+            animation: scanSweep 2.4s linear infinite; }
+        @keyframes scanSweep { 0% { transform: translateX(0%); } 100% { transform: translateX(350%); } }
+        @keyframes cardIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+        #node-info-card .node-type-badge { display: inline-block; font-size: calc(var(--ui-scale) * 9px); font-weight: bold;
+            letter-spacing: 1.5px; padding: 2px 10px; margin-bottom: calc(var(--ui-scale) * 6px); border: 1px solid currentColor;
+            clip-path: polygon(6px 0, 100% 0, 100% 100%, 6px 100%, 0 calc(100% - 6px), 0 6px); }
+        #node-info-card .node-title { font-size: calc(var(--ui-scale) * 15px); font-weight: bold; color: var(--tree-cyan);
+            margin-bottom: calc(var(--ui-scale) * 4px); }
+        #node-info-card .node-desc { font-size: calc(var(--ui-scale) * 11px); color: #a9b3c2; margin-bottom: calc(var(--ui-scale) * 8px); line-height: 1.3; }
+        #node-info-card .node-level { font-size: calc(var(--ui-scale) * 11px); color: #fff; margin-bottom: calc(var(--ui-scale) * 6px); letter-spacing: 0.5px; }
+        #node-info-card .node-cost { font-size: calc(var(--ui-scale) * 11px); font-weight: bold; margin-bottom: calc(var(--ui-scale) * 8px); color: var(--tree-gold); }
+        #node-info-card .node-requires { font-size: calc(var(--ui-scale) * 10px); color: #ff9933; margin-bottom: calc(var(--ui-scale) * 8px); line-height: 1.3; }
+
+        #tree-bottombar { display: flex; align-items: center; justify-content: space-between;
+            padding: calc(var(--ui-scale) * 10px) calc(var(--ui-scale) * 18px);
+            border-top: 1px solid rgba(0, 229, 255, 0.4); background: linear-gradient(90deg, rgba(0,229,255,0.07), rgba(168,85,247,0.05));
+            gap: calc(var(--ui-scale) * 10px); flex-wrap: wrap; }
+        .tree-hint-group { display: flex; gap: calc(var(--ui-scale) * 16px); }
+        .tree-hint { display: flex; flex-direction: column; align-items: center; color: #8a94a6; font-size: calc(var(--ui-scale) * 10px); gap: 2px; }
+        .tree-hint .hint-icon { font-size: calc(var(--ui-scale) * 18px); }
+        .tree-currency-row { display: flex; gap: calc(var(--ui-scale) * 12px); font-size: calc(var(--ui-scale) * 12px); font-weight: bold; }
+        .tree-continue-btn { position: relative; background: rgba(0,229,255,0.08); border: 1px solid var(--tree-cyan); color: var(--tree-cyan);
+            font-family: var(--font-pixel); font-weight: bold; letter-spacing: 1px;
+            padding: calc(var(--ui-scale) * 8px) calc(var(--ui-scale) * 24px);
+            clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+            cursor: pointer; transition: 0.2s; }
+        .tree-continue-btn:hover { background: var(--tree-cyan); color: #001318; box-shadow: 0 0 16px rgba(0,229,255,0.7); }
+        .action-btn { background: linear-gradient(180deg, #4ff0ff, var(--tree-cyan)); color: #001318; border: none;
+            clip-path: polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+            padding: calc(var(--ui-scale) * 6px) calc(var(--ui-scale) * 12px); font-family: var(--font-pixel); font-weight: bold;
+            cursor: pointer; width: 100%; transition: 0.2s; font-size: calc(var(--ui-scale) * 12px);
+            box-shadow: 0 0 10px rgba(0,229,255,0.35); letter-spacing: 0.5px; }
+        .action-btn:hover:not(:disabled) { box-shadow: 0 0 16px rgba(0,229,255,0.7); filter: brightness(1.08); }
+        .action-btn:disabled { background: #3a3d48; color: #767d8c; cursor: not-allowed; box-shadow: none; }
+        .action-btn.maxed { background: linear-gradient(180deg, #ffe89a, var(--tree-gold)); color: #1a1300; box-shadow: 0 0 10px rgba(255,204,51,0.5); }
+
+        /* --- MINIMAP INSTEAD OF BUTTONS --- */
+        /* GAMEPLAY HUD MAP: sci-fi frame art (hud-frame-map.png) replaces the old plain
+           circular border/box-shadow radar look. The frame image is a square panel (its own
+           border art plus a flat dark inner fill) drawn as the container's background, and the
+           radar canvas is inset to sit inside that flat inner area (measured from the source
+           art: ~16% in from each edge) rather than filling the whole container like it did with
+           the old circular clip. The canvas itself still only ever draws vector arcs/dots
+           (asteroid blips - see mCtx usage in game.js), so it keeps the same smooth,
+           non-pixelated rendering as before; only the container's decorative frame changed. */
+        #minimap-container {
+            position: absolute; bottom: calc(var(--ui-scale) * 25px); right: calc(var(--ui-scale) * 25px); z-index: 10;
+            width: calc(var(--ui-scale) * 150px); height: calc(var(--ui-scale) * 146px);
+            background-color: transparent;
+            background-image: url('hud-frame-map.png');
+            background-size: 100% 100%; background-repeat: no-repeat; background-position: center;
+            image-rendering: pixelated;
+            pointer-events: none;
+        }
+        #minimap-container canvas {
+            position: absolute; left: 16%; top: 16%; width: 68%; height: 68%;
+            display: block; image-rendering: auto;
+        }
+
+        /* SHIP LEVEL / ENERGY HUD - reskinned onto the new pill-frame art asset instead of the
+           old plain dark box. The PNG (86x30 native, already cropped to its visible pixels) is
+           a hollow frame: a decorative border with a solid dark interior meant to hold content,
+           the same pattern already used for #minimap-container (hud-frame-map.png) and
+           #special-items-art (hud-antique-powerup.png) elsewhere in this file. Stretched to fill
+           via background-size:100% 100%, same as those two. positionSidePanels() in game.js
+           reads this element's live getBoundingClientRect() (it never assumed a fixed box size),
+           so resizing it here needs no JS changes.
+           CONTAINER-SIZE FIX (root cause of the reported clipping/overlap - text and bars
+           themselves are UNCHANGED, see .level-hud-row/.level-bar-container below): the box was
+           previously 300x104, then 260x90 before that - both attempts to give the fixed-size
+           text/bar content (7px rows, 5px bars) enough interior room, and both still left some
+           of it sitting right at the edge of the frame art's own hollow interior at some
+           resolutions, reading as clipped/overlapping. Rather than shrinking the locked content
+           to fit a box, the box itself is bumped up again here (300x104 -> 340x122, keeping the
+           same ~2.79:1 aspect the source art already tolerates via its 100%/100% stretch) so the
+           interior it exposes is unambiguously larger than the two text rows + two bars need at
+           their original, unshrunk size. Anchored at the same bottom-left corner (bottom/left
+           below are unchanged), so it only grows up and to the right - it does not relocate. */
+        #level-hud {
+            position: absolute; bottom: calc(var(--ui-scale) * 25px); left: calc(var(--ui-scale) * 12px); z-index: 10;
+            width: calc(var(--ui-scale) * 300px); height: calc(var(--ui-scale) * 108px);
+            background-color: transparent;
+            background-image: url('hud-ship-level-energy.png');
+            background-size: 100% 100%; background-repeat: no-repeat; background-position: center;
+            image-rendering: pixelated;
+            pointer-events: none;
+            box-sizing: border-box;
+            /* Belt-and-braces: this container must never crop its own children - the fix above
+               is sizing the box correctly in the first place, this just guarantees nothing here
+               can ever silently clip content again even in an edge case the sizing didn't
+               anticipate (e.g. an unusually long localized string). */
+            overflow: visible;
+        }
+        /* Inset to land inside the frame art's own hollow dark interior (measured directly off
+           the source PNG: left ~11%/right ~12% of width, top ~29%/bottom ~26% of height) rather
+           than guessed - so the text/bars below never overlap the decorative border pixels.
+           Unchanged percentages - it's the box they're a percentage OF (#level-hud above) that
+           grew, which is what actually gives them more absolute pixel room. overflow:visible
+           for the same belt-and-braces reason as #level-hud above. */
+        .level-hud-content { position: absolute; left: 11%; right: 12%; top: 29%; bottom: 26%; display: flex; flex-direction: column; justify-content: space-between; overflow: visible; }
+        /* Dedicated bar classes (level-bar-*) instead of reusing the shared .bar-container/
+           .bar-fill/.energy-fill classes below - those are also used by #dash-hud's bar
+           (.dash-bar/.dash-fill), so changing their shared height/margin here to fit this much
+           shorter pill would have also resized the Dash HUD's bar. Colors match the original
+           XP (orange) / Energy (cyan) bars exactly. LOCKED size - see the #level-hud comment
+           above for how the fit is actually achieved (a bigger container, not a smaller bar). */
+        .level-bar-container { width: 100%; flex-shrink: 0; box-sizing: border-box; background: rgba(0,0,0,0.55); height: calc(var(--ui-scale) * 5px); border-radius: calc(var(--ui-scale) * 3px); border: 1px solid rgba(255,255,255,0.18); }
+        .level-bar-fill { height: 100%; border-radius: inherit; background: repeating-linear-gradient(90deg, #ff9900 0, #ff9900 5px, #ffcc00 5px, #ffcc00 10px); width: 40%; transition: width 0.2s steps(12); image-rendering: pixelated; }
+        .level-energy-fill { background: repeating-linear-gradient(90deg, #0091c2 0, #0091c2 5px, #00f3ff 5px, #00f3ff 10px); width: 100%; }
+
+        /* --- DASH ABILITY HUD (bottom-center, its own free corner - see the div's HTML
+           comment for why this spot was chosen). --- */
+        /* HUD-FRAME REPLACEMENT: the old plain dark-fill box (flat rgb(10,10,15) background +
+           2px solid cyan border + a second cyan box-shadow "outline" ring around that) is fully
+           removed and replaced by the supplied hud-frame-dash.png pixel-art frame, same
+           background-image + background-size:100% 100% + image-rendering:pixelated pattern
+           already used for #level-hud/#minimap-container/#tool-status-hud elsewhere in this
+           file - the source art is used exactly as delivered, not redrawn with CSS
+           borders/shadows. That art is a hollow frame (decorative border, solid dark interior
+           meant to hold content) at a native ~2.27:1 aspect ratio, sized here to 190x84 (same
+           aspect, just scaled up for legibility - the same approach used for #level-hud's
+           300x104). Text/bar content now lives in .dash-hud-content (see below), inset to land
+           inside the frame art's own hollow interior instead of using the old padding, so
+           nothing overlaps the new border pixels. */
+        #dash-hud {
+            position: absolute; bottom: calc(var(--ui-scale) * 25px); left: 50%; transform: translateX(-50%);
+            z-index: 10; background-color: transparent;
+            background-image: url('hud-frame-dash.png');
+            background-size: 100% 100%; background-repeat: no-repeat; background-position: center;
+            image-rendering: pixelated;
+            width: calc(var(--ui-scale) * 170px); height: calc(var(--ui-scale) * 75px);
+            box-sizing: border-box;
+            /* DISPLAY-ONLY (Normal Levels): this HUD is a status readout, never a button - the
+               matching `onclick`/`title` attributes were removed from the element in the HTML,
+               and pointer-events:none here is what actually stops the browser from ever
+               treating it as a click/tap/hover target in the first place (no cursor change, no
+               :hover state, no native tooltip, no click reaching an onclick that no longer
+               exists anyway). Purely an interaction change - background/size/position/opacity/
+               filter transition below are all untouched. */
+            cursor: default; pointer-events: none;
+            transition: opacity 0.2s, filter 0.2s;
+        }
+        /* Inset measured directly off the source PNG's own solid interior fill (left ~9%/right
+           ~9% of width, top ~24%/bottom ~30% of height), same "measure the real art, don't
+           guess" approach used for #level-hud/.level-hud-content. */
+        .dash-hud-content { position: absolute; left: 9%; right: 9%; top: 24%; bottom: 30%; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; }
+        .dash-hud-label { font-size: calc(var(--ui-scale) * 11px); font-weight: bold; color: #00f3ff; letter-spacing: 1px; }
+        .dash-hud-key { font-size: calc(var(--ui-scale) * 8px); color: #aaa; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); padding: 0 calc(var(--ui-scale) * 3px); margin-left: calc(var(--ui-scale) * 3px); }
+        .dash-bar { margin-top: calc(var(--ui-scale) * 4px); height: calc(var(--ui-scale) * 8px); width: 100%; }
+        .dash-fill { background: #00f3ff; width: 100%; }
+        .dash-hud-status { margin-top: calc(var(--ui-scale) * 3px); font-size: calc(var(--ui-scale) * 10px); font-weight: bold; color: #39ff14; }
+        /* LOCKED - original typography, unchanged from before any of the overflow fixes above.
+           The clipping/overlap this row used to show is now fixed entirely by giving #level-hud
+           itself more room (see the #level-hud comment above) rather than by touching this
+           text's font-size, line-height, letter-spacing, or layout. */
+        .level-hud-row { font-size: calc(var(--ui-scale) * 7px); line-height: 1.2; flex-shrink: 0; white-space: nowrap; font-weight: bold; justify-content: space-between; display: flex; color: #cdeeff; text-shadow: 0 1px 0 rgba(0,0,0,0.85); letter-spacing: 0.3px; }
+        .level-hud-energy { color: #7fffe0; }
+        .bar-container { width: 100%; background: #222; height: calc(var(--ui-scale) * 12px); border-radius: calc(var(--ui-scale) * 6px); margin-top: calc(var(--ui-scale) * 5px); border: 1px solid #555; }
+        .bar-fill { height: 100%; background: repeating-linear-gradient(90deg, #ff9900 0, #ff9900 6px, #ffcc00 6px, #ffcc00 12px); width: 40%; transition: width 0.2s steps(12); image-rendering: pixelated; }
+        .energy-fill { background: repeating-linear-gradient(90deg, #0091c2 0, #0091c2 6px, #00f3ff 6px, #00f3ff 12px); width: 100%; }
+
+        /* --- OVERDRIVES SYSTEM HUD ---
+           Fixed-width columns used to be able to exceed narrow phone viewports; since the page
+           itself has overflow:hidden, that excess just got silently clipped off-screen instead
+           of wrapping or scrolling into view - some Overdrive boxes were effectively invisible
+           on small screens. `width: min(...)` caps the panel to whatever viewport room is
+           actually available, and minmax(0, 1fr) columns let the boxes shrink to fit instead of
+           overflowing. Vertical overflow (many unlocked abilities) still scrolls.
+           top below is a fallback only, used for the very first paint before JS runs -
+           positionSidePanels() overrides it every frame the layout can change, stacking this
+           panel a fixed gap below the Minerals panel's real measured bottom edge, so there is
+           always a clear, visible gap between them and they can never overlap/merge regardless
+           of resolution, ui-scale, or how many Minerals rows are shown.
+           max-height below is likewise a fallback only - positionSidePanels() in JS overrides it
+           every frame the layout can change with the panel's real measured distance above the
+           Ship Level/Energy HUD, so the two can never overlap regardless of resolution or how
+           many Overdrives are unlocked.
+           WIDTH INCREASE: base width bumped 268px -> 320px so each of the 2 columns is
+           noticeably wider - more real content width for .od-name/.od-btn to work with before
+           their shrink-to-fit (fitOdName()/fitOdBtn() in game.js) needs to kick in at all, so
+           names/status text render bigger and closer to their natural font-size. Checked clear
+           of every other HUD element at 1366x768 (the smallest supported resolution): the
+           Score/Cash/Depth/Distance badges are screen-center-anchored with plenty of margin to
+           spare, and ANTIQUE_SCREEN_MARGIN_X (game.js) was bumped alongside this so the
+           Dragon Skull decoration's left edge still clears this panel's new, wider right edge. */
+        #overdrives-container {
+            position: absolute; top: calc(var(--ui-scale) * 200px); left: calc(var(--ui-scale) * 15px); z-index: 10;
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-rows: repeat(6, auto);
+            gap: calc(var(--ui-scale) * 3px); pointer-events: auto;
+            width: min(calc(var(--ui-scale) * 205px), calc(100vw - var(--ui-scale) * 30px));
+            padding: calc(var(--ui-scale) * 8px);
+            box-sizing: border-box;
+            background: rgb(8, 8, 14);
+            border-style: solid;
+            border-width: calc(var(--ui-scale) * 18px);
+            border-image-source: url('hud-overdrive.png');
+            border-image-slice: 20;
+            border-image-width: calc(var(--ui-scale) * 18px);
+            border-image-repeat: stretch;
+            image-rendering: pixelated;
+            overflow: hidden;
+        }
+        .od-hud-title {
+            grid-column: 1 / -1; text-align: center; color: #ffea00;
+            font-size: calc(var(--ui-scale) * 10px); font-weight: bold;
+            letter-spacing: calc(var(--ui-scale) * 1px);
+            line-height: 1.1; padding-bottom: calc(var(--ui-scale) * 4px);
+            border-bottom: 1px solid #444;
+        }
+        /* SINGLE OVERDRIVE HUD: all abilities live inside one shared pixel-art frame.
+           There is intentionally no internal scrolling; every icon, name and action button
+           remains visible together. */
+
+/* --- OVERDRIVE HUD ---
+           Old flat box (solid fill + plain 1px border) fully removed. Each Overdrive box's
+           border is now the supplied hud-overdrive.png pixel-art frame via border-image (used
+           exactly as delivered, never redrawn with CSS shapes/gradients). Same technique as the
+           Active Systems frame above: border-image-slice/-width share one 20px base (again
+           measured off the source PNG) so the
+           frame's corners always render at native pixel size and only scale UNIFORMLY with
+           --ui-scale (never stretched non-uniformly), with image-rendering: pixelated keeping
+           every pixel crisp. Every existing dynamic piece (.od-icon, .od-name, .od-bar/.od-fill,
+           .od-key, and the .od-btn - whose READY/WAIT/ACTIVE text is set live by JS and was
+           never baked into any image) sits inside this frame completely unchanged.
+
+           FIXED-SIZE FIX: .od-box previously had no `height` at all, so it just grew to
+           whatever its content needed - and .od-name/.od-btn used to deliberately WRAP onto a
+           second line for long text (see their old comments), which made the box (and the whole
+           2-column #overdrives-container grid) balloon taller the longer an ability's name/status
+           text was. That's reversed now: .od-name and .od-btn are single-line + shrink-to-fit
+           (see their comments below and fitOdName()/fitOdBtn() in game.js) instead of wrapping, so a
+           fixed `height` here is always enough - the box can never grow/shrink with its content
+           and stays exactly this compact, constant size for every Overdrive slot regardless of
+           name length or status text. Value is the sum of this box's own fixed-size pieces at
+           ui-scale 1 (border 20+20, padding 4+4, 18px icon, one line of .od-name, the bar, one
+           line of .od-btn, plus their existing margins) with a couple px of headroom for font
+           metrics/line-height rounding - never a redesign of any of those pieces' own sizing.
+           box-sizing:border-box (set globally on this page, see the `*` rule above) keeps the
+           border-image frame and padding safely inside this height instead of adding to it.
+
+           SMALLER-HUD PASS: icon (22->18px), padding (6->4px), and the name/tier/bar/button
+           font-sizes and margins were all trimmed down a notch (each element's own comment below
+           has its updated value) to make the whole panel visibly more compact, without touching
+           the pixel-art border-image frame itself (border-width/slice untouched, so the frame
+           artwork is never redrawn/distorted) and without reopening the cropping bug - fitOdName()/
+           fitOdBtn() in game.js now read the new, smaller base font-sizes (9->8px) as their
+           shrink-to-fit starting point, with the same absolute 5px floor as before, so the
+           longest name/status text is still always guaranteed to fit on one line. */
+        .od-box {
+            background: transparent;
+            border: none;
+            padding: calc(var(--ui-scale) * 1px); width: 100%; height: calc(var(--ui-scale) * 68px);
+            min-width: 0; text-align: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            transition: opacity 0.3s, border-color 0.2s, background-color 0.2s;
+            position: relative; overflow: hidden; box-sizing: border-box;
+        }
+        /* OPAQUE FIX (preserved): a locked Overdrive box must stay 100% opaque (no gameplay
+           object on the canvas may show through it). Previously this used
+           filter: grayscale()/brightness() on the whole box - but the new pixel-art frame must
+           never have a CSS filter applied to it (no recoloring/darkening of the supplied
+           artwork). Instead, a solid (non-gradient, non-blurred) dark overlay is painted on top
+           of the box's interior via ::before - this dims/greys the readable content (icon/
+           name/bar/button) as before while leaving the frame artwork itself completely
+           unfiltered and fully opaque underneath. */
+        .od-box.locked::before {
+            content: ""; position: absolute; inset: 0; background: rgba(4, 4, 8, 0.8); pointer-events: none;
+        }
+        /* POSITIONING FIX: this box previously only set `height`, leaving `width` to its block-
+           level default (100% of the .od-box row) - so the 22px-tall square slot the design
+           intends (matching every other .icon-fill container's explicit width+height square,
+           e.g. .tree-node/.node-accent above) was actually a full-width sliver. That stretched
+           each icon horizontally out of its true square slot instead of centering it there, and
+           the existing `margin: 0 auto` (meant to center a fixed-width box) had no effect since
+           there was no fixed width to center. Adding the matching width restores the intended
+           fixed-size square slot - same slot size/position, same centering rule, just actually
+           square now, so all 12 icons sit exactly where their layout already intended. */
+        .od-icon { width: calc(var(--ui-scale) * 12px); height: calc(var(--ui-scale) * 12px); line-height: 1; margin: 0 auto calc(var(--ui-scale) * 1px); transition: transform 0.25s ease, filter 0.25s ease; }
+        .od-icon img.icon-locked { filter: grayscale(100%) brightness(0.8); opacity: 0.6; }
+        /* --- Unlock animation: fired once, the moment a power-up's `unlocked` flag flips true.
+           A quick icon flip/pop (lock -> ability icon) plus a bright radial flash sweeping the
+           box, so the transition reads as a distinct "power-up granted" beat rather than the
+           icon just silently changing on the next HUD refresh. --- */
+        .od-box.just-unlocked { animation: odBoxUnlockPop 0.6s ease-out; }
+        .od-box.just-unlocked .od-icon { animation: odIconUnlockSpin 0.5s ease-out; }
+        .od-box.just-unlocked::after {
+            content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+            background: radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 70%);
+            animation: odBoxUnlockFlash 0.6s ease-out forwards;
+        }
+        @keyframes odBoxUnlockPop {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.12); }
+            60% { transform: scale(0.97); }
+            100% { transform: scale(1); }
+        }
+        @keyframes odIconUnlockSpin {
+            0% { transform: scale(0.3) rotate(-25deg); filter: brightness(2.5); }
+            60% { transform: scale(1.35) rotate(8deg); filter: brightness(1.6); }
+            100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+        }
+        @keyframes odBoxUnlockFlash {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        /* NO-CROP FIX: two-line wrapping (the previous fix here) is what let long names like
+           "T3 Electric Storm"/"T2 Firestorm Split"/"T3 Core Overload" blow .od-box's height out -
+           and .od-box is fixed-height now (see its comment above), so wrapped text would just get
+           cropped/clipped by that box's overflow:hidden instead. Restoring
+           white-space:nowrap keeps the tier badge + name on their single intended line, and
+           text-overflow/ellipsis is deliberately NOT used (that would still crop the name) -
+           instead fitOdName() in game.js measures the real rendered width against this fixed
+           slot and shrinks font-size (down to a readable floor) until the longest name/tier
+           combination fits completely, exactly like the existing HUD badge text-fit pattern
+           (fitHudBadgeValue) above. Net effect: every Overdrive name is always 100% visible on
+           one line, and the box never has to grow to fit it. */
+        .od-name { font-size: calc(var(--ui-scale) * 6px); font-weight: bold; margin-bottom: calc(var(--ui-scale) * 3px); text-transform: uppercase; white-space: nowrap; overflow: hidden; line-height: 1.3; width: 100%; }
+        .od-tier { font-size: calc(var(--ui-scale) * 5px); background: rgba(255,255,255,0.14); border-radius: 3px; padding: 1px calc(var(--ui-scale) * 3px); margin-right: calc(var(--ui-scale) * 3px); color: #bbb; letter-spacing: 0.5px; font-weight: bold; }
+        /* Small keyboard-shortcut badge, top-right corner of each Overdrive box. Purely a
+           visual indicator alongside the existing icon/name/button - doesn't replace or
+           resize any of them. */
+        .od-key { position: absolute; top: calc(var(--ui-scale) * 2px); right: calc(var(--ui-scale) * 2px); font-size: calc(var(--ui-scale) * 6px); background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; padding: 0 calc(var(--ui-scale) * 3px); color: #ccc; font-weight: bold; line-height: 1.5; pointer-events: none; }
+        .od-bar { height: calc(var(--ui-scale) * 3px); margin-top: calc(var(--ui-scale) * 3px); margin-bottom: calc(var(--ui-scale) * 1px); }
+        .od-fill { width: 0%; transition: width 0.3s; }
+        /* NO-CROP FIX (replaces the old two-line line-height:1.6 wrap fix): that wrap made
+           .od-box (which had no fixed height) grow taller for every long status string
+           ("READY! (CLICK)", "ACTIVE (Xs)", "Requires <upgrade>"), which is exactly what made
+           the Overdrives HUD unnecessarily tall. Now that .od-box is fixed-height (see its
+           comment above), the button goes back to a single line (white-space:nowrap) and, like
+           .od-name just above, relies on fitOdBtn() in game.js to shrink its font-size just
+           enough that the current status text always fits completely inside the button's fixed
+           width - never cropped, never overlapping the READY/WAIT/ACTIVE label with anything
+           else, and never forcing the box to grow. */
+        .od-btn { margin-top: calc(var(--ui-scale) * 1px); width: 100%; padding: calc(var(--ui-scale) * 2px) calc(var(--ui-scale) * 1px); font-size: calc(var(--ui-scale) * 6px); line-height: 1.2; white-space: nowrap; overflow: hidden; background: #333; color: gray; border: 1px solid #555; border-radius: calc(var(--ui-scale) * 4px); font-family: var(--font-pixel); font-weight: bold; cursor: pointer; transition: background-color 0.3s, color 0.3s, box-shadow 0.3s, transform 0.15s ease-out, filter 0.15s ease-out; transform: scale(1); }
+        /* --- READY/CLICK HOVER ANIMATION ---
+           Shared on .od-btn itself (not a per-Overdrive rule), so all 12 Overdrive slots get it
+           identically for free - nothing about the READY/CLICK markup, IDs, or per-key JS loop
+           needed to change. Only ever visible on a button the player can actually click: every
+           non-READY state (WAIT/LOCKED/ACTIVE/requires-upgrade/cost) already sets
+           `pointerEvents: 'none'` in JS above, and a pointer-events:none element cannot become a
+           :hover target at all - the browser passes the hover straight through to whatever's
+           behind it. So this rule only ever fires on a live "READY! (CLICK)" button, with zero
+           extra state/class bookkeeping.
+           Effect is a small uniform scale (1.05x) plus a slight brightness lift - both pure
+           `transform`/`filter`, so neither one reflows layout or nudges any neighboring
+           Overdrive box/button; .od-box's own `overflow: hidden` (see .od-box above) safely
+           clips the fractional-pixel edge of the scale-up inside the existing frame, so the
+           pixel-art border is never drawn over. The existing flat #27ae60 READY background and
+           white text set inline by JS are untouched - this only adds transform/filter on top of
+           them. :active adds a tiny press-down (scale below 1) for immediate click feedback.
+           Transition is a quick, responsive 0.15s ease-out both in and out (hover enter AND the
+           mouse-leave return to normal reuse the same transition), independent of the existing
+           slower 0.3s used for the button's background/color/box-shadow state changes so the
+           hover itself never feels sluggish. prefers-reduced-motion drops the scale (kept as a
+           static 1) but keeps the small brightness cue, for players who've asked for less motion. */
+        .od-btn:hover { transform: scale(1.05); filter: brightness(1.12); }
+        .od-btn:active { transform: scale(0.96); filter: brightness(1.05); }
+        @media (prefers-reduced-motion: reduce) {
+            .od-btn:hover { transform: scale(1); filter: brightness(1.12); }
+            .od-btn:active { transform: scale(1); filter: brightness(1.05); }
+        }
+
+        /* --- ACTIVE OVERDRIVE SHINE (subtle) ---
+           Applied ONLY to .od-btn while that Overdrive's existing od.activeTimer > 0 state is
+           true (see the ACTIVE branch of the status loop in game.js, right where it already
+           sets btn.innerText to "ACTIVE (Xs)") and removed again in every other branch there
+           (LOCKED/READY/WAIT/requires-upgrade/cost) - this reuses that same real state check,
+           it does not add a new timer or duplicate state of any kind.
+           Kept deliberately light per spec: a slow (2.4s), gentle brightness/text-shadow pulse
+           that eases in and out, not a hard blink and not a big glow radius - the existing
+           colored box-shadow set inline in JS (0 0 10px od.color) and the button's background/
+           icon/size/border are completely untouched by this; the animation only nudges
+           brightness and adds a soft white text-shadow at its peak, then eases back to normal.
+           Because this is a plain CSS animation on the element itself, each .od-btn currently
+           carrying the class runs its own independent instance - with several Overdrives
+           active at once, each one shines on its own without affecting or resetting any of the
+           others. prefers-reduced-motion turns the pulsing off (keeps a small constant, non-
+           animated brightness bump instead) for players who've asked for less motion. */
+        @keyframes odActiveShine {
+            0%, 100% { filter: brightness(1); text-shadow: 0 1px 0 rgba(0,0,0,0.5); }
+            50% { filter: brightness(1.12); text-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 0 5px rgba(255,255,255,0.55); }
+        }
+        .od-btn.od-active-shine { animation: odActiveShine 2.4s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) {
+            .od-btn.od-active-shine { animation: none; filter: brightness(1.06); }
+        }
+
+        /* --- OVERDRIVE SELECTION CARD SYSTEM ---
+           When 2+ overdrives are simultaneously ready, pressing any overdrive button opens
+           this overlay instead of instantly activating one. Reuses the .overlay-menu look
+           (same dim backdrop/z-index family as pause/readme/zones) so it feels native to
+           the game's existing menu language rather than a bolted-on popup. */
+        #od-select-menu { z-index: 70; background: rgba(5, 5, 12, 0.95); }
+        .od-select-sub { font-size: calc(var(--ui-scale) * 14px); color: #aaa; margin-top: calc(var(--ui-scale) * -25px); margin-bottom: calc(var(--ui-scale) * 20px); max-width: 90vw; }
+        #od-select-timer-wrap { width: min(calc(var(--ui-scale) * 320px), 80vw); margin-bottom: calc(var(--ui-scale) * 25px); }
+        #od-select-timer-bar { width: 100%; background: #1a1a24; height: calc(var(--ui-scale) * 10px); border-radius: calc(var(--ui-scale) * 6px); border: 1px solid #555; overflow: hidden; }
+        #od-select-timer-fill { height: 100%; width: 100%; background: repeating-linear-gradient(90deg, #ffea00 0, #ffea00 6px, #ff3333 6px, #ff3333 12px); transition: width 0.1s linear; image-rendering: pixelated; }
+        #od-select-countdown { font-size: calc(var(--ui-scale) * 13px); color: #ffea00; font-weight: bold; margin-top: calc(var(--ui-scale) * 6px); }
+        #od-select-cards-container { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(var(--ui-scale) * 16px); max-width: 90vw; padding: 0 calc(var(--ui-scale) * 10px); }
+        /* CARD FRAME SWAP: the old flat look (solid #12121a fill + a plain 2px border, tinted
+           per-ability via `card.style.borderColor = od.color` in game.js) is fully removed -
+           every one of the 12 possible Overdrive cards this container can show now uses the
+           one supplied hud-od-select-card.png pixel-art frame via border-image, same technique
+           as every other HUD panel in this file (.od-box, #hud, #pause-btn, etc.): the source
+           PNG is used exactly as delivered (its own transparent margin already cropped off),
+           never redrawn with CSS shapes/gradients, and border-image-slice/-width share one 30px
+           base (measured off the source PNG's own corner-rivet size) so the frame's rounded
+           rivet corners always render at native pixel size and only the straight edges
+           stretch - scaling UNIFORMLY with --ui-scale (never non-uniformly), with
+           image-rendering: pixelated keeping every pixel crisp. `border-radius` is dropped
+           entirely (the frame art already has its own rounded corners baked in - a CSS radius
+           on top would just clip it). Width bumped 130->190px so the icon/name/button content
+           still has roughly its old ~100px of breathing room inside the new, thicker frame.
+           Per-ability color is still shown as a hover glow (game.js sets box-shadow on
+           mouseenter using od.color, unchanged) - that glow now sits around the frame art
+           itself instead of replacing a solid-color border. */
+        .od-select-card { position: relative; background: rgb(10, 10, 15); border-style: solid; border-width: calc(var(--ui-scale) * 30px); border-image-source: url('hud-od-select-card.png'); border-image-slice: 30; border-image-width: calc(var(--ui-scale) * 30px); border-image-repeat: stretch; image-rendering: pixelated; padding: calc(var(--ui-scale) * 14px) calc(var(--ui-scale) * 12px); width: calc(var(--ui-scale) * 190px); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; animation: odCardIn 0.35s ease-out; }
+        .od-select-card:hover { transform: translateY(-6px) scale(1.05); }
+        .od-select-card-icon { height: calc(var(--ui-scale) * 34px); line-height: 1; margin: 0 auto calc(var(--ui-scale) * 10px); }
+        .od-select-card-name { font-size: calc(var(--ui-scale) * 13px); font-weight: bold; text-transform: uppercase; margin-bottom: calc(var(--ui-scale) * 12px); line-height: 1.3; min-height: calc(var(--ui-scale) * 34px); display: flex; align-items: center; justify-content: center; }
+        .od-select-card-btn { font-family: var(--font-pixel); font-weight: bold; font-size: calc(var(--ui-scale) * 11px); color: #000; border-radius: calc(var(--ui-scale) * 6px); padding: calc(var(--ui-scale) * 7px) 0; letter-spacing: 0.5px; }
+        @keyframes odCardIn { from { opacity: 0; transform: translateY(14px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        
+        /* --- ANTIQUE POWER-UP HUD: collected special-item icons + counts ---
+           The supplied hud-antique-powerup.png is shown exactly as delivered on
+           #special-items-art - a fixed 1:1-aspect-ratio box painted with background-size:
+           contain (no crop, no stretch, no distortion) so the artwork's own proportions are
+           always preserved. #special-items-grid's two real slots (built by
+           updateSpecialItemsHud() in game.js - index 0 Dragon Skull, index 1 Flower, always
+           exactly these two) are positioned with percentage coordinates measured directly off
+           that artwork.
+           NO OUTLINE: an earlier pass wrapped this panel in its own background/border box to
+           try to visually "contain" the title above the art. That reads as a second, unwanted
+           frame stacked on top of the art's own frame graphic, so it's gone - #special-items-hud
+           stays a plain, invisible positioning box exactly like before, nothing drawn around it.
+           TITLE TRUNCATION FIX: the title used to share the exact same width as the icon-art
+           square beneath it (both were 175px). At that width "ANTIQUE POWER-UP" (plus its small
+           leading icon) didn't actually fit on one line at the intended font-size and was
+           silently cut short by the text-overflow:ellipsis safety net ("ANTIQUE POWE…" - part of
+           the word missing, not just visually tight). Fix: #special-items-hud (the title's own
+           width) is now wider than #special-items-art (the icon square, given its own fixed
+           width and centered under the title instead of stretching to fill the parent) - this
+           gives the title room to fit completely without changing the icon art's on-screen size
+           at all. Font-size was also nudged down slightly for extra margin. Both numbers were
+           picked to comfortably fit "ANTIQUE POWER-UP" in full; see .special-items-title below.
+           POSITIONING: this panel now anchors directly off the Map (#minimap-container)'s own
+           measured right/top edges - see positionSidePanels() in game.js - sitting directly above
+           the Map with the same right edge and a fixed vertical gap. This creates a clean vertical
+           bottom-right HUD stack ([ANTIQUE POWER-UP] above [MAP]) with guaranteed separation.
+           left/bottom/right below are only the fallback for the instant before that JS runs. */
+        #special-items-hud { position: absolute; right: calc(var(--ui-scale) * 25px); bottom: calc(var(--ui-scale) * 190px); z-index: 11; width: calc(var(--ui-scale) * 180px); pointer-events: none; box-sizing: border-box; }
+        /* white-space: nowrap keeps the title forced onto one line; overflow: hidden plus
+           text-overflow: ellipsis remains only as a last-resort safety net - with the wider
+           title column above and the smaller font-size here, the full "ANTIQUE POWER-UP" text
+           now fits on its own and this should never actually trigger. */
+        /* REMOVED FROM HUD (per request): only the "Antique Power Up" title text itself is
+           hidden - the icon box below it (#special-items-art / #special-items-grid, with the
+           Dragon Skull/Flower icons and their running counts) is untouched and still shows
+           exactly as before. Nothing about the Antique Power Up system's logic changed either -
+           this is display:none on the title text only. */
+        .special-items-title { display: none; font-size: calc(var(--ui-scale) * 10px); font-weight: bold; text-align: center; color: #00f3ff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: calc(var(--ui-scale) * 6px); text-shadow: 0 2px 0 rgba(0,0,0,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        /* Fixed width (not 100% of the now-wider #special-items-hud) plus margin: 0 auto keeps
+           this square exactly the same on-screen size as before and centered under the wider
+           title above it - only the invisible title column got wider, not the artwork itself.
+           overflow: hidden clips anything that would otherwise render outside this square's own
+           bounds (background-size: contain already keeps the artwork itself fully inside at any
+           width, so nothing legitimate ever actually gets clipped by this). */
+        #special-items-art { position: relative; width: calc(var(--ui-scale) * 150px); margin: 0 auto; aspect-ratio: 1 / 1; background-image: url('hud-antique-powerup.png'); background-repeat: no-repeat; background-position: center; background-size: contain; image-rendering: pixelated; overflow: hidden; }
+        #special-items-grid { position: absolute; inset: 0; }
+        /* Slot order always matches updateSpecialItemsHud()'s antiqueItemImages array: 1st
+           child = Dragon Skull -> artwork's LEFT socket, 2nd child = Flower -> RIGHT socket.
+           EQUAL-BOX FIX: both slots' size/border/padding/corner-radius are declared ONCE on the
+           shared .special-item-slot rule below (never per nth-child), so Dragon Skull and Flower
+           are mathematically guaranteed to be the exact same box - width, height, border
+           thickness, padding and corner rounding can't drift apart between the two. Only
+           position (left/top, still lined up with the underlying artwork's two sockets) differs
+           per slot. box-sizing: border-box keeps the border+padding INSIDE the declared
+           width/height rather than adding to it, so the box's outer footprint stays identical
+           even with a visible border now drawn. This is a small bordered panel drawn around each
+           icon (distinct from the earlier "no outline" decision on the outer title panel above -
+           that was about not double-framing the whole HUD card; this is per-icon socket framing,
+           which the artwork itself doesn't draw on its own). */
+        /* Box size/border/corner-radius are UNCHANGED from before (still width/height: 17%,
+           same border and border-radius) - the slightly-larger-icon request below is achieved
+           entirely by trimming the box's own inner padding a bit (was 4px, now 3px scaled), which
+           only grows the icon's available content area a small amount and never touches the
+           box's outer width/height/border/corner-radius, so both boxes stay exactly the same
+           size as each other. */
+        .special-item-slot { position: absolute; width: 17%; height: 17%; z-index: 2; display: flex; align-items: center; justify-content: center; box-sizing: border-box; border: calc(var(--ui-scale) * 2px) solid rgba(0, 243, 255, 0.55); border-radius: calc(var(--ui-scale) * 6px); background: rgba(0, 10, 20, 0.35); padding: calc(var(--ui-scale) * 3px); }
+        .special-item-slot:nth-child(1) { left: 3%; top: 39%; }
+        .special-item-slot:nth-child(2) { left: 70%; top: 39%; }
+        /* Icon sizing: 100% of the box's own content area (i.e. inside the padding set above)
+           combined with object-fit: contain scales EACH icon down to the largest size that fits
+           that identical space while preserving its own native aspect ratio - no cropping, no
+           stretching. This is what keeps Dragon Skull and Flower looking visually balanced next
+           to each other even if their source art has different native proportions, without ever
+           changing the box itself, which stays identical per the shared .special-item-slot rule
+           above.
+           POSITION NUDGE: translate shifts the icon a small fixed amount right + down from dead
+           center, applied identically to both icons via this one shared rule (so Dragon Skull and
+           Flower move by the exact same amount). The remaining padding above (3px scaled) plus
+           the icon's own "contain" whitespace on its shorter axis are both still comfortably
+           bigger than this nudge, so the icon stays fully inside the box and never reaches the
+           border. */
+        .special-item-slot img { width: 100%; height: 100%; object-fit: contain; transform: translate(calc(var(--ui-scale) * 1.5px), calc(var(--ui-scale) * 1.5px)); }
+        #dragon-skull-hud-frame {
+            /* Positioned to sit inside the big hex/diamond shape drawn into the top-center of
+               #special-items-art's own hud-antique-powerup.png artwork (measured directly off
+               that artwork - the empty hex sitting above/between the two icon sockets below).
+               object-fit: contain scales the animation DOWN to fit fully inside this box while
+               preserving its own native aspect ratio - it can never overflow past these bounds
+               or get cropped, and every one of the 5 frames (all the same native size - see
+               ANTIQUE_SKULL_DISPLAY_W/H in game.js) ends up identically sized/centered here, so
+               nothing shifts or jitters frame-to-frame. This box itself is fixed - it is never
+               resized or repositioned by the animation ticking (see
+               tickDragonSkullHudAnimation() in game.js, which only ever swaps `src`). z-index: 1
+               keeps it below the two real icon sockets (.special-item-slot is z-index: 2) in the
+               (non-overlapping, but defense-in-depth) case anything ever shifts. */
+            position: absolute; left: 31.25%; top: 20.5%; width: 26.5%; height: 23%;
+            object-fit: contain; z-index: 1; pointer-events: none;
+            image-rendering: pixelated; image-rendering: crisp-edges;
+        }
+        /* OVERFLOW FIX: dragonSkullCount/flowerCount keep climbing forever after the first
+           Antique Power-Up activation (see updateSpecialItemsHud() in game.js - the badge shows
+           "count/100" and count is never capped or reset), so this text can grow far longer
+           than the "0/100"-sized budget the badge was designed for. It was centered on its slot
+           via left:50%/translateX(-50%) with no max-width, so a long count ("4523/100") grows
+           outward equally in both directions - on the LEFT slot (which sits close to this
+           panel's own left edge) that pushed the badge's left half out past the panel entirely.
+           Fix: anchor each slot's badge to that slot's OUTER edge (left slot -> its left edge,
+           right slot -> its right edge) instead of centering, so any growth extends inward
+           toward the panel's center - the open space both slots already have on their inner
+           side - rather than outward past the panel's own boundary. max-width plus
+           overflow-wrap:anywhere is a second line of defense: past that width the count wraps
+           onto a second line (grows downward, still fully inside the panel) instead of
+           overflowing sideways no matter how large it eventually gets. */
+        .special-item-count { position: absolute; bottom: calc(var(--ui-scale) * -8px); left: 50%; transform: translateX(-50%); z-index: 2; background: transparent; color: #fff; font-size: calc(var(--ui-scale) * 8px); font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.95), 0 0 4px rgba(0,0,0,0.85); min-width: calc(var(--ui-scale) * 26px); max-width: calc(var(--ui-scale) * 60px); white-space: normal; overflow-wrap: anywhere; line-height: 1.3; text-align: center; padding: calc(var(--ui-scale) * 1px) calc(var(--ui-scale) * 3px); }
+        .special-item-slot:nth-child(1) .special-item-count { left: 0; transform: none; text-align: left; }
+        .special-item-slot:nth-child(2) .special-item-count { left: auto; right: 0; transform: none; text-align: right; }
+
+        /* ANTIQUE PICKUP "FLY TO HUD" ANIMATION: a short-lived <img> clone spawned at the exact
+           moment a Dragon Skull/Flower is collected (see spawnAntiqueCollectFlyer() in game.js),
+           positioned with position:fixed in raw viewport pixels (its left/top/width/height are
+           driven every frame by that function's own requestAnimationFrame loop, not by CSS
+           transitions) so it can travel from the pickup's on-screen position all the way to its
+           matching socket inside #special-items-hud. z-index 999 is deliberately far above every
+           other HUD layer in this file (the highest normal HUD element is 15, story overlays run
+           up to 200) so the icon is never hidden behind #special-items-hud or anything else it
+           flies past. pointer-events: none the whole way so it never intercepts clicks/taps
+           mid-flight. Removed from the DOM the instant its flight finishes - nothing here is ever
+           left lingering. */
+        .antique-fly-icon { position: fixed; z-index: 999; pointer-events: none; image-rendering: pixelated; object-fit: contain; will-change: left, top, width, height, opacity; filter: drop-shadow(0 0 6px rgba(0, 243, 255, 0.65)); }
+
+        /* Brief "landed" pulse on the destination socket the instant a flight above completes
+           (see spawnAntiqueCollectFlyer()'s onComplete), so the socket itself visibly reacts
+           rather than the incoming count just silently having already been correct. Purely
+           additive - .special-item-slot's own position/size rules above are untouched, and the
+           class is removed again right after the animation ends so it never lingers on a slot
+           that gets reused by the very next collection. */
+        @keyframes antiqueSlotLanded { 0% { transform: scale(1); filter: brightness(1); } 35% { transform: scale(1.35); filter: brightness(1.8); } 100% { transform: scale(1); filter: brightness(1); } }
+        .special-item-slot.antique-slot-landed { animation: antiqueSlotLanded 0.35s ease-out; }
+
+        /* RESOURCE COLLECT "FLY TO HUD" ICON (Stage 2 of the coin/mineral collection visual - see
+           spawnResourceHudFly()/updateResourceHudFlyers() in game.js): a small fixed-position div
+           spawned the instant a coin/mineral reaches Girl, carrying that resource's own icon as a
+           background-image, and driven every frame by updateResourceHudFlyers() (called from the
+           main gated render loop, NOT its own independent animation loop, so it pauses/resumes and
+           cleans up exactly like every other transient gameplay visual). Deliberately NO
+           filter/blur/glow here (unlike .antique-fly-icon above) to match this game's plain crisp
+           pixel-art pickups. z-index sits above the HUD badges/rows it flies to (10) but well
+           below the Antique flyer (999) and story overlays. pointer-events: none throughout so it
+           never intercepts clicks/taps mid-flight, and it is removed from the DOM the instant its
+           flight finishes - nothing here is ever left lingering. */
+        .resource-collect-fly-icon { position: fixed; z-index: 210; pointer-events: none; image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; will-change: left, top, width, height, opacity, transform; }
+
+        /* Brief scale-pulse on a HUD counter (the CASH badge, or a mineral's own resource-row) the
+           instant a flying resource icon in updateResourceHudFlyers() lands on it - a purely
+           temporary transform, never touching the badge/row's real layout, position, or size, and
+           auto-removed by its own short duration so it can never get stuck mid-pulse. */
+        @keyframes resourceHudCounterPulse { 0% { transform: scale(1); } 45% { transform: scale(1.22); } 100% { transform: scale(1); } }
+        .resource-hud-counter-pulse { animation: resourceHudCounterPulse 0.22s ease-out; }
+
+        #info-toast { position: absolute; top: calc(var(--ui-scale) * 75px); left: 50%; transform: translateX(-50%); z-index: 15; background: rgb(0,0,0); border: 1px solid #00f3ff; padding: calc(var(--ui-scale) * 8px) calc(var(--ui-scale) * 16px); border-radius: calc(var(--ui-scale) * 20px); font-size: calc(var(--ui-scale) * 12px); color: #00f3ff; pointer-events: none; animation: fadeOut 6s forwards; display: none; white-space: nowrap; }
+        @keyframes fadeOut { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* --- MOBILE TOUCH JOYSTICK: REMOVED per spec ---
+           Mobile no longer shows any on-screen virtual joystick - CONTROLLER = TOUCH now drives
+           movement via direct touch-drag on the canvas instead (see the touch-drag handlers
+           near isTouchDevice in the script below). */
+        /* ============================================================
+           STORY / VISUAL NOVEL SYSTEM
+           ============================================================ */
+        #story-overlay {
+            display: none; position: fixed; inset: 0; z-index: 500; background: #000;
+            overflow: hidden; opacity: 0; transition: opacity 0.6s ease;
+            font-family: var(--font-pixel), sans-serif;
+        }
+        #story-overlay.visible { opacity: 1; }
+        #story-image-layer { position: absolute; inset: 0; overflow: hidden; background: #000; }
+        .story-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center;
+            opacity: 0; transition: opacity 1.1s ease; will-change: transform, opacity;
+            /* IMAGE-CROP FIX: this used to be object-fit:cover on a box overscanned to
+               112%/-6% (to leave room for the Ken Burns zoom without exposing empty edges) -
+               "cover" always crops whichever axis doesn't match the box's aspect ratio to fill
+               it completely, and the extra 112% zoom plus up to 1.2x further Ken Burns zoom on
+               top of that compounded it, routinely cropping 20%+ of the image away. Since the
+               13 story images have several different aspect ratios (item 4 of the brief) there
+               was no single crop box that worked for all of them - whichever edge got cropped
+               depended on that image's own proportions, which is exactly why only some images
+               (the ones framed close to an edge, e.g. Girl's face near the top) visibly lost
+               content while others happened to survive unnoticed. object-fit:contain fits the
+               ENTIRE source image inside this box on its longer side, letterboxing (not
+               cropping) the shorter side against #story-image-layer's black background instead -
+               same "fit to frame" logic for every image regardless of its own resolution/aspect
+               ratio, so this needs no per-image tuning (item 4/10). See the kenburns keyframes
+               below for how the pan/zoom motion is preserved without ever exceeding this fully-
+               contained, zero-crop size.
+               Dialogue-image click-menu fix: these are purely decorative <img> layers - all
+               clicks/taps are handled by #story-click-layer sitting above them (z-index:1, see
+               below). Making the images themselves fully non-interactive is defense-in-depth so
+               no mouse/touch event can ever reach them directly, which is what the browser's
+               native "Save Image"/drag/selection UI needs to trigger in the first place. */
+            pointer-events: none; -webkit-user-drag: none; user-drag: none;
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        .story-img.active { opacity: 1; }
+        .story-img.kenburns-a { animation: kenburnsA 14s ease-in-out forwards; }
+        .story-img.kenburns-b { animation: kenburnsB 14s ease-in-out forwards; }
+        /* IMAGE-CROP FIX: both keyframes now animate TOWARD scale(1.0)/translate(0,0) - i.e.
+           the exact object-fit:contain "whole image, no crop" size and position - instead of
+           away from it. The start state is a slightly SMALLER (never larger) version of that
+           same fully-visible frame, so the image is 100% uncropped at every single point in the
+           animation, not just at its end. This keeps the original subtle drifting-camera feel
+           (item 11: preserve existing presentation quality) while making it structurally
+           impossible for the pan/zoom to cut off any part of the artwork, at any aspect ratio. */
+        @keyframes kenburnsA {
+            0%   { transform: scale(0.96) translate(0.6%, 0.4%); }
+            100% { transform: scale(1.0) translate(0%, 0%); }
+        }
+        @keyframes kenburnsB {
+            0%   { transform: scale(0.94) translate(-0.6%, -0.4%); }
+            100% { transform: scale(1.0) translate(0%, 0%); }
+        }
+        #story-vignette { position: absolute; inset: 0; pointer-events: none;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 100%),
+                        linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.15) 28%, rgba(0,0,0,0) 55%),
+                        linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 18%); }
+        #story-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+        #story-loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            z-index: 4; color: #66e0ff; font-family: var(--font-pixel), sans-serif; font-weight: bold;
+            font-size: calc(var(--ui-scale) * 15px); letter-spacing: 1px; text-transform: uppercase;
+            background: rgba(8, 10, 18, 0.7); border: 2px solid #00f3ff; border-radius: calc(var(--ui-scale) * 6px);
+            padding: calc(var(--ui-scale) * 10px) calc(var(--ui-scale) * 18px); pointer-events: none; }
+        .story-particle { position: absolute; border-radius: 50%; background: #fff;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.8); opacity: 0; animation: storyParticleFloat linear infinite; }
+        @keyframes storyParticleFloat {
+            0%   { opacity: 0; transform: translateY(0) translateX(0) scale(0.6); }
+            10%  { opacity: 0.9; }
+            90%  { opacity: 0.5; }
+            100% { opacity: 0; transform: translateY(-140px) translateX(18px) scale(1.1); }
+        }
+        #story-click-layer { position: absolute; inset: 0; z-index: 1; cursor: pointer;
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        #story-dialogue-wrap { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+            display: flex; justify-content: center; padding: 0 calc(var(--ui-scale) * 24px) calc(var(--ui-scale) * 26px);
+            transition: opacity 0.35s ease, transform 0.35s ease; }
+        #story-dialogue-wrap.ui-hidden { opacity: 0; transform: translateY(20px); pointer-events: none; }
+        #story-dialogue-box { width: 100%; max-width: 900px; background: rgba(8, 10, 18, 0.82);
+            border: 2px solid #00f3ff; border-radius: calc(var(--ui-scale) * 14px);
+            box-shadow: 0 0 0 4px rgba(0, 243, 255, 0.35), inset 0 0 0 4px rgba(0,243,255,0.05);
+            padding: calc(var(--ui-scale) * 16px) calc(var(--ui-scale) * 22px); backdrop-filter: blur(3px); }
+        #story-speaker-name { color: #ffcc00; font-weight: 700; font-size: calc(var(--ui-scale) * 17px); margin-bottom: calc(var(--ui-scale) * 8px); letter-spacing: 1px; }
+        #story-speaker-name.narration { color: #9fb3c8; font-style: italic; font-weight: 400; }
+        #story-dialogue-text { color: #f0f4ff; font-size: calc(var(--ui-scale) * 16px); line-height: 1.55;
+            font-family: var(--font-pixel), sans-serif; min-height: calc(var(--ui-scale) * 44px); }
+        #story-dialogue-text.narration-text { font-style: italic; color: #b8c6da; }
+        #story-continue-hint { margin-top: calc(var(--ui-scale) * 8px); font-size: calc(var(--ui-scale) * 11px);
+            color: rgba(224,224,232,0.55); text-align: right; animation: storyHintPulse 1.6s ease-in-out infinite; }
+        @keyframes storyHintPulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.9; } }
+        #story-controls { position: absolute; top: calc(var(--ui-scale) * 18px); right: calc(var(--ui-scale) * 18px);
+            z-index: 6; display: flex; gap: calc(var(--ui-scale) * 8px);
+            transition: opacity 0.35s ease, transform 0.35s ease; }
+        #story-controls.ui-hidden { opacity: 0; transform: translateY(-12px); pointer-events: none; }
+        .story-btn { background: rgba(10,10,15,0.85); border: 2px solid #00f3ff; color: #00f3ff;
+            border-radius: calc(var(--ui-scale) * 8px); padding: calc(var(--ui-scale) * 8px) calc(var(--ui-scale) * 12px);
+            font-family: var(--font-pixel), sans-serif; font-size: calc(var(--ui-scale) * 12px); font-weight: 700;
+            cursor: pointer; pointer-events: auto; white-space: nowrap; }
+        .story-btn:active { transform: scale(0.94); }
+        .story-btn.on { background: #00f3ff; color: #05050a; }
+        #story-show-ui-hint { position: absolute; bottom: calc(var(--ui-scale) * 18px); right: calc(var(--ui-scale) * 18px);
+            z-index: 6; display: none; }
+    
+        /* ===================================================================================
+           SKILL TREE - "OLD LOOK" (LOW-KEY) THEME
+           ===================================================================================
+           Toggled via the OLD LOOK / NEW LOOK button in the tree header (toggleTreeTheme() in
+           game.js, which just flips #menu-upgrades' data-tree-theme attribute - same DOM,
+           same layout, same JS, nothing here touches structure). The "New" look above is
+           completely untouched - all of this is scoped under [data-tree-theme="old"] and only
+           overrides colors/shadows/animations for players who want something calmer than the
+           full neon sci-fi treatment.
+           Redefining the theme's own CSS custom properties (--tree-cyan, --tree-gold, etc, all
+           declared on #menu-upgrades) is what makes most of the retheming "free" - every rule
+           above that already reads var(--tree-cyan)/var(--tree-violet)/var(--tree-gold)/
+           var(--nc) automatically follows the muted palette without being touched individually.
+           The rest of this block just zeroes out the remaining hardcoded glow/blur and turns
+           off every infinite animation - which, as a side effect, also makes this the cheapest
+           possible version of the screen to render (no blur, no repaint-animated glow, nothing
+           running while idle). */
+        #menu-upgrades[data-tree-theme="old"] {
+            --tree-void: #141518; --tree-panel: #1b1c21; --tree-cyan: #7c8697; --tree-cyan-dim: #5a6272;
+            --tree-violet: #8b8b93; --tree-gold: #b89a3f; --tree-locked: #4a4e58; --tree-steel: #2b2e35;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.9);
+        }
+        /* Every animation in the tree screen is decorative (breathing glow, rotating rings,
+           pulses, sweeps, pop-ins) - none of them are load-bearing for layout or state, so
+           disabling them wholesale is safe. Verified none of the affected elements depend on a
+           keyframe's 0% state as their only source of a resting opacity/transform - every one
+           already has its resting look set by a normal (non-keyframe) rule, so nothing goes
+           permanently invisible or stuck mid-transform with this off. */
+        #menu-upgrades[data-tree-theme="old"] * { animation: none !important; }
+        #menu-upgrades[data-tree-theme="old"] .modal-header::before { box-shadow: none; }
+        #menu-upgrades[data-tree-theme="old"] .modal-title,
+        #menu-upgrades[data-tree-theme="old"] .modal-title::before,
+        #menu-upgrades[data-tree-theme="old"] .tree-panel-title { text-shadow: none; }
+        #menu-upgrades[data-tree-theme="old"] #tree-currency-chip { box-shadow: 0 0 0 1px rgba(0,0,0,0.5); }
+        #menu-upgrades[data-tree-theme="old"] .close-btn:hover,
+        #menu-upgrades[data-tree-theme="old"] .tree-theme-btn:hover,
+        #menu-upgrades[data-tree-theme="old"] .action-btn:hover:not(:disabled),
+        #menu-upgrades[data-tree-theme="old"] .tree-continue-btn:hover,
+        #menu-upgrades[data-tree-theme="old"] .tree-zoom-controls button:active { box-shadow: none; filter: none; }
+        #menu-upgrades[data-tree-theme="old"] .action-btn,
+        #menu-upgrades[data-tree-theme="old"] .action-btn.maxed { box-shadow: 0 0 0 1px rgba(0,0,0,0.5); }
+        #menu-upgrades[data-tree-theme="old"] .tree-legend-panel,
+        #menu-upgrades[data-tree-theme="old"] .tree-controls-panel,
+        #menu-upgrades[data-tree-theme="old"] .tree-minimap-panel,
+        #menu-upgrades[data-tree-theme="old"] #node-info-card { box-shadow: 0 0 0 1px rgba(0,0,0,0.5); }
+        #menu-upgrades[data-tree-theme="old"] .tree-legend-state,
+        #menu-upgrades[data-tree-theme="old"] .tree-legend-swatch { box-shadow: none; }
+        /* Flat void, no nebula glows/grid-tile image - just the base color. */
+        #menu-upgrades[data-tree-theme="old"] #tree-container { background: var(--tree-void); }
+        #menu-upgrades[data-tree-theme="old"] #tree-container::before { display: none; }
+        #menu-upgrades[data-tree-theme="old"] #tree-container::after { box-shadow: inset 0 0 0 2px rgba(0,0,0,0.6); }
+        /* FINAL CLEANUP: the Core hub has no decoration in either theme now - nothing to
+           override here. */
+        /* Nodes: icon-only in the "old" look too - no ring/border/glow of any kind, same as
+           the default theme. Only the icon filter (hover/locked/selected) differs between the
+           two looks. */
+        #menu-upgrades[data-tree-theme="old"] .tree-node:hover .node-visual { filter: none; }
+        #menu-upgrades[data-tree-theme="old"] .tree-node.locked .node-visual { filter: grayscale(60%) brightness(0.8); }
+        #menu-upgrades[data-tree-theme="old"] .tree-node.tree-node-selected .node-visual { filter: none; }
+        #menu-upgrades[data-tree-theme="old"] .node-accent,
+        #menu-upgrades[data-tree-theme="old"] .node-badge { box-shadow: none; }
+        #menu-upgrades[data-tree-theme="old"] .edge-dot.revealed { opacity: 0.85; }
+
+/* FINAL OVERDRIVE LAYOUT: one shared HUD frame, 6 slots per row, 12 total.
+   Internal slots are deliberately borderless so there is only one visible HUD frame. */
+#overdrives-container {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(6, auto);
+  width: min(calc(var(--ui-scale) * 205px), calc(100vw - var(--ui-scale) * 30px));
+  grid-auto-flow: row;
+  grid-auto-rows: auto;
+  gap: calc(var(--ui-scale) * 3px);
+}
+#overdrives-container .od-box {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  height: calc(var(--ui-scale) * 82px);
+  padding: calc(var(--ui-scale) * 2px);
+}
+#overdrives-container .od-icon {
+  width: calc(var(--ui-scale) * 12px);
+  height: calc(var(--ui-scale) * 12px);
+}
+
+/* --- MECHANICAL OVERDRIVE HUD REVEAL -----------------------------------------
+   The Overdrive panel now behaves like Active Systems: it starts compact and grows only when
+   another Overdrive becomes genuinely unlocked. Unlocked cards are inserted into the same
+   2-column grid (6 rows maximum), while future/locked cards remain hidden until earned. */
+#overdrives-container {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: row;
+  grid-auto-rows: auto;
+  align-content: start;
+  overflow: hidden;
+  transition: max-height 0.42s ease, padding 0.42s ease, border-width 0.42s ease;
+}
+#overdrives-container .od-box.od-not-revealed {
+  display: none;
+}
+#overdrives-container .od-box.just-unlocked {
+  animation: odMechanicalReveal 0.55s cubic-bezier(.2,.8,.25,1) both;
+}
+@keyframes odMechanicalReveal {
+  0% { opacity: 0; transform: translateY(-8px) scale(0.92); }
+  55% { opacity: 1; transform: translateY(2px) scale(1.035); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+
+/* COMPACT MECHANICAL OVERDRIVE HUD: same 2-column / 6-row reveal, reduced footprint. */
+#overdrives-container {
+  width: min(calc(var(--ui-scale) * 205px), calc(100vw - var(--ui-scale) * 30px));
+  padding: calc(var(--ui-scale) * 7px);
+  border-width: calc(var(--ui-scale) * 14px);
+  border-image-width: calc(var(--ui-scale) * 14px);
+  gap: calc(var(--ui-scale) * 2px);
+}
+#overdrives-container .od-box { height: calc(var(--ui-scale) * 68px); padding: calc(var(--ui-scale) * 1px); }
+#overdrives-container .od-icon { width: calc(var(--ui-scale) * 12px); height: calc(var(--ui-scale) * 12px); }
+
+
+/* FINAL HUD COMPACT/SPACING PASS */
+#special-items-hud { width: calc(var(--ui-scale) * 165px); }
+#dash-hud { width: calc(var(--ui-scale) * 145px); height: calc(var(--ui-scale) * 64px); }
+#level-hud { width: calc(var(--ui-scale) * 265px); height: calc(var(--ui-scale) * 95px); }
+#score-hud, #money-hud, #zone-hud, #distance-hud { transform-origin: top right; }
