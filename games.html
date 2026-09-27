@@ -20,17 +20,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <!-- Open Graph / Social Media Meta Tags -->
-    <meta property="og:title" content="Games Library - Pixel Gaunt Studios">
-    <meta property="og:description" content="Play every Pixel Gaunt Studios game free in your browser - including our debut release Girl The Driller and all of our prototypes. No downloads required.">
-    <meta property="og:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
-    <meta property="og:url" content="https://pixelgaunt.com/games.html">
-    <meta property="og:type" content="website">
-    <!-- Twitter Card Tags -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Games Library - Pixel Gaunt Studios">
-    <meta name="twitter:description" content="Play every Pixel Gaunt Studios game free in your browser - including our debut release Girl The Driller and all of our prototypes. No downloads required.">
-    <meta name="twitter:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
+	<!-- Open Graph / Social Media Meta Tags -->
+<meta property="og:title" content="Games Library - Pixel Gaunt Studios">
+<meta property="og:description" content="Play every Pixel Gaunt Studios game free in your browser - including our debut release Girl The Driller and all of our prototypes.">
+<meta property="og:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
+<meta property="og:url" content="https://pixelgaunt.com/games.html">
+<meta property="og:type" content="website">
+
+<!-- Twitter Card Tags -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Games Library - Pixel Gaunt Studios">
+<meta name="twitter:description" content="Play every Pixel Gaunt Studios game free in your browser - including our debut release Girl The Driller and all of our prototypes.">
+<meta name="twitter:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
 </head>
 <body class="theme-blue">
     <div id="scroll-progress"></div>
@@ -51,10 +52,9 @@
             <div class="nav-menu-links">
                 <a href="index.html">Home</a>
                 <a href="games.html" style="color:#fff;">Games</a>
-                <a href="publish.html">Publish</a>
-                <a href="tournaments.html">Tournaments</a>
-                <a href="merch.html">Merch</a>
-                <a href="dashboard.html" id="dashboard-nav-link" class="pg-hidden">Dashboard</a>
+                <a href="index.html#launch-section">Publish</a>
+                <a href="index.html#tournaments-section">Tournaments</a>
+                <a href="index.html#creator-section">Creator Lab</a>
             </div>
             <div class="theme-select-container" title="Select Theme Color Core">
                 <div class="theme-dot t-blue active" onclick="setGlobalTheme('blue', this)"></div>
@@ -66,21 +66,11 @@
         </nav>
     </header>
 
-<main class="container" id="homepage-page" style="padding-top: 40px;">
-        <section class="portfolio-section" id="featured-section">
-            <div class="pg-shelf-head">
-                <div>
-                    <h2 class="pixel-font">Top 3 Games</h2>
-                    <p>The 3 most-played games today.</p>
-                </div>
-            </div>
-            <div class="pg-rail" id="featured-strip" aria-label="Top 3 games"></div>
-        </section>
-
+    <main class="container" id="homepage-page" style="padding-top: 40px;">
         <section class="portfolio-section" id="games-section">
             <div class="pg-shelf-head">
                 <div>
-                    <h2 class="pixel-font">All Games</h2>
+                    <h2 class="pixel-font">Game Library</h2>
                     <p>Every Pixel Gaunt game, free to play, straight in your browser. No downloads.</p>
                 </div>
                 <div class="pg-search"><i class="fas fa-search" aria-hidden="true"></i><input type="search" id="game-search" placeholder="Search games" aria-label="Search games" autocomplete="off"></div>
@@ -93,7 +83,7 @@
                         <h2 class="pixel-font">Community games</h2>
                         <p>Published by players and developers. Every one runs in an isolated sandbox.</p>
                     </div>
-                    <a class="pg-link" href="publish.html">Publish your game</a>
+                    <a class="pg-link" href="index.html#launch-section">Publish your game</a>
                 </div>
                 <div class="game-grid" id="community-grid"></div>
             </div>
@@ -226,6 +216,5 @@
     <script src="script.js" defer></script>
 
     <script type="module" src="firebase-auth.js"></script>
-    <script src="account.js" defer></script>
 </body>
 </html>
