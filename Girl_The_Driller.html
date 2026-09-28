@@ -2255,6 +2255,38 @@
 #special-items-hud { width: calc(var(--ui-scale) * 165px); }
 #dash-hud { width: calc(var(--ui-scale) * 145px); height: calc(var(--ui-scale) * 64px); }
 #level-hud { width: calc(var(--ui-scale) * 265px); height: calc(var(--ui-scale) * 95px); }
+
+/* MOBILE DASH TOUCH BUTTON: round on-screen trigger for the EXISTING dash (window.performGirlDash).
+   Hidden by default; only shown when JS adds .touch-dash-enabled to <html> (touch + coarse pointer,
+   same test as isLikelyMobile) - never from window size alone. Placed with the same --ui-scale
+   bottom/left system as #level-hud: vertically centred on it, a fixed gap to its right. Also hidden
+   whenever #dash-hud is hidden (Extra Levels) via the sibling selector below. */
+#dash-touch-btn {
+  display: none;
+  position: absolute; z-index: 10;
+  width: calc(var(--ui-scale) * 100px); height: calc(var(--ui-scale) * 100px);
+  bottom: calc(var(--ui-scale) * 22.5px);   /* level-hud: bottom 25 + height 95/2 - 100/2 */
+  left: calc(var(--ui-scale) * 291px);      /* level-hud: left 12 + width 265 + 14 gap */
+  border-radius: 50% !important; box-sizing: border-box; padding: 0; margin: 0;
+  border: calc(var(--ui-scale) * 4px) solid #00f3ff;
+  background: radial-gradient(circle at 50% 40%, #12131f 0%, #06060c 100%);
+  color: #00f3ff; font-family: var(--font-pixel);
+  flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; pointer-events: auto;
+  touch-action: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  --dash-pct: 100%;
+  box-shadow: 0 0 0 calc(var(--ui-scale) * 2px) #06060c, inset 0 0 0 calc(var(--ui-scale) * 3px) rgba(0,243,255,0.25);
+}
+.touch-dash-enabled #dash-touch-btn { display: flex; }
+#dash-hud[style*="display: none"] ~ #dash-touch-btn { display: none !important; }
+#dash-touch-btn .dash-touch-label { font-size: calc(var(--ui-scale) * 16px); font-weight: bold; letter-spacing: 1px; line-height: 1; pointer-events: none; }
+#dash-touch-btn .dash-touch-sub { margin-top: calc(var(--ui-scale) * 7px); font-size: calc(var(--ui-scale) * 10px); font-weight: bold; color: #39ff14; line-height: 1; pointer-events: none; }
+#dash-touch-btn .dash-touch-ring { position: absolute; inset: calc(var(--ui-scale) * 3px); border-radius: 50% !important; pointer-events: none;
+  background: conic-gradient(#39ff14 var(--dash-pct), rgba(0,243,255,0.15) 0);
+  -webkit-mask: radial-gradient(circle, transparent calc(50% - var(--ui-scale) * 5px), #000 calc(50% - var(--ui-scale) * 4px)); mask: radial-gradient(circle, transparent calc(50% - var(--ui-scale) * 5px), #000 calc(50% - var(--ui-scale) * 4px)); }
+#dash-touch-btn.dash-touch-pressed { background: radial-gradient(circle at 50% 40%, #0891a3 0%, #06323a 100%); transform: scale(0.94); }
+#dash-hud.dash-cooling ~ #dash-touch-btn { border-color: #0891a3; }
+#dash-hud.dash-cooling ~ #dash-touch-btn .dash-touch-label { color: #0891a3; }
 #score-hud, #money-hud, #zone-hud, #distance-hud { transform-origin: top right; }
 
 </style>
@@ -3041,6 +3073,8 @@
 <div class="dash-hud-status" id="dash-status">READY</div>
 </div>
 </div>
+<!-- MOBILE DASH BUTTON: touch-only trigger for the existing dash; must stay the immediate next sibling of #dash-hud (CSS sibling selectors rely on it). -->
+<div id="dash-touch-btn" role="button" aria-label="Dash"><div class="dash-touch-ring"></div><div class="dash-touch-label">DASH</div><div class="dash-touch-sub" id="dash-touch-sub">READY</div></div>
 <!-- SHIP LEVEL / ENERGY HUD: reskinned onto the new pill-shaped frame art
          (hud-ship-level-energy.png) instead of the old plain dark box.
          Same IDs as before (lbl-level/lbl-xp/xp-bar/lbl-energy/energy-bar) so none of the
@@ -13328,6 +13362,42 @@ const GTDTutorial = (function () {
         playerShip.performDash();
     });
 
+    // --- MOBILE DASH TOUCH BUTTON: only calls the existing performDash() (same cooldown/state
+    // gating as SPACE). One press = one attempt, fired on press; releasing just clears the pressed
+    // state, so holding or dragging off never repeats. Shown only on touch + coarse-pointer devices. ---
+    (function setupDashTouchButton() {
+        const btn = document.getElementById('dash-touch-btn');
+        if (!btn) return;
+        if (isLikelyMobile) document.documentElement.classList.add('touch-dash-enabled');
+        let activeId = null;
+        function press(id, e) {
+            if (activeId !== null) return; // a press is already active until it is released
+            activeId = id;
+            btn.classList.add('dash-touch-pressed');
+            initAudio();
+            if (e.cancelable) e.preventDefault();
+            playerShip.performDash();
+        }
+        function release(id) {
+            if (id !== activeId) return;
+            activeId = null;
+            btn.classList.remove('dash-touch-pressed');
+        }
+        if (window.PointerEvent) {
+            btn.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') return; press(e.pointerId, e); }, { passive: false });
+            const up = e => release(e.pointerId);
+            btn.addEventListener('pointerup', up);
+            btn.addEventListener('pointercancel', up);
+            btn.addEventListener('lostpointercapture', up);
+        } else {
+            btn.addEventListener('touchstart', e => { press(e.changedTouches[0].identifier, e); }, { passive: false });
+            const end = e => { for (const t of e.changedTouches) release(t.identifier); };
+            btn.addEventListener('touchend', end);
+            btn.addEventListener('touchcancel', end);
+        }
+        btn.addEventListener('contextmenu', e => e.preventDefault());
+    })();
+
     // --- DASH TIMER (world-space, follows the Girl) ---------------------------------------
     // Drawn every frame, right after playerShip.draw() (same camera/scale transform she's
     // drawn under - see the call site in renderFrame), so it tracks her actual screen position
@@ -13379,6 +13449,7 @@ const GTDTutorial = (function () {
     // out of sync with each other. Cheap plain DOM text/style writes, same cost class as the
     // rest of the per-frame HUD work already done in renderFrame. ---
     let dashHudEl = null, dashFillEl = null, dashStatusEl = null;
+    let dashTouchEl = document.getElementById('dash-touch-btn'), dashTouchSubEl = document.getElementById('dash-touch-sub');
     function updateDashHudButton() {
         if (!dashHudEl) { dashHudEl = document.getElementById('dash-hud'); dashFillEl = document.getElementById('dash-fill'); dashStatusEl = document.getElementById('dash-status'); }
         if (!dashHudEl) return;
@@ -13402,12 +13473,14 @@ const GTDTutorial = (function () {
             dashStatusEl.innerText = (remainingMs / 1000).toFixed(1) + 's';
             dashStatusEl.style.color = '#00f3ff';
             dashHudEl.classList.add('dash-cooling');
+            if (dashTouchEl) { dashTouchEl.style.setProperty('--dash-pct', pct + '%'); if (dashTouchSubEl) { dashTouchSubEl.textContent = dashStatusEl.innerText; dashTouchSubEl.style.color = '#00f3ff'; } }
         } else {
             dashFillEl.style.width = '100%';
             dashFillEl.style.background = '#39ff14';
             dashStatusEl.innerText = 'READY';
             dashStatusEl.style.color = '#39ff14';
             dashHudEl.classList.remove('dash-cooling');
+            if (dashTouchEl) { dashTouchEl.style.setProperty('--dash-pct', '100%'); if (dashTouchSubEl) { dashTouchSubEl.textContent = 'READY'; dashTouchSubEl.style.color = '#39ff14'; } }
         }
     }
 
