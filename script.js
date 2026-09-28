@@ -12,8 +12,8 @@
             { id: 9, studio: 'Pixel Gaunt', title: 'Pizza Chaos', genre: 'Arcade', controls: 'Mouse / Touch.', howToPlay: 'Keep up with the chaos and serve every order.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Pizza Chaos.png', url: 'pizza-chaos.html', bgm: 'Pizza Chaos.mp3', orientation: 'landscape' },
             { id: 10, studio: 'Pixel Gaunt', title: 'ReBounce', genre: 'Arcade', controls: 'Mouse / Touch. Drag to aim.', howToPlay: 'Drag and release to bounce your way through.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'ReBounce.png', url: 'rebounce.html', bgm: 'ReBounce.mp3', orientation: 'landscape' },
             { id: 11, studio: 'Pixel Gaunt', title: 'Ring Sort', genre: 'Puzzle', controls: 'Mouse / Touch. Drag rings to sort.', howToPlay: 'Drag rings between pegs to sort them by color.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Ring Sort.png', url: 'ring-sort.html', bgm: 'Ring Sort.mp3', orientation: 'landscape' },
-            { id: 12, studio: 'Pixel Gaunt', title: 'Serpent Relic', genre: 'Arcade', controls: 'Keyboard / Touch.', howToPlay: 'Guide the serpent to collect relics and survive.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Serpent Relic.png', url: 'serpent-relic.html', bgm: 'Serpent Relic.mp3', orientation: 'portrait' },
-            { id: 13, studio: 'Pixel Gaunt', title: 'SnakeScape', genre: 'Arcade', controls: 'Keyboard / Touch.', howToPlay: 'Classic snake action — grow long, avoid the walls.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'SnakeScape.png', url: 'snakescape.html', bgm: 'SnakeScape.mp3', orientation: 'portrait' },
+            { id: 12, studio: 'Pixel Gaunt', title: 'Serpent Relic', genre: 'Arcade', controls: 'Keyboard / Touch.', howToPlay: 'Guide the serpent to collect relics and survive.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Serpent Relic.png', url: 'serpent-relic.html', bgm: 'Serpent Relic.mp3', orientation: 'landscape' },
+            { id: 13, studio: 'Pixel Gaunt', title: 'SnakeScape', genre: 'Arcade', controls: 'Keyboard / Touch.', howToPlay: 'Classic snake action — grow long, avoid the walls.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'SnakeScape.png', url: 'snakescape.html', bgm: 'SnakeScape.mp3', orientation: 'landscape' },
             { id: 14, studio: 'Pixel Gaunt', title: 'Stick Man Velocity', genre: 'Action', controls: 'Mouse / Touch. Tap to play.', howToPlay: 'Tap to keep Stick Man moving at full velocity.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Stick Man Velocity.png', url: 'stick-man-velocity.html', bgm: 'Stick Man Velocity.mp3', orientation: 'landscape' },
             { id: 15, studio: 'Pixel Gaunt', title: 'Tetris Reimagine', genre: 'Puzzle', controls: 'Keyboard / Touch.', howToPlay: 'Clear lines across 100 levels of reimagined Tetris.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Tetris Reimagine.png', url: 'tetris-reimagine.html', bgm: 'Tetris Reimagine.mp3', orientation: 'portrait' },
             { id: 16, studio: 'Pixel Gaunt', title: 'Girl The Driller', genre: 'Adventure', controls: 'Mouse / Touch.', howToPlay: 'Click to Go & Eat Mouse.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'August 20, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Girl The Driller.png', preview: 'Girl The Driller.gif', url: 'girl-the-driller.html', bgm: 'Girl The Driller.mp3', orientation: 'landscape' }
@@ -57,7 +57,7 @@
             return games.find(g => g.id === id) || window.communityGames.find(g => g.id === id);
         }
         function playParam(game) {
-            return game.community ? 'c-' + game.docId : playParam(game);
+            return game.community ? 'c-' + game.docId : game.title.toLowerCase().replace(/ /g, '-');
         }
 
         // Keeps track of the currently displayed grid list (All Games or a filtered/searched subset)
@@ -351,6 +351,14 @@
                 label.textContent = isFullscreen ? 'Exit Fullscreen' : 'Fullscreen';
             }
 
+            // Never leave the device stuck in a locked orientation once fullscreen is exited;
+            // re-apply the game's orientation if the player re-enters fullscreen mid-game.
+            if (getDeviceCategory() === 'mobile') {
+                const activeGame = activeGameId != null ? findGame(activeGameId) : null;
+                if (!isFullscreen) unlockGameOrientation();
+                else if (activeGame) lockGameOrientation(activeGame.orientation || 'landscape');
+            }
+
             const mobileExitBtn = document.getElementById('mobile-exit-fullscreen-btn');
             if (mobileExitBtn) {
                 const showOnMobile = isFullscreen && getDeviceCategory() === 'mobile';
@@ -372,12 +380,12 @@
             const category = getDeviceCategory();
             updateFullscreenControlsForDevice(category);
 
-            requestElementFullscreen(container).then(() => {
-                if (category === 'mobile') lockGameOrientation(game.orientation || 'landscape');
-            }).catch(() => {
-                // Some browsers require the fullscreen call to resolve before locking; still attempt the lock.
-                if (category === 'mobile') lockGameOrientation(game.orientation || 'landscape');
-            });
+            // The lock is async (after fullscreen resolves), so re-check the game is still open -
+            // otherwise a quick Back tap could leave the lock applied to the library page.
+            const lockIfStillPlaying = () => {
+                if (category === 'mobile' && activeGameId === game.id) lockGameOrientation(game.orientation || 'landscape');
+            };
+            requestElementFullscreen(container).then(lockIfStillPlaying).catch(lockIfStillPlaying);
         }
 
         // historyMode controls how the URL/history entry is written:

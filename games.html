@@ -102,7 +102,7 @@
         <div class="gameplay-layout">
             <div class="game-container-wrapper">
                 <div class="game-container" id="game-container-element">
-                    <div class="rotate-hint">🔄 Rotate your device for the best experience</div>
+                    <div class="rotate-hint" role="status" aria-live="polite"><span class="rotate-hint-icon" aria-hidden="true">🔄</span><strong>Rotate your device to Landscape</strong><small>This game is played horizontally</small></div>
                     <iframe src="" id="game-canvas" allowfullscreen allow="autoplay; fullscreen"></iframe>
                     <button type="button" id="mobile-exit-fullscreen-btn" class="mobile-exit-fullscreen-btn" onclick="toggleFullscreen()" aria-label="Exit Fullscreen" title="Exit Fullscreen">⛶</button>
                 </div>
