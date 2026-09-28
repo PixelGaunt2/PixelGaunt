@@ -815,11 +815,6 @@
                     activeGenre = name;
                     syncCategoryButtons();
                     applyGameFilters();
-                    // On the homepage the category row sits above the grid - bring the results into view.
-                    if (document.getElementById('categories-section')) {
-                        const target = document.getElementById('games-section');
-                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
                 });
                 bar.appendChild(b);
             });

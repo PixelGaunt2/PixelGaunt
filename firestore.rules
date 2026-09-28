@@ -36,19 +36,31 @@ service cloud.firestore {
     }
 
     // ---- tournaments ------------------------------------------------------------------------
+    // Single-elimination brackets. Anyone can read. Any signed-in user can create one (they become
+    // its owner) and can JOIN (append exactly themselves) while registration is open. Only the owner
+    // can change anything else: add/remove players, start it, enter results, delete it.
     match /tournaments/{tid} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.ownerUid == request.auth.uid
                     && request.resource.data.name is string && request.resource.data.name.size() <= 60
                     && request.resource.data.limit is int && request.resource.data.limit >= 2 && request.resource.data.limit <= 500
-                    && request.resource.data.players.size() == 0;
-      // Join = append exactly one player to the array and touch nothing else; scores are only
-      // ever set by the game's own reporting server (a separate, authenticated integration),
-      // never trusted from an arbitrary client write here.
-      allow update: if request.auth != null
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players'])
-                    && request.resource.data.players.size() == resource.data.players.size() + 1
-                    && request.resource.data.players[request.resource.data.players.size() - 1].uid == request.auth.uid;
+                    && request.resource.data.players.size() == 0
+                    && (!('description' in request.resource.data) || request.resource.data.description.size() <= 300);
+      allow update: if request.auth != null && (
+                      // owner: full control, but ownership can never be reassigned
+                      (request.auth.uid == resource.data.ownerUid
+                        && request.resource.data.ownerUid == resource.data.ownerUid
+                        && request.resource.data.limit is int && request.resource.data.limit >= 2 && request.resource.data.limit <= 500
+                        && request.resource.data.players.size() <= request.resource.data.limit)
+                      ||
+                      // anyone else: join = append exactly one player (themselves) and touch nothing else
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players'])
+                        && request.resource.data.players.size() == resource.data.players.size() + 1
+                        && request.resource.data.players.size() <= resource.data.limit
+                        && request.resource.data.players[request.resource.data.players.size() - 1].uid == request.auth.uid
+                        && (!('status' in resource.data) || resource.data.status == 'registration' || resource.data.status == 'upcoming')
+                        && (!('registration' in resource.data) || resource.data.registration == 'open'))
+                    );
       allow delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
     }
 

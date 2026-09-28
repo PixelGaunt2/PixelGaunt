@@ -31,6 +31,113 @@
 
         const mainLoginBtn = document.getElementById("main-login-btn");
         const googleLoginBtn = document.getElementById("google-login-btn"); 
+        const loginModal = document.getElementById("login-modal");
+
+        // Always show Google's account chooser (otherwise Google may silently reuse the last
+        // account) - this is what lets a user pick a *different* Gmail account.
+        googleProvider.setCustomParameters({ prompt: "select_account" });
+
+        // ---------------------------------------------------------------------------------
+        // LOGIN FLOW:  Login -> Google account selection -> CONTINUE step -> Creator Studio
+        //
+        // Firebase reports "signed in" (onAuthStateChanged) the instant the Google account is
+        // selected. Previously that callback simply closed the modal, so the user saw nothing
+        // between account selection and being logged in. Now, while `awaitingContinue` is true,
+        // the callback shows the Continue step instead and holds back the "logged in" UI events
+        // (pg-auth / plan load / nav change / redirect) until Continue is pressed.
+        //
+        // `awaitingContinue` only controls UI sequencing. Identity always comes from Firebase
+        // (auth.currentUser); the sessionStorage flag exists solely so the Continue step also
+        // appears after a signInWithRedirect round-trip (which reloads the page).
+        // ---------------------------------------------------------------------------------
+        const AWAIT_KEY = "pgAwaitContinue";
+        let awaitingContinue = false;
+        try { awaitingContinue = sessionStorage.getItem(AWAIT_KEY) === "1"; } catch (e) { /* storage unavailable */ }
+        function setAwaiting(v) {
+            awaitingContinue = v;
+            try { if (v) sessionStorage.setItem(AWAIT_KEY, "1"); else sessionStorage.removeItem(AWAIT_KEY); } catch (e) { /* ignore */ }
+        }
+
+        const loginStep = loginModal ? loginModal.querySelector(".modal-step") : null;
+        let loginMsgEl = null, continueStepEl = null, contAvatar = null, contName = null, contEmail = null, contMsg = null, contBtn = null, switchBtn = null;
+
+        // Built here (not copied into every HTML page) so all seven pages share one login modal.
+        // Reuses the existing modal, title and button styles.
+        if (loginModal && loginStep) {
+            loginMsgEl = document.createElement("p");
+            loginMsgEl.id = "pg-login-msg";
+            loginMsgEl.setAttribute("role", "alert");
+            loginMsgEl.style.cssText = "display:none; margin-top:16px; font-size:0.85rem; line-height:1.5; color:#fca5a5; text-align:center;";
+            loginStep.appendChild(loginMsgEl);
+
+            continueStepEl = document.createElement("div");
+            continueStepEl.id = "pg-continue-step";
+            continueStepEl.className = "modal-step";
+            continueStepEl.style.cssText = "display:none; text-align:center;";
+            continueStepEl.innerHTML =
+                '<h3 class="modal-title pixel-font">Pixel <span style="color:var(--neon-purple);">Gaunt</span></h3>' +
+                '<p style="color:#94a3b8; font-size:0.9rem; margin:-8px 0 18px;">Google account selected</p>' +
+                '<img id="pg-continue-avatar" alt="" style="width:64px; height:64px; border-radius:50%; margin:0 auto 12px; display:none; border:2px solid var(--neon-cyan);">' +
+                '<div id="pg-continue-name" style="color:#fff; font-weight:700; font-size:1rem; overflow-wrap:anywhere;"></div>' +
+                '<div id="pg-continue-email" style="color:#e2e8f0; font-size:0.9rem; margin:4px 0 22px; overflow-wrap:anywhere;"></div>' +
+                '<button type="button" class="nav-btn primary pg-btn" id="pg-continue-btn" style="width:100%; justify-content:center;">Continue</button>' +
+                '<button type="button" id="pg-switch-btn" style="margin-top:14px; background:none; border:none; color:#94a3b8; font-size:0.85rem; text-decoration:underline; cursor:pointer;">Use a different Google account</button>' +
+                '<p id="pg-continue-msg" role="alert" style="display:none; margin-top:14px; font-size:0.85rem; line-height:1.5; color:#fca5a5;"></p>';
+            loginStep.parentNode.appendChild(continueStepEl);
+
+            contAvatar = continueStepEl.querySelector("#pg-continue-avatar");
+            contName = continueStepEl.querySelector("#pg-continue-name");
+            contEmail = continueStepEl.querySelector("#pg-continue-email");
+            contMsg = continueStepEl.querySelector("#pg-continue-msg");
+            contBtn = continueStepEl.querySelector("#pg-continue-btn");
+            switchBtn = continueStepEl.querySelector("#pg-switch-btn");
+        }
+
+        function showLoginMsg(text) {
+            if (!loginMsgEl) { if (text) alert(text); return; }   // no modal on this page: last-resort fallback
+            loginMsgEl.textContent = text || "";
+            loginMsgEl.style.display = text ? "block" : "none";
+        }
+        function showContinueMsg(text) {
+            if (!contMsg) return;
+            contMsg.textContent = text || "";
+            contMsg.style.display = text ? "block" : "none";
+        }
+        function showLoginStep() {
+            if (continueStepEl) continueStepEl.style.display = "none";
+            if (loginStep) loginStep.style.display = "";
+            if (contBtn) contBtn.disabled = false;
+            showContinueMsg("");
+        }
+        function showContinueStep(user) {
+            if (!continueStepEl || !loginStep) {
+                // Page without the modal markup: nothing to show, so don't leave the user stuck.
+                finishLogin(false);
+                return;
+            }
+            loginStep.style.display = "none";
+            continueStepEl.style.display = "";
+            contName.textContent = user.displayName || "";
+            contEmail.textContent = user.email || "";
+            if (user.photoURL) { contAvatar.src = user.photoURL; contAvatar.style.display = "block"; } else { contAvatar.style.display = "none"; }
+            contBtn.disabled = false;
+            showContinueMsg("");
+            if (typeof window.openModal === "function") window.openModal("login-modal");
+        }
+
+        // Closing the modal (X / clicking outside) while the Continue step is showing means the
+        // user chose not to continue: sign them out so nothing is half-logged-in.
+        const originalCloseModals = window.closeModals;
+        window.closeModals = function () {
+            if (awaitingContinue && continueStepEl && continueStepEl.style.display !== "none") cancelPendingLogin();
+            showLoginMsg("");
+            if (typeof originalCloseModals === "function") originalCloseModals.apply(this, arguments);
+            setTimeout(() => { if (!awaitingContinue) showLoginStep(); }, 350);
+        };
+        async function cancelPendingLogin() {
+            setAwaiting(false);
+            try { await signOut(auth); } catch (error) { console.error("Logout Error:", error); }
+        }
 
         // Saving the user profile is a SEPARATE concern from signing in.
         // If Firestore rules reject the write, the user is still validly logged in,
@@ -58,55 +165,123 @@
                 case "auth/popup-blocked":
                     return "Your browser blocked the sign-in popup. Please allow popups and try again.";
                 case "auth/popup-closed-by-user":
+                case "auth/user-cancelled":
+                case "auth/redirect-cancelled-by-user":
+                    return "Sign-in cancelled. Click \"Login with Google\" to try again.";
                 case "auth/cancelled-popup-request":
-                    return null; // user simply closed it; not an error worth alerting about
+                    return null; // a second click superseded the first popup; nothing to report
                 case "auth/network-request-failed":
                     return "Network error reaching Firebase. Check your connection and try again.";
+                case "auth/user-disabled":
+                    return "This Google account has been disabled.";
                 default:
-                    return "Login failed: " + ((error && error.message) || "Unknown error");
+                    return "Google authentication failed: " + ((error && error.message) || "Unknown error");
             }
+        }
+
+        // Shows an error inside the login modal (opening it if needed) so the user always sees what happened.
+        function reportLoginError(error) {
+            const msg = describeAuthError(error);
+            if (!msg) return;
+            showLoginStep();
+            showLoginMsg(msg);
+            if (typeof window.openModal === "function") window.openModal("login-modal");
         }
 
         // If we came back from a redirect-based sign-in, finish it here.
         getRedirectResult(auth)
-            .then((result) => { if (result && result.user) saveUserProfile(result.user); })
+            .then((result) => {
+                if (result && result.user) {
+                    saveUserProfile(result.user);
+                    if (awaitingContinue) showContinueStep(result.user);
+                } else if (awaitingContinue && !auth.currentUser) {
+                    // Flag was set but no sign-in came back (cancelled / stale flag).
+                    setAwaiting(false);
+                    reportLoginError({ code: "auth/redirect-cancelled-by-user" });
+                }
+            })
             .catch((error) => {
-                const msg = describeAuthError(error);
                 console.error("Redirect login error:", error);
-                if (msg) alert(msg);
+                setAwaiting(false);
+                reportLoginError(error);
             });
 
         if (googleLoginBtn) {
             googleLoginBtn.addEventListener("click", async () => {
+                showLoginMsg("");
+                setAwaiting(true);            // must be set BEFORE Firebase fires onAuthStateChanged
+                googleLoginBtn.disabled = true;
                 try {
                     const result = await signInWithPopup(auth, googleProvider);
                     await saveUserProfile(result.user);
+                    showContinueStep(result.user);
                 } catch (error) {
                     console.error("Popup login error:", error);
                     // Popups are unreliable on mobile / in-app browsers - fall back to redirect.
                     if (
                         error && (
                             error.code === "auth/popup-blocked" ||
-                            error.code === "auth/operation-not-supported-in-this-environment" ||
-                            error.code === "auth/cancelled-popup-request"
+                            error.code === "auth/operation-not-supported-in-this-environment"
                         )
                     ) {
                         try {
-                            await signInWithRedirect(auth, googleProvider);
+                            await signInWithRedirect(auth, googleProvider);   // keeps awaitingContinue flag across the reload
                             return;
                         } catch (redirectError) {
                             console.error("Redirect login error:", redirectError);
-                            const rmsg = describeAuthError(redirectError);
-                            if (rmsg) alert(rmsg);
+                            setAwaiting(false);
+                            reportLoginError(redirectError);
                             return;
                         }
                     }
-                    const msg = describeAuthError(error);
-                    if (msg) alert(msg);
+                    setAwaiting(false);
+                    reportLoginError(error);
+                } finally {
+                    googleLoginBtn.disabled = false;
                 }
             });
         } else {
             console.warn("google-login-btn not found in the DOM - login button is not wired up.");
+        }
+
+        // CONTINUE: verify the Firebase user, then complete login and open Creator Studio.
+        if (contBtn) {
+            contBtn.addEventListener("click", async () => {
+                const user = auth.currentUser;
+                if (!user) {
+                    setAwaiting(false);
+                    showLoginStep();
+                    showLoginMsg("Your sign-in session ended. Please log in again.");
+                    return;
+                }
+                contBtn.disabled = true;
+                showContinueMsg("");
+                try {
+                    await user.getIdToken();   // confirms Firebase still accepts this session
+                } catch (error) {
+                    console.error("Could not verify Firebase user:", error);
+                    contBtn.disabled = false;
+                    showContinueMsg(describeAuthError(error) || "Could not verify your sign-in. Please try again.");
+                    return;
+                }
+                finishLogin(true);
+            });
+        }
+        if (switchBtn) {
+            switchBtn.addEventListener("click", async () => {
+                await cancelPendingLogin();
+                showLoginStep();
+                showLoginMsg("Signed out. Choose the Google account you want to use.");
+            });
+        }
+
+        function finishLogin(openStudio) {
+            setAwaiting(false);
+            const user = auth.currentUser;
+            applyAuthState(user);           // closes the modal, updates nav, fires pg-auth, loads plan
+            if (openStudio && user && document.body.dataset.pgPage !== "creator-studio") {
+                window.location.href = "creator-studio.html";
+            }
         }
 
         window.logoutUser = async () => {
@@ -135,7 +310,9 @@
 
         const creatorStudioNavLink = document.getElementById('nav-creator-studio-link');
 
-        onAuthStateChanged(auth, (user) => {
+        // The "logged in / logged out" UI. Called directly for normal auth changes (already
+        // signed in on page load, logout) and, for a fresh login, only after Continue.
+        function applyAuthState(user) {
             window.dispatchEvent(new CustomEvent('pg-auth', { detail: { user: user || null } }));
             if (user) {
                 window.isLoggedIn = true; 
@@ -164,6 +341,16 @@
                     window.location.href = 'index.html';
                 }
             }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user && awaitingContinue) {
+                // Fresh sign-in in progress: show the Continue step and WAIT. No pg-auth event,
+                // no "logged in" UI and no redirect until the user presses Continue.
+                showContinueStep(user);
+                return;
+            }
+            applyAuthState(user);
         });
 
         const likeBtn = document.getElementById('like-btn');

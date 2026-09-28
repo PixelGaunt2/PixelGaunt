@@ -32,7 +32,7 @@
         smokeTestMs: 3500,
         cdnAllow: ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net'],
         fontHosts: ['fonts.googleapis.com', 'fonts.gstatic.com'],
-        // First-party games become tournament-ready by reporting scores (see the Tournaments > Compatibility tab).
+        // First-party games can report scores to a server for score-attack events (used by the Publish form).
         // Once a game does, list it here: { 16: 'score' } (key = game id in script.js).
         firstPartyTournament: {},
         // Creator Lab: flip a value to true only when a real service is connected server-side.
@@ -610,77 +610,127 @@
     function resetPublish() { pubState = null; const root = $('#launch-root'); if (root) mountPublish(root); }
 
     /* ======================================================================================
-       TOURNAMENTS MODULE
+       TOURNAMENTS MODULE  -  single-elimination brackets
+       Data lives in the existing Firestore `tournaments` collection. New-style documents carry
+       format: 'single-elim' plus a flat `bracket` array of matches (Firestore has no nested arrays);
+       older leaderboard-style documents (no `format`) still open in the legacy view below.
+       Only the tournament's owner can start it, edit participants or enter results - the UI hides
+       those controls for everyone else AND firestore.rules refuses the writes.
        ====================================================================================== */
     let tourneyTab = 'browse';
+    let cur = null;            // the tournament currently open: { id, t, sel }
+    let authHooked = false;
 
-    function tournamentCompatList() {
-        const list = [];
-        Core.games.forEach(g => { if (CONFIG.firstPartyTournament[g.id]) list.push({ id: g.id, title: g.title, status: 'ready' }); else list.push({ id: g.id, title: g.title, status: 'none' }); });
+    /* ---- bracket engine: pure functions, no DOM and no Firebase ---- */
+    const Bracket = (() => {
+        const nextPow2 = n => { let s = 2; while (s < n) s *= 2; return s; };
+        // Standard seeding so the top seeds meet last and BYEs always go to the top seeds: 8 -> 1,8,4,5,2,7,3,6
+        function seedOrder(size) { let o = [1]; while (o.length < size) { const L = o.length * 2; o = o.flatMap(s => [s, L + 1 - s]); } return o; }
+        const at = (ms, r, i) => ms.find(m => m.round === r && m.index === i) || null;
+        const rounds = ms => ms.reduce((a, m) => Math.max(a, m.round), 0);
+        const nextOf = (ms, m) => (m.round >= rounds(ms) ? null : at(ms, m.round + 1, m.index >> 1));
+        const slotOf = m => (m.index % 2 === 0 ? 'p1' : 'p2');
+        // A player advances into the next round's match: top feeder -> p1, bottom feeder -> p2.
+        function feed(ms, m) { const nx = nextOf(ms, m); if (nx) nx[slotOf(m)] = m.winner; }
+
+        // players: [{ id, name }] in seed order. Missing seeds (players < bracket size) become BYEs.
+        function build(players) {
+            const n = players.length, size = nextPow2(n), total = Math.log2(size), ms = [];
+            for (let r = 1; r <= total; r++) for (let i = 0; i < size / Math.pow(2, r); i++) ms.push({ id: 'r' + r + 'm' + (i + 1), round: r, index: i, p1: null, p2: null, s1: null, s2: null, winner: null, bye: false });
+            const order = seedOrder(size);
+            for (let i = 0; i < size / 2; i++) {
+                const m = at(ms, 1, i), a = order[i * 2], b = order[i * 2 + 1];
+                m.p1 = a <= n ? players[a - 1].id : null; m.p2 = b <= n ? players[b - 1].id : null;
+                if (!m.p1 || !m.p2) { m.bye = true; m.winner = m.p1 || m.p2; feed(ms, m); }
+            }
+            return ms;
+        }
+        // winnerSlot: 'p1' | 'p2'. Scores are optional (walkover). Returns an error string or null.
+        function setResult(ms, id, winnerSlot, s1, s2) {
+            const m = ms.find(x => x.id === id);
+            if (!m || m.bye) return 'This match cannot be scored.';
+            if (!m.p1 || !m.p2) return 'Both players must be known before a result can be entered.';
+            if (winnerSlot !== 'p1' && winnerSlot !== 'p2') return 'Pick a winner.';
+            const w = m[winnerSlot], nx = nextOf(ms, m);
+            if (m.winner && m.winner !== w && nx && nx.winner) return 'The next match already has a result. Reset it first, then change this one.';
+            m.s1 = s1; m.s2 = s2; m.winner = w; feed(ms, m);
+            return null;
+        }
+        // Clears a result and, if later matches were decided from it, clears those too.
+        function clearMatch(ms, m) {
+            const nx = nextOf(ms, m);
+            if (m.winner && nx) { if (nx.winner) clearMatch(ms, nx); nx[slotOf(m)] = null; }
+            m.winner = null; m.s1 = null; m.s2 = null;
+        }
+        function resetMatch(ms, id) {
+            const m = ms.find(x => x.id === id);
+            if (!m || m.bye || !m.winner) return 'Nothing to reset.';
+            clearMatch(ms, m); return null;
+        }
+        function downstreamCount(ms, m) { let c = 0, x = nextOf(ms, m); while (x && x.winner) { c++; x = nextOf(ms, x); } return c; }
+        function roundName(r, total) { const left = Math.pow(2, total - r); return left === 1 ? 'Final' : left === 2 ? 'Semifinals' : left === 4 ? 'Quarterfinals' : 'Round ' + r; }
+        function status(m) { return m.bye ? 'bye' : m.winner ? 'done' : (m.p1 && m.p2) ? 'ready' : 'waiting'; }
+        function champion(ms) { const f = at(ms, rounds(ms), 0); return f && f.winner ? f : null; }
+        return { nextPow2, seedOrder, build, setResult, resetMatch, downstreamCount, roundName, status, champion, at, rounds, nextOf };
+    })();
+
+    /* ---- small helpers ---- */
+    const pid = p => p.id || p.uid;
+    const guestId = () => 'g' + Math.random().toString(36).slice(2, 9);
+    const fmtWhen = ts => (ts && ts.toMillis ? new Date(ts.toMillis()).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'To be announced');
+    const isOwner = () => { const u = getUser(); return !!(u && cur && u.uid === cur.t.ownerUid); };
+    function tStatus(t, now) {
+        if (!t.format) { const k = tournamentStatusOf(t, now); return { key: k, label: k === 'done' ? 'Finished' : k === 'live' ? 'Live' : 'Upcoming' }; }
+        if (t.status === 'complete') return { key: 'done', label: 'Completed' };
+        if (t.status === 'live') return { key: 'live', label: 'In progress' };
+        return t.registration === 'closed' ? { key: 'warn', label: 'Registration closed' } : { key: 'upcoming', label: 'Registration open' };
+    }
+    function tournamentStatusOf(t, now) {
+        const s = t.startAt && t.startAt.toMillis ? t.startAt.toMillis() : null, e = t.endAt && t.endAt.toMillis ? t.endAt.toMillis() : null;
+        if (e && now > e) return 'done'; if (s && now < s) return 'upcoming'; return 'live';
+    }
+    async function allGamesForPicker() {
+        const list = Core.games.map(g => ({ id: String(g.id), title: g.title }));
+        try { if (Core.loadCommunityGames) await Core.loadCommunityGames(); } catch (e) { /* community games are optional here */ }
+        (window.communityGames || []).forEach(g => list.push({ id: String(g.id), title: g.title }));
         return list;
     }
+    // One place for every write: runs inside a transaction against the freshest copy of the document.
+    async function mutateTournament(id, fn) {
+        const { db, fs } = await fb();
+        const ref = fs.doc(db, 'tournaments', id);
+        let merged;
+        await fs.runTransaction(db, async tx => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error('This tournament no longer exists.');
+            const data = snap.data();
+            const patch = fn(data);
+            tx.update(ref, patch);
+            merged = { ...data, ...patch };
+        });
+        return merged;
+    }
+    const ownerOnly = data => { const u = getUser(); if (!u || u.uid !== data.ownerUid) throw new Error('Only the tournament organizer can do that.'); };
 
+    /* ---- mount: Browse / Create tabs ---- */
     async function mountTournaments(root) {
         root.innerHTML = `
             <div class="pg-tabs" role="tablist">
-                <button class="pg-tab" data-tab="browse" role="tab" aria-selected="true">Browse</button>
+                <button class="pg-tab" data-tab="browse" role="tab" aria-selected="true">Tournaments</button>
                 <button class="pg-tab" data-tab="create" role="tab" aria-selected="false">Create</button>
-                <button class="pg-tab" data-tab="compat" role="tab" aria-selected="false">Compatibility</button>
             </div>
             <div id="pg-tourney-body"></div>
         `;
-        root.querySelectorAll('.pg-tab').forEach(btn => btn.addEventListener('click', () => { tourneyTab = btn.dataset.tab; renderTourneyTabs(root); renderTourneyBody(root); }));
-        renderTourneyBody(root);
+        root.querySelectorAll('.pg-tab').forEach(btn => btn.addEventListener('click', () => { cur = null; tourneyTab = btn.dataset.tab; renderTourneyTabs(root); renderTourneyBody(root); }));
+        if (!authHooked) { authHooked = true; onAuth(() => { if (cur) renderTournament(root); }); }
+        const wanted = new URLSearchParams(location.search).get('t');
+        if (wanted) openTournament(root, wanted); else renderTourneyBody(root);
     }
     function renderTourneyTabs(root) { root.querySelectorAll('.pg-tab').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tourneyTab ? 'true' : 'false')); }
 
     async function renderTourneyBody(root) {
         const body = $('#pg-tourney-body', root);
-        if (tourneyTab === 'compat') {
-            const rows = tournamentCompatList().map(g => `<tr><td>${esc(g.title)}</td><td><span class="pg-pill ${g.status === 'ready' ? 'ok' : 'warn'}">${g.status === 'ready' ? 'Tournament ready' : 'Not Tournament Compatible'}</span></td></tr>`).join('');
-            body.innerHTML = `<p class="pg-muted" style="margin-bottom:14px;">A game becomes tournament-ready once it reports match scores to a server PixelGaunt can read from. Single-player games with no scoring server stay marked below.</p><div class="pg-tablewrap"><table class="pg-table"><thead><tr><th>Game</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-            return;
-        }
-        if (tourneyTab === 'create') {
-            body.innerHTML = `
-                <div class="pg-panel pg-cut" style="max-width:640px;">
-                    <h3>Create a tournament</h3>
-                    <p>Only for games marked <b>Tournament ready</b> in the Compatibility tab — those report scores to a server PixelGaunt can read. A single-player game with no such server cannot host one; add a scoring server when you publish it (see Publish above) to make it eligible.</p>
-                    <div class="pg-grid2" style="margin-top:12px;">
-                        <div class="pg-field"><label for="pgt-game">Game</label><select id="pgt-game"></select></div>
-                        <div class="pg-field"><label for="pgt-name">Tournament name</label><input id="pgt-name" maxlength="60" placeholder="Weekend Cup"></div>
-                        <div class="pg-field"><label for="pgt-limit">Player limit</label><input id="pgt-limit" type="number" min="2" max="500" value="32"></div>
-                        <div class="pg-field"><label for="pgt-prize">Prize (optional)</label><input id="pgt-prize" maxlength="80" placeholder="Bragging rights"></div>
-                        <div class="pg-field"><label for="pgt-start">Start</label><input id="pgt-start" type="datetime-local"></div>
-                        <div class="pg-field"><label for="pgt-end">End</label><input id="pgt-end" type="datetime-local"></div>
-                    </div>
-                    <div id="pgt-create-msg" class="pg-note"></div>
-                    <button type="button" class="pg-btn primary" id="pgt-create-btn" style="margin-top:14px;">Create tournament</button>
-                </div>`;
-            const sel = $('#pgt-game', body);
-            const ready = tournamentCompatList().filter(g => g.status === 'ready').concat(window.communityGames.filter(g => g.tournament && g.tournament.reporting === 'score').map(g => ({ id: g.id, title: g.title, status: 'ready' })));
-            sel.innerHTML = ready.length ? ready.map(g => `<option value="${esc(g.id)}">${esc(g.title)}</option>`).join('') : '<option value="">No tournament-ready games yet</option>';
-            $('#pgt-create-btn', body).addEventListener('click', async () => {
-                if (needLogin('Sign in to create a tournament.')) return;
-                if (!ready.length) { $('#pgt-create-msg', body).textContent = 'No games are tournament-ready yet.'; return; }
-                const name = $('#pgt-name', body).value.trim();
-                if (!name) { $('#pgt-create-msg', body).textContent = 'Give your tournament a name.'; return; }
-                const start = $('#pgt-start', body).value, end = $('#pgt-end', body).value;
-                try {
-                    const { db, fs } = await fb();
-                    const user = getUser();
-                    await fs.addDoc(fs.collection(db, 'tournaments'), {
-                        name, gameId: sel.value, gameTitle: sel.selectedOptions[0] ? sel.selectedOptions[0].textContent : '',
-                        limit: Math.max(2, Math.min(500, parseInt($('#pgt-limit', body).value, 10) || 32)),
-                        prize: $('#pgt-prize', body).value.trim().slice(0, 80),
-                        startAt: start ? fs.Timestamp.fromDate(new Date(start)) : null, endAt: end ? fs.Timestamp.fromDate(new Date(end)) : null,
-                        ownerUid: user.uid, ownerName: cleanName(user), players: [], status: 'upcoming', createdAt: fs.serverTimestamp()
-                    });
-                    toast('Tournament created.'); tourneyTab = 'browse'; renderTourneyTabs(root); renderTourneyBody(root);
-                } catch (err) { console.error(err); $('#pgt-create-msg', body).textContent = 'Could not create the tournament: ' + err.message; }
-            });
-            return;
-        }
+        if (tourneyTab === 'create') { renderCreateForm(root, body); return; }
         body.innerHTML = '<p class="pg-muted">Loading tournaments...</p>';
         try {
             const { db, fs } = await fb();
@@ -689,79 +739,332 @@
             const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             if (!list.length) { body.innerHTML = '<div class="pg-empty">No tournaments yet. Create the first one from the Create tab.</div>'; return; }
             body.innerHTML = `<div class="pg-tlist">${list.map(t => tournamentCard(t, now)).join('')}</div>`;
-            body.querySelectorAll('[data-tid]').forEach(card => card.addEventListener('click', e => { if (e.target.closest('button')) return; openTournament(root, card.dataset.tid); }));
-            body.querySelectorAll('[data-join]').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); joinTournament(btn.dataset.join, root); }));
+            body.querySelectorAll('[data-tid]').forEach(card => {
+                const open = () => openTournament(root, card.dataset.tid);
+                card.addEventListener('click', e => { if (e.target.closest('button')) return; open(); });
+                card.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.target.closest('button')) open(); });
+            });
+            body.querySelectorAll('[data-join]').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); joinTournament(btn.dataset.join).then(ok => { if (ok) renderTourneyBody(root); }); }));
         } catch (err) { console.error(err); body.innerHTML = '<div class="pg-empty">Tournaments are unavailable right now.</div>'; }
     }
 
-    function tournamentStatusOf(t, now) {
-        const s = t.startAt && t.startAt.toMillis ? t.startAt.toMillis() : null, e = t.endAt && t.endAt.toMillis ? t.endAt.toMillis() : null;
-        if (e && now > e) return 'done'; if (s && now < s) return 'upcoming'; return 'live';
-    }
     function tournamentCard(t, now) {
-        const status = tournamentStatusOf(t, now);
-        const full = (t.players || []).length >= t.limit;
+        const st = tStatus(t, now), players = (t.players || []).length;
+        const closed = t.format ? (t.status !== 'registration' || t.registration === 'closed') : st.key === 'done';
+        const full = players >= t.limit;
         return `<div class="pg-tcard" data-tid="${esc(t.id)}" tabindex="0" role="button">
-            <div class="pg-row"><span class="pg-pill ${status}">${status}</span>${t.prize ? '<span class="pg-pill">' + esc(t.prize) + '</span>' : ''}</div>
+            <div class="pg-row"><span class="pg-pill ${st.key}">${esc(st.label)}</span>${t.format ? '<span class="pg-pill">Single elimination</span>' : ''}</div>
             <h4>${esc(t.name)}</h4>
-            <dl><dt>Game</dt><dd>${esc(t.gameTitle || 'Unknown')}</dd><dt>Players</dt><dd>${(t.players || []).length} / ${esc(t.limit)}</dd>${t.startAt ? '<dt>Starts</dt><dd>' + esc(new Date(t.startAt.toMillis()).toLocaleString()) + '</dd>' : ''}</dl>
-            <div class="pg-row"><button type="button" class="pg-btn sm primary" data-join="${esc(t.id)}" ${status === 'done' || full ? 'disabled' : ''}>${full ? 'Full' : 'Join'}</button><span class="pg-muted" style="font-size:0.82rem;">View leaderboard →</span></div>
+            <dl><dt>Game</dt><dd>${esc(t.gameTitle || 'Unknown')}</dd><dt>Players</dt><dd>${players} / ${esc(t.limit)}</dd>${t.startAt ? '<dt>Starts</dt><dd>' + esc(fmtWhen(t.startAt)) + '</dd>' : ''}</dl>
+            <div class="pg-row"><button type="button" class="pg-btn sm primary" data-join="${esc(t.id)}" ${closed || full ? 'disabled' : ''}>${full ? 'Full' : closed ? 'Closed' : 'Join'}</button><span class="pg-muted" style="font-size:0.82rem;">${t.format ? 'View bracket' : 'View leaderboard'} →</span></div>
         </div>`;
     }
 
-    async function joinTournament(id, root) {
-        if (needLogin('Sign in to join a tournament.')) return;
-        try {
-            const { db, fs } = await fb();
-            const user = getUser();
-            await fs.runTransaction(db, async tx => {
-                const ref = fs.doc(db, 'tournaments', id);
-                const snap = await tx.get(ref);
-                if (!snap.exists()) throw new Error('This tournament no longer exists.');
-                const data = snap.data(); const players = data.players || [];
-                if (players.some(p => p.uid === user.uid)) return;
-                if (players.length >= data.limit) throw new Error('This tournament is full.');
-                tx.update(ref, { players: [...players, { uid: user.uid, name: cleanName(user), score: 0 }] });
-            });
-            toast('You are in!');
-            renderTourneyBody(root);
-        } catch (err) { toast(err.message || 'Could not join.'); }
+    /* ---- create ---- */
+    async function renderCreateForm(root, body) {
+        body.innerHTML = `
+            <div class="pg-panel pg-cut" style="max-width:720px;">
+                <h3>Create a tournament</h3>
+                <p class="pg-muted" style="margin-top:6px;">A single-elimination bracket. Players register, you start it, then enter each result - winners move to the next round automatically.</p>
+                <div class="pg-grid2" style="margin-top:14px;">
+                    <div class="pg-field"><label for="pgt-name">Tournament name</label><input id="pgt-name" maxlength="60" placeholder="Weekend Cup"></div>
+                    <div class="pg-field"><label for="pgt-game">Game</label><select id="pgt-game"><option value="">Loading games...</option></select></div>
+                    <div class="pg-field"><label for="pgt-limit">Maximum players</label><select id="pgt-limit"><option>4</option><option selected>8</option><option>16</option><option>32</option></select></div>
+                    <div class="pg-field"><label for="pgt-start">Start date</label><input id="pgt-start" type="datetime-local"></div>
+                    <div class="pg-field"><label for="pgt-reg">Registration</label><select id="pgt-reg"><option value="open" selected>Open</option><option value="closed">Closed</option></select></div>
+                    <div class="pg-field" style="grid-column:1/-1;"><label for="pgt-desc">Description</label><textarea id="pgt-desc" maxlength="300" placeholder="Rules, format, prizes..."></textarea></div>
+                </div>
+                <div id="pgt-create-msg" class="pg-note"></div>
+                <button type="button" class="pg-btn primary" id="pgt-create-btn" style="margin-top:14px;">Create tournament</button>
+            </div>`;
+        const sel = $('#pgt-game', body), msg = $('#pgt-create-msg', body);
+        const games = await allGamesForPicker();
+        sel.innerHTML = '<option value="">Select game</option>' + games.map(g => `<option value="${esc(g.id)}">${esc(g.title)}</option>`).join('');
+        $('#pgt-create-btn', body).addEventListener('click', async () => {
+            if (needLogin('Sign in to create a tournament.')) return;
+            const name = $('#pgt-name', body).value.trim();
+            if (!name) { msg.textContent = 'Give your tournament a name.'; return; }
+            if (!sel.value) { msg.textContent = 'Choose the game this tournament is played on.'; return; }
+            const start = $('#pgt-start', body).value;
+            try {
+                const { db, fs } = await fb();
+                const user = getUser();
+                const ref = await fs.addDoc(fs.collection(db, 'tournaments'), {
+                    name, format: 'single-elim', gameId: sel.value, gameTitle: sel.selectedOptions[0].textContent,
+                    description: $('#pgt-desc', body).value.trim().slice(0, 300),
+                    limit: parseInt($('#pgt-limit', body).value, 10) || 8,
+                    registration: $('#pgt-reg', body).value, status: 'registration',
+                    startAt: start ? fs.Timestamp.fromDate(new Date(start)) : null, endAt: null,
+                    ownerUid: user.uid, ownerName: cleanName(user), players: [], bracket: [], createdAt: fs.serverTimestamp()
+                });
+                toast('Tournament created.');
+                tourneyTab = 'browse'; renderTourneyTabs(root); openTournament(root, ref.id);
+            } catch (err) { console.error(err); msg.textContent = 'Could not create the tournament: ' + err.message; }
+        });
     }
 
+    /* ---- join (used by the list and the detail page) ---- */
+    async function joinTournament(id) {
+        if (needLogin('Sign in to join a tournament.')) return false;
+        const user = getUser();
+        try {
+            const merged = await mutateTournament(id, data => {
+                const players = data.players || [];
+                if (players.some(p => p.uid === user.uid)) throw new Error('You are already registered.');
+                if (data.format && (data.status !== 'registration' || data.registration === 'closed')) throw new Error('Registration is closed for this tournament.');
+                if (players.length >= data.limit) throw new Error('This tournament is full.');
+                const entry = { id: user.uid, uid: user.uid, name: cleanName(user) };
+                if (!data.format) entry.score = 0;
+                return { players: [...players, entry] };
+            });
+            if (cur && cur.id === id) cur.t = merged;
+            toast('You are in!');
+            return true;
+        } catch (err) { toast(err.message || 'Could not join.'); return false; }
+    }
+
+    /* ---- detail page ---- */
     async function openTournament(root, id) {
         const body = $('#pg-tourney-body', root);
         body.innerHTML = '<p class="pg-muted">Loading...</p>';
         try {
             const { db, fs } = await fb();
             const snap = await fs.getDoc(fs.doc(db, 'tournaments', id));
-            if (!snap.exists()) { body.innerHTML = '<div class="pg-empty">Tournament not found.</div>'; return; }
-            const t = snap.data(); const now = Date.now();
-            const rows = (t.players || []).slice().sort((a, b) => (b.score || 0) - (a.score || 0))
-                .map((p, i) => `<tr class="${getUser() && p.uid === getUser().uid ? 'me' : ''}"><td>${i + 1}</td><td>${esc(p.name)}</td><td>${esc(p.score || 0)}</td></tr>`).join('') || '<tr><td colspan="3" class="pg-muted">No players yet.</td></tr>';
-            body.innerHTML = `
-                <button type="button" class="pg-link" id="pg-back-t" style="margin-bottom:14px;">← Back to tournaments</button>
-                <div class="pg-tdetail">
-                    <div class="pg-panel pg-cut">
-                        <div class="pg-row"><span class="pg-pill ${tournamentStatusOf(t, now)}">${tournamentStatusOf(t, now)}</span></div>
-                        <h3 style="margin-top:8px;">${esc(t.name)}</h3>
-                        <dl style="margin-top:10px; display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:0.88rem;">
-                            <dt class="pg-muted">Game</dt><dd>${esc(t.gameTitle || 'Unknown')}</dd>
-                            <dt class="pg-muted">Players</dt><dd>${(t.players || []).length} / ${esc(t.limit)}</dd>
-                            ${t.prize ? '<dt class="pg-muted">Prize</dt><dd>' + esc(t.prize) + '</dd>' : ''}
-                            ${t.startAt ? '<dt class="pg-muted">Start</dt><dd>' + esc(new Date(t.startAt.toMillis()).toLocaleString()) + '</dd>' : ''}
-                            ${t.endAt ? '<dt class="pg-muted">End</dt><dd>' + esc(new Date(t.endAt.toMillis()).toLocaleString()) + '</dd>' : ''}
-                        </dl>
-                        <button type="button" class="pg-btn primary" id="pg-join-detail" style="margin-top:16px;" ${tournamentStatusOf(t, now) === 'done' ? 'disabled' : ''}>Join tournament</button>
-                    </div>
-                    <div class="pg-panel pg-cut">
-                        <h3>Leaderboard</h3>
-                        <div class="pg-tablewrap" style="margin-top:10px;"><table class="pg-table"><thead><tr><th>#</th><th>Player</th><th>Score</th></tr></thead><tbody>${rows}</tbody></table></div>
-                        <p class="pg-note">Scores update from the game's own reporting server once a match ends.</p>
-                    </div>
-                </div>`;
-            $('#pg-back-t', body).addEventListener('click', () => renderTourneyBody(root));
-            $('#pg-join-detail', body).addEventListener('click', () => joinTournament(id, root).then(() => openTournament(root, id)));
+            if (!snap.exists()) { cur = null; body.innerHTML = '<div class="pg-empty">Tournament not found.</div>'; return; }
+            const t = snap.data();
+            if (!t.format) { cur = null; renderLegacyTournament(root, id, t); return; }
+            cur = { id, t, sel: null };
+            renderTournament(root);
         } catch (err) { console.error(err); body.innerHTML = '<div class="pg-empty">Could not load this tournament.</div>'; }
+    }
+
+    // Runs an owner/player action, then re-renders from the saved result.
+    async function act(root, fn, okMsg) {
+        try { cur.t = await fn(); if (okMsg) toast(okMsg); }
+        catch (err) { console.error(err); toast(err.message || 'That did not work.'); }
+        renderTournament(root);
+    }
+
+    function renderTournament(root) {
+        if (!cur) return;
+        const body = $('#pg-tourney-body', root); if (!body) return;
+        const { id, t } = cur, owner = isOwner(), user = getUser(), now = Date.now();
+        const st = tStatus(t, now), players = t.players || [], ms = t.bracket || [];
+        const registering = t.status === 'registration';
+        const mine = user && players.some(p => p.uid === user.uid);
+        const full = players.length >= t.limit;
+        const champ = Bracket.champion(ms);
+        const nameOf = pidv => { const p = players.find(x => pid(x) === pidv); return p ? p.name : null; };
+        const scrollLeft = ($('.br-scroll', body) || {}).scrollLeft || 0;
+
+        // Before the tournament starts, show what the bracket WILL look like from the players registered so far.
+        const previewing = registering;
+        const shown = previewing ? (players.length >= 2 ? Bracket.build(players.map(p => ({ id: pid(p), name: p.name }))) : []) : ms;
+
+        const playerRows = players.map((p, i) => `<li><span class="br-seed">${i + 1}</span><span class="br-pname">${esc(p.name)}${p.uid && user && p.uid === user.uid ? ' <em>(you)</em>' : ''}</span>${owner && registering ? `<button type="button" class="pg-btn sm danger" data-act="remove" data-pid="${esc(pid(p))}" aria-label="Remove ${esc(p.name)}">Remove</button>` : ''}</li>`).join('') || '<li class="pg-muted">No players registered yet.</li>';
+
+        body.innerHTML = `
+            <button type="button" class="pg-link" data-act="back" style="margin-bottom:14px;">← Back to tournaments</button>
+            <div class="pg-panel pg-cut br-head">
+                <div class="pg-row"><span class="pg-pill ${st.key}">${esc(st.label)}</span><span class="pg-pill">Single elimination</span></div>
+                <h3 class="br-title">${esc(t.name)}</h3>
+                <dl class="br-facts">
+                    <div><dt>Game</dt><dd>${esc(t.gameTitle || 'Unknown')}</dd></div>
+                    <div><dt>Status</dt><dd>${esc(st.label)}</dd></div>
+                    <div><dt>Players</dt><dd>${players.length} / ${esc(t.limit)}</dd></div>
+                    <div><dt>Start date</dt><dd>${esc(fmtWhen(t.startAt))}</dd></div>
+                    <div><dt>Organizer</dt><dd>${esc(t.ownerName || 'Unknown')}</dd></div>
+                </dl>
+                ${t.description ? `<p class="br-desc">${esc(t.description)}</p>` : ''}
+            </div>
+
+            ${champ ? `<div class="br-champion" role="status"><i class="fas fa-trophy" aria-hidden="true"></i><small>Tournament champion</small><strong>${esc(nameOf(champ.winner) || 'Unknown')}</strong><span>${esc(t.gameTitle || '')} &middot; ${esc(t.name)}${champ.s1 != null && champ.s2 != null ? ' &middot; Final score ' + esc(champ.s1) + ' - ' + esc(champ.s2) : ''}</span></div>` : ''}
+
+            <div class="pg-tdetail br-panels">
+                <div class="pg-panel pg-cut">
+                    <h3>Players</h3>
+                    <p class="br-count"><b>${players.length} / ${esc(t.limit)}</b> registered</p>
+                    <ol class="br-players">${playerRows}</ol>
+                    <div class="pg-row" style="margin-top:14px;">
+                        <button type="button" class="pg-btn primary" data-act="join" ${!registering || t.registration === 'closed' || full || mine ? 'disabled' : ''}>${mine ? 'You are registered' : full ? 'Tournament full' : !registering || t.registration === 'closed' ? 'Registration closed' : 'Join tournament'}</button>
+                        <button type="button" class="pg-btn sm" data-act="refresh">Refresh</button>
+                    </div>
+                </div>
+                ${owner ? `<div class="pg-panel pg-cut">
+                    <h3>Organizer controls</h3>
+                    ${registering ? `
+                        <div class="pg-field" style="margin-top:10px;"><label for="br-add-name">Add a participant</label><div class="pg-row"><input id="br-add-name" maxlength="40" placeholder="Player name" style="flex:1;min-width:0;"><button type="button" class="pg-btn sm" data-act="add">Add</button></div></div>
+                        <div class="pg-row" style="margin-top:12px;">
+                            <button type="button" class="pg-btn sm" data-act="toggle-reg">${t.registration === 'closed' ? 'Open registration' : 'Close registration'}</button>
+                            <button type="button" class="pg-btn sm" data-act="shuffle" ${players.length < 2 ? 'disabled' : ''}>Shuffle seeds</button>
+                        </div>
+                        <button type="button" class="pg-btn primary" data-act="start" style="margin-top:14px;" ${players.length < 2 ? 'disabled' : ''}>Start tournament</button>
+                        <p class="pg-note">Seeds follow the order in the list. Any empty spots up to the next power of two become BYEs - those players advance automatically.</p>
+                    ` : `<p class="pg-note" style="margin-top:8px;">Click a match in the bracket to enter its result. Winners move on automatically.</p>`}
+                    <button type="button" class="pg-btn sm danger" data-act="delete" style="margin-top:14px;">Delete tournament</button>
+                </div>` : ''}
+            </div>
+
+            <div class="pg-panel pg-cut br-wrap">
+                <div class="pg-row" style="justify-content:space-between;"><h3>Bracket</h3>${previewing ? '<span class="pg-pill warn">Preview</span>' : ''}</div>
+                ${previewing ? '<p class="pg-note" style="margin-top:6px;">This preview is built from the players registered so far. The real bracket is locked in when the organizer starts the tournament.</p>' : ''}
+                ${shown.length ? `<p class="br-hint">Swipe sideways to follow the bracket &rarr;</p><div class="br-scroll">${bracketHTML(shown, nameOf, cur.sel, !!champ, t)}</div>` : '<div class="pg-empty">The bracket appears once at least 2 players have registered.</div>'}
+            </div>
+
+            <div class="pg-panel pg-cut br-wrap" id="br-detail">${matchDetailHTML(shown, nameOf, owner && !registering, t)}</div>`;
+
+        const sc = $('.br-scroll', body); if (sc) sc.scrollLeft = scrollLeft;
+        bindTournament(root, body, shown);
+    }
+
+    function bracketHTML(ms, nameOf, selId, hasChamp, t) {
+        const total = Bracket.rounds(ms), seq = {};
+        ms.slice().sort((a, b) => a.round - b.round || a.index - b.index).forEach((m, i) => { seq[m.id] = i + 1; });
+        const cols = [];
+        for (let r = 1; r <= total; r++) {
+            const slots = ms.filter(m => m.round === r).sort((a, b) => a.index - b.index).map(m => {
+                const stt = Bracket.status(m);
+                const row = (slot, sk) => {
+                    const pidv = m[slot], nm = pidv ? nameOf(pidv) : null, won = m.winner && m.winner === pidv;
+                    const label = nm || (stt === 'bye' ? 'BYE' : 'TBD');
+                    const score = m[sk] != null ? m[sk] : (won && stt === 'done' ? '\u2713' : '');
+                    return `<div class="br-p${won ? ' win' : ''}${m.winner && !won ? ' lose' : ''}${!nm ? ' empty' : ''}"><span class="br-n">${esc(label)}</span><span class="br-s">${esc(score)}</span></div>`;
+                };
+                const pos = r < total ? (m.index % 2 === 0 ? ' br-top' : ' br-bot') : ' br-final';
+                return `<div class="br-slot${r > 1 ? ' br-in' : ''}${pos}"><div class="br-match st-${stt}${selId === m.id ? ' sel' : ''}" data-match="${esc(m.id)}" tabindex="0" role="button" aria-label="Match ${seq[m.id]}, ${Bracket.roundName(r, total)}"><div class="br-mh"><span>M${seq[m.id]}</span><span>${stt === 'bye' ? 'Bye' : stt === 'done' ? 'Completed' : stt === 'ready' ? 'Ready' : 'Waiting'}</span></div>${row('p1', 's1')}${row('p2', 's2')}</div></div>`;
+            }).join('');
+            cols.push(`<div class="br-round"><div class="br-rtitle">${esc(Bracket.roundName(r, total))}</div><div class="br-col">${slots}</div></div>`);
+        }
+        const f = Bracket.champion(ms);
+        cols.push(`<div class="br-round br-champ-col"><div class="br-rtitle">Champion</div><div class="br-col"><div class="br-slot br-in"><div class="br-cbox${f ? ' has' : ''}"><i class="fas fa-trophy" aria-hidden="true"></i><span>${f ? esc(nameOf(f.winner) || '') : 'TBD'}</span></div></div></div></div>`);
+        return `<div class="br-cols">${cols.join('')}</div>`;
+    }
+
+    function matchDetailHTML(ms, nameOf, canEdit, t) {
+        const m = cur && cur.sel ? ms.find(x => x.id === cur.sel) : null;
+        if (!m) return '<h3>Match details</h3><p class="pg-muted" style="margin-top:8px;">Select a match in the bracket to see its players, score and status.</p>';
+        const total = Bracket.rounds(ms), stt = Bracket.status(m);
+        const n1 = m.p1 ? nameOf(m.p1) : null, n2 = m.p2 ? nameOf(m.p2) : null;
+        const label = { bye: 'Bye', done: 'Completed', ready: 'Ready to play', waiting: 'Waiting for earlier matches' }[stt];
+        let controls = '';
+        if (canEdit && stt !== 'bye' && stt !== 'waiting') {
+            controls = `<div class="br-form">
+                <div class="pg-grid2">
+                    <div class="pg-field"><label for="br-s1">${esc(n1)} score</label><input id="br-s1" type="number" min="0" max="9999" inputmode="numeric" value="${m.s1 != null ? esc(m.s1) : ''}"></div>
+                    <div class="pg-field"><label for="br-s2">${esc(n2)} score</label><input id="br-s2" type="number" min="0" max="9999" inputmode="numeric" value="${m.s2 != null ? esc(m.s2) : ''}"></div>
+                </div>
+                <div class="pg-row" style="margin-top:12px;">
+                    <button type="button" class="pg-btn primary" data-act="save-result" data-match="${esc(m.id)}">Save result &amp; advance winner</button>
+                    ${m.winner ? `<button type="button" class="pg-btn danger" data-act="reset-match" data-match="${esc(m.id)}">Reset match</button>` : ''}
+                </div>
+                <div class="pg-row" style="margin-top:10px;">
+                    <button type="button" class="pg-btn sm" data-act="walkover" data-slot="p1" data-match="${esc(m.id)}">${esc(n1)} advances (no score)</button>
+                    <button type="button" class="pg-btn sm" data-act="walkover" data-slot="p2" data-match="${esc(m.id)}">${esc(n2)} advances (no score)</button>
+                </div>
+                <p class="pg-note">The higher score wins. Ties are not allowed in a knockout - use the walkover buttons if a match is decided without a score.</p></div>`;
+        }
+        const line = (nm, sc, won) => `<li class="${won ? 'win' : ''}"><span>${esc(nm || (stt === 'bye' ? 'BYE' : 'TBD'))}${won ? ' <i class="fas fa-crown" aria-hidden="true" title="Winner"></i>' : ''}</span><b>${sc != null ? esc(sc) : '-'}</b></li>`;
+        return `<h3>Match details</h3>
+            <div class="pg-row" style="margin:8px 0;"><span class="pg-pill">${esc(Bracket.roundName(m.round, total))}</span><span class="pg-pill ${stt === 'done' ? 'ok' : stt === 'ready' ? 'upcoming' : ''}">${esc(label)}</span></div>
+            <ul class="br-mlist">${line(n1, m.s1, m.winner && m.winner === m.p1)}${line(n2, m.s2, m.winner && m.winner === m.p2)}</ul>
+            <p class="br-winner">${m.winner ? 'Winner: <b>' + esc(nameOf(m.winner) || '') + '</b>' : stt === 'bye' ? 'Advances automatically.' : 'No winner yet.'}</p>
+            ${controls}`;
+    }
+
+    function bindTournament(root, body, shown) {
+        const pickMatch = el => { cur.sel = el.dataset.match; renderTournament(root); const d = $('#br-detail', root); if (d && d.scrollIntoView) d.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };
+        body.querySelectorAll('[data-match]').forEach(el => {
+            if (el.classList.contains('br-match')) {
+                el.addEventListener('click', () => pickMatch(el));
+                el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickMatch(el); } });
+            }
+        });
+        body.querySelectorAll('[data-act]').forEach(btn => btn.addEventListener('click', () => {
+            const a = btn.dataset.act, id = cur.id;
+            if (a === 'back') { cur = null; if (history.replaceState && location.search.includes('t=')) history.replaceState(null, '', location.pathname); renderTourneyBody(root); return; }
+            if (a === 'refresh') { openTournament(root, id); return; }
+            if (a === 'join') { joinTournament(id).then(() => renderTournament(root)); return; }
+            if (!isOwner()) { toast('Only the tournament organizer can do that.'); return; }
+            if (a === 'remove') { act(root, () => mutateTournament(id, d => { ownerOnly(d); if (d.status !== 'registration') throw new Error('Players cannot be removed after the tournament starts.'); return { players: (d.players || []).filter(p => pid(p) !== btn.dataset.pid) }; })); return; }
+            if (a === 'add') {
+                const name = ($('#br-add-name', body).value || '').replace(/[<>]/g, '').trim().slice(0, 40);
+                if (!name) { toast('Type a player name first.'); return; }
+                act(root, () => mutateTournament(id, d => {
+                    ownerOnly(d); const ps = d.players || [];
+                    if (d.status !== 'registration') throw new Error('Participants cannot be added after the tournament starts.');
+                    if (ps.length >= d.limit) throw new Error('This tournament is full.');
+                    if (ps.some(p => p.name.toLowerCase() === name.toLowerCase())) throw new Error('That name is already registered.');
+                    return { players: [...ps, { id: guestId(), name }] };
+                })); return;
+            }
+            if (a === 'toggle-reg') { act(root, () => mutateTournament(id, d => { ownerOnly(d); return { registration: d.registration === 'closed' ? 'open' : 'closed' }; })); return; }
+            if (a === 'shuffle') { act(root, () => mutateTournament(id, d => { ownerOnly(d); const ps = (d.players || []).slice(); for (let i = ps.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ps[i], ps[j]] = [ps[j], ps[i]]; } return { players: ps }; }), 'Seeds shuffled.'); return; }
+            if (a === 'start') {
+                const n = (cur.t.players || []).length, size = Bracket.nextPow2(n);
+                if (!confirm('Start with ' + n + ' players?' + (size > n ? ' ' + (size - n) + ' BYE(s) will be created and those players advance automatically.' : '') + ' Registration closes and the bracket is locked.')) return;
+                cur.sel = null;
+                act(root, () => mutateTournament(id, d => {
+                    ownerOnly(d); const ps = d.players || [];
+                    if (d.status !== 'registration') throw new Error('This tournament has already started.');
+                    if (ps.length < 2) throw new Error('At least 2 players are needed to start.');
+                    return { bracket: Bracket.build(ps.map(p => ({ id: pid(p), name: p.name }))), status: 'live', registration: 'closed' };
+                }), 'Tournament started.'); return;
+            }
+            if (a === 'delete') { if (!confirm('Delete this tournament for everyone? This cannot be undone.')) return; fb().then(({ db, fs }) => fs.deleteDoc(fs.doc(db, 'tournaments', id))).then(() => { cur = null; renderTourneyBody(root); toast('Tournament deleted.'); }).catch(err => toast(err.message || 'Could not delete.')); return; }
+            const matchId = btn.dataset.match;
+            const write = (edit, okMsg) => act(root, () => mutateTournament(id, d => {
+                ownerOnly(d);
+                if (d.status === 'registration') throw new Error('Start the tournament before entering results.');
+                const ms = JSON.parse(JSON.stringify(d.bracket || []));
+                const err = edit(ms); if (err) throw new Error(err);
+                return { bracket: ms, status: Bracket.champion(ms) ? 'complete' : 'live' };
+            }), okMsg);
+            if (a === 'save-result') {
+                const r1 = $('#br-s1', body).value, r2 = $('#br-s2', body).value;
+                if (r1 === '' || r2 === '') { toast('Enter both scores, or use a walkover button.'); return; }
+                const s1 = Math.max(0, parseInt(r1, 10)), s2 = Math.max(0, parseInt(r2, 10));
+                if (isNaN(s1) || isNaN(s2)) { toast('Scores must be numbers.'); return; }
+                if (s1 === s2) { toast('A knockout match cannot end in a tie.'); return; }
+                write(ms => Bracket.setResult(ms, matchId, s1 > s2 ? 'p1' : 'p2', s1, s2), 'Result saved - winner advanced.'); return;
+            }
+            if (a === 'walkover') { write(ms => Bracket.setResult(ms, matchId, btn.dataset.slot, null, null), 'Winner advanced.'); return; }
+            if (a === 'reset-match') {
+                const m = (cur.t.bracket || []).find(x => x.id === matchId);
+                const more = m ? Bracket.downstreamCount(cur.t.bracket, m) : 0;
+                if (!confirm('Reset this match?' + (more ? ' ' + more + ' later match result(s) that depend on it will also be cleared.' : ''))) return;
+                write(ms => Bracket.resetMatch(ms, matchId), 'Match reset.');
+            }
+        }));
+    }
+
+    /* ---- older leaderboard-style tournaments (created before brackets existed) ---- */
+    function renderLegacyTournament(root, id, t) {
+        const body = $('#pg-tourney-body', root); const now = Date.now();
+        const rows = (t.players || []).slice().sort((a, b) => (b.score || 0) - (a.score || 0))
+            .map((p, i) => `<tr class="${getUser() && p.uid === getUser().uid ? 'me' : ''}"><td>${i + 1}</td><td>${esc(p.name)}</td><td>${esc(p.score || 0)}</td></tr>`).join('') || '<tr><td colspan="3" class="pg-muted">No players yet.</td></tr>';
+        const st = tStatus(t, now);
+        body.innerHTML = `
+            <button type="button" class="pg-link" id="pg-back-t" style="margin-bottom:14px;">← Back to tournaments</button>
+            <div class="pg-tdetail">
+                <div class="pg-panel pg-cut">
+                    <div class="pg-row"><span class="pg-pill ${st.key}">${esc(st.label)}</span></div>
+                    <h3 style="margin-top:8px;">${esc(t.name)}</h3>
+                    <dl style="margin-top:10px; display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:0.88rem;">
+                        <dt class="pg-muted">Game</dt><dd>${esc(t.gameTitle || 'Unknown')}</dd>
+                        <dt class="pg-muted">Players</dt><dd>${(t.players || []).length} / ${esc(t.limit)}</dd>
+                        ${t.prize ? '<dt class="pg-muted">Prize</dt><dd>' + esc(t.prize) + '</dd>' : ''}
+                        ${t.startAt ? '<dt class="pg-muted">Start</dt><dd>' + esc(fmtWhen(t.startAt)) + '</dd>' : ''}
+                    </dl>
+                    <button type="button" class="pg-btn primary" id="pg-join-detail" style="margin-top:16px;" ${st.key === 'done' ? 'disabled' : ''}>Join tournament</button>
+                </div>
+                <div class="pg-panel pg-cut">
+                    <h3>Leaderboard</h3>
+                    <div class="pg-tablewrap" style="margin-top:10px;"><table class="pg-table"><thead><tr><th>#</th><th>Player</th><th>Score</th></tr></thead><tbody>${rows}</tbody></table></div>
+                    <p class="pg-note">Scores update from the game's own reporting server once a match ends.</p>
+                </div>
+            </div>`;
+        $('#pg-back-t', body).addEventListener('click', () => renderTourneyBody(root));
+        $('#pg-join-detail', body).addEventListener('click', () => joinTournament(id).then(() => openTournament(root, id)));
     }
 
     /* ======================================================================================
@@ -896,5 +1199,5 @@
         Core.invalidateCommunity();
     }
 
-    window.PG = { CONFIG, resetPublish, mountAll, planLimits, usageInfo, deleteMyGame };
+    window.PG = { CONFIG, resetPublish, mountAll, planLimits, usageInfo, deleteMyGame, Bracket };
 })();
