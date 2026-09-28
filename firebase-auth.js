@@ -33,9 +33,10 @@
         const googleLoginBtn = document.getElementById("google-login-btn"); 
         const loginModal = document.getElementById("login-modal");
 
-        // Always show Google's account chooser (otherwise Google may silently reuse the last
-        // account) - this is what lets a user pick a *different* Gmail account.
-        googleProvider.setCustomParameters({ prompt: "select_account" });
+        // Always show Google's account chooser (so a user can pick a *different* Gmail account)
+        // and ask Google to show its own "Continue / Cancel" confirmation page after the account
+        // is chosen. Without "consent", Google silently skips that page for returning users.
+        googleProvider.setCustomParameters({ prompt: "select_account consent" });
 
         // ---------------------------------------------------------------------------------
         // LOGIN FLOW:  Login -> Google account selection -> CONTINUE step -> Creator Studio
