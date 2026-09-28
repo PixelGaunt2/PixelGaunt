@@ -636,7 +636,7 @@
                     ? '<div class="pg-empty">Community games are unavailable right now. Try again later.</div>'
                     : (window.communityGames.length
                         ? '<div class="pg-empty">No community games match.</div>'
-                        : '<div class="pg-empty">No community games yet. <a href="index.html#launch-section">Publish the first one.</a></div>');
+                        : '<div class="pg-empty">No community games yet. <a href="publish.html">Publish the first one.</a></div>');
                 return;
             }
             shelf.classList.remove('pg-hidden');
@@ -880,8 +880,9 @@
             }
         }
 
-        // Handles the older ?page=tournament / ?page=store links: those fake pages are gone, the real sections replace them.
-        const LEGACY_SECTIONS = { tournament: 'tournaments-section', store: 'creator-section' };
+        // Handles older ?page=... links from when Publish/Tournaments/Creator Lab/Subscribe were
+        // in-page sections on the homepage. They are now real pages - redirect straight there.
+        const LEGACY_PAGES = { tournament: 'tournaments.html', store: 'merch.html', launch: 'publish.html', subscribe: 'subscription.html' };
 
         // Small surface for platform.js
         window.PGCore = {
@@ -954,9 +955,8 @@
                 // history state without pushing a second, redundant back-entry.
                 if (game) window.launchViewport(game.id, 'replace');
                 else window.goHome();
-            } else if (pageQuery && LEGACY_SECTIONS[pageQuery]) {
-                 window.goHome();
-                 requestAnimationFrame(() => { const t = document.getElementById(LEGACY_SECTIONS[pageQuery]); if (t) t.scrollIntoView(); });
+            } else if (pageQuery && LEGACY_PAGES[pageQuery]) {
+                 window.location.replace(LEGACY_PAGES[pageQuery]);
             } else if (pageQuery) {
                  const targetPage = pageQuery + '-page';
                  if(document.getElementById(targetPage)) window.openPage(targetPage);

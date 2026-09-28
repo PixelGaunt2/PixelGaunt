@@ -117,23 +117,51 @@
             }
         };
 
+        // Creator Studio needs the account's plan (free / subscriber) to show the right
+        // limits and to gate the nav link. Fetched once per login, alongside - never instead
+        // of - saveUserProfile, so a Firestore hiccup here still leaves the user validly logged in.
+        window.pgUserPlan = null;
+        async function loadUserPlan(user) {
+            try {
+                const snap = await getDoc(doc(db, "users", user.uid));
+                const data = snap.exists() ? snap.data() : {};
+                window.pgUserPlan = (data.plan === 'subscriber') ? 'subscriber' : 'free';
+            } catch (error) {
+                console.warn("Could not read plan, defaulting to free:", error);
+                window.pgUserPlan = 'free';
+            }
+            window.dispatchEvent(new CustomEvent('pg-plan', { detail: { plan: window.pgUserPlan } }));
+        }
+
+        const creatorStudioNavLink = document.getElementById('nav-creator-studio-link');
+
         onAuthStateChanged(auth, (user) => {
             window.dispatchEvent(new CustomEvent('pg-auth', { detail: { user: user || null } }));
             if (user) {
                 window.isLoggedIn = true; 
                 if(typeof window.updatePromptVisibility === 'function') window.updatePromptVisibility(); 
                 if(typeof window.closeModals === 'function') window.closeModals(); 
-                
+                loadUserPlan(user);
+
                 if (mainLoginBtn) {
                     mainLoginBtn.innerHTML = `<img src="${user.photoURL || 'https://via.placeholder.com/30'}" style="width:20px; height:20px; border-radius:50%; margin-right:8px; vertical-align:middle;"> Logout`;
                     mainLoginBtn.onclick = window.logoutUser;
                 }
+                if (creatorStudioNavLink) creatorStudioNavLink.style.display = '';
             } else {
                 window.isLoggedIn = false;
+                window.pgUserPlan = null;
                 if(typeof window.updatePromptVisibility === 'function') window.updatePromptVisibility(); 
                 if (mainLoginBtn) {
                     mainLoginBtn.innerHTML = "Login";
                     mainLoginBtn.onclick = () => window.openModal('login-modal');
+                }
+                if (creatorStudioNavLink) creatorStudioNavLink.style.display = 'none';
+                // Logged-out visitors never get a lingering Creator Studio page - send them home
+                // if they land there directly (e.g. a stale tab, a shared link) so no private
+                // creator data can be exposed through the UI.
+                if (document.body.dataset.pgPage === 'creator-studio') {
+                    window.location.href = 'index.html';
                 }
             }
         });

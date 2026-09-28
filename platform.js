@@ -39,6 +39,17 @@
         fulfilment: { digital: false, print2d: false, print3d: false, merch: false, payments: false }
     };
 
+    /* --------------------------- ACCOUNT PLAN LIMITS (Publish / Creator Studio) ---------------------------
+       No real payment gateway is connected yet (see subscription.html), so every account is 'free' until
+       one is wired up server-side. window.pgUserPlan is set by firebase-auth.js from the user's Firestore
+       profile (users/{uid}.plan) after each login. */
+    const PLAN_LIMITS = {
+        free: { maxGames: 1, maxBytes: 5 * 1024 * 1024, period: null, label: 'Free' },
+        subscriber: { maxGames: 10, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber' }
+    };
+    function planLimits() { return PLAN_LIMITS[window.pgUserPlan] || PLAN_LIMITS.free; }
+    function monthStart() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); }
+
     /* ------------------------------------- small utils ------------------------------------- */
     const $ = (sel, root) => (root || document).querySelector(sel);
     const fmtBytes = n => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
@@ -421,6 +432,8 @@
     async function publishGame(root, meta) {
         if (!pubState || !pubState.entry) return;
         if (needLogin('Sign in to publish your game.')) return;
+        const { allowed, limits, used } = await usageInfo();
+        if (!allowed) { toast(`You've used ${used} of ${limits.maxGames} games on the ${limits.label} plan. Upgrade to publish more.`); return; }
         const btn = $('.pg-publish-btn', root);
         btn.disabled = true; const oldLabel = btn.textContent; btn.textContent = 'Publishing...';
         try {
@@ -458,9 +471,42 @@
         }
     }
 
+    // How many games the signed-in user has already used against their plan's allowance.
+    // Free = total games ever published/pending. Subscriber = games created this calendar month.
+    async function usageInfo() {
+        const limits = planLimits();
+        const user = getUser();
+        if (!user) return { limits, used: 0, allowed: true };
+        try {
+            const { db, fs } = await fb();
+            const snap = await fs.getDocs(fs.query(fs.collection(db, 'community_games'), fs.where('ownerUid', '==', user.uid)));
+            let used = snap.docs.length;
+            if (limits.period === 'month') {
+                const start = monthStart();
+                used = snap.docs.filter(d => { const c = d.data().createdAt; return c && c.toDate && c.toDate() >= start; }).length;
+            }
+            return { limits, used, allowed: used < limits.maxGames };
+        } catch (err) {
+            console.warn('Usage check unavailable:', err);
+            return { limits, used: 0, allowed: true };
+        }
+    }
+
+    async function renderPlanBanner(root) {
+        const box = $('#pg-plan-banner', root); if (!box) return;
+        const user = getUser();
+        if (!user) { box.innerHTML = '<p class="pg-note">Sign in to see your plan, usage and upload limit.</p>'; return; }
+        const { limits, used } = await usageInfo();
+        const periodLabel = limits.period === 'month' ? ' this month' : ' total';
+        box.innerHTML = `<p class="pg-note"><b>${esc(limits.label)} plan</b> · ${used} / ${limits.maxGames} games${periodLabel} · up to ${fmtBytes(limits.maxBytes)} per game · <a class="pg-link" href="subscription.html" style="font-size:0.82rem;">${limits.label === 'Free' ? 'Upgrade' : 'Manage plan'}</a></p>`;
+    }
+
     function mountPublish(root) {
         root.classList.add('pg-panel-active');
+        const limits = planLimits();
+        CONFIG.maxUploadBytes = limits.maxBytes;
         root.innerHTML = `
+            <div class="pg-plan-banner" id="pg-plan-banner" style="margin-bottom:14px;"></div>
             <div class="pg-drop" id="pg-drop" tabindex="0" role="button" aria-label="Choose game files or a zip">
                 <i class="fas fa-cloud-arrow-up" aria-hidden="true"></i>
                 <b>Drop your game here</b>
@@ -483,7 +529,7 @@
                 <div class="pg-field" style="margin-top:12px;"><label for="pg-desc">Short description</label><textarea id="pg-desc" maxlength="240" placeholder="What is your game about?"></textarea></div>
                 <label class="pg-check-inline" style="margin-top:12px;"><input type="checkbox" id="pg-tournament-check"><span>This game reports scores to a server I control, so it can host a tournament. <a href="#" class="pg-link" id="pg-tournament-help" style="font-size:0.82rem;">How does that work?</a></span></label>
                 <div class="pg-field pg-hidden" id="pg-server-field" style="margin-top:8px;"><label for="pg-server">Score-reporting host (domain only)</label><input id="pg-server" placeholder="scores.mygame.com"></div>
-                <label class="pg-check-inline" style="margin-top:12px;"><input type="checkbox" id="pg-terms-check"><span>This is my own work (or I have the rights to publish it), and it follows the <a href="index.html#" onclick="openPageModal && openPageModal('Terms of Service','pg-terms')" class="pg-link" style="font-size:0.82rem;">PixelGaunt content rules</a>.</span></label>
+                <label class="pg-check-inline" style="margin-top:12px;"><input type="checkbox" id="pg-terms-check"><span>This is my own work (or I have the rights to publish it), and it follows the <a href="#" onclick="event.preventDefault(); openPageModal && openPageModal('Terms of Service','pg-terms')" class="pg-link" style="font-size:0.82rem;">PixelGaunt content rules</a>.</span></label>
                 <button type="button" class="pg-btn primary pg-publish-btn" style="margin-top:16px;" disabled>Publish game</button>
             </div>
             <div id="pg-my-games"></div>
@@ -514,10 +560,20 @@
             });
         });
         loadMyGames(root);
+        renderPlanBanner(root);
+        onAuth(() => { const limits = planLimits(); CONFIG.maxUploadBytes = limits.maxBytes; renderPlanBanner(root); });
+        window.addEventListener('pg-plan', () => { const limits = planLimits(); CONFIG.maxUploadBytes = limits.maxBytes; renderPlanBanner(root); });
     }
 
     async function handleUpload(root, fileList) {
         const drop = $('#pg-drop', root); const oldHtml = drop.innerHTML;
+        if (getUser()) {
+            const { allowed, limits, used } = await usageInfo();
+            if (!allowed) {
+                toast(`You've used ${used} of ${limits.maxGames} games on the ${limits.label} plan. Upgrade to publish more.`);
+                return;
+            }
+        }
         drop.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i><b>Reading your files...</b>';
         $('#pg-meta-panel', root).classList.add('pg-hidden');
         try {
@@ -829,5 +885,16 @@
     }
     mountAll();
 
-    window.PG = { CONFIG, resetPublish, mountAll };
+    // Shared with Creator Studio (creator-studio.html) so game deletion goes through one
+    // place instead of a second copy of this logic. Firestore rules still have final say -
+    // this just removes the listing doc and its gzip chunk docs for a game the caller owns.
+    async function deleteMyGame(gameId, chunkCount) {
+        const { db, fs } = await fb();
+        const n = Math.max(0, Number(chunkCount) || 0);
+        await Promise.all(Array.from({ length: n }, (_, i) => fs.deleteDoc(fs.doc(db, 'community_games', gameId, 'chunks', String(i)))));
+        await fs.deleteDoc(fs.doc(db, 'community_games', gameId));
+        Core.invalidateCommunity();
+    }
+
+    window.PG = { CONFIG, resetPublish, mountAll, planLimits, usageInfo, deleteMyGame };
 })();

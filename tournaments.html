@@ -12,7 +12,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tournaments - Pixel Gaunt Studios</title>
-    <meta name="description" content="Score-attack esports and gaming tournaments with live leaderboards on Pixel Gaunt.">
+    <meta name="description" content="Join Pixel Gaunt Studios tournaments. Compete for a spot on the leaderboard in score-attack events.">
     <link rel="canonical" href="https://pixelgaunt.com/tournaments.html">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,17 +20,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <!-- Open Graph / Social Media Meta Tags -->
-    <meta property="og:title" content="Tournaments - Pixel Gaunt Studios">
-    <meta property="og:description" content="Score-attack esports and gaming tournaments with live leaderboards on Pixel Gaunt.">
-    <meta property="og:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
-    <meta property="og:url" content="https://pixelgaunt.com/tournaments.html">
-    <meta property="og:type" content="website">
-    <!-- Twitter Card Tags -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Tournaments - Pixel Gaunt Studios">
-    <meta name="twitter:description" content="Score-attack esports and gaming tournaments with live leaderboards on Pixel Gaunt.">
-    <meta name="twitter:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
+	<!-- Open Graph / Social Media Meta Tags -->
+<meta property="og:title" content="Tournaments - Pixel Gaunt Studios">
+<meta property="og:description" content="Join Pixel Gaunt Studios tournaments. Compete for a spot on the leaderboard in score-attack events.">
+<meta property="og:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
+<meta property="og:url" content="https://pixelgaunt.com/tournaments.html">
+<meta property="og:type" content="website">
+
+<!-- Twitter Card Tags -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Tournaments - Pixel Gaunt Studios">
+<meta name="twitter:description" content="Join Pixel Gaunt Studios tournaments. Compete for a spot on the leaderboard in score-attack events.">
+<meta name="twitter:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
 </head>
 <body class="theme-blue">
     <div id="scroll-progress"></div>
@@ -41,7 +42,6 @@
     </div>
 
     <audio id="portal-bgm" loop style="display:none;"></audio>
-
     <header id="main-header">
         <div class="logo pixel-font" onclick="window.location.href='index.html'">Pixel <span>Gaunt</span> Studios</div>
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false">
@@ -54,7 +54,8 @@
                 <a href="publish.html">Publish</a>
                 <a href="tournaments.html" style="color:#fff;">Tournaments</a>
                 <a href="merch.html">Merch</a>
-                <a href="dashboard.html" id="dashboard-nav-link" class="pg-hidden">Dashboard</a>
+                <a href="subscription.html">Subscription</a>
+                <a href="creator-studio.html" id="nav-creator-studio-link" style="display:none;">Creator Studio</a>
             </div>
             <div class="theme-select-container" title="Select Theme Color Core">
                 <div class="theme-dot t-blue active" onclick="setGlobalTheme('blue', this)"></div>
@@ -67,7 +68,11 @@
     </header>
 
     <main class="container" id="homepage-page" style="padding-top: 40px;">
-        <section class="portfolio-section" id="tournaments-section" data-pg-module="tournaments">
+        <div class="page-header" style="text-align:center; margin-bottom: 10px;">
+            <h1 class="pixel-font portfolio-section-title">Tournaments</h1>
+            <p class="portfolio-section-subtitle">Score-attack events with live leaderboards.</p>
+        </div>
+<section class="portfolio-section" id="tournaments-section" data-pg-module="tournaments">
             <div class="pg-shelf-head">
                 <div>
                     <h2 class="pixel-font">Tournaments</h2>
@@ -76,10 +81,9 @@
             </div>
             <div id="tournaments-root"><p class="pg-muted">Loading tournaments...</p></div>
         </section>
+    </main>
 
-            </main>
-
-<div class="modal-overlay" id="login-modal">
+    <div class="modal-overlay" id="login-modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModals()">&times;</span>
             <div class="modal-step active">
@@ -173,9 +177,9 @@
     </footer>
 
     <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
+
     <script src="script.js" defer></script>
 
     <script type="module" src="firebase-auth.js"></script>
-    <script src="account.js" defer></script>
 </body>
 </html>

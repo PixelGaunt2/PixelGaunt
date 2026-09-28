@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3455772439100679" crossorigin="anonymous"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LRDNJ69KD1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-LRDNJ69KD1');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator Studio - Pixel Gaunt Studios</title>
+    <meta name="description" content="Manage your published games, upload limits and account on Pixel Gaunt Studios Creator Studio.">
+    <link rel="canonical" href="https://pixelgaunt.com/creator-studio.html">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+	<!-- Open Graph / Social Media Meta Tags -->
+<meta property="og:title" content="Creator Studio - Pixel Gaunt Studios">
+<meta property="og:description" content="Manage your published games, upload limits and account on Pixel Gaunt Studios Creator Studio.">
+<meta property="og:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
+<meta property="og:url" content="https://pixelgaunt.com/creator-studio.html">
+<meta property="og:type" content="website">
+
+<!-- Twitter Card Tags -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Creator Studio - Pixel Gaunt Studios">
+<meta name="twitter:description" content="Manage your published games, upload limits and account on Pixel Gaunt Studios Creator Studio.">
+<meta name="twitter:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
+    <style>
+        #cs-wrap{max-width:1100px;margin:0 auto;padding:40px 5% 60px;}
+        #cs-guard{max-width:520px;margin:80px auto;text-align:center;}
+        #cs-guard .pg-btn{margin-top:16px;}
+        .cs-head{display:flex;align-items:center;gap:16px;margin-bottom:28px;flex-wrap:wrap;}
+        .cs-head img{width:56px;height:56px;border-radius:50%;border:2px solid var(--neon-cyan);}
+        .cs-head h1{font-size:1.3rem;margin:0;}
+        .cs-head p{margin:4px 0 0;color:var(--text-muted,#94a3b8);font-size:0.9rem;}
+        .cs-tabs{display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid rgba(148,163,184,0.2);margin-bottom:26px;}
+        .cs-tab{background:none;border:none;color:#94a3b8;padding:10px 16px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;font-size:0.92rem;}
+        .cs-tab.active{color:var(--neon-cyan,#38bdf8);border-bottom-color:var(--neon-cyan,#38bdf8);}
+        .cs-panel{display:none;}
+        .cs-panel.active{display:block;}
+        .cs-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px;}
+        .cs-stat{background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.15);border-radius:12px;padding:16px;}
+        .cs-stat b{display:block;font-size:1.6rem;color:#fff;}
+        .cs-stat span{font-size:0.82rem;color:#94a3b8;}
+        .cs-games-table{width:100%;border-collapse:collapse;}
+        .cs-games-table th{text-align:left;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;padding:10px;border-bottom:1px solid rgba(148,163,184,0.15);}
+        .cs-games-table td{padding:10px;border-bottom:1px solid rgba(148,163,184,0.08);vertical-align:middle;font-size:0.9rem;}
+        .cs-thumb{width:52px;height:38px;object-fit:cover;border-radius:6px;background:#111;}
+        .cs-row-actions{display:flex;gap:8px;flex-wrap:wrap;}
+        .cs-row-actions button, .cs-row-actions a{font-size:0.78rem;padding:5px 10px;border-radius:6px;border:1px solid rgba(148,163,184,0.3);background:transparent;color:#e2e8f0;cursor:pointer;text-decoration:none;}
+        .cs-row-actions button.danger{border-color:#f87171;color:#f87171;}
+        .cs-row-actions button:disabled{opacity:0.4;cursor:not-allowed;}
+        .cs-account-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
+        .cs-account-field{background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.15);border-radius:12px;padding:14px 16px;}
+        .cs-account-field span{display:block;font-size:0.78rem;color:#64748b;margin-bottom:4px;}
+        .cs-account-field b{font-size:1rem;color:#fff;}
+    </style>
+</head>
+<body class="theme-blue" data-pg-page="creator-studio">
+    <div id="scroll-progress"></div>
+    <div class="aurora-bg">
+        <div class="aurora-blob blob1"></div>
+        <div class="aurora-blob blob2"></div>
+        <div class="aurora-blob blob3"></div>
+    </div>
+
+    <audio id="portal-bgm" loop style="display:none;"></audio>
+    <header id="main-header">
+        <div class="logo pixel-font" onclick="window.location.href='index.html'">Pixel <span>Gaunt</span> Studios</div>
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false">
+            <i class="fas fa-bars"></i>
+        </button>
+        <nav class="nav-links" id="main-nav-links">
+            <div class="nav-menu-links">
+                <a href="index.html">Home</a>
+                <a href="games.html">Games</a>
+                <a href="publish.html">Publish</a>
+                <a href="tournaments.html">Tournaments</a>
+                <a href="merch.html">Merch</a>
+                <a href="subscription.html">Subscription</a>
+                <a href="creator-studio.html" id="nav-creator-studio-link" style="display:none;" style="color:#fff;">Creator Studio</a>
+            </div>
+            <div class="theme-select-container" title="Select Theme Color Core">
+                <div class="theme-dot t-blue active" onclick="setGlobalTheme('blue', this)"></div>
+                <div class="theme-dot t-purple" onclick="setGlobalTheme('purple', this)"></div>
+                <div class="theme-dot t-emerald" onclick="setGlobalTheme('emerald', this)"></div>
+                <div class="theme-dot t-cyber" onclick="setGlobalTheme('cyber', this)"></div>
+            </div>
+            <button class="nav-btn primary" id="main-login-btn" onclick="openModal('login-modal')">Login</button>
+        </nav>
+    </header>
+
+    <div id="cs-wrap">
+        <div id="cs-guard">
+            <h2 class="pixel-font" style="font-size:1.1rem;">Creator Studio</h2>
+            <p style="color:#94a3b8; margin-top:10px;">Sign in to manage your published games, see your upload limits and upgrade your account.</p>
+            <button class="nav-btn primary pg-btn" onclick="openModal('login-modal')">Sign in</button>
+        </div>
+
+        <div id="cs-dashboard" style="display:none;">
+            <div class="cs-head">
+                <img id="cs-avatar" src="" alt="">
+                <div>
+                    <h1 class="pixel-font" id="cs-name">Creator</h1>
+                    <p id="cs-email"></p>
+                </div>
+            </div>
+
+            <div class="cs-tabs" role="tablist">
+                <button class="cs-tab active" data-tab="overview">Overview</button>
+                <button class="cs-tab" data-tab="games">My Games</button>
+                <button class="cs-tab" data-tab="upload">Upload Game</button>
+                <button class="cs-tab" data-tab="account">Account</button>
+                <button class="cs-tab" data-tab="upgrade">Upgrade</button>
+            </div>
+
+            <section class="cs-panel active" id="cs-panel-overview">
+                <div class="cs-stats">
+                    <div class="cs-stat"><b id="cs-ov-plan">Free</b><span>Account type</span></div>
+                    <div class="cs-stat"><b id="cs-ov-games">0 / 1</b><span id="cs-ov-games-label">Games</span></div>
+                    <div class="cs-stat"><b id="cs-ov-size">5 MB</b><span>Maximum file size</span></div>
+                </div>
+                <p class="pg-note">This is your Creator Studio - it's only visible to you while signed in. Use <b>Upload Game</b> to publish, <b>My Games</b> to manage what's live, and <b>Upgrade</b> for more games per month and a bigger size limit.</p>
+            </section>
+
+            <section class="cs-panel" id="cs-panel-games">
+                <div id="cs-games-list"><p class="pg-muted">Loading your games...</p></div>
+            </section>
+
+            <section class="cs-panel" id="cs-panel-upload">
+                <div class="pg-split">
+                    <ol class="pg-steps">
+                        <li><div><b>Upload</b><span>A .zip, a folder, or a single HTML file.</span></div></li>
+                        <li><div><b>Check</b><span>Files, links, scripts and a test run in a sandbox. Every problem is listed by file.</span></div></li>
+                        <li><div><b>Publish</b><span>Add a title and cover, and publish once the check passes.</span></div></li>
+                        <li><div><b>Play</b><span>Your game runs isolated from PixelGaunt. It cannot read logins, storage or site data.</span></div></li>
+                    </ol>
+                    <div id="launch-root" class="pg-panel pg-cut" data-pg-module="launch"><p class="pg-muted">Loading the game checker...</p></div>
+                </div>
+            </section>
+
+            <section class="cs-panel" id="cs-panel-account">
+                <div class="cs-account-grid">
+                    <div class="cs-account-field"><span>Email</span><b id="cs-acc-email">-</b></div>
+                    <div class="cs-account-field"><span>Account type</span><b id="cs-acc-plan">Free</b></div>
+                    <div class="cs-account-field"><span>Subscription status</span><b id="cs-acc-status">Not subscribed</b></div>
+                    <div class="cs-account-field"><span>Renewal</span><b id="cs-acc-renewal">-</b></div>
+                </div>
+                <button class="nav-btn primary pg-btn" style="margin-top:20px;" onclick="window.location.href='subscription.html'">Upgrade account</button>
+            </section>
+
+            <section class="cs-panel" id="cs-panel-upgrade">
+                <p style="color:#94a3b8; max-width:560px;">You're currently on the <b id="cs-up-plan">Free</b> plan (1 game total, 5 MB max). Subscribers get 10 games per month at up to 10 MB each.</p>
+                <button class="nav-btn primary pg-btn" style="margin-top:14px;" onclick="window.location.href='subscription.html'">View subscription plans</button>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const guard = document.getElementById('cs-guard');
+            const dash = document.getElementById('cs-dashboard');
+            const PLAN_LIMITS = { free: { maxGames: 1, maxBytes: 5 * 1024 * 1024, period: null, label: 'Free' },
+                                   subscriber: { maxGames: 10, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber' } };
+            function fmtMB(b) { return (b / (1024 * 1024)).toFixed(0) + ' MB'; }
+
+            document.querySelectorAll('.cs-tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.cs-tab').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.cs-panel').forEach(p => p.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById('cs-panel-' + btn.dataset.tab).classList.add('active');
+                });
+            });
+
+            function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+            async function loadGames(user, limits) {
+                const box = document.getElementById('cs-games-list');
+                try {
+                    const { db, fs } = window.pgFB;
+                    const snap = await fs.getDocs(fs.query(fs.collection(db, 'community_games'), fs.where('ownerUid', '==', user.uid)));
+                    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    docs.sort((a, b) => { const ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate() : 0; const tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate() : 0; return tb - ta; });
+
+                    // Overview + Account + Upgrade counters
+                    let used = docs.length;
+                    if (limits.period === 'month') {
+                        const start = new Date(); start.setDate(1); start.setHours(0,0,0,0);
+                        used = docs.filter(g => g.createdAt && g.createdAt.toDate && g.createdAt.toDate() >= start).length;
+                    }
+                    document.getElementById('cs-ov-games').textContent = used + ' / ' + limits.maxGames;
+                    document.getElementById('cs-ov-games-label').textContent = 'Games' + (limits.period === 'month' ? ' this month' : '');
+
+                    if (!docs.length) { box.innerHTML = '<p class="pg-muted">You have not published any games yet. Use the Upload Game tab to publish your first one.</p>'; return; }
+                    const rows = docs.map(g => {
+                        const created = g.createdAt && g.createdAt.toDate ? g.createdAt.toDate().toLocaleDateString() : '-';
+                        const thumb = g.thumb ? '<img class="cs-thumb" src="' + esc(g.thumb) + '" alt="">' : '<div class="cs-thumb" style="display:flex;align-items:center;justify-content:center;color:#475569;">?</div>';
+                        const statusCls = g.status === 'published' ? 'ok' : 'warn';
+                        const canEdit = g.status !== 'published';
+                        return '<tr>' +
+                            '<td>' + thumb + '</td>' +
+                            '<td>' + esc(g.title) + '</td>' +
+                            '<td><span class="pg-pill ' + statusCls + '">' + esc(g.status) + '</span></td>' +
+                            '<td>' + created + '</td>' +
+                            '<td><div class="cs-row-actions">' +
+                                '<a href="games.html?play=c-' + encodeURIComponent(g.id) + '" target="_blank" rel="noopener">Play</a>' +
+                                '<button ' + (canEdit ? '' : 'disabled title="Published games cannot be edited here - contact pixelgaunt@gmail.com"') + ' onclick="window.pgCsEdit(\'' + g.id + '\',\'' + esc(g.title).replace(/'/g, "&#39;") + '\')">Edit</button>' +
+                                '<button class="danger" onclick="window.pgCsDelete(\'' + g.id + '\',' + (g.chunkCount || 0) + ',\'' + esc(g.title).replace(/'/g, "&#39;") + '\')">Delete</button>' +
+                            '</div></td>' +
+                        '</tr>';
+                    }).join('');
+                    box.innerHTML = '<table class="cs-games-table"><thead><tr><th></th><th>Game</th><th>Status</th><th>Uploaded</th><th>Actions</th></tr></thead><tbody>' + rows + '</tbody></table>';
+                } catch (err) {
+                    console.warn('My games unavailable:', err);
+                    box.innerHTML = '<p class="pg-muted">Could not load your games right now.</p>';
+                }
+            }
+
+            window.pgCsEdit = async function (id, currentTitle) {
+                const title = prompt('New title for this game:', currentTitle);
+                if (title == null) return;
+                const trimmed = title.trim().slice(0, 60);
+                if (!trimmed) return;
+                try {
+                    const { db, fs } = window.pgFB;
+                    await fs.updateDoc(fs.doc(db, 'community_games', id), { title: trimmed });
+                    refresh();
+                } catch (err) { alert('Could not update this game: ' + err.message); }
+            };
+
+            window.pgCsDelete = async function (id, chunkCount, title) {
+                if (!confirm('Delete "' + title + '"? This cannot be undone.')) return;
+                try {
+                    const platform = await window.pgLoadPlatform();
+                    await platform.deleteMyGame(id, chunkCount);
+                    refresh();
+                } catch (err) { alert('Could not delete this game: ' + err.message); }
+            };
+
+            async function refresh() {
+                const user = window.pgFB && window.pgFB.auth.currentUser;
+                if (!user) return;
+                const plan = (window.pgUserPlan === 'subscriber') ? 'subscriber' : 'free';
+                const limits = PLAN_LIMITS[plan];
+
+                document.getElementById('cs-avatar').src = user.photoURL || 'https://via.placeholder.com/56';
+                document.getElementById('cs-name').textContent = user.displayName || 'Creator';
+                document.getElementById('cs-email').textContent = user.email || '';
+                document.getElementById('cs-ov-plan').textContent = limits.label;
+                document.getElementById('cs-ov-size').textContent = fmtMB(limits.maxBytes);
+                document.getElementById('cs-acc-email').textContent = user.email || '-';
+                document.getElementById('cs-acc-plan').textContent = limits.label;
+                document.getElementById('cs-acc-status').textContent = plan === 'subscriber' ? 'Active' : 'Not subscribed';
+                document.getElementById('cs-acc-renewal').textContent = plan === 'subscriber' ? 'Managed on subscription.html' : 'N/A';
+                document.getElementById('cs-up-plan').textContent = limits.label;
+
+                loadGames(user, limits);
+            }
+
+            function showDashboard() { guard.style.display = 'none'; dash.style.display = 'block'; refresh(); }
+            function showGuard() { guard.style.display = 'block'; dash.style.display = 'none'; }
+
+            window.addEventListener('pg-auth', e => { if (e.detail.user) showDashboard(); else showGuard(); });
+            window.addEventListener('pg-plan', () => { if (window.pgFB && window.pgFB.auth.currentUser) refresh(); });
+            // The Upload tab's checker/publisher lives in platform.js (same code as publish.html) -
+            // load it as soon as this page opens rather than waiting for it to scroll into view,
+            // since a signed-in creator is very likely to use it here.
+            if (window.pgLoadPlatform) window.pgLoadPlatform();
+            if (window.isLoggedIn) showDashboard();
+        })();
+    </script>
+
+    <div class="modal-overlay" id="login-modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModals()">&times;</span>
+            <div class="modal-step active">
+                <h3 class="modal-title pixel-font">Authentication</h3>
+                <div class="option-grid">
+                    <button class="opt-btn" id="google-login-btn">
+                        <span><i class="fab fa-google"></i></span> Login with Google
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pg-info-modal">
+        <div class="info-modal-wrapper">
+            <span onclick="closePageModal()" style="position: absolute; right: 24px; top: 20px; color: #64748b; font-size: 35px; cursor: pointer; font-weight: bold; line-height: 1; transition: 0.2s;">&times;</span>
+            <h2 id="pg-info-title" style="color: var(--neon-cyan); text-transform: uppercase; font-family: 'Press Start 2P', cursive; font-size: 1.2rem; text-align: center; margin-bottom: 25px;">Title</h2>
+            <div id="pg-info-body" style="color: #e2e8f0; font-size: 1.05rem; line-height: 1.7; font-family: 'Inter', sans-serif;"></div>
+        </div>
+    </div>
+
+    <div id="pg-comingsoon" style="display:none;">
+        <p style="text-align:center; font-size: 3rem; color: var(--neon-cyan); text-shadow: 0 0 20px rgba(56, 189, 248, 0.325); margin-bottom: 10px;"><i class="fas fa-hourglass-half"></i></p>
+        <p style="text-align:center;">This section is currently under construction. We're working hard to bring you an amazing experience — check back soon!</p>
+    </div>
+
+    <div id="pg-about" style="display:none;">
+        <p><strong>Pixel Gaunt Studios</strong> is an independent game development studio. It started as a solo project — learning game development from scratch by building small HTML5 browser games one at a time — and has since grown into a real body of work, including our debut commercial release, <strong>Girl The Driller</strong>.</p>
+        <p><br>Along the way we've shipped more than a dozen free prototypes across genres — fighting, puzzle, racing, 3D shooting, and more — each one teaching us something new about game feel, physics, and polish.</p>
+        <p><br>Every game is built with HTML5, CSS3, JavaScript, and Three.js/WebGL, and designed to run straight from the browser on PC, Android, iOS, Mac, and Linux — no installs, no downloads.</p>
+        <p><br>Pixel Gaunt stays small and independent on purpose. We'd rather ship fewer games and make them good than chase volume, and there's always something new in the works.</p>
+    </div>
+
+    <div id="pg-contact" style="display:none;">
+        <p>Got feedback on <strong>Girl The Driller</strong>, spotted a bug, or have a question about one of our prototypes? We read everything that comes in — it's what shapes what we fix and build next.</p>
+        <p><br>You can also report a bug directly from inside a game while signed in, using the <strong>Report Bug</strong> button on the game screen.</p>
+        <p><br>For business inquiries, collaborations, or copyright/content concerns, email us directly and we'll get back to you.</p>
+        <p><br><strong>Email:</strong> pixelgaunt@gmail.com</p>
+        <p><br><strong>Community:</strong> Join our <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" style="color: var(--neon-cyan); text-decoration: underline;">WhatsApp Group</a> or <a href="https://discord.gg/DfHFVNMBQF" target="_blank" style="color: var(--neon-cyan); text-decoration: underline;">Discord</a> for quick discussion and updates.</p>
+    </div>
+
+    <div id="pg-faq" style="display:none;">
+        <p><strong>Q: Are the games free to play?</strong><br>A: Yes, all games on Pixel Gaunt are 100% free to play directly in your browser.</p>
+        <p><br><strong>Q: Do I need to download anything?</strong><br>A: No downloads are required. Just click and play!</p>
+        <p><br><strong>Q: Can I play on my phone?</strong><br>A: Absolutely! Our games are fully optimized for mobile devices (Android & iOS) as well as PC, Mac, and Linux.</p>
+    </div>
+
+    <div id="pg-privacy" style="display:none;">
+        <p><strong>Privacy Policy</strong></p>
+        <p><br>This explains what data Pixel Gaunt Studios collects and how it's used. We keep this as limited as possible, and you never need an account to play any game.</p>
+        <p><br><strong>Signing in:</strong> If you choose to sign in with Google, we receive your name, email address, and profile photo, and store this in our database (Firebase) to identify your account — for example, so likes and bug reports can be linked to you.</p>
+        <p><br><strong>Likes & bug reports:</strong> When you like a game or submit a bug report while signed in, that action (game title, report text, and timestamp) is saved to our database so we can track feedback and fix issues.</p>
+        <p><br><strong>Published games, tournaments & creator requests:</strong> If you publish a game, join or create a tournament, or save a creator request, what you submit (game files, title, cover image, your display name, scores and request details) is stored in our database. Games and tournament leaderboards are shown publicly; creator requests are visible only to you and us. Ask us at pixelgaunt@gmail.com to remove anything you submitted.</p>
+        <p><br><strong>Analytics:</strong> We use Google Analytics and Firebase Analytics to understand overall site traffic and which games are played most. This data is aggregated and isn't tied to your identity.</p>
+        <p><br><strong>Advertising:</strong> This site uses Google AdSense, which may use cookies to serve ads. Google's own privacy policy governs how that data is handled.</p>
+        <p><br><strong>Local storage:</strong> To rank games by popularity, play counts are saved in your browser's local storage. This stays on your device and is never sent to us.</p>
+        <p><br><strong>What we don't do:</strong> We don't sell your data, and we don't collect personal information beyond what's described above.</p>
+        <p><br>Questions about your data? Contact us at pixelgaunt@gmail.com.</p>
+    </div>
+
+    <div id="pg-disclaimer" style="display:none;">
+        <p><strong>Disclaimer</strong></p>
+        <p><br>All games, logos, and assets on this site — including the Pixel Gaunt branding — belong to Pixel Gaunt Studios unless stated otherwise.</p>
+        <p><br>Games are provided "as is." While we test everything before release, browser games can behave differently across devices and browsers, and occasional bugs or downtime may occur. We're not liable for any loss or issue arising from use of this website.</p>
+        <p><br>Links to our Discord, WhatsApp, YouTube, and other social channels lead to third-party platforms we don't control, and we're not responsible for their content or availability.</p>
+        <p><br>Games on this site may be updated, changed, or removed over time as development continues.</p>
+        <p><br>Community games are published by their creators, not by Pixel Gaunt Studios. They run in an isolated sandbox, but we cannot guarantee their content. To report a game or a copyright concern, email pixelgaunt@gmail.com.</p>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="social-icons">
+                <a href="https://www.youtube.com/channel/UCmCPkHm7yRadCKcv_ugE4uQ" target="_blank" class="yt" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                <a href="https://www.facebook.com/profile.php?id=61583034586770" target="_blank" class="fb" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                <a href="https://www.reddit.com/user/Real_Network860/" target="_blank" class="rd" title="Reddit"><i class="fa-brands fa-reddit-alien"></i></a>
+                <a href="https://discord.gg/DfHFVNMBQF" target="_blank" class="dc" title="Discord"><i class="fa-brands fa-discord"></i></a>
+                <a href="https://www.tiktok.com/@pixelgaunt" target="_blank" class="tk" title="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+                <a href="mailto:pixelgaunt@gmail.com" class="gm" title="Gmail"><i class="fa-solid fa-envelope"></i></a>
+                <a href="https://whatsapp.com/channel/0029VbBo20lLo4hmsAJODc2u" target="_blank" class="wa-channel" title="WhatsApp Channel"><i class="fa-brands fa-whatsapp"></i></a>
+                <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" class="wa-group" title="WhatsApp Group"><i class="fa-solid fa-user-group"></i></a>
+            </div>
+            <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt Studios. All Rights Reserved.</p>
+            <div class="footer-links">
+                <a onclick="openPageModal('FAQ', 'pg-faq')">FAQ</a>
+                <a onclick="openPageModal('Contact', 'pg-contact')">Contact</a>
+                <a onclick="openPageModal('About Us', 'pg-about')">About Us</a>
+                <a onclick="openPageModal('Privacy Policy', 'pg-privacy')">Privacy Policy</a>
+                <a onclick="openPageModal('Disclaimer', 'pg-disclaimer')">Disclaimer</a>
+            </div>
+        </div>
+    </footer>
+
+    <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
+
+    <script src="script.js" defer></script>
+
+    <script type="module" src="firebase-auth.js"></script>
+</body>
+</html>
