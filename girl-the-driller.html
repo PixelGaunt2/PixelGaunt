@@ -2287,6 +2287,13 @@
 #dash-touch-btn.dash-touch-pressed { background: radial-gradient(circle at 50% 40%, #0891a3 0%, #06323a 100%); transform: scale(0.94); }
 #dash-hud.dash-cooling ~ #dash-touch-btn { border-color: #0891a3; }
 #dash-hud.dash-cooling ~ #dash-touch-btn .dash-touch-label { color: #0891a3; }
+/* PAUSE MENU CROP FIX: #pause-menu (10 buttons + title) is taller than the viewport at most sizes, and
+   the shared .overlay-menu is a centered flex column with overflow hidden, so overflow was clipped off
+   BOTH the top (PAUSED title) and bottom (last buttons). 'safe center' never lets content start above the
+   top edge; fitPauseMenu() in the script additionally shrinks this menu's local --ui-scale so it fits. */
+#pause-menu { justify-content: safe center; box-sizing: border-box; }
+/* .menu-btn animates every property (transition: 0.2s); freeze that while fitPauseMenu() measures so it never reads mid-transition sizes. */
+#pause-menu.pm-fitting, #pause-menu.pm-fitting * { transition: none !important; }
 #score-hud, #money-hud, #zone-hud, #distance-hud { transform-origin: top right; }
 
 </style>
@@ -7196,7 +7203,43 @@ const GTDTutorial = (function () {
                 minimapCanvasEl.width = mmSize; minimapCanvasEl.height = mmSize;
             }
         }
+        fitPauseMenu();
     }
+    // PAUSE MENU CROP FIX: the existing #pause-menu is a fixed stack (title + up to 10 buttons) sized from
+    // --ui-scale. On viewports too short for it, the centered/overflow-hidden container clipped the title and
+    // last buttons. This measures the menu at the normal ui-scale and, only when it would not fit, overrides
+    // --ui-scale LOCALLY on #pause-menu (uniform - title, buttons, fonts, spacing all shrink together, no
+    // stretching). Nothing else is touched; gameplay HUD keeps the global --ui-scale.
+    function fitPauseMenu() {
+        const m = document.getElementById('pause-menu');
+        if (!m || m.style.display === 'none') return;
+        m.classList.add('pm-fitting');
+        m.style.setProperty('--ui-scale', String(uiScale));
+        const kids = [...m.children].filter(c => c.offsetParent !== null && c.getBoundingClientRect().height > 0);
+        if (!kids.length) { m.classList.remove('pm-fitting'); return; }
+        const mg = (el, side) => parseFloat(getComputedStyle(el)['margin' + side]) || 0;
+        const first = kids[0], last = kids[kids.length - 1];
+        const contentH = (last.getBoundingClientRect().bottom + mg(last, 'Bottom')) - (first.getBoundingClientRect().top - mg(first, 'Top'));
+        const cs = getComputedStyle(m);
+        const availH = m.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+        if (contentH > availH && availH > 0) {
+            m.style.setProperty('--ui-scale', String(uiScale * Math.max(0.2, availH / contentH * 0.97)));
+        }
+        void m.offsetHeight; // flush the final size while transitions are still frozen
+        m.classList.remove('pm-fitting');
+    }
+    (function watchPauseMenuFit() {
+        const m = document.getElementById('pause-menu');
+        if (!m) return;
+        let wasShown = m.style.display !== 'none';
+        new MutationObserver(() => {
+            const shown = m.style.display !== 'none';
+            if (shown && !wasShown) fitPauseMenu();
+            wasShown = shown;
+        }).observe(m, { attributes: true, attributeFilter: ['style'] });
+        window.addEventListener('resize', fitPauseMenu);
+        window.addEventListener('orientationchange', () => setTimeout(fitPauseMenu, 250));
+    })();
     let minimapMobileReady = false; // flips true once isTouchDevice/positionMinimapMobile below are ready
 
     // --- SIDE PANEL SPACING (PC layout fix) ---
