@@ -73,16 +73,24 @@
 
     <section class="premium-hero" id="hero-presentation-section">
         <div class="hero-info-panel" id="hero-panel-bg" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(99, 102, 241, 0.315)), url('Girl%20The%20Driller.png') bottom center/cover no-repeat;">
-            <span class="hero-tag" id="hero-tag-label" style="color: var(--neon-cyan); text-shadow: 0 0 10px rgba(56, 189, 248, 0.325);" onclick="document.getElementById('hero-play-btn').click()" title="View in the Game Library">OUR DEBUT RELEASE</span>
+            <span class="hero-tag" id="hero-tag-label" style="color: var(--neon-cyan); text-shadow: 0 0 10px rgba(56, 189, 248, 0.325);" onclick="document.getElementById('hero-play-btn').click()" title="Play the demo">OUR DEBUT RELEASE</span>
             <h1 class="hero-title pixel-font" id="hero-title-text" style="text-shadow: 0 4px 15px rgba(0,0,0,0.9);">GIRL: THE DRILLER</h1>
             <p class="hero-desc" id="hero-desc-text" style="color: #e2e8f0; font-weight: 500; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Collect all Energy Orbs to unlock the Portal and reach it. Experience highly polished commercial-quality physics action gameplay.</p>
             <p class="hero-release-status" style="color: var(--neon-cyan); font-weight: 600; font-size: 0.95rem; margin-top: 4px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Demo Release &amp; Full Release Soon on Steam and Android</p>
 
+            <div class="hero-play-options">
+                <a class="pg-tile hero-play-tile" id="hero-play-btn" href="games.html?play=girl-the-driller-demo-2d" aria-label="Play Girl: The Driller Demo — 2D">
+                    <img src="Girl The Driller 2D.png" alt="" loading="lazy" decoding="async" width="310" height="194">
+                    <div class="pg-tile-info"><b>Play Girl: The Driller Demo — 2D</b><span>▶ 2D VERSION</span></div>
+                </a>
+                <a class="pg-tile hero-play-tile" id="hero-play-btn-25d" href="games.html?play=girl-the-driller-demo-25d" aria-label="Play Girl: The Driller Demo — 2.5D">
+                    <img src="Girl The Driller 2.5D.png" alt="" loading="lazy" decoding="async" width="310" height="194">
+                    <div class="pg-tile-info"><b>Play Girl: The Driller Demo — 2.5D</b><span>▶ 2.5D VERSION</span></div>
+                </a>
+            </div>
+
             <div class="hero-stats-row">
-                <button class="nav-btn primary pixel-font" id="hero-play-btn" onclick="window.location.href='games.html#game-16'" style="font-size: 0.8rem; padding: 14px 28px; box-shadow: 0 5px 20px rgba(99, 102, 241, 0.35);">
-                    ▶ VIEW IN GAME LIBRARY
-                </button>
-                <div class="stat-item" style="margin-left: 20px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">
+                <div class="stat-item" style="text-shadow: 0 2px 5px rgba(0,0,0,0.8);">
                     <span class="stat-num" id="hero-rating-text" style="color: #fbbf24; font-size: 1.1rem;">★★★★★</span>
                     <span class="stat-label" style="color: #fff;">4.8/5 Rating</span>
                 </div>
@@ -104,7 +112,7 @@
             <div class="pg-shelf-head">
                 <div>
                     <h2 class="pixel-font">Trending today</h2>
-                    <p>The 3 most-played games today. Tap a game to find it in the full library.</p>
+                    <p>Trending right now. Tap a game to play it.</p>
                 </div>
                 <a class="pg-link" href="games.html">Open the full library</a>
             </div>
