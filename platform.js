@@ -5,8 +5,8 @@
    seen. Vanilla JS, no libraries. Uses the Firebase handles exposed by firebase-auth.js
    (window.pgFB) and the helpers exposed by script.js (window.PGCore).
 
-   NOTHING SECRET LIVES IN THIS FILE. The optional AI review talks to a server-side proxy
-   (pg-ai-worker.js, deployed separately) - the AI provider key stays there.
+   NOTHING SECRET LIVES IN THIS FILE. Game submissions go to the manual-review service
+   (pg-review-worker.js, deployed separately) - Google Drive credentials stay there.
    Firestore security rules for the collections used here: see firestore.rules.
    ===================================================================================== */
 (function () {
@@ -17,13 +17,9 @@
 
     /* ------------------------------ PUBLIC CONFIG (no secrets) ------------------------------ */
     const CONFIG = {
-        // URL of your deployed pg-ai-worker.js (e.g. https://pg-ai.yourname.workers.dev/review).
-        // Leave empty to run local checks only - the AI step is then shown as "not connected".
-        aiEndpoint: '',
-        // true  = a game that passes the check is published immediately.
-        // false = it is saved as "pending" and you approve it in the Firebase console.
-        // Must match the rule you pasted from firestore.rules.
-        autoPublish: true,
+        // Base URL of your deployed pg-review-worker.js, no trailing slash (e.g. https://pg-review.yourname.workers.dev).
+        // While this is empty, submitting a game shows "not connected yet" - it never pretends to succeed.
+        reviewEndpoint: '',
         maxUploadBytes: 40 * 1024 * 1024,      // raw upload
         maxUnpackedBytes: 60 * 1024 * 1024,    // zip-bomb guard
         maxBundleBytes: 6 * 1024 * 1024,       // gzip bundle stored in Firestore (Spark plan)
@@ -109,6 +105,41 @@
         const out = new Uint8Array(n); let o = 0;
         chunks.forEach(c => { out.set(c, o); o += c.length; });
         return out;
+    }
+
+    /* Submission status as shown to creators (values are set by the review service, never by the browser) */
+    function statusInfo(st) {
+        if (st === 'approved' || st === 'published') return { label: 'Approved / Published', cls: 'ok' };
+        if (st === 'rejected') return { label: 'Rejected', cls: 'bad' };
+        return { label: 'Pending Review', cls: 'warn' };   // pending_review (and the old 'pending')
+    }
+    function newId() {
+        if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+        const h = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join('');
+        return h.slice(0, 8) + '-' + h.slice(8, 12) + '-4' + h.slice(13, 16) + '-a' + h.slice(17, 20) + '-' + h.slice(20, 32);
+    }
+    /* Minimal "stored" zip writer - used when the developer uploads a folder or a single .html, so the admin
+       always gets one real .zip package to download and test. */
+    const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+    function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+    function buildZip(files) {
+        const te = new TextEncoder(), parts = [], central = []; let off = 0;
+        files.forEach((bytes, name) => {
+            const nb = te.encode(name), crc = crc32(bytes);
+            const lh = new DataView(new ArrayBuffer(30));
+            lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(12, 0x21, true);
+            lh.setUint32(14, crc, true); lh.setUint32(18, bytes.length, true); lh.setUint32(22, bytes.length, true); lh.setUint16(26, nb.length, true);
+            parts.push(new Uint8Array(lh.buffer), nb, bytes);
+            const ch = new DataView(new ArrayBuffer(46));
+            ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(14, 0x21, true);
+            ch.setUint32(16, crc, true); ch.setUint32(20, bytes.length, true); ch.setUint32(24, bytes.length, true); ch.setUint16(28, nb.length, true); ch.setUint32(42, off, true);
+            central.push(new Uint8Array(ch.buffer), nb);
+            off += 30 + nb.length + bytes.length;
+        });
+        const cdSize = central.reduce((a, q) => a + q.length, 0);
+        const e = new DataView(new ArrayBuffer(22));
+        e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.size, true); e.setUint16(10, files.size, true); e.setUint32(12, cdSize, true); e.setUint32(16, off, true);
+        return new Blob([...parts, ...central, new Uint8Array(e.buffer)], { type: 'application/zip' });
     }
 
     /* ------------------------------------ ZIP reader ------------------------------------
@@ -205,8 +236,9 @@
     }
 
     /* ======================================================================================
-       LOCAL GAME CHECK  (runs entirely in the browser - this is the real gate; the AI review
-       below is an optional second opinion layered on top of it, never a replacement for it)
+       LOCAL GAME CHECK  (runs in the browser for quick feedback. The review service repeats the
+       zip / size / executable-file checks on the server, because browser checks can be bypassed.
+       This is basic upload validation, NOT a malware scan.)
        ====================================================================================== */
     async function runLocalCheck(files, problems, log) {
         const checks = [];
@@ -356,47 +388,20 @@
         });
     }
 
-    /* Optional AI review via a server-side proxy the developer deploys separately (see
-       CONFIG.aiEndpoint above). Sends only small text snippets, never full binary assets.
-       If unreachable, disabled, or it errors, the check simply continues without it - the
-       local checks above remain the real gate, so a missing AI step never blocks publishing. */
-    async function aiReview(entryHtml, extraJs) {
-        if (!CONFIG.aiEndpoint) return { available: false };
-        try {
-            const res = await fetch(CONFIG.aiEndpoint, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ html: entryHtml.slice(0, 20000), js: (extraJs || '').slice(0, 20000) }),
-                signal: AbortSignal.timeout ? AbortSignal.timeout(12000) : undefined
-            });
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            const data = await res.json();
-            return { available: true, notes: Array.isArray(data.notes) ? data.notes.slice(0, 8) : [], safe: data.safe !== false };
-        } catch (err) {
-            console.warn('AI review unavailable:', err);
-            return { available: false, error: true };
-        }
-    }
-
     /* ======================================================================================
        PUBLISH MODULE
        ====================================================================================== */
     let pubState = null; // { files, entry, html, result }
 
-    function renderChecklist(root, res, ai) {
+    function renderChecklist(root, res) {
         const items = res.checks.map(c => `<li class="${c.level}"><span class="g">${c.level === 'pass' ? '✓' : c.level === 'fail' ? '✗' : c.level === 'warn' ? '⚠' : 'i'}</span><span>${esc(c.text)}${c.detail ? '<small>' + esc(c.detail) + '</small>' : ''}</span></li>`).join('');
-        let aiHtml = '';
-        if (ai) {
-            if (ai.available) aiHtml = `<li class="${ai.safe === false ? 'fail' : 'pass'}"><span class="g">${ai.safe === false ? '✗' : '✓'}</span><span>AI review${ai.notes && ai.notes.length ? '<small>' + esc(ai.notes.join(' · ')) + '</small>' : ' found nothing to flag'}</span></li>`;
-            else aiHtml = `<li class="info"><span class="g">i</span><span>AI review not available<small>Local checks above are still the pass/fail gate.</small></span></li>`;
-        }
-        root.innerHTML = `<ul class="pg-checks">${items}${aiHtml}</ul>`;
+        root.innerHTML = `<ul class="pg-checks">${items}</ul>`;
     }
 
-    function verdictBanner(res, ai) {
-        const blockedByAi = ai && ai.available && ai.safe === false;
-        if (res.verdict === 'bad' || blockedByAi) return { cls: 'bad', title: 'Not ready to publish', sub: (res.fails || 0) + ' check(s) failed' + (blockedByAi ? ' · flagged by AI review' : '') + '. Fix these and check again.' };
-        if (res.verdict === 'warn') return { cls: 'warn', title: 'Ready, with warnings', sub: res.warns + ' warning(s) - you can still publish.' };
-        return { cls: 'ok', title: 'READY TO PUBLISH', sub: 'All checks passed.' };
+    function verdictBanner(res) {
+        if (res.verdict === 'bad') return { cls: 'bad', title: 'Not ready to submit', sub: (res.fails || 0) + ' check(s) failed. Fix these and check again.' };
+        if (res.verdict === 'warn') return { cls: 'warn', title: 'Ready to submit, with warnings', sub: res.warns + ' warning(s) - you can still submit. A person reviews every game before it is published.' };
+        return { cls: 'ok', title: 'READY TO SUBMIT', sub: 'Basic file checks passed. Next step: manual review.' };
     }
 
     async function runCheck(root, files, problems) {
@@ -412,61 +417,80 @@
         }
         if (smokeErrors.length) { res.checks.push({ level: 'fail', text: 'The game threw an error when it ran in the sandbox', detail: smokeErrors.slice(0, 3).join(' | ') }); res.verdict = 'bad'; res.fails = (res.fails || 0) + 1; }
         else if (res.entry) res.checks.push({ level: 'pass', text: 'Loaded and ran in the sandbox test with no errors' });
-        setProgress(75);
-        let ai = null;
-        if (res.entry) {
-            const jsPaths = [...files.keys()].filter(n => /\.js$/i.test(n)).slice(0, 3);
-            const extraJs = jsPaths.map(p => utf8.decode(files.get(p))).join('\n');
-            ai = await aiReview(utf8.decode(files.get(res.entry)), extraJs);
-        }
         setProgress(100);
-        renderChecklist(list, res, ai);
-        const v = verdictBanner(res, ai);
-        verdictBox.innerHTML = `<div class="pg-verdict ${v.cls}">${v.cls === 'ok' ? 'READY TO PUBLISH' : esc(v.title)}<small>${esc(v.sub)}</small></div>`;
-        const canPublish = v.cls !== 'bad';
-        publishBtn.disabled = !canPublish;
-        pubState = { files, entry: res.entry, verdict: v.cls, ai, sizeTotal: res.sizeTotal };
+        renderChecklist(list, res);
+        const v = verdictBanner(res);
+        verdictBox.innerHTML = `<div class="pg-verdict ${v.cls}">${esc(v.title)}<small>${esc(v.sub)}</small></div>`;
+        publishBtn.disabled = v.cls === 'bad';
+        // submissionId is created once per selected upload, so a retry after a network error re-uses it (no duplicates)
+        pubState = { files, entry: res.entry, verdict: v.cls, sizeTotal: res.sizeTotal, submissionId: newId(), sourceZip: null };
         return res;
     }
 
-    async function publishGame(root, meta) {
+    async function submitGame(root, meta) {
         if (!pubState || !pubState.entry) return;
-        if (needLogin('Sign in to publish your game.')) return;
-        const { allowed, limits, used } = await usageInfo();
-        if (!allowed) { toast(`You've used ${used} of ${limits.maxGames} games on the ${limits.label} plan. Upgrade to publish more.`); return; }
+        if (needLogin('Sign in to submit your game.')) return;
         const btn = $('.pg-publish-btn', root);
-        btn.disabled = true; const oldLabel = btn.textContent; btn.textContent = 'Publishing...';
+        const box = $('.pg-verdict-box', root);
+        if (!CONFIG.reviewEndpoint) { toast('Game submission is not connected yet. Please try again later.'); return; }
+        const { allowed, limits, used } = await usageInfo();
+        if (!allowed) { toast(`You've used ${used} of ${limits.maxGames} games on the ${limits.label} plan. Upgrade to submit more.`); return; }
+        btn.disabled = true; const oldLabel = btn.textContent; btn.textContent = 'Submitting...';
         try {
             const user = getUser();
-            // MVP bundle: the entry HTML only, so assets must be inlined as data: URLs (the
-            // upload panel says so). Multi-file storage is a follow-up, not a blocker for v1.
+            const id = pubState.submissionId;
+            // MVP bundle (unchanged): the entry HTML only, so assets must be inlined as data: URLs. The FULL package
+            // goes to the admin via Google Drive so it can be tested properly before anything goes live.
             const html = utf8.decode(pubState.files.get(pubState.entry));
             const gz = await gzip(html);
             if (gz.length > CONFIG.maxBundleBytes) throw new Error('This game packages to more than ' + fmtBytes(CONFIG.maxBundleBytes) + ' after compression. Inline assets as data: URLs and stay under the limit.');
-            const pkg = await fb();
-            const { db, fs } = pkg;
+            const pkgBlob = pubState.sourceZip || buildZip(pubState.files);
+
+            // 1) The review service re-validates the package, enforces the plan from the database, stores it in Drive
+            //    (Pending) and records the submission as pending_review. Re-sending the same id is safe.
+            const form = new FormData();
+            form.append('submissionId', id);
+            form.append('title', meta.title);
+            form.append('description', meta.description || '');
+            form.append('packageName', (pubState.sourceZip && pubState.sourceZip.name) || 'game.zip');
+            form.append('package', pkgBlob, 'game.zip');
+            let res;
+            try {
+                res = await fetch(CONFIG.reviewEndpoint.replace(/\/+$/, '') + '/submit', { method: 'POST', headers: { Authorization: 'Bearer ' + await user.getIdToken() }, body: form });
+            } catch (netErr) { throw new Error('Could not reach the submission service. Check your connection and press Submit again - nothing will be duplicated.'); }
+            let data = {}; try { data = await res.json(); } catch (e) { /* non-JSON error page */ }
+            if (!res.ok || !data.ok) {
+                const details = Array.isArray(data.details) && data.details.length ? data.details : null;
+                if (details) { box.innerHTML = `<div class="pg-verdict bad">Basic validation failed<small>${details.map(esc).join('<br>')}</small></div>`; }
+                throw new Error(data.error || ('Submission failed (HTTP ' + res.status + ').'));
+            }
+
+            // 2) Write the playable bundle under the SAME id. Its status is forced to pending_review by firestore.rules,
+            //    and the rules only allow it when the service has already recorded this submission for this user.
+            const { db, fs } = await fb();
+            const gameRef = fs.doc(db, 'community_games', id);
             const chunkBytes = [];
             for (let i = 0; i < gz.length; i += CONFIG.chunkBytes) chunkBytes.push(gz.subarray(i, i + CONFIG.chunkBytes));
-
-            const gameDoc = {
-                title: meta.title, genre: meta.genre, description: meta.description || '',
-                controls: meta.controls || '', orientation: meta.orientation || 'landscape',
-                thumb: meta.thumbDataUrl || '', ownerUid: user.uid, ownerName: cleanName(user),
-                status: CONFIG.autoPublish ? 'published' : 'pending',
-                chunkCount: chunkBytes.length, tournament: meta.tournamentServer ? { reporting: 'score', server: meta.tournamentServer } : null,
-                createdAt: fs.serverTimestamp(), checkVerdict: pubState.verdict
-            };
-            const docRef = fs.doc(fs.collection(db, 'community_games'));
-            await fs.setDoc(docRef, gameDoc);
-            await Promise.all(chunkBytes.map((b, i) => fs.setDoc(fs.doc(db, 'community_games', docRef.id, 'chunks', String(i)), { i, b: fs.Bytes.fromUint8Array(b) })));
+            if (!(await fs.getDoc(gameRef)).exists()) {
+                await fs.setDoc(gameRef, {
+                    title: meta.title, genre: meta.genre, description: meta.description || '',
+                    controls: meta.controls || '', orientation: meta.orientation || 'landscape',
+                    thumb: meta.thumbDataUrl || '', ownerUid: user.uid, ownerName: cleanName(user),
+                    status: 'pending_review', chunkCount: chunkBytes.length,
+                    tournament: meta.tournamentServer ? { reporting: 'score', server: meta.tournamentServer } : null,
+                    createdAt: fs.serverTimestamp(), checkVerdict: pubState.verdict
+                });
+            }
+            await Promise.all(chunkBytes.map(async (b, i) => {
+                const cref = fs.doc(db, 'community_games', id, 'chunks', String(i));
+                if (!(await fs.getDoc(cref)).exists()) await fs.setDoc(cref, { i, b: fs.Bytes.fromUint8Array(b) });
+            }));
 
             Core.invalidateCommunity();
-            const pending = gameDoc.status === 'pending';
-            root.innerHTML = `<div class="pg-verdict ok">${pending ? 'Submitted for review' : 'Published!'}<small>${pending ? 'We will list it once it is approved.' : 'Your game is live in Community Games.'}</small></div><button type="button" class="pg-btn primary" style="margin-top:14px;" onclick="window.pgLoadPlatform().then(m=>m.resetPublish())">Publish another game</button>`;
-            if (!pending) toast('"' + meta.title + '" is live in Community Games.');
+            root.innerHTML = `<div class="pg-verdict ok">Game submitted successfully.<small>Your game is now pending manual review.</small></div><p style="margin-top:12px;"><b>${esc(meta.title)}</b> <span class="pg-pill warn">Pending Review</span></p><button type="button" class="pg-btn primary" style="margin-top:14px;" onclick="window.pgLoadPlatform().then(m=>m.resetPublish())">Submit another game</button>`;
         } catch (err) {
-            console.error('Publish failed:', err);
-            toast('Publish failed: ' + err.message);
+            console.error('Submit failed:', err);
+            toast(err.message);
             btn.disabled = false; btn.textContent = oldLabel;
         }
     }
@@ -514,7 +538,7 @@
                 <input type="file" id="pg-file-input" accept=".zip,.html,.htm" multiple webkitdirectory style="display:none;">
                 <input type="file" id="pg-file-input-single" accept=".zip,.html,.htm" style="display:none;">
             </div>
-            <p class="pg-note">Everything runs in an isolated sandbox and cannot read PixelGaunt logins, storage, or other games. Assets must be embedded as <code>data:</code> URLs for this first version — external files referenced by path will show as missing.</p>
+            <p class="pg-note">Every submitted game is tested by a person before it is published. Everything runs in an isolated sandbox and cannot read PixelGaunt logins, storage, or other games. Assets must be embedded as <code>data:</code> URLs for this first version — external files referenced by path will show as missing.</p>
             <div class="pg-progress"><i></i></div>
             <div class="pg-checklist"></div>
             <div class="pg-verdict-box"></div>
@@ -530,7 +554,7 @@
                 <label class="pg-check-inline" style="margin-top:12px;"><input type="checkbox" id="pg-tournament-check"><span>This game reports scores to a server I control, so it can host a tournament. <a href="#" class="pg-link" id="pg-tournament-help" style="font-size:0.82rem;">How does that work?</a></span></label>
                 <div class="pg-field pg-hidden" id="pg-server-field" style="margin-top:8px;"><label for="pg-server">Score-reporting host (domain only)</label><input id="pg-server" placeholder="scores.mygame.com"></div>
                 <label class="pg-check-inline" style="margin-top:12px;"><input type="checkbox" id="pg-terms-check"><span>This is my own work (or I have the rights to publish it), and it follows the <a href="#" onclick="event.preventDefault(); openPageModal && openPageModal('Terms of Service','pg-terms')" class="pg-link" style="font-size:0.82rem;">PixelGaunt content rules</a>.</span></label>
-                <button type="button" class="pg-btn primary pg-publish-btn" style="margin-top:16px;" disabled>Publish game</button>
+                <button type="button" class="pg-btn primary pg-publish-btn" style="margin-top:16px;" disabled>Submit for review</button>
             </div>
             <div id="pg-my-games"></div>
         `;
@@ -553,7 +577,7 @@
         root.addEventListener('change', syncPublishEnabled);
         $('.pg-publish-btn', root).addEventListener('click', async () => {
             const server = $('#pg-tournament-check', root).checked ? $('#pg-server', root).value.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '') : '';
-            await publishGame(root, {
+            await submitGame(root, {
                 title: $('#pg-title', root).value.trim().slice(0, 60) || 'Untitled', genre: $('#pg-genre', root).value,
                 description: $('#pg-desc', root).value.trim(), controls: $('#pg-controls', root).value.trim(),
                 orientation: $('#pg-orientation', root).value, thumbDataUrl: pubState.thumbDataUrl, tournamentServer: server
@@ -570,7 +594,7 @@
         if (getUser()) {
             const { allowed, limits, used } = await usageInfo();
             if (!allowed) {
-                toast(`You've used ${used} of ${limits.maxGames} games on the ${limits.label} plan. Upgrade to publish more.`);
+                toast(`You've used ${used} of ${limits.maxGames} games on the ${limits.label} plan. Upgrade to submit more.`);
                 return;
             }
         }
@@ -580,6 +604,7 @@
             const { files, problems } = await collectFiles(fileList);
             drop.innerHTML = `<i class="fas fa-gamepad" aria-hidden="true"></i><b>${esc(files.size)} file(s) loaded</b><span>Click to choose a different upload</span>`;
             const res = await runCheck(root, files, problems);
+            if (pubState && fileList.length === 1 && /\.zip$/i.test(fileList[0].name)) pubState.sourceZip = fileList[0];
             if (res.entry) {
                 // Auto-generate a small thumbnail candidate from the game's own <canvas> after the smoke test's
                 // paint settles, but never block on it - a missing thumb just falls back to the initial letter.
@@ -602,8 +627,8 @@
             const { db, fs } = await fb();
             const snap = await fs.getDocs(fs.query(fs.collection(db, 'community_games'), fs.where('ownerUid', '==', user.uid)));
             if (!snap.docs.length) { box.innerHTML = ''; return; }
-            const rows = snap.docs.map(d => { const g = d.data(); return `<li><span>${esc(g.title)}</span><span class="pg-pill ${g.status === 'published' ? 'ok' : 'warn'}">${esc(g.status)}</span></li>`; }).join('');
-            box.innerHTML = `<div class="pg-shelf-head" style="margin:26px 0 8px;"><div><h2 class="pixel-font" style="font-size:1.1rem;">Your published games</h2></div></div><ul class="pg-mine">${rows}</ul>`;
+            const rows = snap.docs.map(d => { const g = d.data(); const si = statusInfo(g.status); return `<li><span>${esc(g.title)}${g.status === 'rejected' && g.rejectionReason ? '<small style="display:block;color:#fca5a5;">Reason: ' + esc(g.rejectionReason) + '</small>' : ''}</span><span class="pg-pill ${si.cls}">${esc(si.label)}</span></li>`; }).join('');
+            box.innerHTML = `<div class="pg-shelf-head" style="margin:26px 0 8px;"><div><h2 class="pixel-font" style="font-size:1.1rem;">Your submitted games</h2></div></div><ul class="pg-mine">${rows}</ul>`;
         } catch (err) { console.warn('My games unavailable:', err); }
     }
 
@@ -1199,5 +1224,5 @@
         Core.invalidateCommunity();
     }
 
-    window.PG = { CONFIG, resetPublish, mountAll, planLimits, usageInfo, deleteMyGame, Bracket };
+    window.PG = { CONFIG, statusInfo, resetPublish, mountAll, planLimits, usageInfo, deleteMyGame, Bracket };
 })();

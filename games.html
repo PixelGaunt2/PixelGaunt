@@ -68,52 +68,26 @@
         </nav>
     </header>
 
-    <main class="pgx-page" id="homepage-page">
-        <h1 class="pgx-sr">Pixel Gaunt Game Library - free browser games</h1>
-
-        <div class="pgx-topbar">
-            <div class="pgx-search" role="search">
-                <i class="fas fa-search" aria-hidden="true"></i>
-                <input type="search" id="game-search" placeholder="Search games and categories" aria-label="Search games and categories" autocomplete="off" enterkeyhint="search">
-                <button type="button" class="pgx-clear" id="game-search-clear" aria-label="Clear search"><i class="fas fa-xmark" aria-hidden="true"></i></button>
-            </div>
-        </div>
-
-        <section class="pgx-games" id="games-section">
-            <div class="pgx-shell">
-                <nav class="pgx-side" id="category-bar" aria-label="Game categories"></nav>
-
-                <div class="pgx-main">
-                    <section class="pgx-section" id="pgx-recent" hidden>
-                        <div class="pgx-head"><h2>Continue playing <i class="fas fa-chevron-right" aria-hidden="true"></i></h2></div>
-                        <div class="pgx-recent-rail" id="pgx-recent-rail"></div>
-                    </section>
-
-                    <section class="pgx-section" id="pgx-top">
-                        <div class="pgx-head"><h2>Top games <i class="fas fa-chevron-right" aria-hidden="true"></i></h2></div>
-                        <div class="pgx-railwrap">
-                            <div class="pgx-toprail" id="pgx-top-rail"></div>
-                            <button type="button" class="pgx-arrow prev" id="pgx-top-prev" aria-label="Scroll left" hidden><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
-                            <button type="button" class="pgx-arrow next" id="pgx-top-next" aria-label="Scroll right" hidden><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
-                        </div>
-                    </section>
-
-                    <section class="pgx-section" id="pgx-all">
-                        <div class="pgx-head"><h2 id="pgx-all-title">All games</h2></div>
-                        <div class="pgx-mosaic" id="game-grid"></div>
-                    </section>
-
-                    <section class="pgx-section" id="community-shelf">
-                        <div class="pgx-head">
-                            <div>
-                                <h2>Community games</h2>
-                                <p>Published by players and developers. Every one runs in an isolated sandbox.</p>
-                            </div>
-                            <a class="pg-link" href="publish.html">Publish your game</a>
-                        </div>
-                        <div class="pgx-mosaic" id="community-grid"></div>
-                    </section>
+    <main class="container" id="homepage-page" style="padding-top: 40px;">
+        <section class="portfolio-section" id="games-section">
+            <div class="pg-shelf-head">
+                <div>
+                    <h2 class="pixel-font">Game Library</h2>
+                    <p>Every Pixel Gaunt game, free to play, straight in your browser. No downloads.</p>
                 </div>
+                <div class="pg-search"><i class="fas fa-search" aria-hidden="true"></i><input type="search" id="game-search" placeholder="Search games" aria-label="Search games" autocomplete="off"></div>
+            </div>
+            <div class="pg-cats" id="category-bar" role="group" aria-label="Game categories" style="margin-bottom: 22px;"></div>
+            <div class="game-grid" id="game-grid"></div>
+            <div id="community-shelf">
+                <div class="pg-shelf-head" style="margin-top: 44px;">
+                    <div>
+                        <h2 class="pixel-font">Community games</h2>
+                        <p>Published by players and developers. Every one runs in an isolated sandbox.</p>
+                    </div>
+                    <a class="pg-link" href="publish.html">Publish your game</a>
+                </div>
+                <div class="game-grid" id="community-grid"></div>
             </div>
         </section>
     </main>
@@ -202,7 +176,7 @@
         <p><br><strong>Published games, tournaments & creator requests:</strong> If you publish a game, join or create a tournament, or save a creator request, what you submit (game files, title, cover image, your display name, scores and request details) is stored in our database. Games and tournament leaderboards are shown publicly; creator requests are visible only to you and us. Ask us at pixelgaunt@gmail.com to remove anything you submitted.</p>
         <p><br><strong>Analytics:</strong> We use Google Analytics and Firebase Analytics to understand overall site traffic and which games are played most. This data is aggregated and isn't tied to your identity.</p>
         <p><br><strong>Advertising:</strong> This site uses Google AdSense, which may use cookies to serve ads. Google's own privacy policy governs how that data is handled.</p>
-        <p><br><strong>Local storage:</strong> To rank games by popularity and to show your "Continue playing" row, play counts and your recently played games are saved in your browser's local storage. This stays on your device and is never sent to us.</p>
+        <p><br><strong>Local storage:</strong> To rank games by popularity, play counts are saved in your browser's local storage. This stays on your device and is never sent to us.</p>
         <p><br><strong>What we don't do:</strong> We don't sell your data, and we don't collect personal information beyond what's described above.</p>
         <p><br>Questions about your data? Contact us at pixelgaunt@gmail.com.</p>
     </div>

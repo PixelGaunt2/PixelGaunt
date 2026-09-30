@@ -44,81 +44,6 @@
         // Seed each game object with its persisted play count
         games.forEach(g => { g.playCount = playCounts[g.id] || 0; });
 
-        /* ================= GAMES PAGE (portal layout) HELPERS ================= */
-        // Flagship games win ties in the ranking, so a brand-new visitor sees them first.
-        const PGX_FLAGSHIP_IDS = [16, 15, 12];
-        const pgxFlagshipRank = g => { const i = PGX_FLAGSHIP_IDS.indexOf(g.id); return i === -1 ? PGX_FLAGSHIP_IDS.length : i; };
-
-        // "Continue playing": the last few games opened, kept only in this browser's local storage.
-        const PGX_RECENT_KEY = 'pixelGauntRecentGames';
-        const PGX_RECENT_MAX = 12;
-        function pgxLoadRecent() {
-            try { const a = JSON.parse(localStorage.getItem(PGX_RECENT_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
-        }
-        function pgxPushRecent(id) {
-            try {
-                const list = pgxLoadRecent().filter(x => x !== id);
-                list.unshift(id);
-                localStorage.setItem(PGX_RECENT_KEY, JSON.stringify(list.slice(0, PGX_RECENT_MAX)));
-            } catch (e) { /* storage blocked - the row just stays empty */ }
-        }
-
-        // Mosaic sizing (Poki-style): mixes a few big 2x2 ('lg') and wide 2x1 ('wd') tiles in with the
-        // plain 1x1 ones. The counts are chosen from the real column count so the tiles add up to whole
-        // rows and the grid packs with no holes. Big tiles sit early in the list so plain tiles can fill any gaps.
-        function pgxPlanMosaic(n, cols) {
-            const sizes = new Array(n).fill('sm');
-            if (n < 6 || cols < 3 || n < cols) return sizes;
-            const maxW = Math.max(2, Math.floor(n / 4));
-            let best = null;
-            for (let b = (n >= 8 ? 1 : 0); b <= Math.max(1, Math.round(n / 4)); b++) {
-                for (let w = 0; w <= maxW; w++) {
-                    if ((n + 3 * b + w) % cols !== 0) continue;
-                    const cost = Math.abs(b - n / 7) * 2 + w * 0.4;
-                    if (!best || cost < best.cost) best = { b, w, cost };
-                }
-            }
-            if (!best) return sizes;
-            const span = Math.max(1, n - 5);
-            const taken = new Set();
-            const put = (pos, type) => { let i = Math.min(pos, n - 1); while (taken.has(i) && i < n - 1) i++; taken.add(i); sizes[i] = type; };
-            for (let k = 0; k < best.b; k++) put(Math.floor(k * span / best.b), 'lg');
-            for (let k = 0; k < best.w; k++) put(Math.floor((k + 0.5) * span / Math.max(1, best.w)) + 1, 'wd');
-            return sizes;
-        }
-
-        // Measures a mosaic grid, writes its column count + square row height as CSS variables, and returns the
-        // column count. Re-run whenever the grid is resized (see pgxWatchGrids).
-        const pgxGridCols = new WeakMap();
-        function pgxSyncGrid(grid) {
-            const w = grid.clientWidth;
-            if (!w) return pgxGridCols.get(grid) || 6; // hidden right now (e.g. a game is open) - the observer re-syncs when it shows
-            const cs = getComputedStyle(grid);
-            const gap = parseFloat(cs.columnGap) || 12;
-            const cell = parseFloat(cs.getPropertyValue('--cell')) || 132;
-            const cols = Math.max(2, Math.floor((w + gap) / (cell + gap)));
-            grid.style.setProperty('--cols', cols);
-            grid.style.setProperty('--rowh', ((w - gap * (cols - 1)) / cols) + 'px');
-            pgxGridCols.set(grid, cols);
-            return cols;
-        }
-        function pgxWatchGrids() {
-            const grids = ['game-grid', 'community-grid'].map(id => document.getElementById(id)).filter(Boolean);
-            const onSize = grid => {
-                const before = pgxGridCols.get(grid);
-                const cols = pgxSyncGrid(grid);
-                if (cols === before) return;
-                if (grid.id === 'game-grid') { lastRenderedGridKey = null; window.renderGames(currentDisplayedList); }
-                else renderCommunity();
-            };
-            if ('ResizeObserver' in window) {
-                const ro = new ResizeObserver(entries => entries.forEach(e => onSize(e.target)));
-                grids.forEach(g => ro.observe(g));
-            } else {
-                window.addEventListener('resize', () => grids.forEach(onSize));
-            }
-        }
-
         /* ================= PLATFORM HELPERS ================= */
         // Escape anything that did not come from this file (community game titles, names, ...)
         window.pgEsc = function(v) {
@@ -158,8 +83,6 @@
             return [...source].sort((a, b) => {
                 const diff = (b.playCount || 0) - (a.playCount || 0);
                 if (diff !== 0) return diff;
-                const f = pgxFlagshipRank(a) - pgxFlagshipRank(b);
-                if (f !== 0) return f;
                 return a.id - b.id;
             });
         }
@@ -172,12 +95,8 @@
             const game = findGame(gameId);
             if (game) game.playCount = playCounts[gameId];
 
-            pgxPushRecent(gameId);
-
             window.updateFeaturedPanels();
             window.renderGames(currentDisplayedList);
-            pgxRenderRecent();
-            pgxRenderTop();
             trackDailyPlay(gameId);
         }
 
@@ -277,131 +196,77 @@
             }
 
             // Same games, same order as what's already on screen -> nothing to do.
-            const cols = pgxSyncGrid(gameGrid);
-            const gridKey = cols + '|' + rankedList.map(g => g.id).join(',');
+            const gridKey = rankedList.map(g => g.id).join(',');
             if (gridKey === lastRenderedGridKey) return;
             lastRenderedGridKey = gridKey;
 
-            const sizes = pgxPlanMosaic(rankedList.length, cols);
             gameGrid.innerHTML = '';
-            rankedList.forEach((game, i) => gameGrid.appendChild(createGameCard(game, { size: sizes[i] })));
+            rankedList.forEach(game => gameGrid.appendChild(createGameCard(game)));
         }
 
-        // Builds one image-first game tile (a real link, so it can be opened in a new tab and read by crawlers).
-        // opts.size: 'sm' (1x1) | 'lg' (2x2) | 'xl' (Top games hero) | 'md' (Top games cluster) | 'icon' (Continue playing)
-        // opts.noId: skip the element id, for tiles that repeat a game shown elsewhere on the page.
-        // First-party tiles lazy-load their hover GIF preview; community tiles show a badge and only load their own thumb.
-        function createGameCard(game, opts) {
-            opts = opts || {};
-            const size = opts.size || 'sm';
-            const hashId = game.community ? 'cgame-' + game.docId : 'game-' + game.id;
-
-            const card = document.createElement('a');
-            card.className = 'pgx-tile pgx-' + size;
-            if (!opts.noId) card.id = hashId;
-            card.setAttribute('aria-label', 'Play ' + game.title);
-            if (size === 'icon') card.title = game.title;
-
-            if (window.SHOWCASE_MODE) {
-                // Homepage is a showcase only - never launch a game directly from here.
-                card.href = 'games.html#' + hashId;
-            } else {
-                card.href = '?play=' + encodeURIComponent(playParam(game));
-                card.addEventListener('click', e => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return; // let the browser open a new tab
-                    e.preventDefault();
+        // Builds one game card. First-party cards keep their original markup (hover GIF preview,
+        // stars); community cards show a badge + author and never load anything but their own thumb.
+        function createGameCard(game) {
+            const card = document.createElement('div');
+            card.className = 'game-card';
+            card.id = (game.community ? 'cgame-' + game.docId : 'game-' + game.id);
+            card.onclick = () => {
+                if (window.SHOWCASE_MODE) {
+                    // Homepage is a showcase only - never launch a game directly from here.
+                    window.location.href = 'games.html#' + card.id;
+                } else {
                     window.launchViewport(game.id);
-                });
-            }
-
-            const cap = size === 'icon' ? '' : `<span class="pgx-cap"><b>${esc(game.title)}</b><span>${esc(game.genre)}</span></span>`;
+                }
+            };
 
             if (game.community) {
                 const thumb = game.thumb
-                    ? `<img class="pgx-img" src="${esc(game.thumb)}" alt="${esc(game.title)}" width="320" height="240" loading="lazy" decoding="async">`
+                    ? `<img class="card-thumb-img" src="${esc(game.thumb)}" alt="${esc(game.title)}" width="320" height="240" decoding="async">`
                     : `<div class="pg-thumb-fallback" aria-hidden="true">${esc((game.title || '?').charAt(0).toUpperCase())}</div>`;
-                const tourney = (game.tournament && game.tournament.reporting === 'score' && size !== 'icon') ? '<span class="pg-badge t">Tournament ready</span>' : '';
-                const badge = size === 'icon' ? '' : '<span class="pg-badge">Community</span>';
-                card.innerHTML = thumb + badge + tourney + cap;
+                const tourney = (game.tournament && game.tournament.reporting === 'score') ? '<span class="pg-badge t">Tournament ready</span>' : '';
+                card.innerHTML = `
+                    <div class="card-thumb">
+                        ${thumb}
+                        <span class="pg-badge">Community</span>${tourney}
+                        <div class="play-overlay"><div class="play-btn-circle"></div></div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-genre">${esc(game.genre)}</div>
+                        <div class="card-title">${esc(game.title)}</div>
+                        <div class="card-premium-meta"><span class="pg-muted" style="font-size:0.78rem;">by ${esc(game.studio)}</span></div>
+                    </div>`;
                 return card;
             }
 
             const safeImg = encodeURI(game.image);
             const safePreview = encodeURI(game.preview || game.image.replace('.png', '.gif'));
-            card.innerHTML = `<img class="pgx-img" src="${esc(safeImg)}" alt="${esc(game.title)}" loading="lazy" decoding="async" width="400" height="300">`
-                + (size === 'icon' ? '' : `<span class="pgx-gif" data-gif="${esc(safePreview)}"></span>`)
-                + cap;
+            card.innerHTML = `
+                <div class="card-thumb">
+                    <img class="card-thumb-img" src="${esc(safeImg)}" alt="${esc(game.title)}" loading="lazy" decoding="async" width="400" height="300">
+                    <div class="gif-overlay" data-gif="${esc(safePreview)}"></div>
+                    <div class="play-overlay"><div class="play-btn-circle"></div></div>
+                </div>
+                <div class="card-info">
+                    <div class="card-genre">${esc(game.genre)}</div>
+                    <div class="card-title">${esc(game.title)}</div>
+                    <div class="card-premium-meta">
+                        <div class="card-stars-layer">★★★★★</div>
+                    </div>
+                </div>
+            `;
 
             // The preview GIF is never fetched on render - only on genuine hover/touch
-            // intent, and only once per tile (the browser caches it after that).
-            const gifLayer = card.querySelector('.pgx-gif');
-            if (gifLayer) {
-                let gifRequested = false;
-                const loadGifOnce = () => {
-                    if (gifRequested) return;
-                    gifRequested = true;
-                    gifLayer.style.backgroundImage = `url('${gifLayer.dataset.gif}')`;
-                };
-                card.addEventListener('mouseenter', loadGifOnce, { once: true });
-                card.addEventListener('touchstart', loadGifOnce, { once: true, passive: true });
-            }
+            // intent, and only once per card (result is cached by the browser after that).
+            const gifLayer = card.querySelector('.gif-overlay');
+            let gifRequested = false;
+            const loadGifOnce = () => {
+                if (gifRequested) return;
+                gifRequested = true;
+                gifLayer.style.backgroundImage = `url('${gifLayer.dataset.gif}')`;
+            };
+            card.addEventListener('mouseenter', loadGifOnce, { once: true });
+            card.addEventListener('touchstart', loadGifOnce, { once: true, passive: true });
             return card;
-        }
-
-        // "Top games": a big hero tile followed by a 2x2 cluster, repeating (CrazyGames-style rail).
-        function pgxRenderTop() {
-            const rail = document.getElementById('pgx-top-rail');
-            if (!rail) return;
-            const list = window.getRankedGames(games).slice(0, 6);
-            rail.innerHTML = '';
-            let cluster = null;
-            list.forEach((g, i) => {
-                if (i % 5 === 0) {
-                    rail.appendChild(createGameCard(g, { size: 'xl', noId: true }));
-                    cluster = null;
-                } else {
-                    if (!cluster) { cluster = document.createElement('div'); cluster.className = 'pgx-cluster'; rail.appendChild(cluster); }
-                    cluster.appendChild(createGameCard(g, { size: 'md', noId: true }));
-                }
-            });
-            rail.querySelectorAll('.pgx-cluster').forEach(c => c.classList.add('k' + c.children.length));
-            pgxRefreshTopArrows();
-        }
-
-        // "Continue playing": small icons of the games opened most recently (hidden until there is history).
-        function pgxRenderRecent() {
-            const sec = document.getElementById('pgx-recent');
-            const rail = document.getElementById('pgx-recent-rail');
-            if (!sec || !rail) return;
-            const list = pgxLoadRecent().map(findGame).filter(Boolean);
-            rail.innerHTML = '';
-            list.forEach(g => rail.appendChild(createGameCard(g, { size: 'icon', noId: true })));
-            sec.hidden = list.length === 0;
-        }
-
-        function pgxRefreshTopArrows() {
-            const rail = document.getElementById('pgx-top-rail');
-            const prev = document.getElementById('pgx-top-prev');
-            const next = document.getElementById('pgx-top-next');
-            if (!rail || !prev || !next) return;
-            const max = rail.scrollWidth - rail.clientWidth - 2;
-            prev.hidden = rail.scrollLeft <= 6;
-            next.hidden = rail.scrollLeft >= max - 4;
-        }
-
-        function pgxInitRows() {
-            const rail = document.getElementById('pgx-top-rail');
-            const prev = document.getElementById('pgx-top-prev');
-            const next = document.getElementById('pgx-top-next');
-            if (rail && prev && next) {
-                rail.addEventListener('scroll', pgxRefreshTopArrows, { passive: true });
-                window.addEventListener('resize', pgxRefreshTopArrows);
-                prev.addEventListener('click', () => rail.scrollBy({ left: -rail.clientWidth * 0.8, behavior: 'smooth' }));
-                next.addEventListener('click', () => rail.scrollBy({ left: rail.clientWidth * 0.8, behavior: 'smooth' }));
-            }
-            pgxRenderTop();
-            pgxRenderRecent();
-            requestAnimationFrame(pgxRefreshTopArrows);
         }
 
         /* ================= MOBILE / TABLET AUTO FULLSCREEN + ORIENTATION ================= */
@@ -744,7 +609,7 @@
                 }
                 const fb = await whenFirebase();
                 const { collection, query, where, limit, getDocs } = fb.fs;
-                const snap = await getDocs(query(collection(fb.db, 'community_games'), where('status', '==', 'published'), limit(24)));
+                const snap = await getDocs(query(collection(fb.db, 'community_games'), where('status', 'in', ['approved', 'published']), limit(24)));
                 const list = snap.docs.map(d => mapCommunityDoc(d.id, d.data())).sort((a, b) => b.createdMs - a.createdMs);
                 window.communityGames = list;
                 communityLoaded = true;
@@ -769,7 +634,6 @@
                 if (isLibrary) grid.innerHTML = '<div class="pg-empty">Loading community games...</div>';
                 return;
             }
-            pgxRenderRecent(); // community ids in the history can be resolved now
             const q = searchQuery.trim().toLowerCase();
             const list = window.communityGames.filter(g =>
                 (activeGenre === 'All' || g.genre === activeGenre) && (!q || (g.title + ' ' + g.genre + ' ' + g.studio).toLowerCase().includes(q)));
@@ -785,8 +649,7 @@
             }
             shelf.classList.remove('pg-hidden');
             grid.innerHTML = '';
-            const sizes = pgxPlanMosaic(list.length, pgxSyncGrid(grid));
-            list.forEach((g, i) => grid.appendChild(createGameCard(g, { size: sizes[i] })));
+            list.forEach(g => grid.appendChild(createGameCard(g)));
 
             // Arriving from a homepage click (games.html#cgame-<id>): scroll to the card, never auto-launch.
             if (!communityHashDone && window.location.hash.startsWith('#cgame-')) {
@@ -901,7 +764,7 @@
         // (The hero above the rail stays fixed on Girl The Driller regardless of any of this.)
         const FEATURED_FALLBACK_IDS = [16, 15, 12];
         const FEATURED_COUNT = 3;
-        const GENRE_ICONS = { All: 'fa-table-cells-large', Arcade: 'fa-gamepad', Puzzle: 'fa-puzzle-piece', Racing: 'fa-flag-checkered', Action: 'fa-bolt', Adventure: 'fa-compass', Card: 'fa-clone' };
+        const GENRE_ICONS = { Arcade: 'fa-gamepad', Puzzle: 'fa-puzzle-piece', Racing: 'fa-flag-checkered', Action: 'fa-bolt', Adventure: 'fa-compass', Card: 'fa-clone' };
         let activeGenre = 'All';
         let searchQuery = '';
 
@@ -955,8 +818,7 @@
                 b.type = 'button';
                 b.className = 'pg-cat';
                 b.dataset.genre = name;
-                b.title = (name === 'All' ? 'All games' : name) + ' (' + n + ')';
-                b.innerHTML = `<i class="fas ${GENRE_ICONS[name] || 'fa-star'}" aria-hidden="true"></i><span>${esc(name)}</span>`;
+                b.innerHTML = `<i class="fas ${GENRE_ICONS[name] || 'fa-star'}" aria-hidden="true"></i><span>${esc(name === 'All' ? 'All games' : name)}<small>${n} ${n === 1 ? 'game' : 'games'}</small></span>`;
                 b.addEventListener('click', () => {
                     activeGenre = name;
                     syncCategoryButtons();
@@ -964,54 +826,24 @@
                 });
                 bar.appendChild(b);
             });
-            if (document.getElementById('community-shelf')) {
-                const sep = document.createElement('span');
-                sep.className = 'pgx-side-sep';
-                sep.setAttribute('aria-hidden', 'true');
-                const link = document.createElement('a');
-                link.className = 'pgx-side-link';
-                link.href = '#community-shelf';
-                link.title = 'Community games';
-                link.innerHTML = '<i class="fas fa-users" aria-hidden="true"></i><span>Community</span>';
-                link.addEventListener('click', e => {
-                    e.preventDefault();
-                    const target = document.getElementById('community-shelf');
-                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                });
-                bar.appendChild(sep);
-                bar.appendChild(link);
-            }
             syncCategoryButtons();
         }
 
         function applyGameFilters() {
             const q = searchQuery.trim().toLowerCase();
-            const filtered = activeGenre !== 'All' || q !== '';
-            const section = document.getElementById('games-section');
-            if (section) section.classList.toggle('pgx-filtered', filtered);
-            const allTitle = document.getElementById('pgx-all-title');
-            if (allTitle) allTitle.textContent = q ? 'Results for \u201c' + searchQuery.trim() + '\u201d' : (activeGenre !== 'All' ? activeGenre + ' games' : 'All games');
             const list = games.filter(g => (activeGenre === 'All' || g.genre === activeGenre) && (!q || (g.title + ' ' + g.genre).toLowerCase().includes(q)));
             window.renderGames(list);
             renderCommunity();
-            if (!filtered) requestAnimationFrame(pgxRefreshTopArrows);
         }
 
         function initSearch() {
             const input = document.getElementById('game-search');
             if (!input) return;
             let timer;
-            const wrap = input.closest('.pgx-search');
-            const clearBtn = document.getElementById('game-search-clear');
-            const syncClear = () => { if (wrap) wrap.classList.toggle('has-text', input.value.length > 0); };
-            const clearSearch = () => { input.value = ''; syncClear(); searchQuery = ''; applyGameFilters(); };
             input.addEventListener('input', () => {
-                syncClear();
                 clearTimeout(timer);
                 timer = setTimeout(() => { searchQuery = input.value; applyGameFilters(); }, 120);
             });
-            input.addEventListener('keydown', e => { if (e.key === 'Escape' && input.value) { e.preventDefault(); clearSearch(); } });
-            if (clearBtn) clearBtn.addEventListener('click', () => { clearSearch(); input.focus(); });
         }
 
         /* ================= LAZY PLATFORM MODULES (Publish, Tournaments, Creator Lab) ================= */
@@ -1095,8 +927,6 @@
             renderFeatured();
             renderCategories();
             initSearch();
-            pgxInitRows();
-            pgxWatchGrids();
             initLazyModules();
             // Community shelf: read Firestore only once the Games section is about to be seen.
             const gamesSection = document.getElementById('games-section');

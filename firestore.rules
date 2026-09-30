@@ -9,29 +9,64 @@ service cloud.firestore {
     // ---- shared daily play counter (Featured rail: top 3 played today) --------------------
     match /daily_plays/{date}/games/{gameId} { allow read: if true; allow write: if true; }
 
-    // ---- community games (Publish) --------------------------------------------------------
-    // Anyone can read published games; only the owner can read their own pending/rejected ones.
+    // ---- users: plan and admin rights can never be written from the browser ----------------------
+    // Everyone may read/write their own basic profile fields. `plan` (free/subscriber) can only be set
+    // in the Firebase console or by a trusted server - the review service reads it from here.
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid && !('plan' in request.resource.data);
+      allow update: if request.auth != null && request.auth.uid == uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'lastLogin']);
+    }
+
+    // ---- admins: create admins/<your-uid> by hand in the Firebase console. Browsers cannot write here. --
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;   // lets the UI know whether to show Admin Review
+      allow write: if false;
+    }
+
+    // ---- game submissions (manual review) ----------------------------------------------------------
+    // Written ONLY by the review service (service account bypasses rules). Owners can read their own;
+    // admins can read all. Nobody can change status from the browser.
+    match /submissions/{sid} {
+      allow read: if request.auth != null
+                  && (resource.data.user_id == request.auth.uid
+                      || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      allow write: if false;
+    }
+
+    // ---- community games (Publish) --------------------------------------------------------------
+    // Public can only see approved (or legacy 'published') games. Owners see their own in any state.
+    // A new game document must reuse the id of a submission the review service recorded for that same
+    // user, and must start as pending_review. Only the review service can set approved / rejected.
     match /community_games/{gameId} {
-      allow read: if resource.data.status == 'published'
-                  || (request.auth != null && request.auth.uid == resource.data.ownerUid);
+      allow read: if resource.data.status in ['approved', 'published']
+                  || (request.auth != null && request.auth.uid == resource.data.ownerUid)
+                  || (request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
       allow create: if request.auth != null
                     && request.resource.data.ownerUid == request.auth.uid
-                    && request.resource.data.status in ['published', 'pending']
+                    && request.resource.data.status == 'pending_review'
+                    && exists(/databases/$(database)/documents/submissions/$(gameId))
+                    && get(/databases/$(database)/documents/submissions/$(gameId)).data.user_id == request.auth.uid
+                    && get(/databases/$(database)/documents/submissions/$(gameId)).data.status == 'pending_review'
                     && request.resource.data.title is string && request.resource.data.title.size() <= 60
                     && request.resource.data.chunkCount is int && request.resource.data.chunkCount <= 8;
-      // Owner can edit their own listing metadata but not re-approve themselves once rejected,
-      // and cannot rewrite ownerUid.
+      // Owners may only rename a game that is not live; status, owner and files are off limits.
       allow update: if request.auth != null && request.auth.uid == resource.data.ownerUid
-                    && request.resource.data.ownerUid == resource.data.ownerUid
-                    && request.resource.data.status != 'published';
+                    && !(resource.data.status in ['approved', 'published'])
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title'])
+                    && request.resource.data.title is string && request.resource.data.title.size() <= 60;
       allow delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
 
       match /chunks/{chunkId} {
-        allow read: if get(/databases/$(database)/documents/community_games/$(gameId)).data.status == 'published'
+        allow read: if get(/databases/$(database)/documents/community_games/$(gameId)).data.status in ['approved', 'published']
                     || (request.auth != null && request.auth.uid == get(/databases/$(database)/documents/community_games/$(gameId)).data.ownerUid);
+        // Only while the game is still pending_review, so a live game's files can never be swapped.
         allow create: if request.auth != null
-                      && request.auth.uid == get(/databases/$(database)/documents/community_games/$(gameId)).data.ownerUid;
-        allow update, delete: if false; // chunks are immutable once written
+                      && request.auth.uid == get(/databases/$(database)/documents/community_games/$(gameId)).data.ownerUid
+                      && get(/databases/$(database)/documents/community_games/$(gameId)).data.status == 'pending_review';
+        allow update: if false;
+        allow delete: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/community_games/$(gameId)).data.ownerUid;
       }
     }
 

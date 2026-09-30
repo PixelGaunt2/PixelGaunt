@@ -57,6 +57,15 @@
         .cs-row-actions button, .cs-row-actions a{font-size:0.78rem;padding:5px 10px;border-radius:6px;border:1px solid rgba(148,163,184,0.3);background:transparent;color:#e2e8f0;cursor:pointer;text-decoration:none;}
         .cs-row-actions button.danger{border-color:#f87171;color:#f87171;}
         .cs-row-actions button:disabled{opacity:0.4;cursor:not-allowed;}
+        .cs-reason{display:block;margin-top:4px;font-size:0.8rem;color:#fca5a5;}
+        .cs-adm-card{border:1px solid rgba(148,163,184,0.2);padding:14px 16px;margin-bottom:12px;}
+        .cs-adm-meta{display:flex;flex-wrap:wrap;gap:6px 18px;color:#94a3b8;font-size:0.82rem;margin:6px 0 10px;}
+        .cs-adm-rej{display:none;margin-top:12px;gap:8px;flex-wrap:wrap;}
+        .cs-adm-rej select,.cs-adm-rej textarea{background:#0f172a;color:#e2e8f0;border:1px solid rgba(148,163,184,0.3);padding:7px;font:inherit;font-size:0.85rem;}
+        .cs-adm-rej textarea{flex:1 1 260px;min-height:54px;}
+        .cs-adm-note{color:#94a3b8;font-size:0.82rem;margin:0 0 14px;}
+        .cs-adm-check{color:#cbd5e1;font-size:0.85rem;line-height:1.6;margin:0 0 16px;}
+        .cs-adm-check summary{cursor:pointer;color:var(--neon-cyan,#38bdf8);font-weight:600;}
         .cs-account-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
         .cs-account-field{background:rgba(255,255,255,0.04);border:1px solid rgba(148,163,184,0.15);border-radius:12px;padding:14px 16px;}
         .cs-account-field span{display:block;font-size:0.78rem;color:#64748b;margin-bottom:4px;}
@@ -119,6 +128,7 @@
                 <button class="cs-tab" data-tab="upload">Upload Game</button>
                 <button class="cs-tab" data-tab="account">Account</button>
                 <button class="cs-tab" data-tab="upgrade">Upgrade</button>
+                <button class="cs-tab" data-tab="admin" id="cs-tab-admin" style="display:none;">Admin Review</button>
             </div>
 
             <section class="cs-panel active" id="cs-panel-overview">
@@ -127,7 +137,7 @@
                     <div class="cs-stat"><b id="cs-ov-games">0 / 1</b><span id="cs-ov-games-label">Games</span></div>
                     <div class="cs-stat"><b id="cs-ov-size">5 MB</b><span>Maximum file size</span></div>
                 </div>
-                <p class="pg-note">This is your Creator Studio - it's only visible to you while signed in. Use <b>Upload Game</b> to publish, <b>My Games</b> to manage what's live, and <b>Upgrade</b> for more games per month and a bigger size limit.</p>
+                <p class="pg-note">This is your Creator Studio - it's only visible to you while signed in. Use <b>Upload Game</b> to submit a game for review, <b>My Games</b> to see whether each one is pending, approved or rejected, and <b>Upgrade</b> for more games per month and a bigger size limit.</p>
             </section>
 
             <section class="cs-panel" id="cs-panel-games">
@@ -139,8 +149,8 @@
                     <ol class="pg-steps">
                         <li><div><b>Upload</b><span>A .zip, a folder, or a single HTML file.</span></div></li>
                         <li><div><b>Check</b><span>Files, links, scripts and a test run in a sandbox. Every problem is listed by file.</span></div></li>
-                        <li><div><b>Publish</b><span>Add a title and cover, and publish once the check passes.</span></div></li>
-                        <li><div><b>Play</b><span>Your game runs isolated from PixelGaunt. It cannot read logins, storage or site data.</span></div></li>
+                        <li><div><b>Submit</b><span>Add a title and submit once the check passes. It then shows as Pending Review.</span></div></li>
+                        <li><div><b>Review</b><span>A person tests every game before it goes live. If it is rejected, the reason appears in My Games.</span></div></li>
                     </ol>
                     <div id="launch-root" class="pg-panel pg-cut" data-pg-module="launch"><p class="pg-muted">Loading the game checker...</p></div>
                 </div>
@@ -154,6 +164,29 @@
                     <div class="cs-account-field"><span>Renewal</span><b id="cs-acc-renewal">-</b></div>
                 </div>
                 <button class="nav-btn primary pg-btn" style="margin-top:20px;" onclick="window.location.href='subscription.html'">Upgrade account</button>
+            </section>
+
+            <section class="cs-panel" id="cs-panel-admin">
+                <p class="cs-adm-note">Administrator only. Every action is re-checked on the server - hiding this tab is not what protects it.</p>
+                <details class="cs-adm-check">
+                    <summary>Manual test checklist</summary>
+                    <p><b>Package:</b> zip opens, no corruption, expected files present, no missing assets or broken references.<br>
+                    <b>Gameplay:</b> launches; controls, buttons, menus, scoring and progression work; no freezes or crashes.<br>
+                    <b>JavaScript / technical:</b> no fatal JS errors, broken asset paths, scripts, audio or video.<br>
+                    <b>Security:</b> no suspicious executables, malicious scripts, unwanted redirects or popups, or suspicious external behaviour.<br>
+                    <b>Responsive:</b> PC, tablet, mobile; portrait and landscape where they apply; touch controls; nothing cropped or overflowing.<br>
+                    <i>This checklist is a working aid. It is not a security certification - do your own final security check.</i></p>
+                </details>
+                <div class="cs-row-actions" style="margin-bottom:14px;">
+                    <select id="cs-adm-filter" style="background:#0f172a;color:#e2e8f0;border:1px solid rgba(148,163,184,0.3);padding:6px;">
+                        <option value="pending_review">Pending games</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <button id="cs-adm-refresh">Refresh</button>
+                    <button id="cs-adm-drive">Check Drive connection</button>
+                </div>
+                <div id="cs-adm-list"><p class="pg-muted">Loading...</p></div>
             </section>
 
             <section class="cs-panel" id="cs-panel-upgrade">
@@ -180,6 +213,11 @@
                 });
             });
 
+            function statusInfo(st) {
+                if (st === 'approved' || st === 'published') return { label: 'Approved / Published', cls: 'ok' };
+                if (st === 'rejected') return { label: 'Rejected', cls: 'bad' };
+                return { label: 'Pending Review', cls: 'warn' };
+            }
             function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
             async function loadGames(user, limits) {
@@ -199,19 +237,21 @@
                     document.getElementById('cs-ov-games').textContent = used + ' / ' + limits.maxGames;
                     document.getElementById('cs-ov-games-label').textContent = 'Games' + (limits.period === 'month' ? ' this month' : '');
 
-                    if (!docs.length) { box.innerHTML = '<p class="pg-muted">You have not published any games yet. Use the Upload Game tab to publish your first one.</p>'; return; }
+                    if (!docs.length) { box.innerHTML = '<p class="pg-muted">You have not submitted any games yet. Use the Upload Game tab to submit your first one.</p>'; return; }
                     const rows = docs.map(g => {
                         const created = g.createdAt && g.createdAt.toDate ? g.createdAt.toDate().toLocaleDateString() : '-';
                         const thumb = g.thumb ? '<img class="cs-thumb" src="' + esc(g.thumb) + '" alt="">' : '<div class="cs-thumb" style="display:flex;align-items:center;justify-content:center;color:#475569;">?</div>';
-                        const statusCls = g.status === 'published' ? 'ok' : 'warn';
-                        const canEdit = g.status !== 'published';
+                        const si = statusInfo(g.status);
+                        const live = g.status === 'approved' || g.status === 'published';
+                        const canEdit = !live;
+                        const reason = (g.status === 'rejected' && g.rejectionReason) ? '<span class="cs-reason">Rejection reason: ' + esc(g.rejectionReason) + '</span>' : '';
                         return '<tr>' +
                             '<td>' + thumb + '</td>' +
-                            '<td>' + esc(g.title) + '</td>' +
-                            '<td><span class="pg-pill ' + statusCls + '">' + esc(g.status) + '</span></td>' +
+                            '<td>' + esc(g.title) + reason + '</td>' +
+                            '<td><span class="pg-pill ' + si.cls + '">' + esc(si.label) + '</span></td>' +
                             '<td>' + created + '</td>' +
                             '<td><div class="cs-row-actions">' +
-                                '<a href="games.html?play=c-' + encodeURIComponent(g.id) + '" target="_blank" rel="noopener">Play</a>' +
+                                (live ? '<a href="games.html?play=c-' + encodeURIComponent(g.id) + '" target="_blank" rel="noopener">Play</a>' : '') +
                                 '<button ' + (canEdit ? '' : 'disabled title="Published games cannot be edited here - contact pixelgaunt@gmail.com"') + ' onclick="window.pgCsEdit(\'' + g.id + '\',\'' + esc(g.title).replace(/'/g, "&#39;") + '\')">Edit</button>' +
                                 '<button class="danger" onclick="window.pgCsDelete(\'' + g.id + '\',' + (g.chunkCount || 0) + ',\'' + esc(g.title).replace(/'/g, "&#39;") + '\')">Delete</button>' +
                             '</div></td>' +
@@ -245,6 +285,109 @@
                 } catch (err) { alert('Could not delete this game: ' + err.message); }
             };
 
+
+            /* ---------------- ADMIN REVIEW ----------------
+               The tab only appears when admins/<your uid> exists (a document you create in the Firebase console).
+               That is a UI convenience. The real checks are on the review service and in firestore.rules:
+               a non-admin who forces this tab open still gets 403s and empty reads. */
+            let isAdmin = false;
+            const admList = document.getElementById('cs-adm-list');
+            const fmtSize = n => n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(2) + ' MB';
+            const tsDate = t => (t && t.toDate) ? t.toDate().toLocaleString() : '-';
+            const tsMs = t => (t && t.toMillis) ? t.toMillis() : 0;
+            async function reviewBase() {
+                const PG = await window.pgLoadPlatform();
+                const base = PG && PG.CONFIG && PG.CONFIG.reviewEndpoint;
+                if (!base) throw new Error('The review service URL is not set yet (CONFIG.reviewEndpoint in platform.js).');
+                return base.replace(/\/+$/, '');
+            }
+            async function authed(path, init) {
+                const user = window.pgFB.auth.currentUser;
+                if (!user) throw new Error('Sign in again.');
+                return fetch((await reviewBase()) + path, { ...init, headers: { ...(init && init.headers), Authorization: 'Bearer ' + await user.getIdToken() } });
+            }
+            async function apiJson(path, body) {
+                const res = await authed(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+                let data = {}; try { data = await res.json(); } catch (e) {}
+                if (!res.ok || !data.ok) throw new Error(data.error || ('Request failed (HTTP ' + res.status + ').'));
+                return data;
+            }
+            async function setupAdmin(user) {
+                const tab = document.getElementById('cs-tab-admin');
+                isAdmin = false;
+                try { const { db, fs } = window.pgFB; isAdmin = (await fs.getDoc(fs.doc(db, 'admins', user.uid))).exists(); } catch (e) { isAdmin = false; }
+                tab.style.display = isAdmin ? '' : 'none';
+                if (isAdmin) loadAdmin();
+            }
+            async function loadAdmin() {
+                if (!isAdmin) return;
+                const status = document.getElementById('cs-adm-filter').value;
+                admList.innerHTML = '<p class="pg-muted">Loading...</p>';
+                try {
+                    const { db, fs } = window.pgFB;
+                    const snap = await fs.getDocs(fs.query(fs.collection(db, 'submissions'), fs.where('status', '==', status)));
+                    const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    rows.sort((a, b) => tsMs(b.submitted_at) - tsMs(a.submitted_at));
+                    if (!rows.length) { admList.innerHTML = '<p class="pg-muted">Nothing here.</p>'; return; }
+                    admList.innerHTML = rows.map(r => {
+                        const si = statusInfo(r.status), pending = r.status === 'pending_review';
+                        const warn = (r.validation_warnings && r.validation_warnings.length) ? '<span class="cs-reason" style="color:#fcd34d;">Validation warnings: ' + esc(r.validation_warnings.join(' | ')) + '</span>' : '';
+                        const why = r.rejection_reason ? '<span class="cs-reason">Rejected: ' + esc(r.rejection_reason) + '</span>' : '';
+                        const presets = ['Missing game assets', 'Gameplay issue', 'Mobile layout problem', 'Game does not launch', 'Broken controls', 'Security concern', 'Corrupt package', 'Custom reason...'];
+                        return '<div class="cs-adm-card pg-cut" data-id="' + esc(r.id) + '" data-name="' + esc(r.game_name) + '">' +
+                            '<b>' + esc(r.game_name) + '</b> <span class="pg-pill ' + si.cls + '">' + esc(si.label) + '</span>' +
+                            '<div class="cs-adm-meta"><span>Developer: ' + esc(r.developer_name || '-') + ' (' + esc(r.developer_email || 'no email') + ')</span><span>Submitted: ' + esc(tsDate(r.submitted_at)) + '</span><span>Size: ' + esc(fmtSize(r.file_size || 0)) + '</span><span>Plan: ' + esc(r.subscription_type || '-') + '</span></div>' +
+                            (r.description ? '<div style="font-size:0.85rem;color:#cbd5e1;margin-bottom:8px;">' + esc(r.description) + '</div>' : '') + warn + why +
+                            '<div class="cs-row-actions" style="margin-top:10px;">' +
+                                '<button data-act="download">Download package</button>' +
+                                (pending ? '<button data-act="approve">Approve</button><button class="danger" data-act="reject-open">Reject</button>' : '') +
+                            '</div>' +
+                            '<div class="cs-adm-rej"><select>' + presets.map(x => '<option>' + x + '</option>').join('') + '</select>' +
+                            '<textarea maxlength="500" placeholder="Reason shown to the developer (required; edit or write your own)"></textarea>' +
+                            '<button class="danger" data-act="reject-confirm" style="padding:6px 12px;border:1px solid #f87171;background:transparent;color:#f87171;cursor:pointer;">Confirm reject</button></div>' +
+                        '</div>';
+                    }).join('');
+                } catch (err) { admList.innerHTML = '<p class="pg-muted">Could not load submissions: ' + esc(err.message) + '</p>'; }
+            }
+            admList.addEventListener('change', e => {
+                if (e.target.tagName !== 'SELECT') return;
+                e.target.parentNode.querySelector('textarea').value = /^Custom/.test(e.target.value) ? '' : e.target.value;
+            });
+            admList.addEventListener('click', async e => {
+                const btn = e.target.closest('button[data-act]'); if (!btn) return;
+                const card = btn.closest('.cs-adm-card'), id = card.dataset.id, act = btn.dataset.act;
+                if (act === 'reject-open') { const f = card.querySelector('.cs-adm-rej'); f.style.display = 'flex'; const ta = f.querySelector('textarea'); if (!ta.value) ta.value = f.querySelector('select').value; return; }
+                btn.disabled = true;
+                try {
+                    if (act === 'download') {
+                        const res = await authed('/admin/download?id=' + encodeURIComponent(id));
+                        if (!res.ok) { let m = 'Download failed (HTTP ' + res.status + ').'; try { m = (await res.json()).error || m; } catch (x) {} throw new Error(m); }
+                        const url = URL.createObjectURL(await res.blob());
+                        const a = document.createElement('a'); a.href = url; a.download = (card.dataset.name || 'game').replace(/[^\w.-]+/g, '-') + '.zip';
+                        document.body.appendChild(a); a.click(); a.remove();
+                        setTimeout(() => URL.revokeObjectURL(url), 60000);
+                    } else if (act === 'approve') {
+                        if (!confirm('Approve and publish "' + card.dataset.name + '"? Only do this after your manual test.')) return;
+                        await apiJson('/admin/approve', { submissionId: id });
+                        loadAdmin();
+                    } else if (act === 'reject-confirm') {
+                        const reason = card.querySelector('textarea').value.trim();
+                        if (reason.length < 3) { alert('Enter a rejection reason.'); return; }
+                        await apiJson('/admin/reject', { submissionId: id, reason });
+                        loadAdmin();
+                    }
+                } catch (err) { alert(err.message); }
+                finally { btn.disabled = false; }
+            });
+            document.getElementById('cs-adm-filter').addEventListener('change', loadAdmin);
+            document.getElementById('cs-adm-refresh').addEventListener('click', loadAdmin);
+            document.getElementById('cs-adm-drive').addEventListener('click', async e => {
+                e.target.disabled = true;
+                try { const r = await apiJson('/admin/drive-check'); alert('Google Drive is connected. Folders ready:\n' + r.folders.join('\n')); }
+                catch (err) { alert('Drive check failed: ' + err.message); }
+                finally { e.target.disabled = false; }
+            });
+
             async function refresh() {
                 const user = window.pgFB && window.pgFB.auth.currentUser;
                 if (!user) return;
@@ -263,6 +406,7 @@
                 document.getElementById('cs-up-plan').textContent = limits.label;
 
                 loadGames(user, limits);
+                setupAdmin(user);
             }
 
             function showDashboard() { guard.style.display = 'none'; dash.style.display = 'block'; refresh(); }
@@ -334,7 +478,7 @@
         <p><br><strong>Published games, tournaments & creator requests:</strong> If you publish a game, join or create a tournament, or save a creator request, what you submit (game files, title, cover image, your display name, scores and request details) is stored in our database. Games and tournament leaderboards are shown publicly; creator requests are visible only to you and us. Ask us at pixelgaunt@gmail.com to remove anything you submitted.</p>
         <p><br><strong>Analytics:</strong> We use Google Analytics and Firebase Analytics to understand overall site traffic and which games are played most. This data is aggregated and isn't tied to your identity.</p>
         <p><br><strong>Advertising:</strong> This site uses Google AdSense, which may use cookies to serve ads. Google's own privacy policy governs how that data is handled.</p>
-        <p><br><strong>Local storage:</strong> To rank games by popularity and to show your "Continue playing" row, play counts and your recently played games are saved in your browser's local storage. This stays on your device and is never sent to us.</p>
+        <p><br><strong>Local storage:</strong> To rank games by popularity, play counts are saved in your browser's local storage. This stays on your device and is never sent to us.</p>
         <p><br><strong>What we don't do:</strong> We don't sell your data, and we don't collect personal information beyond what's described above.</p>
         <p><br>Questions about your data? Contact us at pixelgaunt@gmail.com.</p>
     </div>
