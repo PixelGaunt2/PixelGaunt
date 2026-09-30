@@ -5003,7 +5003,9 @@ const GTDTutorial = (function () {
     // in-progress touch whenever we leave Touch mode or gameplay isn't actively running, so a
     // stale touch can never keep driving movement from behind a menu/pause.
     function applyControllerModeUI() {
-        if (typeof resetTouchDrag === 'function' && (controllerMode !== 'touch' || gameState !== 'PLAYING')) {
+        // JET TOUCH FIX: this runs every frame (see renderFrame) and used to clear the finger whenever
+        // gameState !== 'PLAYING' - i.e. on EVERY frame of an Extra Level - so the Jet never saw a held touch.
+        if (typeof resetTouchDrag === 'function' && !(controllerMode === 'touch' && gameState === 'PLAYING') && gameState !== 'EXTRA_SURVIVAL') {
             resetTouchDrag();
         }
     }
@@ -12268,7 +12270,8 @@ const GTDTutorial = (function () {
     // itself (reading touchPointer) happens in playerShip.update(), gated on
     // controllerMode === 'touch' there too.
     canvas.addEventListener('pointerdown', e => {
-        if (controllerMode !== 'touch' || gameState !== 'PLAYING') return;
+        // JET TOUCH FIX: Extra Levels (gameState 'EXTRA_SURVIVAL') accept a real finger/pen on the canvas too.
+        if (!((controllerMode === 'touch' && gameState === 'PLAYING') || gameState === 'EXTRA_SURVIVAL')) return;
         if (e.pointerType === 'mouse') return; // real mouse clicks on the canvas shouldn't drive Touch-controller movement
         if (touchPointerId !== null) return; // already tracking a pointer
         touchPointerId = e.pointerId;
@@ -12292,7 +12295,7 @@ const GTDTutorial = (function () {
     // using the touchstart/touchmove/touchend/touchcancel handling.
     if (!window.PointerEvent) {
         canvas.addEventListener('touchstart', e => {
-            if (controllerMode !== 'touch' || gameState !== 'PLAYING') return;
+            if (!((controllerMode === 'touch' && gameState === 'PLAYING') || gameState === 'EXTRA_SURVIVAL')) return;
             if (touchPointerId !== null) return;
             let t = e.changedTouches[0];
             touchPointerId = t.identifier;
@@ -21218,7 +21221,30 @@ const GTDTutorial = (function () {
         // playerShip.update() already uses for its own this.distanceMoved (lastX/lastY diff)
         // - see gameStats.distanceTraveled below.
         let jetPrevX = es.jet.x, jetPrevY = es.jet.y;
-        if (controllerMode === 'keyboard' || controllerMode === 'gamepad') {
+        // JET TOUCH/BOUNDS FIX: every conversion below goes through the SAME transform esRender uses
+        // (world layer scaled by gameScale around the screen centre), so the Jet's visible area is exact.
+        const esRenderScale = gameScale;
+        const esCenterX = viewportW / 2, esCenterY = viewportH / 2;
+        // client (touch/mouse) px -> canvas CSS px via the canvas' real bounding rect -> Jet/world coords
+        const esClientToWorld = (cx, cy) => {
+            const r = canvas.getBoundingClientRect();
+            const vx = r.width > 0 ? (cx - r.left) * (viewportW / r.width) : cx;
+            const vy = r.height > 0 ? (cy - r.top) * (viewportH / r.height) : cy;
+            return { x: esCenterX + (vx - esCenterX) / esRenderScale, y: esCenterY + (vy - esCenterY) / esRenderScale };
+        };
+        if (touchPointer.active) {
+            // Finger held on the canvas: direct finger-follow. Speed is never below keyboard speed, but
+            // closes most of the gap each frame so it feels attached to the finger (no slow chase).
+            const t = esClientToWorld(touchPointer.x, touchPointer.y);
+            let ddx = t.x - es.jet.x, ddy = t.y - es.jet.y;
+            let dist = Math.hypot(ddx, ddy);
+            if (dist > 0.5) {
+                let ease = 1 - Math.pow(1 - 0.35, dtScale);
+                let step = Math.min(dist, Math.max(speed, dist * ease));
+                es.jet.x += (ddx / dist) * step;
+                es.jet.y += (ddy / dist) * step;
+            }
+        } else if (controllerMode === 'keyboard' || controllerMode === 'gamepad') {
             if (inputKeys['ArrowLeft'] || inputKeys['KeyA']) dx -= 1;
             if (inputKeys['ArrowRight'] || inputKeys['KeyD']) dx += 1;
             if (inputKeys['ArrowUp'] || inputKeys['KeyW']) dy -= 1;
@@ -21229,20 +21255,10 @@ const GTDTutorial = (function () {
                 es.jet.y += (dy / mag) * speed;
             }
         } else {
-            // Mouse/touch controllers: ease the jet toward the last known pointer
-            // position, same input source those controllers already use elsewhere
-            // (mouseX/mouseY, touchPointer) rather than inventing a new input path.
-            // Extra Levels now render their gameplay world at the SAME responsive scale as
-            // Normal Girl levels. Convert the pointer back through that centered render scale
-            // so mouse/touch control still targets the same logical jet position.
-            const esRenderScale = gameScale;
-            const esCenterX = viewportW / 2, esCenterY = viewportH / 2;
-            const rawTargetX = touchPointer.active ? touchPointer.x : mouseX;
-            const rawTargetY = touchPointer.active ? touchPointer.y : mouseY;
-            let targetX = esCenterX + (rawTargetX - esCenterX) / esRenderScale;
-            let targetY = esCenterY + (rawTargetY - esCenterY) / esRenderScale;
-            if (targetX || targetY) {
-                let ddx = targetX - es.jet.x, ddy = targetY - es.jet.y;
+            // Mouse controller (desktop): unchanged behaviour, only the coordinate conversion is now rect-based.
+            if (mouseX || mouseY) {
+                const m = esClientToWorld(mouseX, mouseY);
+                let ddx = m.x - es.jet.x, ddy = m.y - es.jet.y;
                 let dist = Math.hypot(ddx, ddy);
                 if (dist > 4) {
                     es.jet.x += (ddx / dist) * Math.min(speed, dist);
@@ -21250,13 +21266,15 @@ const GTDTutorial = (function () {
                 }
             }
         }
-        // Section 4: keep the jet fully inside the existing playable screen area - never able
-        // to leave the screen in any of the 4 directions - while staying in a left-of-center
-        // band so there's always room to react to incoming objects (same margin the old Girl
-        // movement used).
-        let margin = ES_JET_RADIUS + 10 + (ES_JET_DRAW_SIZE - 70) / 2; // sprite-half grew with the 2x jet - same 'sprite fully on-screen' relationship as before
-        es.jet.x = Math.max(margin, Math.min(viewportW * 0.72, es.jet.x));
-        es.jet.y = Math.max(margin + 40, Math.min(viewportH - margin, es.jet.y));
+        // BOUNDS FIX: clamp to the area the player actually SEES. The world layer is drawn scaled by
+        // gameScale around the screen centre, so the visible world spans centre +/- (viewport/2)/gameScale.
+        // (Was a fixed [margin, viewportW*0.72] x [margin+40, viewportH-margin] box in unscaled px, which on
+        // phones - where gameScale < 1 - left large visible areas unreachable.) Jet half-size keeps the whole
+        // sprite on screen: it touches the edge but never leaves it.
+        const esHalf = ES_JET_DRAW_SIZE / 2;
+        const esVisHalfW = esCenterX / esRenderScale, esVisHalfH = esCenterY / esRenderScale;
+        es.jet.x = Math.max(esCenterX - esVisHalfW + esHalf, Math.min(esCenterX + esVisHalfW - esHalf, es.jet.x));
+        es.jet.y = Math.max(esCenterY - esVisHalfH + esHalf, Math.min(esCenterY + esVisHalfH - esHalf, es.jet.y));
 
         // DISTANCE (LEVEL VISIBILITY FIX): feeds the exact same existing Distance HUD
         // accumulator (gameStats.distanceTraveled, see playerShip.update()'s own
