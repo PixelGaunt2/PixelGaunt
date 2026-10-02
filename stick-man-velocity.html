@@ -281,54 +281,67 @@
         
         let soundMuted = false;
         function toggleSound() {
-            soundMuted = !soundMuted;
+            soundMuted = !soundMuted; GameAudio.setMuted(soundMuted);
             document.getElementById('soundBtn').innerText = soundMuted ? "SOUND: OFF" : "SOUND: ON";
-            if (soundMuted) {
-                if(audioCtx.state === 'running') audioCtx.suspend();
-            } else {
-                if(audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        // --- GAME AUDIO (HTML5 Audio: provided .wav sound effects + .mp3 background music) ---
+        const GameAudio = (function () {
+            const MUSIC_FILE = 'The_Silver_Path.mp3';
+            const POOL_SIZE = 3;            // max simultaneous copies per sound (reused, never grows)
+            const pools = {};
+            let muted = false, music = null, musicWanted = false;
+            function pool(name) {
+                if (!pools[name]) { pools[name] = { list: [], i: 0 }; }
+                return pools[name];
             }
-        }
+            function sfx(name, vol) {
+                if (muted) return;
+                try {
+                    const p = pool(name);
+                    let a = p.list[p.i];
+                    if (!a) { a = new Audio(name + '.wav'); a.preload = 'auto'; p.list[p.i] = a; }
+                    p.i = (p.i + 1) % POOL_SIZE;
+                    a.volume = (vol === undefined ? 0.5 : vol);
+                    a.currentTime = 0;
+                    const r = a.play(); if (r && r.catch) r.catch(function () {});
+                } catch (e) {}
+            }
+            function ensureMusic() {
+                if (!music) { music = new Audio(MUSIC_FILE); music.loop = true; music.volume = 0.3; music.preload = 'auto'; }
+                return music;
+            }
+            function tryPlayMusic() {
+                if (!musicWanted || muted) return;
+                try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+            }
+            function unlock() {
+                if (musicWanted) tryPlayMusic();
+            }
+            ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
+                window.addEventListener(ev, unlock, { passive: true });
+            });
+            return {
+                sfx: sfx,
+                startMusic: function () { musicWanted = true; tryPlayMusic(); },
+                stopMusic: function () { musicWanted = false; if (music) { music.pause(); music.currentTime = 0; } },
+                pauseMusic: function () { musicWanted = false; if (music) music.pause(); },
+                setMuted: function (m) { muted = !!m; if (muted) { if (music) music.pause(); } else { tryPlayMusic(); } },
+                isMuted: function () { return muted; }
+            };
+        })();
 
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
-        let bgMusicOsc, bgMusicGain;
-        let isMusicPlaying = false;
-
-        function playSound(freq, duration, type='square', volume=0.03) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type; osc.frequency.value = freq; gain.gain.value = volume;
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + duration);
-        }
-        function sfxJump(){ playSound(420,0.08,'triangle',0.04); }
-        function sfxPunch(){ playSound(180,0.06,'square',0.05); }
-        function sfxKick(){ playSound(120,0.08,'sawtooth',0.05); }
-        function sfxFireball(){ playSound(300,0.15,'sawtooth',0.05); }
-        function sfxShock(){ playSound(600,0.1,'sine',0.06); } 
-        function sfxHit(){ playSound(90,0.1,'square',0.06); }
-        function sfxCoin(){ playSound(800,0.1,'sine',0.03); }
-        function sfxZap(){ playSound(150,0.2,'sawtooth',0.08); }
-
-        function startMusic() {
-            if(isMusicPlaying) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            bgMusicOsc = audioCtx.createOscillator();
-            bgMusicGain = audioCtx.createGain();
-            bgMusicOsc.type = 'sawtooth'; bgMusicOsc.frequency.value = 110;
-            bgMusicGain.gain.value = 0.02;
-            bgMusicOsc.connect(bgMusicGain); bgMusicGain.connect(audioCtx.destination);
-            bgMusicOsc.start(); isMusicPlaying = true;
-            
-            setInterval(() => {
-                if(gameState !== 'PLAYING') return;
-                bgMusicOsc.frequency.setValueAtTime(110 + (currentStage*2), audioCtx.currentTime);
-                bgMusicOsc.frequency.setValueAtTime(146.83 + (currentStage*2), audioCtx.currentTime + 0.2);
-                bgMusicOsc.frequency.setValueAtTime(164.81 + (currentStage*2), audioCtx.currentTime + 0.4);
-            }, 600);
-        }
+        function sfxJump(){ GameAudio.sfx('dash', 0.3); }
+        function sfxPunch(){ GameAudio.sfx('axe_swing', 0.4); }
+        function sfxKick(){ GameAudio.sfx('axe_swing', 0.4); }
+        function sfxFireball(){ GameAudio.sfx('fireball_throw', 0.4); }
+        function sfxShock(){ GameAudio.sfx('electric_zap', 0.4); } 
+        function sfxHit(){ GameAudio.sfx('object_hit', 0.4); }
+        function sfxCoin(){ GameAudio.sfx('coin', 0.4); }
+        function sfxZap(){ GameAudio.sfx('explode', 0.5); }
+        function sfxLevelComplete(){ GameAudio.sfx('win_fanfare', 0.5); }
+        function sfxGameOver(){ GameAudio.sfx('player_death', 0.55); }
+        function startMusic() { GameAudio.startMusic(); }
 
         class Particle {
             constructor(x, y, color) {
@@ -1013,7 +1026,7 @@
 
         function triggerLevelComplete() {
             levelCompleted = true;
-            gameState = 'LEVEL_COMPLETE';
+            gameState = 'LEVEL_COMPLETE'; GameAudio.pauseMusic(); sfxLevelComplete();
             let costumes = "";
             if(currentStage === 1) costumes = "Cap Unlocked!";
             else if(currentStage === 2) costumes = "Neon Shirt Unlocked!";
@@ -1070,7 +1083,7 @@
             document.getElementById('mobileUI').style.display = 'flex';
             document.getElementById('playerStageText').innerText = `PLAYER 1 (LVL ${currentStage})`;
             
-            gameState = 'PLAYING';
+            gameState = 'PLAYING'; GameAudio.startMusic();
             // Clean loop creation to fix any freeze
             cancelAnimationFrame(animationId);
             gameLoop();
@@ -1323,7 +1336,7 @@
             }
 
             if (player.health <= 0) { 
-                gameState = 'GAME_OVER'; 
+                gameState = 'GAME_OVER'; GameAudio.stopMusic(); sfxGameOver();
                 document.getElementById('finalStats').innerText = `Reached Stage: ${currentStage} | Score: ${score} | Coins: ${coins}`; 
                 document.getElementById('gameOver').style.display = 'flex'; 
                 document.getElementById('mobileUI').style.display = 'none'; 
@@ -1367,12 +1380,12 @@
 
         function togglePause() {
             if(gameState === 'PLAYING') { 
-                gameState = 'PAUSED'; 
+                gameState = 'PAUSED'; GameAudio.pauseMusic();
                 document.getElementById('pauseMenu').style.display = 'flex'; 
                 cancelAnimationFrame(animationId); 
             }
             else if(gameState === 'PAUSED') { 
-                gameState = 'PLAYING'; 
+                gameState = 'PLAYING'; GameAudio.startMusic();
                 document.getElementById('pauseMenu').style.display = 'none'; 
                 gameLoop(); 
             }

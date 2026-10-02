@@ -240,20 +240,15 @@ window.addEventListener('load', async () => {
 });
 
 /* ================= AUDIO SYSTEM ================= */
-let audioCtx = null; 
 let isMuted = false;
 let audioUnlocked = false;
 
-// ⚠️ YAHAN APNI AUDIO FILE KA NAAM LIKHEN
-const bgMusic = new Audio('Titan_Ore_Runner.mp3'); 
+const bgMusic = new Audio('The_Silver_Path.mp3'); 
 bgMusic.loop = true;
-bgMusic.volume = 0.4;
+bgMusic.volume = 0.3;
 
 function unlockAudio() {
     if (audioUnlocked) return;
-    if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    
     if (!isMuted) { 
         let playPromise = bgMusic.play();
         if (playPromise !== undefined) {
@@ -285,33 +280,42 @@ function toggleSound() {
     }
 }
 
-function playTone(freq, type, duration, vol, sweepDown = false, sweepUp = false) {
-    if (!audioCtx || isMuted) return;
-    try {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        if (sweepDown) osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-        if (sweepUp) osc.frequency.exponentialRampToValueAtTime(freq * 2, audioCtx.currentTime + duration);
-        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + duration);
-    } catch(e) {}
-}
+// --- GAME SFX (HTML5 Audio: provided .wav sound effects) ---
+const GameAudio = (function () {
+    const POOL_SIZE = 3;            // max simultaneous copies per sound (reused, never grows)
+    const pools = {};
+    function sfx(name, vol) {
+        try {
+            const p = pools[name] || (pools[name] = { list: [], i: 0 });
+            let a = p.list[p.i];
+            if (!a) { a = new Audio(name + '.wav'); a.preload = 'auto'; p.list[p.i] = a; }
+            p.i = (p.i + 1) % POOL_SIZE;
+            a.volume = (vol === undefined ? 0.5 : vol);
+            a.currentTime = 0;
+            const r = a.play(); if (r && r.catch) r.catch(function () {});
+        } catch (e) {}
+    }
+    return { sfx: sfx };
+})();
+
+function playSfx(name, vol) { if (!isMuted) GameAudio.sfx(name, vol); }
 
 const SFX = {
-    hit: () => playTone(350, 'square', 0.08, 0.06), 
-    shoot: () => playTone(600, 'sine', 0.15, 0.05, true),
-    zap: () => { playTone(800, 'sawtooth', 0.1, 0.05); setTimeout(()=>playTone(600, 'sawtooth', 0.1, 0.05), 50); },
-    explosion: () => playTone(100, 'square', 0.4, 0.15, true), 
-    melt: () => playTone(250, 'sine', 0.3, 0.08, false, true),
-    quake: () => playTone(50, 'sawtooth', 0.6, 0.25, true),
-    freeze: () => playTone(1200, 'sine', 0.3, 0.05), 
-    click: () => playTone(450, 'sine', 0.05, 0.05),
-    bounce: () => playTone(700, 'triangle', 0.05, 0.03),
-    win: () => { playTone(400, 'sine', 0.2, 0.1); setTimeout(()=>playTone(500, 'sine', 0.2, 0.1), 150); setTimeout(()=>playTone(600, 'sine', 0.4, 0.1), 300); },
-    coin: () => { playTone(1000, 'sine', 0.05, 0.05); setTimeout(()=>playTone(1500, 'sine', 0.1, 0.05), 50); }
+    hit: () => playSfx('object_hit', 0.35), 
+    shoot: () => playSfx('laser', 0.35),
+    ballFire: () => playSfx('drone_shoot', 0.3),
+    zap: () => playSfx('electric_zap', 0.45),
+    explosion: () => playSfx('explode', 0.5), 
+    melt: () => playSfx('acid_splash', 0.5),
+    quake: () => playSfx('clone_explode', 0.55),
+    freeze: () => playSfx('power_new_activate', 0.45), 
+    extraBalls: () => playSfx('collector_deploy', 0.45),
+    gameover: () => playSfx('player_death', 0.5),
+    click: () => playSfx('click', 0.4),
+    bounce: () => playSfx('hover', 0.2),
+    levelup: () => playSfx('levelup', 0.5),
+    win: () => playSfx('win_fanfare', 0.5),
+    coin: () => playSfx('coin', 0.45)
 };
 
 // 9 new images added to the backgrounds array alongside the old ones
@@ -529,7 +533,7 @@ function triggerGameOver(reasonText) {
     if(timerInterval) clearInterval(timerInterval);
     try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStop(); } catch(e){}
 
-    SFX.explosion(); triggerShake('strong');
+    SFX.gameover(); triggerShake('strong');
     gameState = STATE.GAMEOVER;
     document.getElementById('gameover-reason').innerText = reasonText;
     document.getElementById('gameover-stage').innerText = `Reached Stage ${currentLevel}`;
@@ -664,7 +668,7 @@ function executePowerupInstantly(type) {
     } else if (type === 'extraballs') {
         let soundPlayed = false;
         for (let i = 0; i < 5; i++) {
-            if(!soundPlayed){ playTone(500, 'triangle', 0.25, 0.08, false, true); soundPlayed=true;}
+            if(!soundPlayed){ SFX.extraBalls(); soundPlayed=true;}
             let angle = -Math.PI / 6 - (i * (Math.PI / 6)); 
             balls.push({ x: baseX, y: bottomY - 15, vx: Math.cos(angle) * ballSpeed, vy: Math.sin(angle) * ballSpeed, r: 4.5, active: true, returning: false, isClone: true });
         }
@@ -723,7 +727,7 @@ function damageBlock(b, baseDmg) {
         player.xp += Math.floor(Math.random() * 8) + 8 + prestigeBuff; 
         if (player.xp >= player.xpNeeded) {
             player.heroLevel++; player.xp -= player.xpNeeded; player.xpNeeded = Math.floor(player.xpNeeded * 1.6);
-            createParticle(gameWidth/2, gameHeight/2, 'LEVEL UP!', '#00e5ff'); SFX.win(); triggerShake('mild');
+            createParticle(gameWidth/2, gameHeight/2, 'LEVEL UP!', '#00e5ff'); SFX.levelup(); triggerShake('mild');
         }
         updateUI(); triggerShake('mild'); 
         for(let p = 0; p < 8; p++) { particles.push({ x: b.x + b.w / 2, y: b.y + b.h / 2, text: '✦', color: '#fff', life: 1, vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8 }); }
@@ -744,7 +748,7 @@ function update() {
         frameCounter++; 
         if (ballsFiredCount < regBalls.length && frameCounter >= framesBetweenShots) {
             let b = regBalls[ballsFiredCount]; b.vx = Math.cos(aimAngle) * ballSpeed; b.vy = Math.sin(aimAngle) * ballSpeed;
-            b.active = true; b.returning = false; SFX.shoot(); ballsFiredCount++; frameCounter = 0;
+            b.active = true; b.returning = false; SFX.ballFire(); ballsFiredCount++; frameCounter = 0;
         }
     }
 

@@ -224,34 +224,60 @@
 <script>
     window.soundEnabled = true;
 
-    const AudioSys = (function() {
-        let ctx = null;
-        function init() { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume(); }
-        function playTone(freq, type, dur, vol, slideFreq = null) {
-            if (!ctx || !window.soundEnabled) return;
-            const osc = ctx.createOscillator(); const gain = ctx.createGain();
-            osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
-            if (slideFreq) osc.frequency.exponentialRampToValueAtTime(slideFreq, ctx.currentTime + dur);
-            gain.gain.setValueAtTime(vol, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur);
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.start(); osc.stop(ctx.currentTime + dur);
+    // --- GAME AUDIO (HTML5 Audio: provided .wav sound effects + .mp3 background music) ---
+    const GameAudio = (function () {
+        const MUSIC_FILE = 'The_Silver_Path.mp3';
+        const POOL_SIZE = 3;            // max simultaneous copies per sound (reused, never grows)
+        const pools = {};
+        let muted = false, music = null, musicWanted = false;
+        function pool(name) {
+            if (!pools[name]) { pools[name] = { list: [], i: 0 }; }
+            return pools[name];
         }
-        function createNoise(dur, vol) {
-            if (!ctx || !window.soundEnabled) return;
-            const bufferSize = ctx.sampleRate * dur; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-            const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-            const noise = ctx.createBufferSource(); noise.buffer = buffer;
-            const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 1000;
-            const gain = ctx.createGain(); gain.gain.setValueAtTime(vol, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur);
-            noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination); noise.start();
+        function sfx(name, vol) {
+            if (muted) return;
+            try {
+                const p = pool(name);
+                let a = p.list[p.i];
+                if (!a) { a = new Audio(name + '.wav'); a.preload = 'auto'; p.list[p.i] = a; }
+                p.i = (p.i + 1) % POOL_SIZE;
+                a.volume = (vol === undefined ? 0.5 : vol);
+                a.currentTime = 0;
+                const r = a.play(); if (r && r.catch) r.catch(function () {});
+            } catch (e) {}
         }
+        function ensureMusic() {
+            if (!music) { music = new Audio(MUSIC_FILE); music.loop = true; music.volume = 0.3; music.preload = 'auto'; }
+            return music;
+        }
+        function tryPlayMusic() {
+            if (!musicWanted || muted) return;
+            try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+        }
+        function unlock() {
+            if (musicWanted) tryPlayMusic();
+        }
+        ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
+            window.addEventListener(ev, unlock, { passive: true });
+        });
         return {
-            init, move: () => playTone(300, 'sine', 0.05, 0.1), rotate: () => playTone(500, 'triangle', 0.05, 0.1),
-            lock: () => playTone(100, 'square', 0.1, 0.2), pop: () => { createNoise(0.2, 0.5); playTone(800, 'sine', 0.1, 0.2, 1200); },
-            bombDmg: () => { createNoise(0.6, 0.8); playTone(100, 'sawtooth', 0.4, 0.6); },
-            levelUp: () => { playTone(440, 'sine', 0.2, 0.3, 880); setTimeout(() => playTone(554, 'sine', 0.4, 0.3, 1108), 150); },
-            gameOver: () => { playTone(150, 'sawtooth', 0.5, 0.4, 50); createNoise(0.6, 0.6); }
+            sfx: sfx,
+            startMusic: function () { musicWanted = true; tryPlayMusic(); },
+            stopMusic: function () { musicWanted = false; if (music) { music.pause(); music.currentTime = 0; } },
+            pauseMusic: function () { musicWanted = false; if (music) music.pause(); },
+            setMuted: function (m) { muted = !!m; if (muted) { if (music) music.pause(); } else { tryPlayMusic(); } },
+            isMuted: function () { return muted; }
+        };
+    })();
+
+    const AudioSys = (function() {
+        const play = (name, vol) => { if (window.soundEnabled) GameAudio.sfx(name, vol); };
+        return {
+            init: () => {}, // HTML5 Audio needs no setup; music is unlocked by the first user interaction
+            move: () => play('hover', 0.3), rotate: () => play('click', 0.35),
+            lock: () => play('object_hit', 0.4), pop: () => play('object_destroy_base', 0.45),
+            levelUp: () => play('levelup', 0.5),
+            gameOver: () => play('player_death', 0.55)
         };
     })();
 
@@ -312,7 +338,7 @@
         drawNextPiece();
 
         if (collide(activePiece)) {
-            state = 'GAMEOVER'; AudioSys.gameOver();
+            state = 'GAMEOVER'; GameAudio.stopMusic(); AudioSys.gameOver();
             document.getElementById('top-controls').classList.add('hidden');
             document.querySelectorAll('.hidden-menu-ui').forEach(el => el.style.display = 'none');
             document.getElementById('crashLevel').innerText = level;
@@ -662,8 +688,8 @@
     }, {passive: false});
     document.getElementById('btnDown').addEventListener('touchend', e => { e.preventDefault(); clearInterval(downInterval); });
 
-    document.getElementById('playBtn').addEventListener('click', () => { AudioSys.init(); document.getElementById('menu').classList.add('hidden'); initGame(1); state = 'PLAY'; });
-    document.getElementById('resumeBtn').addEventListener('click', () => { AudioSys.init(); document.getElementById('menu').classList.add('hidden'); initGame(savedLevel); state = 'PLAY'; });
+    document.getElementById('playBtn').addEventListener('click', () => { AudioSys.init(); document.getElementById('menu').classList.add('hidden'); initGame(1); state = 'PLAY'; GameAudio.startMusic(); });
+    document.getElementById('resumeBtn').addEventListener('click', () => { AudioSys.init(); document.getElementById('menu').classList.add('hidden'); initGame(savedLevel); state = 'PLAY'; GameAudio.startMusic(); });
     
     document.getElementById('openReadmeBtn').addEventListener('click', () => { 
         document.getElementById('menu').classList.add('hidden'); 
@@ -676,16 +702,16 @@
 
     document.getElementById('pauseBtn').addEventListener('click', () => {
         if (state === 'PLAY') {
-            state = 'PAUSED';
+            state = 'PAUSED'; GameAudio.pauseMusic();
             document.getElementById('pauseMenu').classList.remove('hidden');
         }
     });
     document.getElementById('resumePauseBtn').addEventListener('click', () => {
-        state = 'PLAY';
+        state = 'PLAY'; GameAudio.startMusic();
         document.getElementById('pauseMenu').classList.add('hidden');
     });
     document.getElementById('backToMenuBtn').addEventListener('click', () => {
-        state = 'MENU';
+        state = 'MENU'; GameAudio.stopMusic();
         document.getElementById('pauseMenu').classList.add('hidden');
         document.getElementById('top-controls').classList.add('hidden');
         document.querySelectorAll('.hidden-menu-ui').forEach(el => el.style.display = 'none');
@@ -694,11 +720,11 @@
     });
 
     document.getElementById('soundBtn').addEventListener('click', () => {
-        window.soundEnabled = !window.soundEnabled;
+        window.soundEnabled = !window.soundEnabled; GameAudio.setMuted(!window.soundEnabled);
         document.getElementById('soundBtn').innerText = window.soundEnabled ? '🔊 SOUND: ON' : '🔇 SOUND: OFF';
     });
 
-    document.getElementById('retryLevelBtn').addEventListener('click', () => { document.getElementById('gameOverMenu').classList.add('hidden'); initGame(level); state = 'PLAY'; });
+    document.getElementById('retryLevelBtn').addEventListener('click', () => { document.getElementById('gameOverMenu').classList.add('hidden'); initGame(level); state = 'PLAY'; GameAudio.startMusic(); });
     document.getElementById('quitBtn').addEventListener('click', () => {
         document.getElementById('gameOverMenu').classList.add('hidden'); document.getElementById('menu').classList.remove('hidden');
         document.getElementById('top-controls').classList.add('hidden');

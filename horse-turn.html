@@ -340,43 +340,59 @@
         dashBtn.addEventListener('mouseleave', e => { e.preventDefault(); keys.Dash = false; });
 
         // --- AUDIO ---
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        let actx, bgmInterval;
-        function initAudio() { if (!actx) actx = new AudioContext(); if (actx.state === 'suspended') actx.resume(); }
-        function playSFX(type) {
-            if (!soundEnabled || !actx) return; // Respect Sound Toggle
-            const osc = actx.createOscillator(), gain = actx.createGain();
-            osc.connect(gain); gain.connect(actx.destination);
-            if (type === 'jump') {
-                osc.frequency.setValueAtTime(200, actx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(500, actx.currentTime + 0.15);
-                gain.gain.setValueAtTime(0.1, actx.currentTime);
-                osc.start(); osc.stop(actx.currentTime + 0.15);
-            } else if (type === 'fall' || type === 'crash') {
-                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, actx.currentTime);
-                osc.frequency.linearRampToValueAtTime(30, actx.currentTime + 0.6);
-                gain.gain.setValueAtTime(0.2, actx.currentTime);
-                osc.start(); osc.stop(actx.currentTime + 0.6);
-            } else if (type === 'coin') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(800, actx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(1500, actx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.15, actx.currentTime);
-                osc.start(); osc.stop(actx.currentTime + 0.1);
+        // --- GAME AUDIO (HTML5 Audio: provided .wav sound effects + .mp3 background music) ---
+        const GameAudio = (function () {
+            const MUSIC_FILE = 'The_Silver_Path.mp3';
+            const POOL_SIZE = 3;            // max simultaneous copies per sound (reused, never grows)
+            const pools = {};
+            let muted = false, music = null, musicWanted = false;
+            function pool(name) {
+                if (!pools[name]) { pools[name] = { list: [], i: 0 }; }
+                return pools[name];
             }
+            function sfx(name, vol) {
+                if (muted) return;
+                try {
+                    const p = pool(name);
+                    let a = p.list[p.i];
+                    if (!a) { a = new Audio(name + '.wav'); a.preload = 'auto'; p.list[p.i] = a; }
+                    p.i = (p.i + 1) % POOL_SIZE;
+                    a.volume = (vol === undefined ? 0.5 : vol);
+                    a.currentTime = 0;
+                    const r = a.play(); if (r && r.catch) r.catch(function () {});
+                } catch (e) {}
+            }
+            function ensureMusic() {
+                if (!music) { music = new Audio(MUSIC_FILE); music.loop = true; music.volume = 0.3; music.preload = 'auto'; }
+                return music;
+            }
+            function tryPlayMusic() {
+                if (!musicWanted || muted) return;
+                try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+            }
+            function unlock() {
+                if (musicWanted) tryPlayMusic();
+            }
+            ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
+                window.addEventListener(ev, unlock, { passive: true });
+            });
+            return {
+                sfx: sfx,
+                startMusic: function () { musicWanted = true; tryPlayMusic(); },
+                stopMusic: function () { musicWanted = false; if (music) { music.pause(); music.currentTime = 0; } },
+                pauseMusic: function () { musicWanted = false; if (music) music.pause(); },
+                setMuted: function (m) { muted = !!m; if (muted) { if (music) music.pause(); } else { tryPlayMusic(); } },
+                isMuted: function () { return muted; }
+            };
+        })();
+        const SFX_MAP = { jump: ['dash', 0.35], crash: ['player_death', 0.5], fall: ['player_death', 0.5], coin: ['coin', 0.45], level: ['levelup', 0.45] };
+        function playSFX(type) {
+            if (!soundEnabled) return; // Respect Sound Toggle
+            const s = SFX_MAP[type]; if (s) GameAudio.sfx(s[0], s[1]);
         }
         function manageBGM(play) {
-            clearInterval(bgmInterval);
-            if (!play || !actx || !soundEnabled) return; // Respect Sound Toggle
-            let seq = [147, 165, 196, 220], step = 0;
-            bgmInterval = setInterval(() => {
-                const osc = actx.createOscillator(), gain = actx.createGain();
-                osc.type = 'triangle'; osc.frequency.value = seq[step];
-                gain.gain.setValueAtTime(0.03, actx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + (keys.Dash ? 0.1 : 0.2));
-                osc.connect(gain); gain.connect(actx.destination);
-                osc.start(); osc.stop(actx.currentTime + 0.2);
-                step = (step + 1) % seq.length;
-            }, keys.Dash ? 150 : 250); 
+            if (!play || !soundEnabled) { GameAudio.pauseMusic(); return; } // Respect Sound Toggle
+            GameAudio.startMusic();
         }
 
         // --- 3D MATH ---
@@ -663,7 +679,7 @@
         }
 
         function startGame() {
-            initAudio(); gameState = 'playing'; 
+            gameState = 'playing'; 
             uiLayer.classList.add('hidden');
             dashBtn.classList.remove('hidden'); 
             gameplayControls.classList.remove('hidden'); // Show Pause/Sound
@@ -675,7 +691,7 @@
         }
 
         function endGame(manualQuit = false) {
-            gameState = 'gameover'; manageBGM(false); 
+            gameState = 'gameover'; GameAudio.stopMusic(); 
             uiLayer.classList.remove('hidden');
             dashBtn.classList.add('hidden'); 
             gameplayControls.classList.add('hidden'); // Hide Pause/Sound
@@ -710,7 +726,7 @@
             if (Math.floor(distanceTraveled) % 12 === 0) {
                 score += 5; scoreHUD.innerText = score;
                 if (score > 0 && score % 800 === 0) {
-                    level++; baseGameSpeed += 1.2; levelHUD.innerText = level;
+                    level++; playSFX('level'); baseGameSpeed += 1.2; levelHUD.innerText = level;
                 }
             }
             requestAnimationFrame(loop);

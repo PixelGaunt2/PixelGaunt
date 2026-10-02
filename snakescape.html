@@ -249,63 +249,68 @@
     </footer>
 
 <script>
+// --- GAME AUDIO (HTML5 Audio: provided .wav sound effects + .mp3 background music) ---
+const GameAudio = (function () {
+    const MUSIC_FILE = 'The_Silver_Path.mp3';
+    const POOL_SIZE = 3;            // max simultaneous copies per sound (reused, never grows)
+    const pools = {};
+    let muted = false, music = null, musicWanted = false;
+    function pool(name) {
+        if (!pools[name]) { pools[name] = { list: [], i: 0 }; }
+        return pools[name];
+    }
+    function sfx(name, vol) {
+        if (muted) return;
+        try {
+            const p = pool(name);
+            let a = p.list[p.i];
+            if (!a) { a = new Audio(name + '.wav'); a.preload = 'auto'; p.list[p.i] = a; }
+            p.i = (p.i + 1) % POOL_SIZE;
+            a.volume = (vol === undefined ? 0.5 : vol);
+            a.currentTime = 0;
+            const r = a.play(); if (r && r.catch) r.catch(function () {});
+        } catch (e) {}
+    }
+    function ensureMusic() {
+        if (!music) { music = new Audio(MUSIC_FILE); music.loop = true; music.volume = 0.3; music.preload = 'auto'; }
+        return music;
+    }
+    function tryPlayMusic() {
+        if (!musicWanted || muted) return;
+        try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+    }
+    function unlock() {
+        if (musicWanted) tryPlayMusic();
+    }
+    ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
+        window.addEventListener(ev, unlock, { passive: true });
+    });
+    return {
+        sfx: sfx,
+        startMusic: function () { musicWanted = true; tryPlayMusic(); },
+        stopMusic: function () { musicWanted = false; if (music) { music.pause(); music.currentTime = 0; } },
+        pauseMusic: function () { musicWanted = false; if (music) music.pause(); },
+        setMuted: function (m) { muted = !!m; if (muted) { if (music) music.pause(); } else { tryPlayMusic(); } },
+        isMuted: function () { return muted; }
+    };
+})();
+
 const audio = {
-    ctx: null,
     enabled: true,
-    init() {
-        if (!this.ctx) {
-            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-    },
+    init() {}, // HTML5 Audio needs no setup; music is unlocked by the first user interaction
     toggleSound() {
-        this.enabled = !this.enabled;
+        this.enabled = !this.enabled; GameAudio.setMuted(!this.enabled);
         document.getElementById('sound-btn').innerText = `Sound: ${this.enabled ? 'ON' : 'OFF'}`;
     },
-    playTone(freq, type, duration, vol=0.1, slideFreq=null) {
-        if (!this.enabled || !this.ctx) return;
-        try {
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-            if (slideFreq) {
-                osc.frequency.exponentialRampToValueAtTime(slideFreq, this.ctx.currentTime + duration);
-            }
-            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(this.ctx.destination);
-            osc.start();
-            osc.stop(this.ctx.currentTime + duration);
-        } catch(e) {}
-    },
-    playMove() { this.playTone(300, 'sine', 0.1, 0.05); },
-    playSlide() { this.playTone(200, 'triangle', 0.3, 0.1, 500); },
-    playBlocked() { 
-        this.playTone(150, 'sawtooth', 0.2, 0.15, 100); 
-        setTimeout(() => this.playTone(120, 'sawtooth', 0.2, 0.15, 80), 100);
-    },
-    playEat() { 
-        this.playTone(800, 'sine', 0.1, 0.1, 1200); 
-        setTimeout(() => this.playTone(1000, 'sine', 0.1, 0.1, 1400), 50);
-    },
-    playCoin() {
-        this.playTone(1200, 'sine', 0.1, 0.1, 2000);
-    },
-    playItem() {
-        this.playTone(600, 'square', 0.1, 0.1, 800);
-        setTimeout(() => this.playTone(900, 'sine', 0.1, 0.1, 1200), 80);
-    },
-    playVictory() {
-        [440, 554, 659, 880, 1108].forEach((freq, i) => {
-            setTimeout(() => this.playTone(freq, 'square', 0.3, 0.08), i * 120);
-        });
-    },
-    playGameOver() {
-        [400, 350, 300, 250].forEach((freq, i) => {
-            setTimeout(() => this.playTone(freq, 'sawtooth', 0.4, 0.1), i * 200);
-        });
-    }
+    play(name, vol) { if (this.enabled) GameAudio.sfx(name, vol); },
+    playMove() { this.play('hover', 0.3); },
+    playSlide() { this.play('dash', 0.35); },
+    playBlocked() { this.play('object_hit', 0.45); },
+    playEat() { this.play('collect_base', 0.45); },
+    playCoin() { this.play('coin', 0.45); },
+    playItem() { this.play('powerup_unlock', 0.45); },
+    playVictory() { this.play('win_fanfare', 0.5); },
+    playGameOver() { this.play('player_death', 0.55); }
 };
 
 const DIRS = { UP: {r: -1, c: 0}, DOWN: {r: 1, c: 0}, LEFT: {r: 0, c: -1}, RIGHT: {r: 0, c: 1} };
@@ -576,6 +581,7 @@ const game = {
     },
 
     loadLevel() {
+        GameAudio.startMusic();
         document.getElementById('gameover-modal').classList.remove('active');
         document.getElementById('victory-modal').classList.remove('active');
 
@@ -717,7 +723,7 @@ const game = {
                     
                     if(this.lives <= 0) { 
                         setTimeout(() => {
-                            audio.playGameOver(); 
+                            GameAudio.stopMusic(); audio.playGameOver(); 
                             document.getElementById('gameover-modal').classList.add('active'); 
                         }, 300);
                     }

@@ -204,7 +204,6 @@
 <script>
 
 function openReadme() { 
-    if(typeof actx !== 'undefined' && actx.state === 'suspended') actx.resume(); 
     document.querySelectorAll('.menu').forEach(m => { m.classList.remove('active'); m.style.display = 'none'; });
     let m = document.getElementById('menu-readme');
     m.style.display = 'flex'; setTimeout(() => m.classList.add('active'), 10);
@@ -231,36 +230,61 @@ let bobber = { x: 0, y: 0, active: false, targetY: 0 };
 let fishProgress = 10, hookedFish = null, fishPos = 50, fishTarget = 50, barPos = 10, moveTimer = 0;
 let battleTimer = 0, battleTarget = null;
 
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-const actx = new AudioContext();
-
-function playSound(type) {
-    if (actx.state === 'suspended') actx.resume();
-    const osc = actx.createOscillator(); const gain = actx.createGain();
-    osc.connect(gain); gain.connect(actx.destination); const now = actx.currentTime;
-    
-    if (type === 'cast') {
-        osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
-        gain.gain.setValueAtTime(0.5, now); gain.gain.linearRampToValueAtTime(0, now + 0.3); osc.start(now); osc.stop(now + 0.3);
-    } else if (type === 'splash') {
-        osc.type = 'triangle'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now + 0.2);
-        gain.gain.setValueAtTime(0.5, now); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2);
-    } else if (type === 'bite') {
-        osc.type = 'square'; osc.frequency.setValueAtTime(800, now);
-        gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(now); osc.stop(now + 0.1);
-    } else if (type === 'shoot') {
-        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(20, now + 0.2);
-        gain.gain.setValueAtTime(1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2); osc.start(now); osc.stop(now + 0.2);
-    } else if (type === 'hit') {
-        osc.type = 'square'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(20, now + 0.2);
-        gain.gain.setValueAtTime(0.8, now); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2);
-    } else if (type === 'coin') {
-        osc.type = 'sine'; osc.frequency.setValueAtTime(1200, now); osc.frequency.setValueAtTime(1600, now + 0.1);
-        gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 0.3); osc.start(now); osc.stop(now + 0.3);
-    } else if (type === 'hurt') {
-        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
-        gain.gain.setValueAtTime(0.8, now); gain.gain.linearRampToValueAtTime(0, now + 0.3); osc.start(now); osc.stop(now + 0.3);
+// --- GAME AUDIO (HTML5 Audio: provided .wav sound effects + .mp3 background music) ---
+const GameAudio = (function () {
+    const MUSIC_FILE = 'The_Silver_Path.mp3';
+    const POOL_SIZE = 3;            // max simultaneous copies per sound (reused, never grows)
+    const pools = {};
+    let muted = false, music = null, musicWanted = false;
+    function pool(name) {
+        if (!pools[name]) { pools[name] = { list: [], i: 0 }; }
+        return pools[name];
     }
+    function sfx(name, vol) {
+        if (muted) return;
+        try {
+            const p = pool(name);
+            let a = p.list[p.i];
+            if (!a) { a = new Audio(name + '.wav'); a.preload = 'auto'; p.list[p.i] = a; }
+            p.i = (p.i + 1) % POOL_SIZE;
+            a.volume = (vol === undefined ? 0.5 : vol);
+            a.currentTime = 0;
+            const r = a.play(); if (r && r.catch) r.catch(function () {});
+        } catch (e) {}
+    }
+    function ensureMusic() {
+        if (!music) { music = new Audio(MUSIC_FILE); music.loop = true; music.volume = 0.3; music.preload = 'auto'; }
+        return music;
+    }
+    function tryPlayMusic() {
+        if (!musicWanted || muted) return;
+        try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+    }
+    function unlock() {
+        if (musicWanted) tryPlayMusic();
+    }
+    ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
+        window.addEventListener(ev, unlock, { passive: true });
+    });
+    return {
+        sfx: sfx,
+        startMusic: function () { musicWanted = true; tryPlayMusic(); },
+        stopMusic: function () { musicWanted = false; if (music) { music.pause(); music.currentTime = 0; } },
+        pauseMusic: function () { musicWanted = false; if (music) music.pause(); },
+        setMuted: function (m) { muted = !!m; if (muted) { if (music) music.pause(); } else { tryPlayMusic(); } },
+        isMuted: function () { return muted; }
+    };
+})();
+const SOUND_MAP = {
+    cast: ['axe_swing', 0.4], splash: ['acid_splash', 0.45], bite: ['object_hit', 0.4], shoot: ['laser', 0.45],
+    hit: ['axe_hit', 0.5], coin: ['coin', 0.45], hurt: ['player_hurt', 0.55], buy: ['upgrade_buy', 0.5], death: ['player_death', 0.55]
+};
+function playSound(type) {
+    const s = SOUND_MAP[type]; if (s) GameAudio.sfx(s[0], s[1]);
+}
+function toggleSound() {
+    GameAudio.setMuted(!GameAudio.isMuted());
+    document.getElementById('btn-sound').innerText = GameAudio.isMuted() ? '🔇' : '🔊';
 }
 
 function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
@@ -281,14 +305,14 @@ loadData();
 function hideAllMenus() { document.querySelectorAll('.menu').forEach(m => { m.classList.remove('active'); m.style.display = 'none'; }); }
 function showMenu(id) { hideAllMenus(); let m = document.getElementById(id); if(m) { m.style.display = 'flex'; setTimeout(() => m.classList.add('active'), 10); } }
 
-function startGame() { if(actx.state === 'suspended') actx.resume(); hideAllMenus(); document.getElementById('hud').style.display = 'flex'; player.hp = player.maxHp; updateHUD(); gameState = STATE.IDLE; fishes = []; spawnFish(8); document.body.classList.remove('battle-mode'); hookedFish = null; battleTarget = null; }
-function openShop() { if(actx.state === 'suspended') actx.resume(); showMenu('menu-shop'); document.getElementById('shop-coins').innerText = player.coins; document.getElementById('btn-upg-rod').innerText = player.upgrades.rod ? "Maxed" : "50 Coins"; document.getElementById('btn-upg-armor').innerText = player.upgrades.armor ? "Maxed" : "100 Coins"; document.getElementById('btn-upg-lure').innerText = player.upgrades.lure ? "Maxed" : "200 Coins"; }
+function startGame() { GameAudio.startMusic(); hideAllMenus(); document.getElementById('hud').style.display = 'flex'; player.hp = player.maxHp; updateHUD(); gameState = STATE.IDLE; fishes = []; spawnFish(8); document.body.classList.remove('battle-mode'); hookedFish = null; battleTarget = null; }
+function openShop() { showMenu('menu-shop'); document.getElementById('shop-coins').innerText = player.coins; document.getElementById('btn-upg-rod').innerText = player.upgrades.rod ? "Maxed" : "50 Coins"; document.getElementById('btn-upg-armor').innerText = player.upgrades.armor ? "Maxed" : "100 Coins"; document.getElementById('btn-upg-lure').innerText = player.upgrades.lure ? "Maxed" : "200 Coins"; }
 function closeShop() { showMenu('menu-main'); }
-function buyUpgrade(type, cost) { if (player.upgrades[type] === 0 && player.coins >= cost) { player.coins -= cost; player.upgrades[type] = 1; saveData(); playSound('coin'); openShop(); } }
-function pauseGame() { gameState = STATE.PAUSED; document.getElementById('pause-title').innerText = "Paused"; document.getElementById('btn-resume').style.display = "block"; showMenu('menu-pause'); document.body.classList.remove('battle-mode'); }
-function resumeGame() { hideAllMenus(); gameState = STATE.IDLE; if (bobber.active) gameState = STATE.WAITING; if(gameState===STATE.BATTLE) document.body.classList.add('battle-mode'); }
-function toMainMenu() { document.getElementById('hud').style.display = 'none'; showMenu('menu-main'); gameState = STATE.MENU; document.body.classList.remove('battle-mode'); }
-function triggerGameOver() { gameState = STATE.GAMEOVER; document.getElementById('pause-title').innerText = "Knocked Out!"; document.getElementById('btn-resume').style.display = "none"; showMenu('menu-pause'); document.body.classList.remove('battle-mode'); }
+function buyUpgrade(type, cost) { if (player.upgrades[type] === 0 && player.coins >= cost) { player.coins -= cost; player.upgrades[type] = 1; saveData(); playSound('buy'); openShop(); } }
+function pauseGame() { gameState = STATE.PAUSED; GameAudio.pauseMusic(); document.getElementById('pause-title').innerText = "Paused"; document.getElementById('btn-resume').style.display = "block"; showMenu('menu-pause'); document.body.classList.remove('battle-mode'); }
+function resumeGame() { GameAudio.startMusic(); hideAllMenus(); gameState = STATE.IDLE; if (bobber.active) gameState = STATE.WAITING; if(gameState===STATE.BATTLE) document.body.classList.add('battle-mode'); }
+function toMainMenu() { GameAudio.stopMusic(); document.getElementById('hud').style.display = 'none'; showMenu('menu-main'); gameState = STATE.MENU; document.body.classList.remove('battle-mode'); }
+function triggerGameOver() { GameAudio.stopMusic(); playSound('death'); gameState = STATE.GAMEOVER; document.getElementById('pause-title').innerText = "Knocked Out!"; document.getElementById('btn-resume').style.display = "none"; showMenu('menu-pause'); document.body.classList.remove('battle-mode'); }
 
 function updateHUD() { document.getElementById('health-bar').style.width = (player.hp / player.maxHp * 100) + '%'; document.getElementById('coin-count').innerText = player.coins; }
 function showNotification(text, color="#fff") { let n = document.getElementById('notification'); n.innerText = text; n.style.color = color; n.style.opacity = 1; setTimeout(() => n.style.opacity = 0, 2000); }

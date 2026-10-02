@@ -392,16 +392,58 @@ button:active {
  * Engine: Vanilla JS + Matter.js
  */
 
-// --- Audio System ---
-const audioCache = {};
-const playSound = (name) => {
-    if (!audioCache[name]) {
-        const audio = new Audio(`assets/sounds/${name}.mp3`);
-        audioCache[name] = audio;
+// --- GAME AUDIO (HTML5 Audio: provided .wav sound effects + .mp3 background music) ---
+const GameAudio = (function () {
+    const MUSIC_FILE = 'The_Silver_Path.mp3';
+    const POOL_SIZE = 3;            // max simultaneous copies per sound (reused, never grows)
+    const pools = {};
+    let muted = false, music = null, musicWanted = false;
+    function pool(name) {
+        if (!pools[name]) { pools[name] = { list: [], i: 0 }; }
+        return pools[name];
     }
-    const a = audioCache[name].cloneNode();
-    a.volume = 0.5;
-    a.play().catch(e => console.log(`Audio missing or blocked: ${name}`));
+    function sfx(name, vol) {
+        if (muted) return;
+        try {
+            const p = pool(name);
+            let a = p.list[p.i];
+            if (!a) { a = new Audio(name + '.wav'); a.preload = 'auto'; p.list[p.i] = a; }
+            p.i = (p.i + 1) % POOL_SIZE;
+            a.volume = (vol === undefined ? 0.5 : vol);
+            a.currentTime = 0;
+            const r = a.play(); if (r && r.catch) r.catch(function () {});
+        } catch (e) {}
+    }
+    function ensureMusic() {
+        if (!music) { music = new Audio(MUSIC_FILE); music.loop = true; music.volume = 0.3; music.preload = 'auto'; }
+        return music;
+    }
+    function tryPlayMusic() {
+        if (!musicWanted || muted) return;
+        try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+    }
+    function unlock() {
+        if (musicWanted) tryPlayMusic();
+    }
+    ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
+        window.addEventListener(ev, unlock, { passive: true });
+    });
+    return {
+        sfx: sfx,
+        startMusic: function () { musicWanted = true; tryPlayMusic(); },
+        stopMusic: function () { musicWanted = false; if (music) { music.pause(); music.currentTime = 0; } },
+        pauseMusic: function () { musicWanted = false; if (music) music.pause(); },
+        setMuted: function (m) { muted = !!m; if (muted) { if (music) music.pause(); } else { tryPlayMusic(); } },
+        isMuted: function () { return muted; }
+    };
+})();
+const SOUND_MAP = {
+    shock: ['electric_zap', 0.5], tornado: ['blackhole_loop', 0.4], drop: ['powerup_spawn', 0.35],
+    merge: ['collect_base', 0.5], coin: ['coin', 0.45], button: ['click', 0.4],
+    gameover: ['player_death', 0.5], victory: ['win_fanfare', 0.5]
+};
+const playSound = (name) => {
+    const s = SOUND_MAP[name]; if (s) GameAudio.sfx(s[0], s[1]);
 };
 
 // --- Config & State ---
@@ -641,7 +683,7 @@ function initLevel(lvl) {
 function triggerTornado() {
     isTornadoActive = true;
     tornadoEndTime = Date.now() + 3000; // Lasts exactly 3 seconds
-    playSound('shock'); // Reuse intense sound
+    playSound('tornado');
     screenShake = 25; // Shake screen for chaos
     
     floatingTexts.spawn(GAME_WIDTH/2 - 100, GAME_HEIGHT/2, "🌪️ AANDHI! 🌪️", "#ffffff");
@@ -990,6 +1032,7 @@ canvas.addEventListener('touchend', (e) => { dropFace(mouseX); });
 
 // --- UI & Flow Management ---
 function switchScreen(screenName) {
+    if (screenName === 'ui') GameAudio.startMusic(); else GameAudio.stopMusic();
     Object.values(screens).forEach(s => {
         s.classList.add('hidden');
         s.classList.remove('active');
@@ -1064,12 +1107,12 @@ document.getElementById('btn-readme-back').onclick = () => { playSound('button')
 
 document.getElementById('btn-pause').onclick = () => {
     playSound('button');
-    gameState = 'paused';
+    gameState = 'paused'; GameAudio.pauseMusic();
     document.getElementById('pause-menu').classList.remove('hidden');
 };
 document.getElementById('btn-resume').onclick = () => {
     playSound('button');
-    gameState = 'playing';
+    gameState = 'playing'; GameAudio.startMusic();
     document.getElementById('pause-menu').classList.add('hidden');
 };
 document.getElementById('btn-restart').onclick = () => { playSound('button'); document.getElementById('pause-menu').classList.add('hidden'); initLevel(currentLevel); };

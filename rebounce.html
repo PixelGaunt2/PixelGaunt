@@ -202,9 +202,35 @@ const soundBtn = document.getElementById('soundBtn');
 const backBtn = document.getElementById('backBtn');
 
 // --- BACKGROUND MUSIC SETUP ---
-const bgMusic = new Audio('ReBounce.mp3');
+const bgMusic = new Audio('The_Silver_Path.mp3');
 bgMusic.loop = true;
-bgMusic.volume = 0.5;
+bgMusic.volume = 0.35;
+
+// --- GAME SFX (HTML5 Audio: provided .wav sound effects) ---
+const GameAudio = (function () {
+    const POOL_SIZE = 3;            // max simultaneous copies per sound (reused, never grows)
+    const pools = {};
+    function sfx(name, vol) {
+        try {
+            const p = pools[name] || (pools[name] = { list: [], i: 0 });
+            let a = p.list[p.i];
+            if (!a) { a = new Audio(name + '.wav'); a.preload = 'auto'; p.list[p.i] = a; }
+            p.i = (p.i + 1) % POOL_SIZE;
+            a.volume = (vol === undefined ? 0.5 : vol);
+            a.currentTime = 0;
+            const r = a.play(); if (r && r.catch) r.catch(function () {});
+        } catch (e) {}
+    }
+    return { sfx: sfx };
+})();
+const lastSfxTime = {};
+function playSfx(name, vol, minGap = 0) {
+    if (!soundEnabled) return;
+    const now = performance.now();
+    if (minGap && lastSfxTime[name] && now - lastSfxTime[name] < minGap) return;
+    lastSfxTime[name] = now;
+    GameAudio.sfx(name, vol);
+}
 
 let GAME_STATE = 'MENU'; 
 let score = 0;
@@ -266,7 +292,7 @@ function handleDragEnd() {
     const powerMultiplier = 0.25;
     if (distance > 10) {
         player.vx = dx * powerMultiplier; player.vy = dy * powerMultiplier;
-        hasLaunched = true; 
+        hasLaunched = true; playSfx('dash', 0.4);
         spawnParticles(player.x, player.y, '#00ffcc', 10, 4); triggerShake(5); 
     }
 }
@@ -575,6 +601,7 @@ function checkWallCollisions(p) {
                 p.vx *= restitution; 
                 p.vy *= restitution;
                 collided = true;
+                if (b.type === 'bounce') playSfx('powerup_spawn', 0.4, 80); else playSfx('object_hit', 0.35, 60);
 
                 spawnParticles(closestX, closestY, b.type === 'bounce' ? '#f59e0b' : '#00ffcc', b.type === 'bounce' ? 8 : 4, 3);
                 triggerShake(b.type === 'bounce' ? 8 : 2);
@@ -593,7 +620,7 @@ function checkOtherCollisions(p) {
                 let dest = teleporters[t.linkedId];
                 p.x = dest.x; p.y = dest.y + 10; p.teleportCooldown = 60; 
                 spawnParticles(t.x, t.y, '#8b5cf6', 15, 8, 5); spawnParticles(dest.x, dest.y, '#8b5cf6', 15, 8, 5);
-                triggerShake(5); break;
+                playSfx('mirror_matrix_launch', 0.4); triggerShake(5); break;
             }
         }
     }
@@ -602,9 +629,9 @@ function checkOtherCollisions(p) {
         if (!c.collected) {
             let dx = p.x - c.x; let dy = p.y - c.y;
             if (dx*dx + dy*dy < (p.radius + c.radius)*(p.radius + c.radius)) {
-                c.collected = true; coinsCollectedInLevel++; score += 150; updateHUD();
+                c.collected = true; coinsCollectedInLevel++; score += 150; updateHUD(); playSfx('coin', 0.45);
                 spawnParticles(c.x, c.y, '#fbbf24', 10, 6, 5);
-                if (coinsCollectedInLevel >= totalCoinsInLevel) { portal.isUnlocked = true; spawnParticles(portal.x, portal.y, '#10b981', 20, 8, 4); }
+                if (coinsCollectedInLevel >= totalCoinsInLevel) { portal.isUnlocked = true; playSfx('powerup_unlock', 0.45); spawnParticles(portal.x, portal.y, '#10b981', 20, 8, 4); }
             }
         }
     }
@@ -614,7 +641,7 @@ function checkOtherCollisions(p) {
         if (portal.isUnlocked) levelComplete();
         else {
             p.vx *= -1.5; p.vy *= -1.5;
-            spawnParticles(p.x, p.y, '#ff3366', 10, 6, 4); triggerShake(6); showWarning();
+            spawnParticles(p.x, p.y, '#ff3366', 10, 6, 4); triggerShake(6); playSfx('powerup_warning', 0.4, 300); showWarning();
         }
     }
 }
@@ -623,13 +650,13 @@ function updateHUD() { scoreDisplay.innerText = `Lvl ${currentLevel} | Score: ${
 function updateTimer() { if (GAME_STATE === 'PLAYING') timeDisplay.innerText = `Time: ${((Date.now() - levelStartTime) / 1000).toFixed(1)}s`; }
 
 function gameOver() {
-    GAME_STATE = 'GAMEOVER'; spawnParticles(player.x, player.y, '#ff3366', 30, 15, 6); triggerShake(20);
+    if (GAME_STATE !== 'GAMEOVER') playSfx('player_death', 0.55); GAME_STATE = 'GAMEOVER'; spawnParticles(player.x, player.y, '#ff3366', 30, 15, 6); triggerShake(20);
     gameControls.classList.add('hidden'); // NEW: Hide buttons on death
     setTimeout(() => { gameOverScreen.classList.remove('hidden'); }, 600);
 }
 
 function levelComplete() {
-    GAME_STATE = 'VICTORY'; spawnParticles(portal.x, portal.y, '#10b981', 40, 15, 8);
+    GAME_STATE = 'VICTORY'; playSfx('win_fanfare', 0.5); spawnParticles(portal.x, portal.y, '#10b981', 40, 15, 8);
     gameControls.classList.add('hidden'); // NEW: Hide buttons on win
     let timeTaken = (Date.now() - levelStartTime) / 1000;
     let stars = "⭐"; let timeBonus = 100;

@@ -421,26 +421,69 @@
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
             document.getElementById(screenId).style.display = 'flex';
+            if (screenId === 'title-screen') GameAudio.stopMusic();
         }
 
         function surrender() { if(confirm("Pause game and return to Map?")) { showScreen('map-screen'); } }
         
         function toggleSound() {
-            soundEnabled = !soundEnabled;
+            soundEnabled = !soundEnabled; GameAudio.setMuted(!soundEnabled);
             document.getElementById('btn-sound').innerText = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
         }
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // --- GAME AUDIO (HTML5 Audio: provided .wav sound effects + .mp3 background music) ---
+        const GameAudio = (function () {
+            const MUSIC_FILE = 'The_Silver_Path.mp3';
+            const POOL_SIZE = 3;            // max simultaneous copies per sound (reused, never grows)
+            const pools = {};
+            let muted = false, music = null, musicWanted = false;
+            function pool(name) {
+                if (!pools[name]) { pools[name] = { list: [], i: 0 }; }
+                return pools[name];
+            }
+            function sfx(name, vol) {
+                if (muted) return;
+                try {
+                    const p = pool(name);
+                    let a = p.list[p.i];
+                    if (!a) { a = new Audio(name + '.wav'); a.preload = 'auto'; p.list[p.i] = a; }
+                    p.i = (p.i + 1) % POOL_SIZE;
+                    a.volume = (vol === undefined ? 0.5 : vol);
+                    a.currentTime = 0;
+                    const r = a.play(); if (r && r.catch) r.catch(function () {});
+                } catch (e) {}
+            }
+            function ensureMusic() {
+                if (!music) { music = new Audio(MUSIC_FILE); music.loop = true; music.volume = 0.3; music.preload = 'auto'; }
+                return music;
+            }
+            function tryPlayMusic() {
+                if (!musicWanted || muted) return;
+                try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+            }
+            function unlock() {
+                if (musicWanted) tryPlayMusic();
+            }
+            ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
+                window.addEventListener(ev, unlock, { passive: true });
+            });
+            return {
+                sfx: sfx,
+                startMusic: function () { musicWanted = true; tryPlayMusic(); },
+                stopMusic: function () { musicWanted = false; if (music) { music.pause(); music.currentTime = 0; } },
+                pauseMusic: function () { musicWanted = false; if (music) music.pause(); },
+                setMuted: function (m) { muted = !!m; if (muted) { if (music) music.pause(); } else { tryPlayMusic(); } },
+                isMuted: function () { return muted; }
+            };
+        })();
+        const SOUND_MAP = {
+            attack: ['axe_hit', 0.5], block: ['object_hit', 0.4], power: ['powerup_unlock', 0.45],
+            draw: ['click', 0.3], error: ['ui_close', 0.4], enemyAttack: ['fireball_throw', 0.4],
+            hurt: ['player_hurt', 0.5], death: ['player_death', 0.55], win: ['levelup', 0.5], victory: ['win_fanfare', 0.5]
+        };
         function playSound(type) {
             if(!soundEnabled) return;
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            const os = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-            os.connect(gain); gain.connect(audioCtx.destination);
-            if (type === 'attack') { os.type = 'sawtooth'; os.frequency.setValueAtTime(150, audioCtx.currentTime); os.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.2); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2); os.start(); os.stop(audioCtx.currentTime + 0.2); }
-            else if (type === 'block') { os.type = 'sine'; os.frequency.setValueAtTime(300, audioCtx.currentTime); os.frequency.linearRampToValueAtTime(500, audioCtx.currentTime + 0.2); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2); os.start(); os.stop(audioCtx.currentTime + 0.2); }
-            else if (type === 'power') { os.type = 'square'; os.frequency.setValueAtTime(400, audioCtx.currentTime); os.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.4); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.4); os.start(); os.stop(audioCtx.currentTime + 0.4); }
-            else if (type === 'draw') { os.type = 'triangle'; os.frequency.setValueAtTime(600, audioCtx.currentTime); os.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); os.start(); os.stop(audioCtx.currentTime + 0.1); }
-            else if (type === 'error') { os.type = 'sawtooth'; os.frequency.setValueAtTime(100, audioCtx.currentTime); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15); os.start(); os.stop(audioCtx.currentTime + 0.15); }
+            const s = SOUND_MAP[type]; if (s) GameAudio.sfx(s[0], s[1]);
         }
 
         const ALL_CARDS = [
@@ -494,7 +537,6 @@
         function openSetup(mode) {
             state.mode = mode;
             showScreen('setup-screen');
-            if(audioCtx.state === 'suspended') audioCtx.resume();
         }
 
         function selectChar(el, emoji, defName) {
@@ -522,6 +564,7 @@
             pSpan.innerText = state.player.emoji;
             document.querySelector('#player-container .player-name').innerText = state.player.name;
 
+            GameAudio.startMusic();
             startGame();
         }
 
@@ -586,14 +629,14 @@
                 col.innerHTML = `<div class="card ${item.type}"><div class="ambient-effect ${effectCls}"></div><div class="card-header"><div class="card-cost">${item.cost}</div><div class="card-title">${item.name}</div></div><div class="card-art">${item.img}</div><div class="card-desc">${item.desc}</div></div><button class="btn-green" onclick="takeCard(${item.id})">TAKE CARD</button>`;
                 container.appendChild(col);
             }
-            showScreen('loot-screen');
+            playSound('win'); showScreen('loot-screen');
         }
 
         function takeCard(cardId) { const card = ALL_CARDS.find(c => c.id === cardId); if(card) state.deck.push({...card}); completeNode(); }
         function skipLoot() { completeNode(); }
         function completeNode() {
             const node = MAP_DATA.find(n => n.id === state.currentNodeId);
-            if(node.type === 'boss') { alert("VICTORY! You conquered The Spire."); showScreen('title-screen'); } else { renderMap(); }
+            if(node.type === 'boss') { playSound('victory'); alert("VICTORY! You conquered The Spire."); showScreen('title-screen'); } else { renderMap(); }
         }
 
         function startGame() {
@@ -880,7 +923,7 @@
             let target = getPrimaryTarget('skill'); 
             if(!target) return callback();
 
-            playSound('attack'); 
+            playSound('enemyAttack'); 
             showEmotion(enemyKey+'-container', '💢', 600);
             swapEmojiFace(enemyKey, '😡', 500);
             spawnThrowAnimation(enemyKey+'-sprite', target.id, '🔥', 5, 400);
@@ -896,12 +939,13 @@
                 if (target.data.block >= dmg) { target.data.block -= dmg; actualDmg = 0; }
                 else { actualDmg -= target.data.block; target.data.block = 0; target.data.hp = Math.max(0, target.data.hp - actualDmg); }
 
+                playSound(actualDmg > 0 ? 'hurt' : 'block');
                 showFloatingText(target.id, '-' + actualDmg, '#ff4757');
                 autoSelectAliveTargets();
                 updateUI();
                 
                 if (state.player.hp <= 0 && (state.mode === '1v1' || state.player2.hp <= 0)) { 
-                    setTimeout(() => { showScreen('death-screen'); }, 1000); 
+                    setTimeout(() => { playSound('death'); showScreen('death-screen'); }, 1000); 
                     return; 
                 }
                 callback();

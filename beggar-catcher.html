@@ -245,66 +245,74 @@
     </div>
 
     <script>
-        // --- 0. SOUND ENGINE (Web Audio API) ---
-        let audioCtx;
-        let bgmInterval;
-
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // --- 0. SOUND ENGINE (HTML5 Audio) ---
+        // --- GAME AUDIO (HTML5 Audio: provided .wav sound effects + .mp3 background music) ---
+        const GameAudio = (function () {
+            const MUSIC_FILE = 'The_Silver_Path.mp3';
+            const POOL_SIZE = 3;            // max simultaneous copies per sound (reused, never grows)
+            const pools = {};
+            let muted = false, music = null, musicWanted = false;
+            function pool(name) {
+                if (!pools[name]) { pools[name] = { list: [], i: 0 }; }
+                return pools[name];
             }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
+            function sfx(name, vol) {
+                if (muted) return;
+                try {
+                    const p = pool(name);
+                    let a = p.list[p.i];
+                    if (!a) { a = new Audio(name + '.wav'); a.preload = 'auto'; p.list[p.i] = a; }
+                    p.i = (p.i + 1) % POOL_SIZE;
+                    a.volume = (vol === undefined ? 0.5 : vol);
+                    a.currentTime = 0;
+                    const r = a.play(); if (r && r.catch) r.catch(function () {});
+                } catch (e) {}
             }
-        }
-
-        function playTone(freq, type, duration, vol=0.1) {
-            if(!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
-        }
+            function ensureMusic() {
+                if (!music) { music = new Audio(MUSIC_FILE); music.loop = true; music.volume = 0.3; music.preload = 'auto'; }
+                return music;
+            }
+            function tryPlayMusic() {
+                if (!musicWanted || muted) return;
+                try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+            }
+            function unlock() {
+                if (musicWanted) tryPlayMusic();
+            }
+            ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
+                window.addEventListener(ev, unlock, { passive: true });
+            });
+            return {
+                sfx: sfx,
+                startMusic: function () { musicWanted = true; tryPlayMusic(); },
+                stopMusic: function () { musicWanted = false; if (music) { music.pause(); music.currentTime = 0; } },
+                pauseMusic: function () { musicWanted = false; if (music) music.pause(); },
+                setMuted: function (m) { muted = !!m; if (muted) { if (music) music.pause(); } else { tryPlayMusic(); } },
+                isMuted: function () { return muted; }
+            };
+        })();
 
         const SoundManager = {
-            playHit: () => {
-                playTone(100, 'square', 0.1, 0.15);
-                playTone(50, 'sawtooth', 0.2, 0.1);
-            },
-            playCoin: () => {
-                playTone(600, 'sine', 0.1, 0.1);
-                setTimeout(() => playTone(800, 'sine', 0.2, 0.1), 100);
-            },
-            playJail: () => {
-                playTone(400, 'square', 0.4, 0.1);
-                setTimeout(() => playTone(300, 'square', 0.5, 0.1), 300);
-            },
+            playHit: () => GameAudio.sfx('axe_hit', 0.5),
+            playSwing: () => GameAudio.sfx('axe_swing', 0.4),
+            playHurt: () => GameAudio.sfx('player_hurt', 0.5),
+            playCoin: () => GameAudio.sfx('coin', 0.45),
+            playBuy: () => GameAudio.sfx('upgrade_buy', 0.5),
+            playJail: () => GameAudio.sfx('collect_base', 0.5),
+            playPickup: () => GameAudio.sfx('collect_base', 0.45),
+            playKO: () => GameAudio.sfx('object_destroy_base', 0.4),
+            playComplete: () => GameAudio.sfx('levelup', 0.55),
+            playDeath: () => GameAudio.sfx('player_death', 0.55),
             lastScanTime: 0,
             playScan: () => {
-                if(!audioCtx) return;
-                if(audioCtx.currentTime - SoundManager.lastScanTime > 0.15) {
-                    playTone(900, 'sine', 0.05, 0.02);
-                    SoundManager.lastScanTime = audioCtx.currentTime;
+                const now = performance.now();
+                if (now - SoundManager.lastScanTime > 150) {
+                    GameAudio.sfx('drone_hit', 0.25);
+                    SoundManager.lastScanTime = now;
                 }
             },
-            startBGM: () => {
-                if(bgmInterval) clearInterval(bgmInterval);
-                let step = 0;
-                const freqs = [100, 0, 120, 0, 100, 0, 150, 0];
-                bgmInterval = setInterval(() => {
-                    if(freqs[step] > 0) playTone(freqs[step], 'triangle', 0.2, 0.05);
-                    step = (step + 1) % freqs.length;
-                }, 300);
-            },
-            stopBGM: () => {
-                if(bgmInterval) clearInterval(bgmInterval);
-            }
+            startBGM: () => GameAudio.startMusic(),
+            stopBGM: () => GameAudio.stopMusic()
         };
 
         // --- 1. SAVE SYSTEM & LEVELS DEFINITION ---
@@ -384,7 +392,7 @@
 
         function buyUpgrade(item, price) {
             if(saveData.coins >= price && !saveData.upgrades[item]) {
-                saveData.coins -= price; saveData.upgrades[item] = true; saveGameData(); applyUpgradesToPlayer(); SoundManager.playCoin();
+                saveData.coins -= price; saveData.upgrades[item] = true; saveGameData(); applyUpgradesToPlayer(); SoundManager.playBuy();
             } else if(saveData.coins < price) alert("Not enough coins!");
         }
 
@@ -522,7 +530,7 @@
                 this.models.headMesh.material.color.setHex(0xff0000);
                 setTimeout(() => { if(this.hp > 0) this.models.headMesh.material.color.setHex(0xf5d0b5); }, 200);
                 
-                if (this.hp <= 0) { this.state = 'knocked_out'; this.mesh.rotation.x = -Math.PI/2; this.mesh.position.y = 0.5; } 
+                if (this.hp <= 0) { this.state = 'knocked_out'; SoundManager.playKO(); this.mesh.rotation.x = -Math.PI/2; this.mesh.position.y = 0.5; } 
                 else if (this.role === 'aggressive') this.state = 'attacking';
                 else this.state = 'fleeing';
             }
@@ -556,8 +564,7 @@
                     speed *= 2.2; this.targetPos.copy(playerGroup.position);
                     if (this.mesh.position.distanceTo(playerGroup.position) < 2.5 && performance.now() - player.lastAttack > 1000) {
                         player.hp -= 10; document.getElementById('combat-flash').style.opacity = 0.5; setTimeout(() => document.getElementById('combat-flash').style.opacity = 0, 100);
-                        updatePlayerUI(); this.models.armR.rotation.x = -Math.PI/2; setTimeout(()=>{ this.models.armR.rotation.x = 0; }, 200);
-                        SoundManager.playHit();
+                        SoundManager.playHurt(); updatePlayerUI(); this.models.armR.rotation.x = -Math.PI/2; setTimeout(()=>{ this.models.armR.rotation.x = 0; }, 200);
                     }
                 }
 
@@ -604,7 +611,7 @@
         }
 
         function startLevel(levelNum) {
-            initAudio(); SoundManager.startBGM();
+            SoundManager.startBGM();
             
             saveData.currentLevel = levelNum; saveData.hasSavedGame = true; saveGameData();
             clearLevel(); applyUpgradesToPlayer();
@@ -631,7 +638,7 @@
 
         function levelComplete(bounty) {
             gameState = 'MENU'; document.exitPointerLock();
-            SoundManager.stopBGM(); addCoins(bounty);
+            SoundManager.stopBGM(); SoundManager.playComplete(); addCoins(bounty);
             if(saveData.currentLevel === saveData.maxLevelUnlocked && saveData.maxLevelUnlocked < 10) saveData.maxLevelUnlocked++;
             saveData.hasSavedGame = false; saveGameData();
             
@@ -656,7 +663,7 @@
         function resumeGame() {
             if(gameState === 'PAUSED') {
                 showMenu('ui-layer'); gameState = 'PLAYING'; document.body.requestPointerLock();
-                initAudio(); SoundManager.startBGM();
+                SoundManager.startBGM();
             } else if (saveData.hasSavedGame) {
                 startLevel(saveData.currentLevel);
             }
@@ -675,7 +682,7 @@
             else document.getElementById('weapon-display').innerText = `Weapon: ${player.weapon.name}`;
             
             document.getElementById('vehicle-display').innerText = player.hasSkateboard ? "Vehicle: Skateboard" : "Vehicle: None";
-            if(player.hp <= 0) { alert("Wasted!"); quitToMenu(); }
+            if(player.hp <= 0) { SoundManager.playDeath(); alert("Wasted!"); quitToMenu(); }
         }
 
         // --- 5. CONTROLS ---
@@ -721,7 +728,7 @@
 
         function combatHit() {
             if(performance.now() - player.lastAttack < 500 || player.carriedNPC) return; 
-            player.lastAttack = performance.now(); player.isAttacking = true; player.attackTimer = 0.2; SoundManager.playHit();
+            player.lastAttack = performance.now(); player.isAttacking = true; player.attackTimer = 0.2; SoundManager.playSwing();
             npcs.forEach(npc => {
                 if(npc.state !== 'knocked_out' && npc.state !== 'carried' && npc.state !== 'surrendered' && npc.mesh.position.distanceTo(playerGroup.position) < 4) {
                     const dirToNpc = new THREE.Vector3().subVectors(npc.mesh.position, playerGroup.position).normalize();
@@ -834,7 +841,7 @@
                     weaponMesh.material = new THREE.MeshLambertMaterial({color: item.color});
                     weaponMesh.position.set(0, -0.6, 0.2); weaponMesh.rotation.x = Math.PI/2;
                     if(!player.holdingGun && !player.carriedNPC) weaponMesh.visible = true;
-                    scene.remove(item.mesh); items.splice(i, 1); updatePlayerUI();
+                    scene.remove(item.mesh); items.splice(i, 1); SoundManager.playPickup(); updatePlayerUI();
                 }
             }
 
@@ -930,9 +937,9 @@
             camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        document.getElementById('btn-play').onclick = () => { initAudio(); startLevel(saveData.currentLevel); };
+        document.getElementById('btn-play').onclick = () => { startLevel(saveData.currentLevel); };
         document.getElementById('btn-readme').onclick = () => showMenu('readme-menu'); // NEW EVENT
-        document.getElementById('btn-resume').onclick = () => { initAudio(); resumeGame(); };
+        document.getElementById('btn-resume').onclick = () => { resumeGame(); };
         document.getElementById('btn-levels').onclick = () => showMenu('level-menu');
         document.getElementById('btn-shop').onclick = () => showMenu('shop-menu');
 

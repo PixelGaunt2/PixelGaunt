@@ -284,53 +284,66 @@ window.onload = () => {
     let activeTraps = [];
     let deathTimer = null;
 
-    const AudioEngine = (() => {
-        let actx = null, masterGain = null, initialized = false, soundEnabled = true;
-        const init = () => {
-            if (initialized) return;
+    // --- GAME AUDIO (HTML5 Audio: provided .wav sound effects + .mp3 background music) ---
+    const GameAudio = (function () {
+        const MUSIC_FILE = 'The_Silver_Path.mp3';
+        const POOL_SIZE = 3;            // max simultaneous copies per sound (reused, never grows)
+        const pools = {};
+        let muted = false, music = null, musicWanted = false;
+        function pool(name) {
+            if (!pools[name]) { pools[name] = { list: [], i: 0 }; }
+            return pools[name];
+        }
+        function sfx(name, vol) {
+            if (muted) return;
             try {
-                window.AudioContext = window.AudioContext || window.webkitAudioContext;
-                actx = new AudioContext();
-                masterGain = actx.createGain(); 
-                masterGain.gain.value = soundEnabled ? 0.2 : 0;
-                masterGain.connect(actx.destination); initialized = true;
-            } catch(e) {}
+                const p = pool(name);
+                let a = p.list[p.i];
+                if (!a) { a = new Audio(name + '.wav'); a.preload = 'auto'; p.list[p.i] = a; }
+                p.i = (p.i + 1) % POOL_SIZE;
+                a.volume = (vol === undefined ? 0.5 : vol);
+                a.currentTime = 0;
+                const r = a.play(); if (r && r.catch) r.catch(function () {});
+            } catch (e) {}
+        }
+        function ensureMusic() {
+            if (!music) { music = new Audio(MUSIC_FILE); music.loop = true; music.volume = 0.3; music.preload = 'auto'; }
+            return music;
+        }
+        function tryPlayMusic() {
+            if (!musicWanted || muted) return;
+            try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+        }
+        function unlock() {
+            if (musicWanted) tryPlayMusic();
+        }
+        ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
+            window.addEventListener(ev, unlock, { passive: true });
+        });
+        return {
+            sfx: sfx,
+            startMusic: function () { musicWanted = true; tryPlayMusic(); },
+            stopMusic: function () { musicWanted = false; if (music) { music.pause(); music.currentTime = 0; } },
+            pauseMusic: function () { musicWanted = false; if (music) music.pause(); },
+            setMuted: function (m) { muted = !!m; if (muted) { if (music) music.pause(); } else { tryPlayMusic(); } },
+            isMuted: function () { return muted; }
         };
+    })();
+
+    const AudioEngine = (() => {
+        let soundEnabled = true;
+        const init = () => {}; // HTML5 Audio needs no setup; music is unlocked by the first user interaction
         const toggleMute = () => {
-            soundEnabled = !soundEnabled;
-            if (masterGain) masterGain.gain.value = soundEnabled ? 0.2 : 0;
+            soundEnabled = !soundEnabled; GameAudio.setMuted(!soundEnabled);
             return soundEnabled;
         };
-        const playTone = (freq, type, duration, vol=1) => {
-            if(!initialized || !actx || !soundEnabled) return;
-            try {
-                const osc = actx.createOscillator(); const gain = actx.createGain();
-                osc.type = type; osc.frequency.setValueAtTime(freq, actx.currentTime);
-                gain.gain.setValueAtTime(vol, actx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + duration);
-                osc.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(actx.currentTime + duration);
-            } catch(e) {}
-        };
-        const playNoise = (duration, vol=1) => {
-            if(!initialized || !actx || !soundEnabled) return;
-            try {
-                const bufferSize = actx.sampleRate * duration;
-                const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-                const noise = actx.createBufferSource(); noise.buffer = buffer;
-                const gain = actx.createGain();
-                gain.gain.setValueAtTime(vol, actx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + duration);
-                const filter = actx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 800;
-                noise.connect(filter); filter.connect(gain); gain.connect(masterGain); noise.start();
-            } catch(e) {}
-        };
+        const play = (name, vol) => { if (soundEnabled) GameAudio.sfx(name, vol); };
         return {
             init, toggleMute, 
-            move: () => playTone(180, 'sine', 0.08, 0.4), hit: () => playTone(100, 'sawtooth', 0.2, 0.8),
-            pickup: () => { playTone(600, 'sine', 0.1, 0.5); setTimeout(()=>playTone(800, 'sine', 0.2, 0.5), 80); },
-            breakRock: () => playNoise(0.3, 1), switch: () => playTone(400, 'square', 0.1, 0.4), door: () => playNoise(0.4, 0.5),
-            win: () => { playTone(440, 'sine', 0.15); setTimeout(()=>playTone(554, 'sine', 0.15), 150); setTimeout(()=>playTone(659, 'sine', 0.3), 300); }
+            move: () => play('hover', 0.3), hit: () => play('object_hit', 0.45),
+            pickup: () => play('collect_base', 0.45),
+            breakRock: () => play('object_destroy_base', 0.4), switch: () => play('node_unlock', 0.4), door: () => play('ui_open', 0.4),
+            win: () => play('win_fanfare', 0.5), death: () => play('player_death', 0.5)
         };
     })();
 
@@ -559,13 +572,14 @@ window.onload = () => {
     document.getElementById('btnMenuFromEnd').addEventListener('click', () => showScreen('screenStart'));
 
     function togglePause() {
-        if (currentState === STATE.PLAYING) { currentState = STATE.PAUSED; showScreen('screenPause'); } 
-        else if (currentState === STATE.PAUSED) { currentState = STATE.PLAYING; hideScreens(); }
+        if (currentState === STATE.PLAYING) { currentState = STATE.PAUSED; showScreen('screenPause'); GameAudio.pauseMusic(); } 
+        else if (currentState === STATE.PAUSED) { currentState = STATE.PLAYING; hideScreens(); GameAudio.startMusic(); }
     }
 
     function showScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         if(id) document.getElementById(id).classList.add('active');
+        if(['screenLevels', 'screenStart', 'screenWin', 'screenEnd', 'screenReadme'].includes(id)) GameAudio.stopMusic();
         if(['screenLevels', 'screenStart', 'screenWin', 'screenEnd', 'screenReadme'].includes(id)) { document.getElementById('minimapContainer').style.display = 'none'; }
     }
 
@@ -623,7 +637,7 @@ window.onload = () => {
         if(levelData.enemies) levelData.enemies.forEach(e => { enemies.push({x: e.x, y: e.y, visualX: e.x, visualY: e.y, dir: e.dir, min: e.min, max: e.max, speed: e.speed}); });
 
         updateHUD(); showPopup(levelData.name + " | " + levelData.tip, 4500);
-        currentState = STATE.PLAYING; hideScreens();
+        currentState = STATE.PLAYING; hideScreens(); GameAudio.startMusic();
         
         camera.x = snake[0].x * TILE_SIZE - canvasW/2; camera.y = snake[0].y * TILE_SIZE - canvasH/2;
         drawMinimap();
@@ -815,7 +829,7 @@ window.onload = () => {
 
     function gameOver(reason) {
         if (currentState === STATE.TRANSITION) return;
-        currentState = STATE.TRANSITION; AudioEngine.hit(); cameraShake(25);
+        currentState = STATE.TRANSITION; AudioEngine.death(); cameraShake(25);
         if(!snake.escaped) createParticles(snake[0].x*TILE_SIZE+20, snake[0].y*TILE_SIZE+20, '#ff003c', 40);
         showPopup(`Critical Failure: ${reason || 'System Crash'}`, 2500);
         deathTimer = setTimeout(() => resetLevel(), 2500);
