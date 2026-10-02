@@ -315,7 +315,7 @@ async function planFor(env, uid) {
 async function usedGames(env, uid, plan) {
     const [subs, games] = await Promise.all([fsQueryByField(env, 'submissions', 'user_id', uid), fsQueryByField(env, 'community_games', 'ownerUid', uid)]);
     const seen = new Map();
-    subs.forEach(s => seen.set(s.id, Date.parse(s.submitted_at) || 0));
+    subs.forEach(s => { if (s.status !== 'sending') seen.set(s.id, Date.parse(s.submitted_at) || 0); });   // an undelivered attempt does not use up the allowance
     games.forEach(g => { if (!seen.has(g.id)) seen.set(g.id, Date.parse(g.createdAt) || 0); });   // older games that pre-date review still count
     if (plan.period === 'month') { const d = new Date(); const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1); return [...seen.values()].filter(t => t >= start).length; }
     return seen.size;
@@ -338,8 +338,11 @@ async function handleSubmit(req, env, cors) {
     const existing = await fsGet(env, 'submissions/' + id);
     if (existing) {
         if (existing.user_id !== user.uid) throw new HttpError(403, 'This submission id belongs to someone else.');
-        return json({ ok: true, duplicate: true, submissionId: id, status: existing.status }, 200, cors);
+        // 'sending' = an earlier attempt never reached the review inbox. Fall through and try again (the email call is
+        // idempotent per submission id, so a retry can never produce a second email). Anything else is already submitted.
+        if (existing.status !== 'sending') return json({ ok: true, duplicate: true, submissionId: id, status: existing.status }, 200, cors);
     }
+    if (!env.RESEND_API_KEY) throw new HttpError(503, 'Email delivery is not configured on the review service (missing RESEND_API_KEY). Nothing was submitted.');
 
     const plan = await planFor(env, user.uid);           // NOT taken from the browser
     if (pkg.size > Math.min(plan.maxBytes, HARD_MAX_BYTES)) throw new HttpError(413, `The package is ${(pkg.size / 1048576).toFixed(1)} MB. The ${plan.label} plan allows ${plan.maxBytes / 1048576} MB per game.`);
@@ -355,32 +358,85 @@ async function handleSubmit(req, env, cors) {
     const entryText = dec.decode(info.entryHtml);
     const entryHash = await sha256hex(enc.encode(entryText));
 
-    let folders = await ensureFolders(env, false), driveIds;
-    const store = async () => {
-        const today = new Date().toISOString().slice(0, 10);
-        const folderName = `${safeName(title, 40)}_${safeName(user.name || user.email.split('@')[0] || 'user', 30)}_${today}_${id.slice(0, 8)}`;
-        const folderId = await driveFolder(env, folderName, folders.Pending);           // find-or-create => retries reuse it
-        let zip = await driveFindChild(env, folderId, 'game.zip', false);
-        if (!zip) zip = await driveUpload(env, { name: 'game.zip', parentId: folderId, mime: 'application/zip', bytes: new Uint8Array(buf) });
-        const submittedAt = new Date();
-        const meta = { submission_id: id, game_id: id, game_name: title, user_id: user.uid, developer_name: user.name, developer_email: user.email, submitted_at: submittedAt.toISOString(), version, description, package_file_name: fileName, stored_as: 'game.zip', package_size_bytes: pkg.size, subscription_type: plan.label, status: 'pending_review', drive_file_id: zip.id, drive_folder_id: folderId, entry_file: info.entry, file_count: info.fileCount, validation_warnings: info.warnings, note: 'Basic upload validation only - not a malware scan.' };
-        if (!(await driveFindChild(env, folderId, 'submission-info.json', false))) await driveUpload(env, { name: 'submission-info.json', parentId: folderId, mime: 'application/json', bytes: enc.encode(JSON.stringify(meta, null, 2)) });
-        return { folderId, fileId: zip.id, submittedAt, folderName };
-    };
-    try { driveIds = await store(); }
-    catch (e) {
-        if (e.driveStatus === 404) { folders = await ensureFolders(env, true); driveIds = await store(); }   // someone moved/deleted the folders: rebuild once
-        else throw e;
+    // 1) Record the attempt as 'sending'. This is NOT visible to the public or counted against the plan, and the
+    //    browser cannot turn it into a playable game: firestore.rules only accepts a game for a 'pending_review' submission.
+    const submittedAt = existing && existing.submitted_at ? new Date(existing.submitted_at) : new Date();
+    const record = { submission_id: id, game_id: id, user_id: user.uid, developer_name: user.name, developer_email: user.email, game_name: title, description, version, file_name: fileName, file_size: pkg.size, subscription_type: plan.label, status: 'sending', rejection_reason: '', submitted_at: submittedAt, reviewed_at: null, reviewed_by: '', entry_file: info.entry, entry_sha256: entryHash, file_count: info.fileCount, validation_warnings: info.warnings };
+    if (!existing) {
+        const created = await fsCreate(env, 'submissions', id, record);
+        if (!created) {   // a parallel retry won the race: let that request finish, do not send a second email
+            const now = await fsGet(env, 'submissions/' + id);
+            if (!now || now.user_id !== user.uid) throw new HttpError(409, 'Submission conflict. Try again.');
+            return json({ ok: true, duplicate: true, submissionId: id, status: now.status }, 200, cors);
+        }
     }
 
-    const record = { submission_id: id, game_id: id, user_id: user.uid, developer_name: user.name, developer_email: user.email, game_name: title, description, version, file_name: fileName, file_size: pkg.size, subscription_type: plan.label, status: 'pending_review', rejection_reason: '', submitted_at: driveIds.submittedAt, reviewed_at: null, reviewed_by: '', drive_file_id: driveIds.fileId, drive_folder_id: driveIds.folderId, drive_folder_name: driveIds.folderName, drive_state: 'stored', entry_file: info.entry, entry_sha256: entryHash, file_count: info.fileCount, validation_warnings: info.warnings };
-    const created = await fsCreate(env, 'submissions', id, record);
-    if (!created) {   // a parallel retry won the race
-        const now = await fsGet(env, 'submissions/' + id);
-        if (!now || now.user_id !== user.uid) throw new HttpError(409, 'Submission conflict. Try again.');
-        return json({ ok: true, duplicate: true, submissionId: id, status: now.status }, 200, cors);
+    // 2) OPTIONAL backup copy in Google Drive (only when its OAuth settings exist). Email is the delivery channel; a Drive
+    //    problem is logged but never blocks or fakes a submission.
+    const driveOn = !!(env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET && env.GOOGLE_OAUTH_REFRESH_TOKEN);
+    let drive = { drive_state: 'not_configured' };
+    if (driveOn) {
+        try {
+            let folders = await ensureFolders(env, false), driveIds;
+            const store = async () => {
+                const today = new Date().toISOString().slice(0, 10);
+                const folderName = `${safeName(title, 40)}_${safeName(user.name || user.email.split('@')[0] || 'user', 30)}_${today}_${id.slice(0, 8)}`;
+                const folderId = await driveFolder(env, folderName, folders.Pending);           // find-or-create => retries reuse it
+                let zip = await driveFindChild(env, folderId, 'game.zip', false);
+                if (!zip) zip = await driveUpload(env, { name: 'game.zip', parentId: folderId, mime: 'application/zip', bytes: new Uint8Array(buf) });
+                const meta = { submission_id: id, game_id: id, game_name: title, user_id: user.uid, developer_name: user.name, developer_email: user.email, submitted_at: submittedAt.toISOString(), version, description, package_file_name: fileName, stored_as: 'game.zip', package_size_bytes: pkg.size, subscription_type: plan.label, status: 'pending_review', drive_file_id: zip.id, drive_folder_id: folderId, entry_file: info.entry, file_count: info.fileCount, validation_warnings: info.warnings, note: 'Basic upload validation only - not a malware scan.' };
+                if (!(await driveFindChild(env, folderId, 'submission-info.json', false))) await driveUpload(env, { name: 'submission-info.json', parentId: folderId, mime: 'application/json', bytes: enc.encode(JSON.stringify(meta, null, 2)) });
+                return { folderId, fileId: zip.id, folderName };
+            };
+            try { driveIds = await store(); }
+            catch (e) { if (e.driveStatus === 404) { folders = await ensureFolders(env, true); driveIds = await store(); } else throw e; }
+            drive = { drive_file_id: driveIds.fileId, drive_folder_id: driveIds.folderId, drive_folder_name: driveIds.folderName, drive_state: 'stored' };
+        } catch (e) {
+            console.error('Drive backup failed (submission continues by email):', e && e.message || e);
+            drive = { drive_state: 'failed' };
+        }
     }
+
+    // 3) Email the package to the review inbox. Only if this succeeds does the submission become pending_review.
+    await sendReviewEmail(env, { id, title, description, version, user, plan, buf, fileName, info, submittedAt, pkgSize: pkg.size, drive });
+
+    // 4) Delivered => now (and only now) mark it pending_review.
+    await fsPatch(env, 'submissions/' + id, { status: 'pending_review', email_sent_at: new Date(), email_to: reviewTo(env), ...drive });
     return json({ ok: true, submissionId: id, status: 'pending_review', warnings: info.warnings, maxBundleBytes: MAX_BUNDLE_BYTES }, 200, cors);
+}
+
+/* ------------------------------------ review e-mail (Resend API) ------------------------------------ */
+const reviewTo = env => String(env.REVIEW_EMAIL_TO || 'pixelgaunt@gmail.com').trim();
+const escHtml = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const toB64 = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+const MAX_EMAIL_ATTACHMENT = 18 * 1024 * 1024;   // raw bytes; base64 adds ~33%, Gmail accepts 25 MB per message. Plans cap at 10 MB, so this always fits.
+
+async function sendReviewEmail(env, d) {
+    if (d.pkgSize > MAX_EMAIL_ATTACHMENT) throw new HttpError(413, 'The package is too large to email for review.');
+    const when = d.submittedAt.toISOString();
+    const rows = [
+        ['Game title', d.title], ['Developer', d.user.name || '(no name)'], ['Developer account email', d.user.email || '(none)'],
+        ['Submission ID', d.id], ['Submitted (UTC)', when], ['Plan', d.plan.label], ['Package', d.fileName + ' (' + (d.pkgSize / 1048576).toFixed(2) + ' MB, ' + d.info.fileCount + ' files)'],
+        ['Entry file', d.info.entry], ['Version', d.version || '-'], ['Description', d.description || '-'],
+        ['Automatic warnings', d.info.warnings.length ? d.info.warnings.join(' | ') : 'none'], ['Drive backup', d.drive.drive_state]
+    ];
+    const text = 'MANUAL REVIEW SUBMISSION\n\n' + rows.map(r => r[0] + ': ' + r[1]).join('\n') + '\n\nThe game package is attached as game.zip. Basic upload validation only - this is NOT a malware scan; review it before approving.\nApprove or reject it in Creator Studio -> Admin Review.';
+    const html = '<h2>Manual review submission</h2><table cellpadding="6" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">' +
+        rows.map(r => '<tr><td style="border:1px solid #ddd"><b>' + escHtml(r[0]) + '</b></td><td style="border:1px solid #ddd">' + escHtml(r[1]) + '</td></tr>').join('') + '</table>' +
+        '<p>The game package is attached as <b>game.zip</b>. Basic upload validation only &mdash; this is <b>not</b> a malware scan; review it before approving.<br>Approve or reject it in Creator Studio &rarr; Admin Review.</p>';
+    const body = {
+        from: String(env.REVIEW_EMAIL_FROM || 'PixelGaunt Review <onboarding@resend.dev>'),
+        to: [reviewTo(env)],
+        subject: '[PixelGaunt Review] ' + d.title + ' - ' + (d.user.name || d.user.email || 'developer'),
+        text, html,
+        attachments: [{ filename: safeName(d.title, 40) + '.zip', content: toB64(new Uint8Array(d.buf)) }]
+    };
+    if (d.user.email) body.reply_to = d.user.email;
+    let res;
+    try {
+        res = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json', 'Idempotency-Key': 'pg-submit-' + d.id }, body: JSON.stringify(body) });
+    } catch (e) { console.error('email network error', e && e.message || e); throw new HttpError(502, 'Submission could not be sent. Please try again.'); }
+    if (!res.ok) { console.error('email send failed', res.status, await res.text()); throw new HttpError(502, 'Submission could not be sent. Please try again.'); }
 }
 
 async function requireAdmin(req, env) {
@@ -424,8 +480,7 @@ async function handleApprove(req, env, cors) {
     if (sub.status === 'approved') return json({ ok: true, status: 'approved', already: true }, 200, cors);
     if (sub.status !== 'pending_review') throw new HttpError(409, `This submission is ${sub.status}, not pending review.`);
     await verifyBundle(env, submissionId, sub);
-    const folders = await ensureFolders(env, false);
-    await driveMove(env, sub.drive_folder_id, folders.Approved);
+    if (sub.drive_folder_id) { const folders = await ensureFolders(env, false); await driveMove(env, sub.drive_folder_id, folders.Approved); }
     const now = new Date();
     await fsPatch(env, 'community_games/' + submissionId, { status: 'approved', rejectionReason: '', reviewedAt: now });   // this is what lists it on the Games page
     await fsPatch(env, 'submissions/' + submissionId, { status: 'approved', rejection_reason: '', reviewed_at: now, reviewed_by: admin.uid });
@@ -438,8 +493,7 @@ async function handleReject(req, env, cors) {
     if (why.length < 3) throw new HttpError(400, 'A rejection reason is required.');
     const sub = await loadForReview(env, submissionId);
     if (sub.status === 'rejected') return json({ ok: true, status: 'rejected', already: true }, 200, cors);
-    const folders = await ensureFolders(env, false);
-    await driveMove(env, sub.drive_folder_id, folders.Rejected);
+    if (sub.drive_folder_id) { const folders = await ensureFolders(env, false); await driveMove(env, sub.drive_folder_id, folders.Rejected); }
     const now = new Date();
     const game = await fsGet(env, 'community_games/' + submissionId);
     if (game) await fsPatch(env, 'community_games/' + submissionId, { status: 'rejected', rejectionReason: why, reviewedAt: now });   // leaves the public list; owner sees the reason
@@ -449,7 +503,7 @@ async function handleReject(req, env, cors) {
 async function handleDownload(req, env, cors) {
     await requireAdmin(req, env);
     const sub = await loadForReview(env, new URL(req.url).searchParams.get('id'));
-    if (!sub.drive_file_id) throw new HttpError(404, 'No stored package for this submission.');
+    if (!sub.drive_file_id) throw new HttpError(404, 'No Drive copy of this package. The ZIP was emailed to the review inbox - download it from that email.');
     const res = await driveFetch(env, `https://www.googleapis.com/drive/v3/files/${sub.drive_file_id}?alt=media`);
     return new Response(res.body, { status: 200, headers: { ...cors, 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="${safeName(sub.game_name, 50)}.zip"`, 'Cache-Control': 'no-store' } });
 }
@@ -465,7 +519,7 @@ export default {
         if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
         try {
             if (req.method === 'GET' && url.pathname === '/health') {
-                return json({ ok: true, configured: { FIREBASE_PROJECT_ID: !!env.FIREBASE_PROJECT_ID, FIREBASE_SA_JSON: !!env.FIREBASE_SA_JSON, GOOGLE_OAUTH_CLIENT_ID: !!env.GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET: !!env.GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN: !!env.GOOGLE_OAUTH_REFRESH_TOKEN } }, 200, cors);
+                return json({ ok: true, configured: { FIREBASE_PROJECT_ID: !!env.FIREBASE_PROJECT_ID, FIREBASE_SA_JSON: !!env.FIREBASE_SA_JSON, GOOGLE_OAUTH_CLIENT_ID: !!env.GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET: !!env.GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN: !!env.GOOGLE_OAUTH_REFRESH_TOKEN, RESEND_API_KEY: !!env.RESEND_API_KEY }, review_email_to: reviewTo(env), note: 'Drive settings are optional; RESEND_API_KEY is required for submissions.' }, 200, cors);
             }
             if (!env.FIREBASE_PROJECT_ID) throw new HttpError(503, 'Review service is not configured (FIREBASE_PROJECT_ID).');
             if (req.method === 'POST' && url.pathname === '/submit') return await handleSubmit(req, env, cors);

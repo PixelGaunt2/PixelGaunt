@@ -440,7 +440,9 @@
         }
         const { allowed, limits, used } = await usageInfo();
         if (!allowed) { toast(`You've used ${used} of ${limits.maxGames} games on the ${limits.label} plan. Upgrade to submit more.`); return; }
-        btn.disabled = true; const oldLabel = btn.textContent; btn.textContent = 'Submitting...';
+        if (pubState.submitting) return;   // double-click guard: one send at a time
+        pubState.submitting = true;
+        btn.disabled = true; const oldLabel = btn.textContent; btn.textContent = 'Sending...';
         try {
             const user = getUser();
             const id = pubState.submissionId;
@@ -492,7 +494,7 @@
             }));
 
             Core.invalidateCommunity();
-            root.innerHTML = `<div class="pg-verdict ok">Game submitted successfully.<small>Your game is now pending manual review.</small></div><p style="margin-top:12px;"><b>${esc(meta.title)}</b> <span class="pg-pill warn">Pending Review</span></p><button type="button" class="pg-btn primary" style="margin-top:14px;" onclick="window.pgLoadPlatform().then(m=>m.resetPublish())">Submit another game</button>`;
+            root.innerHTML = `<div class="pg-verdict ok">Submitted for Review.<small>Your game was sent to PixelGaunt and is now pending manual review.</small></div><p style="margin-top:12px;"><b>${esc(meta.title)}</b> <span class="pg-pill warn">Pending Review</span></p><button type="button" class="pg-btn primary" style="margin-top:14px;" onclick="window.pgLoadPlatform().then(m=>m.resetPublish())">Submit another game</button>`;
         } catch (err) {
             console.error('Submit failed:', err);
             // Turn raw Firestore/network codes into something understandable; the technical error stays in the console.
@@ -501,6 +503,7 @@
             else if (err && err.code === 'unavailable') msg = 'The database is temporarily unreachable. Press Submit again - nothing will be duplicated.';
             else if (err && err.code === 'unauthenticated') msg = 'Authentication required. Sign in again and press Submit.';
             toast(msg);
+            if (pubState) pubState.submitting = false;   // allow a retry (same submission id, so nothing is duplicated)
             btn.disabled = false; btn.textContent = oldLabel;
         }
     }

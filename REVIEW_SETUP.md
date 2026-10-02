@@ -1,5 +1,9 @@
 # PixelGaunt manual review - setup
 
+**Delivery:** every submission is EMAILED to pixelgaunt@gmail.com (game ZIP attached) by the Worker. The submission only becomes
+`pending_review` after the email provider accepted it. **Google Drive (sections 2 and the Drive rows below) is now OPTIONAL** - skip it
+unless you also want a backup copy and the in-site "Download package" button.
+
 What you need to do, in order. Nothing below is done for you: the code is in place, but it cannot reach
 your Google Drive or Firebase until you add these settings.
 
@@ -10,7 +14,7 @@ your Google Drive or Firebase until you add these settings.
 3. Project settings -> Service accounts -> Generate new private key. Keep the JSON file; it goes into the Worker (step 3).
 4. Subscribers: set `users/<uid>.plan = "subscriber"` in the console (no payment gateway writes this yet).
 
-## 2. Google Cloud (Drive)
+## 2. Google Cloud (Drive) - OPTIONAL backup copy
 1. console.cloud.google.com -> use the project linked to Firebase (or a new one) -> APIs & Services -> Library ->
    enable **Google Drive API**.
 2. OAuth consent screen: choose External, fill the app name and your email, add yourself as a test user, then
@@ -39,6 +43,15 @@ your Google Drive or Firebase until you add these settings.
 
 3. Open `https://<your-worker>.workers.dev/health` - every value should say true (it never shows the values).
 
+## 3b. Email sending (REQUIRED) - Resend, free tier
+1. Create an account at https://resend.com **with the email pixelgaunt@gmail.com** (until you verify your own domain, Resend only lets
+   `onboarding@resend.dev` send to the account owner's address - which is exactly this inbox).
+2. API Keys -> Create API key (sending access). Copy it once.
+3. Worker -> Settings -> Variables and Secrets: add **RESEND_API_KEY** (type Secret). Optional text variables:
+   `REVIEW_EMAIL_TO` (default pixelgaunt@gmail.com) and `REVIEW_EMAIL_FROM` (default `PixelGaunt Review <onboarding@resend.dev>`;
+   change it only after verifying a domain in Resend).
+4. `/health` must show `RESEND_API_KEY: true`.
+
 ## 4. Point the site at it
 In `platform.js` set `reviewEndpoint: 'https://<your-worker>.workers.dev'` (no trailing slash), commit, push.
 That URL is public by design; it holds no secret.
@@ -47,6 +60,6 @@ That URL is public by design; it holds no secret.
 1. Sign in as yourself -> Creator Studio -> **Admin Review** tab appears -> **Check Drive connection**.
    Drive now has `PixelGaunt Game Submissions/Pending`, `Approved`, `Rejected`.
 2. Submit a test game from a normal (non-admin) account. Creator Studio -> My Games shows **Pending Review**.
-3. In Drive, `PixelGaunt Game Submissions/Pending/<Game>_<User>_<date>_<id>/` holds `game.zip` and `submission-info.json`.
+3. pixelgaunt@gmail.com receives "[PixelGaunt Review] <title> - <developer>" with the ZIP attached (check Spam the first time). If Drive is configured, the same ZIP is also in `PixelGaunt Game Submissions/Pending/...`.
 4. Admin Review -> Download package -> Approve (moves to Approved, appears on the Games page) or Reject (reason required,
    shown to the developer, folder moves to Rejected).
