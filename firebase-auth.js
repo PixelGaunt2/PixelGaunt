@@ -53,10 +53,18 @@
         // ---------------------------------------------------------------------------------
         const AWAIT_KEY = "pgAwaitContinue";
         let awaitingContinue = false;
-        try { awaitingContinue = sessionStorage.getItem(AWAIT_KEY) === "1"; } catch (e) { /* storage unavailable */ }
+        // The flag stores a timestamp and only counts for AWAIT_MAX_MS. A stale flag (tab closed or page
+        // reloaded mid-login) must never leave a valid Firebase session hidden behind the Continue step.
+        const AWAIT_MAX_MS = 3 * 60 * 1000;
+        try {
+            const raw = sessionStorage.getItem(AWAIT_KEY);
+            const t = raw === "1" ? 0 : Number(raw);          // "1" = old-format flag, treated as already expired
+            awaitingContinue = !!t && (Date.now() - t) < AWAIT_MAX_MS;
+            if (!awaitingContinue && raw) sessionStorage.removeItem(AWAIT_KEY);
+        } catch (e) { /* storage unavailable */ }
         function setAwaiting(v) {
             awaitingContinue = v;
-            try { if (v) sessionStorage.setItem(AWAIT_KEY, "1"); else sessionStorage.removeItem(AWAIT_KEY); } catch (e) { /* ignore */ }
+            try { if (v) sessionStorage.setItem(AWAIT_KEY, String(Date.now())); else sessionStorage.removeItem(AWAIT_KEY); } catch (e) { /* ignore */ }
         }
 
         const loginStep = loginModal ? loginModal.querySelector(".modal-step") : null;
@@ -130,7 +138,13 @@
         // user chose not to continue: sign them out so nothing is half-logged-in.
         const originalCloseModals = window.closeModals;
         window.closeModals = function () {
-            if (awaitingContinue && continueStepEl && continueStepEl.style.display !== "none") cancelPendingLogin();
+            // Closing the modal (X / click outside) is NOT a logout. The Google sign-in is already valid, so keep the
+            // session and complete the login UI. Only the explicit "Use a different Google account" button signs out.
+            if (awaitingContinue && continueStepEl && continueStepEl.style.display !== "none" && auth.currentUser) {
+                setAwaiting(false);
+                applyAuthState(auth.currentUser);   // re-enters closeModals with the flag cleared, so no loop
+                return;
+            }
             showLoginMsg("");
             if (typeof originalCloseModals === "function") originalCloseModals.apply(this, arguments);
             setTimeout(() => { if (!awaitingContinue) showLoginStep(); }, 350);
