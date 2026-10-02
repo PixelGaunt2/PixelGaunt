@@ -2265,8 +2265,8 @@
   display: none;
   position: absolute; z-index: 10;
   width: calc(var(--ui-scale) * 100px); height: calc(var(--ui-scale) * 100px);
-  bottom: calc(var(--ui-scale) * 22.5px);   /* level-hud: bottom 25 + height 95/2 - 100/2 */
-  left: calc(var(--ui-scale) * 291px);      /* level-hud: left 12 + width 265 + 14 gap */
+  bottom: calc(var(--ui-scale) * 48px);     /* MOVED NEXT TO THE MAP: map bottom 25 + height 146/2 - 100/2, i.e. vertically centred on the Map */
+  right: calc(var(--ui-scale) * 187px);     /* map right 25 + width 150 + 12 gap -> sits fully LEFT of the Map, never over it */
   border-radius: 50% !important; box-sizing: border-box; padding: 0; margin: 0;
   border: calc(var(--ui-scale) * 4px) solid #00f3ff;
   background: radial-gradient(circle at 50% 40%, #12131f 0%, #06060c 100%);
@@ -2287,6 +2287,37 @@
 #dash-touch-btn.dash-touch-pressed { background: radial-gradient(circle at 50% 40%, #0891a3 0%, #06323a 100%); transform: scale(0.94); }
 #dash-hud.dash-cooling ~ #dash-touch-btn { border-color: #0891a3; }
 #dash-hud.dash-cooling ~ #dash-touch-btn .dash-touch-label { color: #0891a3; }
+
+/* MOBILE EXTRA-LEVEL MOVEMENT PAD: compact touch joystick for the Jet. Hidden by default; shown ONLY when
+   JS adds .touch-jet-pad-enabled to <html> (touch + coarse pointer, same test as the Dash button) AND an
+   Extra Level is active (the existing mechanism that hides #dash-hud during Extra Levels, reused through
+   the sibling selector below, so it never appears in Normal Levels or on desktop). Sits in the bottom-left
+   slot to the right of the Ship Level HUD (the slot the Dash button used to occupy), vertically centred on it. */
+#jet-touch-pad {
+  display: none;
+  position: absolute; z-index: 10;
+  width: calc(var(--ui-scale) * 116px); height: calc(var(--ui-scale) * 116px);
+  bottom: calc(var(--ui-scale) * 14.5px);   /* level-hud: bottom 25 + height 95/2 - 116/2 */
+  left: calc(var(--ui-scale) * 291px);      /* level-hud: left 12 + width 265 + 14 gap */
+  border-radius: 50% !important; box-sizing: border-box; padding: 0; margin: 0;
+  border: calc(var(--ui-scale) * 4px) solid #00f3ff;
+  background: radial-gradient(circle at 50% 40%, #12131f 0%, #06060c 100%);
+  pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 0 0 calc(var(--ui-scale) * 2px) #06060c, inset 0 0 0 calc(var(--ui-scale) * 3px) rgba(0,243,255,0.25);
+}
+.touch-jet-pad-enabled #dash-hud[style*="display: none"] ~ #jet-touch-pad { display: block; }
+#jet-touch-pad .jet-pad-ring { position: absolute; inset: calc(var(--ui-scale) * 14px); border-radius: 50% !important; pointer-events: none;
+  border: calc(var(--ui-scale) * 2px) dashed rgba(0,243,255,0.35); box-sizing: border-box; }
+#jet-touch-pad .jet-pad-knob {
+  position: absolute; left: 50%; top: 50%; pointer-events: none; border-radius: 50% !important; box-sizing: border-box;
+  width: calc(var(--ui-scale) * 46px); height: calc(var(--ui-scale) * 46px);
+  margin-left: calc(var(--ui-scale) * -23px); margin-top: calc(var(--ui-scale) * -23px);
+  border: calc(var(--ui-scale) * 3px) solid #00f3ff;
+  background: radial-gradient(circle at 50% 40%, #0891a3 0%, #06323a 100%);
+  transform: translate(0px, 0px);
+}
+#jet-touch-pad.jet-pad-active { background: radial-gradient(circle at 50% 40%, #0a2a31 0%, #06060c 100%); }
 /* PAUSE MENU CROP FIX: #pause-menu (10 buttons + title) is taller than the viewport at most sizes, and
    the shared .overlay-menu is a centered flex column with overflow hidden, so overflow was clipped off
    BOTH the top (PAUSED title) and bottom (last buttons). 'safe center' never lets content start above the
@@ -2570,8 +2601,8 @@
              the Extra Level Pause Menu's own EXIT GAME button below (#pause-exit-game-btn) - not
              two separate exit-game systems. See exitGame()'s own comment for why (no Electron/
              app-close path exists in this browser build to reuse). -->
-<button class="menu-btn" id="btn-exit-game-app" onclick="exitGame()"><img alt="" class="inline-icon" src="exit-icon-unused.png"/>EXIT GAME</button>
-<button class="menu-btn" id="btn-reset-progress" onclick="resetProgressFromMenu()" style="display:none; color: #ff3333;"><img alt="" class="inline-icon" src="btn-resetprogress.png"/>RESET PROGRESS</button>
+<button class="menu-btn" id="btn-exit-game-app" onclick="exitGame()">EXIT GAME</button>
+<button class="menu-btn" id="btn-reset-progress" onclick="resetProgressFromMenu()" style="display:none; color: #ff3333;">RESET PROGRESS</button>
 </div>
 <!-- CHARACTER SELECTION: reuses the existing .overlay-menu look (same as Settings/Game
          Guide). #char-preview-canvas is a dedicated small canvas the character-select preview
@@ -2588,7 +2619,7 @@
 <div class="char-select-name" id="char-select-name">NOVA</div>
 <button aria-label="Next character" class="char-nav-arrow" onclick="charSelectNext()">▶</button>
 </div>
-<button class="menu-btn" onclick="closeCharacterSelect()" style="margin-top: calc(var(--ui-scale) * 20px);"><img alt="" class="inline-icon" src="btn-back.png"/>BACK</button>
+<button class="menu-btn" onclick="closeCharacterSelect()" style="margin-top: calc(var(--ui-scale) * 20px);">BACK</button>
 </div>
 <!-- SETTINGS: reuses the existing .overlay-menu look (same as Game Guide/Mining Zones).
          The MUSIC row simply relocates the pre-existing #btn-music-toggle button and its
@@ -2624,7 +2655,7 @@
 <option value="touch">TOUCH</option>
 </select>
 </div>
-<button class="menu-btn" onclick="closeSettings()" style="margin-top: calc(var(--ui-scale) * 20px);"><img alt="" class="inline-icon" src="btn-back.png"/>BACK</button>
+<button class="menu-btn" onclick="closeSettings()" style="margin-top: calc(var(--ui-scale) * 20px);">BACK</button>
 </div>
 <div class="overlay-menu" id="readme-menu" style="display: none; z-index: 60;">
 <div class="overlay-title" style="font-size: calc(var(--ui-scale) * 34px); margin-bottom: calc(var(--ui-scale) * 6px);">Game Guide</div>
@@ -2827,7 +2858,7 @@
 </div>
 </div>
 <div class="guide-nav-row">
-<button class="menu-btn guide-nav-btn" id="guide-back-btn" onclick="guidePrevPage()"><img alt="" class="inline-icon" src="btn-back.png"/>BACK</button>
+<button class="menu-btn guide-nav-btn" id="guide-back-btn" onclick="guidePrevPage()">BACK</button>
 <button class="menu-btn guide-nav-btn" id="guide-next-btn" onclick="guideNextPage()">NEXT</button>
 </div>
 </div>
@@ -2856,7 +2887,7 @@
              beginNewGameFlow()'s and resetToFreshGameState()'s own comments in game.js for how
              the Extra Level lock and its runtime state get fully cleared either way. -->
 <button class="menu-btn" id="pause-new-game-btn" onclick="newGameFromMenuOrStart()"><img alt="" class="inline-icon" src="futuristic_sci-fi_arcade_game_1_.png"/>NEW GAME</button>
-<button class="menu-btn" id="pause-reset-progress-btn" onclick="resetProgressFromMenu()" style="color: #ff3333;"><img alt="" class="inline-icon" src="btn-resetprogress.png"/>RESET PROGRESS</button>
+<button class="menu-btn" id="pause-reset-progress-btn" onclick="resetProgressFromMenu()" style="color: #ff3333;">RESET PROGRESS</button>
 <!-- EXIT FULL SCREEN / EXIT GAME: available from the Pause Menu during BOTH a Normal
              Level and an Extra Level (this single #pause-menu is shared by both - see
              pauseGame()'s own comment). Unlike MAIN MENU just below, neither button is hidden
@@ -2869,7 +2900,7 @@
              FULLSCREEN button) and exitGame() (same function as the Main Menu's new EXIT GAME
              button, #btn-exit-game-app) - no duplicate fullscreen or exit-game system. -->
 <button class="menu-btn" onclick="exitFullscreenFromMenu()"><img alt="" class="inline-icon" src="futuristic_sci-fi_command_cent.png"/>EXIT FULL SCREEN</button>
-<button class="menu-btn" id="pause-exit-game-btn" onclick="exitGame()"><img alt="" class="inline-icon" src="exit-icon-unused.png"/>EXIT GAME</button>
+<button class="menu-btn" id="pause-exit-game-btn" onclick="exitGame()">EXIT GAME</button>
 <button class="menu-btn" id="pause-main-menu-btn" onclick="goToMainMenu()" style="color: #ff3333;"><img alt="" class="inline-icon" src="futuristic_sci-fi_command_cent.png"/>MAIN MENU</button>
 </div>
 <div class="overlay-menu" id="zones-menu" style="display: none; z-index: 60; background: rgba(5, 5, 8, 0.93);">
@@ -2877,7 +2908,7 @@
 <div class="overlay-title"><img alt="" class="inline-icon" src="futuristic_space_mining_zone_i.png"/>MINING ZONES</div>
 <div class="readme-text" id="zones-depth-readout">Depth: 0m</div>
 <div id="zones-list" style="display:flex; flex-direction:column; gap: calc(var(--ui-scale) * 10px); overflow-y:auto; padding: calc(var(--ui-scale) * 4px);"></div>
-<button class="menu-btn" onclick="closeZonesMenu()"><img alt="" class="inline-icon" src="btn-back.png"/>BACK</button>
+<button class="menu-btn" onclick="closeZonesMenu()">BACK</button>
 </div>
 </div>
 <div class="overlay-menu" id="od-select-menu" style="display: none;">
@@ -2893,7 +2924,7 @@
 <div class="overlay-title" style="color: #39ff14;">MISSION COMPLETE!</div>
 <div class="readme-text" style="max-width: min(520px, 85vw);">The girl has mined <strong style="color:#ffcc00;">$1 Trillion</strong> in resources and shipped it all back to Earth. Her cargo runs have supercharged humanity's technology for generations to come.</div>
 <div class="readme-text" style="font-size: calc(var(--ui-scale) * 22px); color: #ffcc00; font-weight: bold; margin-top: calc(var(--ui-scale) * -10px);">TOTAL MONEY EARNED: <span id="win-final-score">$0</span></div>
-<button class="menu-btn" onclick="restartGame()" style="color: #39ff14;"><img alt="" class="inline-icon" src="btn-playagain.png"/>PLAY AGAIN</button>
+<button class="menu-btn" onclick="restartGame()" style="color: #39ff14;">PLAY AGAIN</button>
 </div>
 <!-- GAMEPLAY HUD SKILL TREE BUTTON: additional direct access to the same Skill Tree system
          opened by the Pause Menu's "SKILL TREE" button below - not a separate/duplicate system,
@@ -2970,7 +3001,7 @@
 
 </div>
 <div id="special-items-hud">
-<div class="special-items-title"><img alt="" class="inline-icon" src="hud-earthcargo.png"/>Antique Power Up</div>
+<div class="special-items-title">Antique Power Up</div>
 <div id="special-items-art">
 <!-- DRAGON SKULL HUD ANIMATION: sits inside the big decorative hex/diamond shape at
                  the top-center of this panel's own frame artwork (hud-antique-powerup.png) -
@@ -3082,6 +3113,8 @@
 </div>
 <!-- MOBILE DASH BUTTON: touch-only trigger for the existing dash; must stay the immediate next sibling of #dash-hud (CSS sibling selectors rely on it). -->
 <div id="dash-touch-btn" role="button" aria-label="Dash"><div class="dash-touch-ring"></div><div class="dash-touch-label">DASH</div><div class="dash-touch-sub" id="dash-touch-sub">READY</div></div>
+<!-- MOBILE EXTRA-LEVEL MOVEMENT PAD: touch-only joystick for the Jet; must stay after #dash-hud (CSS sibling selector shows it only while the Extra Level has #dash-hud hidden). -->
+<div id="jet-touch-pad" role="application" aria-label="Move Jet"><div class="jet-pad-ring"></div><div class="jet-pad-knob" id="jet-pad-knob"></div></div>
 <!-- SHIP LEVEL / ENERGY HUD: reskinned onto the new pill-shaped frame art
          (hud-ship-level-energy.png) instead of the old plain dark box.
          Same IDs as before (lbl-level/lbl-xp/xp-bar/lbl-energy/energy-bar) so none of the
@@ -3183,7 +3216,7 @@
 <button class="story-btn" id="story-btn-hide" onclick="storyToggleHideUI(event)" type="button">👁 HIDE UI</button>
 <button class="story-btn" onclick="storySkip(event)" type="button">⏭ SKIP</button>
 </div>
-<button class="story-btn" id="story-nav-prev" onclick="storyPrev(event)" style="position:absolute; z-index:6;" type="button"><img alt="" class="inline-icon" src="btn-back.png"/>PREV</button>
+<button class="story-btn" id="story-nav-prev" onclick="storyPrev(event)" style="position:absolute; z-index:6;" type="button">PREV</button>
 <div id="story-dialogue-wrap">
 <div id="story-dialogue-box">
 <div id="story-speaker-name"></div>
@@ -5462,9 +5495,9 @@ const GTDTutorial = (function () {
             if (completed) {
                 // COMPLETED LEVEL = LOCKED: the player has already moved on past this zone -
                 // it's done, and (per the TRAVEL button below) can never be entered again.
-                reqLine = `<img class="inline-icon" src="checkmark.png" alt="">Completed`;
+                reqLine = `Completed`;
             } else if (unlocked) {
-                reqLine = `<img class="inline-icon" src="checkmark.png" alt="">Unlocked`;
+                reqLine = `Unlocked`;
             } else if (powerupGateMet && pendingExtraLevel && !extraSurvivalCompleted[pendingExtraLevel]) {
                 // Power-Up requirement already met - the ONLY thing standing between the player
                 // and this zone now is actually winning its preceding Extra Level.
@@ -5636,20 +5669,20 @@ const GTDTutorial = (function () {
         player_hurt: 'player_hurt.wav', player_death: 'player_death.wav', dash: 'dash.wav',
         drill_deploy: 'drill_deploy.wav', drill_hit: 'drill_hit.wav', object_hit: 'object_hit.wav',
         object_destroy: 'object_destroy_base.wav', rocket_launch: 'rocket_launch.wav', explode: 'explode.wav',
-        laser: 'laser.wav', fireball_throw: 'fireball_throw.wav', fire_hit: 'fire_hit.wav',
+        fireball_throw: 'fireball_throw.wav', fire_hit: 'fire_hit.wav',
         axe_swing: 'axe_swing.wav', axe_hit: 'axe_hit.wav', drone_shoot: 'drone_shoot.wav', drone_hit: 'drone_hit.wav',
-        clone_explode: 'clone_explode.wav', power_new_activate: 'power_new_activate.wav', power_new_hit: 'power_new_hit.wav',
-        electric_zap: 'electric_zap.wav', acid_throw: 'acid_throw.wav', acid_splash: 'acid_splash.wav',
+        power_new_activate: 'power_new_activate.wav', power_new_hit: 'power_new_hit.wav',
+        
         overdrive_ready: 'overdrive_ready_base.wav', powerup_spawn: 'powerup_spawn.wav', powerup_warning: 'powerup_warning.wav',
         powerup_expire: 'powerup_expire.wav', powerup_unlock: 'powerup_unlock.wav',
-        dragonskull_pickup: 'dragonskull_pickup.wav', dragonskull_activate: 'dragonskull_activate.wav',
-        dragonskull_attack: 'dragonskull_attack.wav', dragonskull_hit: 'dragonskull_hit.wav',
-        dragonskull_warning: 'dragonskull_warning.wav', dragonskull_expire: 'dragonskull_expire.wav',
+        
+        
+        
         // Dedicated Dragon Skull "charging/mouth-opening" cue (plays just before each volley)
         // and dedicated Dragon Fire "launch" + "traveling" cues (layered alongside the skull's
         // own dragonskull_attack roar and dragonskull_hit impact) - see updateAndDrawDragon().
-        dragonskull_charge: 'dragonskull_charge.wav',
-        dragonfire_launch: 'dragonfire_launch.wav', dragonfire_travel: 'dragonfire_travel.wav',
+        
+        
         blackhole_damage: 'blackhole_damage.wav',
         // AUDIT FIX: respawnPlayerFromBlackHole() previously had no sound of its own at all -
         // player_death/blackhole_damage cover the capture itself, but coming back out the other
@@ -5662,7 +5695,7 @@ const GTDTutorial = (function () {
         // win fanfare separate from the routine levelup jingle, a soft story scene-transition
         // whoosh, and a Collector-deploy cue). All follow the exact same SFX_BASE_PATH
         // ('assets/audio/sfx/') convention as every entry above - no new folder/system.
-        mirror_matrix_launch: 'mirror_matrix_launch.wav', mirror_matrix_attach: 'mirror_matrix_attach.wav',
+        
         overdrive_cooldown_ready: 'overdrive_cooldown_ready.wav', win_fanfare: 'win_fanfare.wav',
         story_transition: 'story_transition.wav', collector_deploy: 'collector_deploy.wav',
     };
@@ -9078,29 +9111,9 @@ const GTDTutorial = (function () {
         { id: 4, frames: ["object-04-frame-1.png", "object-04-frame-2.png", "object-04-frame-3.png", "object-04-frame-4.png", "object-04-frame-5.png"], level: 1, scale: 1.2 },
         { id: 5, frames: ["object-05-frame-1.png", "object-05-frame-2.png", "object-05-frame-3.png", "object-05-frame-4.png", "object-05-frame-5.png"], level: 1, scale: 1.2 },
         // Zone 2 (Crimson Rift): level 2
-        { id: 6, frames: ["object-06-frame-1.png", "object-06-frame-2.png", "object-06-frame-3.png", "object-06-frame-4.png", "object-06-frame-5.png"], level: 2, scale: 1.2 },
-        { id: 7, frames: ["object-07-frame-1.png", "object-07-frame-2.png", "object-07-frame-3.png", "object-07-frame-4.png", "object-07-frame-5.png"], level: 2, scale: 1.091 },
-        { id: 8, frames: ["object-08-frame-1.png", "object-08-frame-2.png", "object-08-frame-3.png", "object-08-frame-4.png", "object-08-frame-5.png"], level: 2, scale: 1.099 },
-        { id: 9, frames: ["object-09-frame-1.png", "object-09-frame-2.png", "object-09-frame-3.png", "object-09-frame-4.png", "object-09-frame-5.png"], level: 2, scale: 1.2 },
-        { id: 10, frames: ["object-10-frame-1.png", "object-10-frame-2.png", "object-10-frame-3.png", "object-10-frame-4.png", "object-10-frame-5.png"], level: 2, scale: 1.169 },
         // Zone 3 (Frozen Expanse): level 3
-        { id: 11, frames: ["object-11-frame-1.png", "object-11-frame-2.png", "object-11-frame-3.png", "object-11-frame-4.png", "object-11-frame-5.png"], level: 3, scale: 1.14 },
-        { id: 12, frames: ["object-12-frame-1.png", "object-12-frame-2.png", "object-12-frame-3.png", "object-12-frame-4.png", "object-12-frame-5.png"], level: 3, scale: 1.112 },
-        { id: 13, frames: ["object-13-frame-1.png", "object-13-frame-2.png", "object-13-frame-3.png", "object-13-frame-4.png", "object-13-frame-5.png"], level: 3, scale: 1.154 },
-        { id: 14, frames: ["object-14-frame-1.png", "object-14-frame-2.png", "object-14-frame-3.png", "object-14-frame-4.png", "object-14-frame-5.png"], level: 3, scale: 1.06 },
-        { id: 15, frames: ["object-15-frame-1.png", "object-15-frame-2.png", "object-15-frame-3.png", "object-15-frame-4.png", "object-15-frame-5.png"], level: 3, scale: 1.112 },
         // Zone 4 (Volcanic Core): level 4
-        { id: 16, frames: ["object-16-frame-1.png", "object-16-frame-2.png", "object-16-frame-3.png", "object-16-frame-4.png", "object-16-frame-5.png"], level: 4, scale: 1.036 },
-        { id: 17, frames: ["object-17-frame-1.png", "object-17-frame-2.png", "object-17-frame-3.png", "object-17-frame-4.png", "object-17-frame-5.png"], level: 4, scale: 1.112 },
-        { id: 18, frames: ["object-18-frame-1.png", "object-18-frame-2.png", "object-18-frame-3.png", "object-18-frame-4.png", "object-18-frame-5.png"], level: 4, scale: 1.048 },
-        { id: 19, frames: ["object-19-frame-1.png", "object-19-frame-2.png", "object-19-frame-3.png", "object-19-frame-4.png", "object-19-frame-5.png"], level: 4, scale: 1.184 },
-        { id: 20, frames: ["object-20-frame-1.png", "object-20-frame-2.png", "object-20-frame-3.png", "object-20-frame-4.png", "object-20-frame-5.png"], level: 4, scale: 1.2 },
         // Zone 5 (Void Nexus): level 5
-        { id: 21, frames: ["object-21-frame-1.png", "object-21-frame-2.png", "object-21-frame-3.png", "object-21-frame-4.png", "object-21-frame-5.png"], level: 5, scale: 1.169 },
-        { id: 22, frames: ["object-22-frame-1.png", "object-22-frame-2.png", "object-22-frame-3.png", "object-22-frame-4.png", "object-22-frame-5.png"], level: 5, scale: 1.0 },
-        { id: 23, frames: ["object-23-frame-1.png", "object-23-frame-2.png", "object-23-frame-3.png", "object-23-frame-4.png", "object-23-frame-5.png"], level: 5, scale: 1.023 },
-        { id: 24, frames: ["object-24-frame-1.png", "object-24-frame-2.png", "object-24-frame-3.png", "object-24-frame-4.png", "object-24-frame-5.png"], level: 5, scale: 1.06 },
-        { id: 25, frames: ["object-25-frame-1.png", "object-25-frame-2.png", "object-25-frame-3.png", "object-25-frame-4.png", "object-25-frame-5.png"], level: 5, scale: 1.1 },
 ];
     // ============================================================
     // ASSET MANAGER (perf fix: startup connection-pool congestion)
@@ -9415,9 +9428,6 @@ const GTDTutorial = (function () {
     // offline here too, keyed by its own src path, so getVisibleBBox() below never has to fall
     // back to a live canvas read (and its file:// SecurityError) for these images either.
     const SRC_PRECOMPUTED_BBOXES = {
-        "cargo-3.png": { x: 15, y: 12, width: 199, height: 235 },
-        "cargo-4.png": { x: 18, y: 12, width: 197, height: 238 },
-        "cargo-5.png": { x: 22, y: 13, width: 175, height: 246 },
         "axe-frame-0.png": { x: 8, y: 10, width: 81, height: 77 },
         "axe-frame-1.png": { x: 11, y: 11, width: 73, height: 76 },
         "axe-frame-2.png": { x: 18, y: 7, width: 62, height: 79 },
@@ -11084,7 +11094,7 @@ const GTDTutorial = (function () {
         container.innerHTML = '';
         odSelectReadyKeys.forEach(key => {
             let od = overdrives[key];
-            let icon = odIconMap[key] || '<img class="icon-fill" src="hud-score.png" alt="">';
+            let icon = odIconMap[key] || '';
             let card = document.createElement('div');
             card.className = 'od-select-card';
             // OLD-OUTLINE REMOVED: this card no longer has a solid-color CSS border to tint
@@ -12248,6 +12258,12 @@ const GTDTutorial = (function () {
     // needing to special-case individual button ids.
     let touchPointer = { x: 0, y: 0, active: false };
     let touchPointerId = null;
+    // MOBILE EXTRA-LEVEL MOVEMENT PAD state (see setupJetTouchPad below / esMoveJet): x,y are the
+    // direction (-1..1, magnitude already deadzone-/curve-shaped); esTouchVel is the Jet's smoothed touch velocity.
+    // Both stay at 0 on desktop, so desktop movement is untouched.
+    const jetPad = { active: false, x: 0, y: 0 };
+    const esTouchVel = { x: 0, y: 0 };
+    const ES_TOUCH_MAX_SPEED = 3.6; // px/frame at 60fps for touch only (keyboard/mouse stay 6.2)
     // The 8 unit vectors touch movement/facing snaps to, indexed by octant (0 = Right, going
     // clockwise on-screen since +y is down): 0 Right, 1 Down-Right, 2 Down, 3 Down-Left,
     // 4 Left, 5 Up-Left, 6 Up, 7 Up-Right. Diagonals use SQRT1_2 on both axes so diagonal speed
@@ -13442,6 +13458,69 @@ const GTDTutorial = (function () {
             btn.addEventListener('touchcancel', end);
         }
         btn.addEventListener('contextmenu', e => e.preventDefault());
+    })();
+
+    // --- MOBILE EXTRA-LEVEL MOVEMENT PAD: touch-only joystick feeding jetPad (read by esMoveJet). Own pointer id,
+    // so it works alongside the Dash button / canvas touches. Shown via CSS only during Extra Levels. ---
+    (function setupJetTouchPad() {
+        const pad = document.getElementById('jet-touch-pad');
+        const knob = document.getElementById('jet-pad-knob');
+        if (!pad || !knob) return;
+        if (isLikelyMobile) document.documentElement.classList.add('touch-jet-pad-enabled');
+        const DEADZONE = 0.12;
+        let activeId = null;
+        function setKnob(px, py) { knob.style.transform = 'translate(' + px.toFixed(1) + 'px,' + py.toFixed(1) + 'px)'; }
+        function update(clientX, clientY) {
+            const r = pad.getBoundingClientRect();
+            if (r.width <= 0) return;
+            const knobR = knob.getBoundingClientRect().width / 2;
+            const travel = Math.max(1, r.width / 2 - knobR - 2);
+            let dx = clientX - (r.left + r.width / 2), dy = clientY - (r.top + r.height / 2);
+            const len = Math.hypot(dx, dy);
+            const clamped = Math.min(len, travel);
+            const ux = len > 0 ? dx / len : 0, uy = len > 0 ? dy / len : 0;
+            setKnob(ux * clamped, uy * clamped);
+            let m = clamped / travel;
+            m = m <= DEADZONE ? 0 : (m - DEADZONE) / (1 - DEADZONE);
+            m = Math.pow(m, 1.3); // gentler near the centre = finer control
+            jetPad.x = ux * m; jetPad.y = uy * m;
+            jetPad.active = true;
+        }
+        function start(id, x, y, e) {
+            if (activeId !== null) return;
+            if (gameState !== 'EXTRA_SURVIVAL') return;
+            activeId = id;
+            pad.classList.add('jet-pad-active');
+            initAudio();
+            if (e.cancelable) e.preventDefault();
+            update(x, y);
+        }
+        function end(id) {
+            if (id !== activeId) return;
+            activeId = null;
+            jetPad.active = false; jetPad.x = 0; jetPad.y = 0;
+            pad.classList.remove('jet-pad-active');
+            setKnob(0, 0);
+        }
+        if (window.PointerEvent) {
+            pad.addEventListener('pointerdown', e => {
+                if (e.pointerType === 'mouse') return;
+                start(e.pointerId, e.clientX, e.clientY, e);
+                if (activeId === e.pointerId && pad.setPointerCapture) { try { pad.setPointerCapture(e.pointerId); } catch (err) {} }
+            }, { passive: false });
+            pad.addEventListener('pointermove', e => { if (e.pointerId === activeId) { update(e.clientX, e.clientY); if (e.cancelable) e.preventDefault(); } }, { passive: false });
+            const up = e => end(e.pointerId);
+            pad.addEventListener('pointerup', up);
+            pad.addEventListener('pointercancel', up);
+            pad.addEventListener('lostpointercapture', up);
+        } else {
+            pad.addEventListener('touchstart', e => { const t = e.changedTouches[0]; start(t.identifier, t.clientX, t.clientY, e); }, { passive: false });
+            pad.addEventListener('touchmove', e => { for (const t of e.changedTouches) { if (t.identifier === activeId) { update(t.clientX, t.clientY); break; } } if (e.cancelable) e.preventDefault(); }, { passive: false });
+            const tend = e => { for (const t of e.changedTouches) end(t.identifier); };
+            pad.addEventListener('touchend', tend);
+            pad.addEventListener('touchcancel', tend);
+        }
+        pad.addEventListener('contextmenu', e => e.preventDefault());
     })();
 
     // --- DASH TIMER (world-space, follows the Girl) ---------------------------------------
@@ -17366,7 +17445,7 @@ const GTDTutorial = (function () {
 
             if (od.unlocked) {
                 box.classList.remove('locked');
-                if (icon) { icon.innerHTML = odIconMap[key] || '<img class="icon-fill" src="hud-score.png" alt="">'; }
+                if (icon) { icon.innerHTML = odIconMap[key] || ''; }
                 if (justUnlocked) {
                     // Smooth unlock animation: icon pop/flip + a bright radial flash across the
                     // box, auto-removed once the CSS animation finishes so it only plays once.
@@ -21232,18 +21311,40 @@ const GTDTutorial = (function () {
             const vy = r.height > 0 ? (cy - r.top) * (viewportH / r.height) : cy;
             return { x: esCenterX + (vx - esCenterX) / esRenderScale, y: esCenterY + (vy - esCenterY) / esRenderScale };
         };
-        if (touchPointer.active) {
-            // Finger held on the canvas: direct finger-follow. Speed is never below keyboard speed, but
-            // closes most of the gap each frame so it feels attached to the finger (no slow chase).
+        // MOBILE TOUCH MOVEMENT (Extra Level only): slower, smoothed and proportional - precise control instead of the
+        // old fast finger-chase. Driven by the on-screen movement pad, or by a finger held on the canvas. Keyboard /
+        // mouse / gamepad (desktop) never set these inputs, so they skip this branch entirely.
+        let esTouchDriven = false, esDesX = 0, esDesY = 0, esFingerDist = 0;
+        if (jetPad.active) {
+            esTouchDriven = true;
+            esDesX = jetPad.x * ES_TOUCH_MAX_SPEED; esDesY = jetPad.y * ES_TOUCH_MAX_SPEED;
+        } else if (touchPointer.active) {
             const t = esClientToWorld(touchPointer.x, touchPointer.y);
             let ddx = t.x - es.jet.x, ddy = t.y - es.jet.y;
             let dist = Math.hypot(ddx, ddy);
+            esFingerDist = dist;
+            esTouchDriven = true;
             if (dist > 0.5) {
-                let ease = 1 - Math.pow(1 - 0.35, dtScale);
-                let step = Math.min(dist, Math.max(speed, dist * ease));
-                es.jet.x += (ddx / dist) * step;
-                es.jet.y += (ddy / dist) * step;
+                // Speed ramps down as the jet nears the finger (stops precisely on it), capped at the touch max.
+                let sp = Math.min(ES_TOUCH_MAX_SPEED, dist * 0.12);
+                esDesX = (ddx / dist) * sp; esDesY = (ddy / dist) * sp;
             }
+        }
+        const esTouchGlide = !esTouchDriven && (esTouchVel.x !== 0 || esTouchVel.y !== 0);
+        if (esTouchDriven || esTouchGlide) {
+            // Smooth acceleration/deceleration (frame-rate independent).
+            const k = 1 - Math.pow(1 - (esTouchDriven ? 0.18 : 0.28), dtScale);
+            esTouchVel.x += (esDesX - esTouchVel.x) * k;
+            esTouchVel.y += (esDesY - esTouchVel.y) * k;
+            if (!esTouchDriven && Math.hypot(esTouchVel.x, esTouchVel.y) < 0.05) { esTouchVel.x = 0; esTouchVel.y = 0; }
+            let stepX = esTouchVel.x * dtScale, stepY = esTouchVel.y * dtScale;
+            // Finger-follow never overshoots the touch point.
+            if (!jetPad.active && touchPointer.active) {
+                const sm = Math.hypot(stepX, stepY);
+                if (sm > esFingerDist && sm > 0) { stepX *= esFingerDist / sm; stepY *= esFingerDist / sm; }
+            }
+            es.jet.x += stepX;
+            es.jet.y += stepY;
         } else if (controllerMode === 'keyboard' || controllerMode === 'gamepad') {
             if (inputKeys['ArrowLeft'] || inputKeys['KeyA']) dx -= 1;
             if (inputKeys['ArrowRight'] || inputKeys['KeyD']) dx += 1;
