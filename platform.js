@@ -432,7 +432,12 @@
         if (needLogin('Sign in to submit your game.')) return;
         const btn = $('.pg-publish-btn', root);
         const box = $('.pg-verdict-box', root);
-        if (!CONFIG.reviewEndpoint) { toast('Game submission is not connected yet. Please try again later.'); return; }
+        if (!CONFIG.reviewEndpoint) {
+            // Real cause, not a transient state: the review service (pg-review-worker.js) has not been deployed/linked yet.
+            console.error('Submit blocked: CONFIG.reviewEndpoint is empty in platform.js. Deploy pg-review-worker.js and set reviewEndpoint to its URL (see REVIEW_SETUP.md, steps 3-4).');
+            toast('Submission service is not configured on this site yet (review service URL missing). This is a site setup issue, not a problem with your game - your files were not sent.');
+            return;
+        }
         const { allowed, limits, used } = await usageInfo();
         if (!allowed) { toast(`You've used ${used} of ${limits.maxGames} games on the ${limits.label} plan. Upgrade to submit more.`); return; }
         btn.disabled = true; const oldLabel = btn.textContent; btn.textContent = 'Submitting...';
@@ -490,7 +495,12 @@
             root.innerHTML = `<div class="pg-verdict ok">Game submitted successfully.<small>Your game is now pending manual review.</small></div><p style="margin-top:12px;"><b>${esc(meta.title)}</b> <span class="pg-pill warn">Pending Review</span></p><button type="button" class="pg-btn primary" style="margin-top:14px;" onclick="window.pgLoadPlatform().then(m=>m.resetPublish())">Submit another game</button>`;
         } catch (err) {
             console.error('Submit failed:', err);
-            toast(err.message);
+            // Turn raw Firestore/network codes into something understandable; the technical error stays in the console.
+            let msg = err && err.message ? err.message : 'Submission failed.';
+            if (err && err.code === 'permission-denied') msg = 'Database permission denied. Your game was stored for review, but the playable copy could not be saved - the latest firestore.rules may not be published yet. Press Submit again after that; nothing will be duplicated.';
+            else if (err && err.code === 'unavailable') msg = 'The database is temporarily unreachable. Press Submit again - nothing will be duplicated.';
+            else if (err && err.code === 'unauthenticated') msg = 'Authentication required. Sign in again and press Submit.';
+            toast(msg);
             btn.disabled = false; btn.textContent = oldLabel;
         }
     }
