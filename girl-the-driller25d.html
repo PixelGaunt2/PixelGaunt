@@ -2259,14 +2259,15 @@
 /* MOBILE DASH TOUCH BUTTON: round on-screen trigger for the EXISTING dash (window.performGirlDash).
    Hidden by default; only shown when JS adds .touch-dash-enabled to <html> (touch + coarse pointer,
    same test as isLikelyMobile) - never from window size alone. Placed with the same --ui-scale
-   bottom/left system as #level-hud: vertically centred on it, a fixed gap to its right. Also hidden
+   bottom/right system as #minimap-container: vertically centred on the Map, a fixed gap to its LEFT
+   (never over it). Also hidden
    whenever #dash-hud is hidden (Extra Levels) via the sibling selector below. */
 #dash-touch-btn {
   display: none;
   position: absolute; z-index: 10;
   width: calc(var(--ui-scale) * 100px); height: calc(var(--ui-scale) * 100px);
-  bottom: calc(var(--ui-scale) * 22.5px);   /* level-hud: bottom 25 + height 95/2 - 100/2 */
-  left: calc(var(--ui-scale) * 291px);      /* level-hud: left 12 + width 265 + 14 gap */
+  bottom: calc(var(--ui-scale) * 48px);     /* map: bottom 25 + height 146/2 - 100/2 (vertically centred on the Map) */
+  right: calc(var(--ui-scale) * 189px);     /* map: right 25 + width 150 + 14 gap (sits fully left of the Map) */
   border-radius: 50% !important; box-sizing: border-box; padding: 0; margin: 0;
   border: calc(var(--ui-scale) * 4px) solid #00f3ff;
   background: radial-gradient(circle at 50% 40%, #12131f 0%, #06060c 100%);
@@ -2287,6 +2288,33 @@
 #dash-touch-btn.dash-touch-pressed { background: radial-gradient(circle at 50% 40%, #0891a3 0%, #06323a 100%); transform: scale(0.94); }
 #dash-hud.dash-cooling ~ #dash-touch-btn { border-color: #0891a3; }
 #dash-hud.dash-cooling ~ #dash-touch-btn .dash-touch-label { color: #0891a3; }
+/* EXTRA LEVEL TOUCH MOVEMENT CONTROLLER: compact joystick for the Jet. Touch devices only (needs
+   .touch-dash-enabled on <html>, the same coarse-pointer test the Dash button uses) AND only while an Extra
+   Level is running (JS toggles .es-joy-on). Same --ui-scale bottom/left system as #level-hud: vertically
+   centred on it, a fixed gap to its right (the slot the Dash button used to occupy), so it never touches
+   the Ship Level HUD, the Map or the Dash button. Same cyan-on-dark look as the Dash button. */
+#es-joystick {
+  display: none;
+  --es-joy-size: max(calc(var(--ui-scale) * 100px), 64px);
+  position: absolute; z-index: 10;
+  width: var(--es-joy-size); height: var(--es-joy-size);
+  bottom: calc(var(--ui-scale) * 72.5px - var(--es-joy-size) / 2);  /* level-hud centre line */
+  left: calc(var(--ui-scale) * 291px);                              /* level-hud: left 12 + width 265 + 14 gap */
+  border-radius: 50% !important; box-sizing: border-box; padding: 0; margin: 0;
+  border: calc(var(--ui-scale) * 4px) solid #00f3ff;
+  background: radial-gradient(circle at 50% 40%, #12131f 0%, #06060c 100%);
+  box-shadow: 0 0 0 calc(var(--ui-scale) * 2px) #06060c, inset 0 0 0 calc(var(--ui-scale) * 3px) rgba(0,243,255,0.25);
+  pointer-events: auto; touch-action: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none; user-select: none;
+}
+.touch-dash-enabled #es-joystick.es-joy-on { display: block; }
+#es-joystick .es-joy-knob {
+  position: absolute; left: 50%; top: 50%; width: 40%; height: 40%;
+  margin: -20% 0 0 -20%; border-radius: 50% !important; pointer-events: none;
+  background: radial-gradient(circle at 50% 40%, #0891a3 0%, #06323a 100%);
+  border: calc(var(--ui-scale) * 3px) solid #00f3ff; box-sizing: border-box;
+}
+#es-joystick.es-joy-held { background: radial-gradient(circle at 50% 40%, #0b2a33 0%, #06060c 100%); }
 /* PAUSE MENU CROP FIX: #pause-menu (10 buttons + title) is taller than the viewport at most sizes, and
    the shared .overlay-menu is a centered flex column with overflow hidden, so overflow was clipped off
    BOTH the top (PAUSED title) and bottom (last buttons). 'safe center' never lets content start above the
@@ -2570,8 +2598,8 @@
              the Extra Level Pause Menu's own EXIT GAME button below (#pause-exit-game-btn) - not
              two separate exit-game systems. See exitGame()'s own comment for why (no Electron/
              app-close path exists in this browser build to reuse). -->
-<button class="menu-btn" id="btn-exit-game-app" onclick="exitGame()"><img alt="" class="inline-icon" src="exit-icon-unused.png"/>EXIT GAME</button>
-<button class="menu-btn" id="btn-reset-progress" onclick="resetProgressFromMenu()" style="display:none; color: #ff3333;"><img alt="" class="inline-icon" src="btn-resetprogress.png"/>RESET PROGRESS</button>
+<button class="menu-btn" id="btn-exit-game-app" onclick="exitGame()">EXIT GAME</button>
+<button class="menu-btn" id="btn-reset-progress" onclick="resetProgressFromMenu()" style="display:none; color: #ff3333;">RESET PROGRESS</button>
 </div>
 <!-- CHARACTER SELECTION: reuses the existing .overlay-menu look (same as Settings/Game
          Guide). #char-preview-canvas is a dedicated small canvas the character-select preview
@@ -2588,7 +2616,7 @@
 <div class="char-select-name" id="char-select-name">NOVA</div>
 <button aria-label="Next character" class="char-nav-arrow" onclick="charSelectNext()">▶</button>
 </div>
-<button class="menu-btn" onclick="closeCharacterSelect()" style="margin-top: calc(var(--ui-scale) * 20px);"><img alt="" class="inline-icon" src="btn-back.png"/>BACK</button>
+<button class="menu-btn" onclick="closeCharacterSelect()" style="margin-top: calc(var(--ui-scale) * 20px);">BACK</button>
 </div>
 <!-- SETTINGS: reuses the existing .overlay-menu look (same as Game Guide/Mining Zones).
          The MUSIC row simply relocates the pre-existing #btn-music-toggle button and its
@@ -2624,7 +2652,7 @@
 <option value="touch">TOUCH</option>
 </select>
 </div>
-<button class="menu-btn" onclick="closeSettings()" style="margin-top: calc(var(--ui-scale) * 20px);"><img alt="" class="inline-icon" src="btn-back.png"/>BACK</button>
+<button class="menu-btn" onclick="closeSettings()" style="margin-top: calc(var(--ui-scale) * 20px);">BACK</button>
 </div>
 <div class="overlay-menu" id="readme-menu" style="display: none; z-index: 60;">
 <div class="overlay-title" style="font-size: calc(var(--ui-scale) * 34px); margin-bottom: calc(var(--ui-scale) * 6px);">Game Guide</div>
@@ -2827,7 +2855,7 @@
 </div>
 </div>
 <div class="guide-nav-row">
-<button class="menu-btn guide-nav-btn" id="guide-back-btn" onclick="guidePrevPage()"><img alt="" class="inline-icon" src="btn-back.png"/>BACK</button>
+<button class="menu-btn guide-nav-btn" id="guide-back-btn" onclick="guidePrevPage()">BACK</button>
 <button class="menu-btn guide-nav-btn" id="guide-next-btn" onclick="guideNextPage()">NEXT</button>
 </div>
 </div>
@@ -2856,7 +2884,7 @@
              beginNewGameFlow()'s and resetToFreshGameState()'s own comments in game.js for how
              the Extra Level lock and its runtime state get fully cleared either way. -->
 <button class="menu-btn" id="pause-new-game-btn" onclick="newGameFromMenuOrStart()"><img alt="" class="inline-icon" src="futuristic_sci-fi_arcade_game_1_.png"/>NEW GAME</button>
-<button class="menu-btn" id="pause-reset-progress-btn" onclick="resetProgressFromMenu()" style="color: #ff3333;"><img alt="" class="inline-icon" src="btn-resetprogress.png"/>RESET PROGRESS</button>
+<button class="menu-btn" id="pause-reset-progress-btn" onclick="resetProgressFromMenu()" style="color: #ff3333;">RESET PROGRESS</button>
 <!-- EXIT FULL SCREEN / EXIT GAME: available from the Pause Menu during BOTH a Normal
              Level and an Extra Level (this single #pause-menu is shared by both - see
              pauseGame()'s own comment). Unlike MAIN MENU just below, neither button is hidden
@@ -2869,7 +2897,7 @@
              FULLSCREEN button) and exitGame() (same function as the Main Menu's new EXIT GAME
              button, #btn-exit-game-app) - no duplicate fullscreen or exit-game system. -->
 <button class="menu-btn" onclick="exitFullscreenFromMenu()"><img alt="" class="inline-icon" src="futuristic_sci-fi_command_cent.png"/>EXIT FULL SCREEN</button>
-<button class="menu-btn" id="pause-exit-game-btn" onclick="exitGame()"><img alt="" class="inline-icon" src="exit-icon-unused.png"/>EXIT GAME</button>
+<button class="menu-btn" id="pause-exit-game-btn" onclick="exitGame()">EXIT GAME</button>
 <button class="menu-btn" id="pause-main-menu-btn" onclick="goToMainMenu()" style="color: #ff3333;"><img alt="" class="inline-icon" src="futuristic_sci-fi_command_cent.png"/>MAIN MENU</button>
 </div>
 <div class="overlay-menu" id="zones-menu" style="display: none; z-index: 60; background: rgba(5, 5, 8, 0.93);">
@@ -2877,7 +2905,7 @@
 <div class="overlay-title"><img alt="" class="inline-icon" src="futuristic_space_mining_zone_i.png"/>MINING ZONES</div>
 <div class="readme-text" id="zones-depth-readout">Depth: 0m</div>
 <div id="zones-list" style="display:flex; flex-direction:column; gap: calc(var(--ui-scale) * 10px); overflow-y:auto; padding: calc(var(--ui-scale) * 4px);"></div>
-<button class="menu-btn" onclick="closeZonesMenu()"><img alt="" class="inline-icon" src="btn-back.png"/>BACK</button>
+<button class="menu-btn" onclick="closeZonesMenu()">BACK</button>
 </div>
 </div>
 <div class="overlay-menu" id="od-select-menu" style="display: none;">
@@ -2893,7 +2921,7 @@
 <div class="overlay-title" style="color: #39ff14;">MISSION COMPLETE!</div>
 <div class="readme-text" style="max-width: min(520px, 85vw);">The girl has mined <strong style="color:#ffcc00;">$1 Trillion</strong> in resources and shipped it all back to Earth. Her cargo runs have supercharged humanity's technology for generations to come.</div>
 <div class="readme-text" style="font-size: calc(var(--ui-scale) * 22px); color: #ffcc00; font-weight: bold; margin-top: calc(var(--ui-scale) * -10px);">TOTAL MONEY EARNED: <span id="win-final-score">$0</span></div>
-<button class="menu-btn" onclick="restartGame()" style="color: #39ff14;"><img alt="" class="inline-icon" src="btn-playagain.png"/>PLAY AGAIN</button>
+<button class="menu-btn" onclick="restartGame()" style="color: #39ff14;">PLAY AGAIN</button>
 </div>
 <!-- GAMEPLAY HUD SKILL TREE BUTTON: additional direct access to the same Skill Tree system
          opened by the Pause Menu's "SKILL TREE" button below - not a separate/duplicate system,
@@ -2970,7 +2998,7 @@
 
 </div>
 <div id="special-items-hud">
-<div class="special-items-title"><img alt="" class="inline-icon" src="hud-earthcargo.png"/>Antique Power Up</div>
+<div class="special-items-title">Antique Power Up</div>
 <div id="special-items-art">
 <!-- DRAGON SKULL HUD ANIMATION: sits inside the big decorative hex/diamond shape at
                  the top-center of this panel's own frame artwork (hud-antique-powerup.png) -
@@ -3105,6 +3133,8 @@
 </div>
 <!-- Mobile virtual joystick removed per spec - CONTROLLER = TOUCH now uses direct
          touch-drag on the canvas instead (see the touch-drag handlers near isTouchDevice). -->
+<!-- EXTRA LEVEL TOUCH CONTROLLER: shown only on touch devices while an Extra Level is running (see setupEsJoystick). -->
+<div id="es-joystick" role="application" aria-label="Move Jet"><div class="es-joy-knob"></div></div>
 <div data-tree-theme="new" id="menu-upgrades">
 <div class="modal-header">
 <div>
@@ -3183,7 +3213,7 @@
 <button class="story-btn" id="story-btn-hide" onclick="storyToggleHideUI(event)" type="button">👁 HIDE UI</button>
 <button class="story-btn" onclick="storySkip(event)" type="button">⏭ SKIP</button>
 </div>
-<button class="story-btn" id="story-nav-prev" onclick="storyPrev(event)" style="position:absolute; z-index:6;" type="button"><img alt="" class="inline-icon" src="btn-back.png"/>PREV</button>
+<button class="story-btn" id="story-nav-prev" onclick="storyPrev(event)" style="position:absolute; z-index:6;" type="button">PREV</button>
 <div id="story-dialogue-wrap">
 <div id="story-dialogue-box">
 <div id="story-speaker-name"></div>
@@ -5464,9 +5494,9 @@ const GTDTutorial = (function () {
             if (completed) {
                 // COMPLETED LEVEL = LOCKED: the player has already moved on past this zone -
                 // it's done, and (per the TRAVEL button below) can never be entered again.
-                reqLine = `<img class="inline-icon" src="checkmark.png" alt="">Completed`;
+                reqLine = `Completed`;
             } else if (unlocked) {
-                reqLine = `<img class="inline-icon" src="checkmark.png" alt="">Unlocked`;
+                reqLine = `Unlocked`;
             } else if (powerupGateMet && pendingExtraLevel && !extraSurvivalCompleted[pendingExtraLevel]) {
                 // Power-Up requirement already met - the ONLY thing standing between the player
                 // and this zone now is actually winning its preceding Extra Level.
@@ -5638,21 +5668,15 @@ const GTDTutorial = (function () {
         player_hurt: 'player_hurt.wav', player_death: 'player_death.wav', dash: 'dash.wav',
         drill_deploy: 'drill_deploy.wav', drill_hit: 'drill_hit.wav', object_hit: 'object_hit.wav',
         object_destroy: 'object_destroy_base.wav', rocket_launch: 'rocket_launch.wav', explode: 'explode.wav',
-        laser: 'laser.wav', fireball_throw: 'fireball_throw.wav', fire_hit: 'fire_hit.wav',
+        fireball_throw: 'fireball_throw.wav', fire_hit: 'fire_hit.wav',
         axe_swing: 'axe_swing.wav', axe_hit: 'axe_hit.wav', drone_shoot: 'drone_shoot.wav', drone_hit: 'drone_hit.wav',
-        clone_explode: 'clone_explode.wav', power_new_activate: 'power_new_activate.wav', power_new_hit: 'power_new_hit.wav',
-        electric_zap: 'electric_zap.wav', acid_throw: 'acid_throw.wav', acid_splash: 'acid_splash.wav',
-        overdrive_ready: 'overdrive_ready_base.wav', powerup_spawn: 'powerup_spawn.wav', powerup_warning: 'powerup_warning.wav',
+        power_new_activate: 'power_new_activate.wav', power_new_hit: 'power_new_hit.wav',
+                overdrive_ready: 'overdrive_ready_base.wav', powerup_spawn: 'powerup_spawn.wav', powerup_warning: 'powerup_warning.wav',
         powerup_expire: 'powerup_expire.wav', powerup_unlock: 'powerup_unlock.wav',
-        dragonskull_pickup: 'dragonskull_pickup.wav', dragonskull_activate: 'dragonskull_activate.wav',
-        dragonskull_attack: 'dragonskull_attack.wav', dragonskull_hit: 'dragonskull_hit.wav',
-        dragonskull_warning: 'dragonskull_warning.wav', dragonskull_expire: 'dragonskull_expire.wav',
-        // Dedicated Dragon Skull "charging/mouth-opening" cue (plays just before each volley)
+                                // Dedicated Dragon Skull "charging/mouth-opening" cue (plays just before each volley)
         // and dedicated Dragon Fire "launch" + "traveling" cues (layered alongside the skull's
         // own dragonskull_attack roar and dragonskull_hit impact) - see updateAndDrawDragon().
-        dragonskull_charge: 'dragonskull_charge.wav',
-        dragonfire_launch: 'dragonfire_launch.wav', dragonfire_travel: 'dragonfire_travel.wav',
-        blackhole_damage: 'blackhole_damage.wav',
+                        blackhole_damage: 'blackhole_damage.wav',
         // AUDIT FIX: respawnPlayerFromBlackHole() previously had no sound of its own at all -
         // player_death/blackhole_damage cover the capture itself, but coming back out the other
         // side into play was completely silent. New dedicated cue (file expected at the usual
@@ -5664,8 +5688,7 @@ const GTDTutorial = (function () {
         // win fanfare separate from the routine levelup jingle, a soft story scene-transition
         // whoosh, and a Collector-deploy cue). All follow the exact same SFX_BASE_PATH
         // ('assets/audio/sfx/') convention as every entry above - no new folder/system.
-        mirror_matrix_launch: 'mirror_matrix_launch.wav', mirror_matrix_attach: 'mirror_matrix_attach.wav',
-        overdrive_cooldown_ready: 'overdrive_cooldown_ready.wav', win_fanfare: 'win_fanfare.wav',
+                overdrive_cooldown_ready: 'overdrive_cooldown_ready.wav', win_fanfare: 'win_fanfare.wav',
         story_transition: 'story_transition.wav', collector_deploy: 'collector_deploy.wav',
     };
     const LOOP_FILES = { thrust: 'thrust_loop.wav', drill: 'drill_loop.wav', blackhole: 'blackhole_loop.wav' };
@@ -9422,9 +9445,6 @@ const GTDTutorial = (function () {
     // offline here too, keyed by its own src path, so getVisibleBBox() below never has to fall
     // back to a live canvas read (and its file:// SecurityError) for these images either.
     const SRC_PRECOMPUTED_BBOXES = {
-        "cargo-3.png": { x: 15, y: 12, width: 199, height: 235 },
-        "cargo-4.png": { x: 18, y: 12, width: 197, height: 238 },
-        "cargo-5.png": { x: 22, y: 13, width: 175, height: 246 },
         "axe-frame-0.png": { x: 8, y: 10, width: 81, height: 77 },
         "axe-frame-1.png": { x: 11, y: 11, width: 73, height: 76 },
         "axe-frame-2.png": { x: 18, y: 7, width: 62, height: 79 },
@@ -9435,54 +9455,13 @@ const GTDTutorial = (function () {
         "rocket-frame-2.png": { x: 28, y: 3, width: 35, height: 93 },
         "rocket-frame-3.png": { x: 28, y: 2, width: 35, height: 94 },
         "rocket-frame-4.png": { x: 28, y: 0, width: 35, height: 94 },
-        "firesplit-frame-0.png": { x: 25, y: 0, width: 51, height: 85 },
-        "firesplit-frame-1.png": { x: 24, y: 0, width: 52, height: 87 },
-        "firesplit-frame-2.png": { x: 22, y: 0, width: 56, height: 89 },
-        "firesplit-frame-3.png": { x: 34, y: 0, width: 33, height: 79 },
-        "firesplit-frame-4.png": { x: 34, y: 9, width: 33, height: 70 },
-        "drone-frame-0.png": { x: 3, y: 14, width: 91, height: 67 },
-        "drone-frame-1.png": { x: 3, y: 13, width: 91, height: 67 },
-        "drone-frame-2.png": { x: 3, y: 12, width: 91, height: 67 },
-        "drone-frame-3.png": { x: 3, y: 14, width: 91, height: 69 },
-        "drone-frame-4.png": { x: 3, y: 14, width: 91, height: 67 },
-        "collector-1.png": { x: 8, y: 8, width: 79, height: 80 },
-        "collector-2.png": { x: 8, y: 8, width: 79, height: 80 },
-        "collector-3.png": { x: 8, y: 8, width: 80, height: 79 },
-        "collector-4.png": { x: 8, y: 8, width: 80, height: 79 },
-        "collector-5.png": { x: 8, y: 8, width: 79, height: 80 },
         // Acid Sisters -> Laser Drone replacement (see the DRONE+LASER REPLACEMENT block near
         // drawDroneSprite below) - bboxes measured offline from the supplied source PNGs the
         // same way as every other entry in this table, so sizing works instantly without a
         // runtime canvas read.
-        "drone-frame-0.png": { x: 21, y: 31, width: 86, height: 63 },
-        "drone-frame-1.png": { x: 21, y: 31, width: 86, height: 73 },
-        "drone-frame-2.png": { x: 21, y: 29, width: 86, height: 77 },
-        "drone-frame-3.png": { x: 12, y: 29, width: 104, height: 74 },
-        "drone-frame-4.png": { x: 21, y: 30, width: 86, height: 63 },
-        "laser-frame-0.png": { x: 6, y: 43, width: 118, height: 42 },
-        "laser-frame-1.png": { x: 8, y: 45, width: 116, height: 38 },
-        "laser-frame-2.png": { x: 12, y: 49, width: 100, height: 31 },
-        "laser-frame-3.png": { x: 14, y: 53, width: 100, height: 22 },
-        "laser-frame-4.png": { x: 16, y: 49, width: 98, height: 30 },
-        "laser-frame-5.png": { x: 18, y: 53, width: 93, height: 22 },
-        "laser-frame-6.png": { x: 15, y: 53, width: 98, height: 22 },
-        "laser-frame-7.png": { x: 14, y: 55, width: 99, height: 18 },
-        "laser-frame-8.png": { x: 6, y: 43, width: 110, height: 42 },
-        "laser-frame-9.png": { x: 10, y: 48, width: 100, height: 32 },
-        "laser-frame-10.png": { x: 6, y: 43, width: 118, height: 42 },
         // Flower Bomb (formerly named "Mirror Matrix"/"Girl Clones") replacement mechanic (see the
         // FLOWER BOMB block near drawMirrorFlowerSprite below) - bboxes measured offline from the supplied source PNGs,
         // same convention as every other entry in this table.
-        "flower-frame-0.png": { x: 8, y: 6, width: 112, height: 116 },
-        "flower-frame-1.png": { x: 8, y: 7, width: 112, height: 115 },
-        "flower-frame-2.png": { x: 8, y: 8, width: 112, height: 113 },
-        "flower-frame-3.png": { x: 8, y: 9, width: 112, height: 110 },
-        "flower-frame-4.png": { x: 8, y: 11, width: 112, height: 106 },
-        "blast-frame-0.png": { x: 8, y: 6, width: 112, height: 116 },
-        "blast-frame-1.png": { x: 8, y: 6, width: 112, height: 116 },
-        "blast-frame-2.png": { x: 8, y: 6, width: 112, height: 116 },
-        "blast-frame-3.png": { x: 8, y: 6, width: 112, height: 116 },
-        "blast-frame-4.png": { x: 6, y: 6, width: 115, height: 116 },
         // Black Hole hazard sprite replacement (see drawBlackHoleSprite below) - bboxes measured
         // offline from the supplied source PNGs, same convention as every other entry in this
         // table. Frame heights differ slightly (the animation legitimately shrinks/tightens
@@ -10020,13 +9999,13 @@ const GTDTutorial = (function () {
     // so the same +90deg draw-time rotation correction (angle + PI/2) makes the pointed tip
     // lead in the projectile's actual direction of travel, with the fat end trailing behind.
     const FIRESPLIT_FRAME_SRCS = [
-        "firesplit-frame-0.png",
-        "firesplit-frame-1.png",
-        "firesplit-frame-2.png",
-        "firesplit-frame-3.png",
-        "firesplit-frame-4.png",
+        "",
+        "",
+        "",
+        "",
+        "",
     ];
-    const fireSplitFrames = FIRESPLIT_FRAME_SRCS.map(src => { const img = new Image(); img.src = src; return img; });
+    const fireSplitFrames = FIRESPLIT_FRAME_SRCS.map(() => new Image());
     const fireSplitFrameBBoxes = [];
     const FIRESPLIT_TARGET_LENGTH = 40; // in-world pixel length of the fire bolt's long (tip-to-tail) axis
     let fireSplitBaseScale = null;
@@ -10050,21 +10029,21 @@ const GTDTutorial = (function () {
     });
 
     const FIREBALL_FRAME_SRCS = [
-        "fireball-frame-0.png",
-        "fireball-frame-1.png",
-        "fireball-frame-2.png",
-        "fireball-frame-3.png",
-        "fireball-frame-4.png",
+        "",
+        "",
+        "",
+        "",
+        "",
     ];
-    const fireballFrames = FIREBALL_FRAME_SRCS.map(src => { const img = new Image(); img.src = src; return img; });
+    const fireballFrames = FIREBALL_FRAME_SRCS.map(() => new Image());
     const DRONE_FRAME_SRCS = [
-        "drone-frame-0.png",
-        "drone-frame-1.png",
-        "drone-frame-2.png",
-        "drone-frame-3.png",
-        "drone-frame-4.png",
+        "",
+        "",
+        "",
+        "",
+        "",
     ];
-    const droneFrames = DRONE_FRAME_SRCS.map(src => { const img = new Image(); img.src = src; return img; });
+    const droneFrames = DRONE_FRAME_SRCS.map(() => new Image());
     // Drone sprite sizing, same tight-bbox normalization approach as the Drill/Rocket frames
     // above so the transparent padding in each 96x96 canvas doesn't get scaled along with the
     // art. DRONE_TARGET_LENGTH is the MAIN drone's in-world size; the mini attack drones reuse
@@ -10143,13 +10122,13 @@ const GTDTutorial = (function () {
     // sys-acid HUD element id) is intentionally left completely unchanged so existing save data,
     // the skill tree structure, and keybindings all keep working exactly as before.
     const ACID_DRONE_FRAME_SRCS = [
-        "drone-frame-0.png",
-        "drone-frame-1.png",
-        "drone-frame-2.png",
-        "drone-frame-3.png",
-        "drone-frame-4.png",
+        "",
+        "",
+        "",
+        "",
+        "",
     ];
-    const acidDroneFrames = ACID_DRONE_FRAME_SRCS.map(src => { const img = new Image(); img.src = src; return img; });
+    const acidDroneFrames = ACID_DRONE_FRAME_SRCS.map(() => new Image());
     const acidDroneFrameBBoxes = [];
     // DRONE SIZE PASS: 40 (original) -> 26 (too small) -> 32 (nudged back up slightly). Scaling
     // stays off droneArtAspect/box height exactly as before (see drawAcidDroneSprite below), so
@@ -10218,19 +10197,19 @@ const GTDTutorial = (function () {
     }
 
     const ACID_LASER_FRAME_SRCS = [
-        "laser-frame-0.png",
-        "laser-frame-1.png",
-        "laser-frame-2.png",
-        "laser-frame-3.png",
-        "laser-frame-4.png",
-        "laser-frame-5.png",
-        "laser-frame-6.png",
-        "laser-frame-7.png",
-        "laser-frame-8.png",
-        "laser-frame-9.png",
-        "laser-frame-10.png",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
     ];
-    const acidLaserFrames = ACID_LASER_FRAME_SRCS.map(src => { const img = new Image(); img.src = src; return img; });
+    const acidLaserFrames = ACID_LASER_FRAME_SRCS.map(() => new Image());
     const acidLaserFrameBBoxes = [];
     const ACID_LASER_TARGET_LENGTH = 42; // long (tip-to-tail) axis, similar in-world scale to FIRESPLIT_TARGET_LENGTH/ROCKET_TARGET_LENGTH above
     let acidLaserBaseScale = null;
@@ -10293,13 +10272,13 @@ const GTDTutorial = (function () {
     // machine; this block is just the art/scale plumbing, same pattern as every other animated
     // companion above (drawAcidDroneSprite, drawAcidLaserSprite).
     const MIRROR_FLOWER_FRAME_SRCS = [
-        "flower-frame-0.png",
-        "flower-frame-1.png",
-        "flower-frame-2.png",
-        "flower-frame-3.png",
-        "flower-frame-4.png",
+        "",
+        "",
+        "",
+        "",
+        "",
     ];
-    const mirrorFlowerFrames = MIRROR_FLOWER_FRAME_SRCS.map(src => { const img = new Image(); img.src = src; return img; });
+    const mirrorFlowerFrames = MIRROR_FLOWER_FRAME_SRCS.map(() => new Image());
     const mirrorFlowerFrameBBoxes = [];
     const MIRROR_FLOWER_TARGET_LENGTH = 30; // long (vertical) axis in-world size of the thrown bomb while travelling (small/original size)
     const MIRROR_FLOWER_ATTACHED_LENGTH = MIRROR_FLOWER_TARGET_LENGTH * 2; // EXACTLY 2x the throwing size - used once attached, and for the blast that follows
@@ -10360,13 +10339,13 @@ const GTDTutorial = (function () {
     }
 
     const MIRROR_BLAST_FRAME_SRCS = [
-        "blast-frame-0.png",
-        "blast-frame-1.png",
-        "blast-frame-2.png",
-        "blast-frame-3.png",
-        "blast-frame-4.png",
+        "",
+        "",
+        "",
+        "",
+        "",
     ];
-    const mirrorBlastFrames = MIRROR_BLAST_FRAME_SRCS.map(src => { const img = new Image(); img.src = src; return img; });
+    const mirrorBlastFrames = MIRROR_BLAST_FRAME_SRCS.map(() => new Image());
     const mirrorBlastFrameBBoxes = [];
     let mirrorBlastRefHeight = null; // reference height (frame 0) - see drawMirrorBlastSprite
     let mirrorBlastArtAspect = 1;
@@ -10480,11 +10459,11 @@ const GTDTutorial = (function () {
     // the next one - it never attacks, never damages/destroys anything, and never touches the
     // player's own movement speed or controls. Its own movement speed is a fixed constant
     // (COLLECTOR_SPEED below) that no upgrade in the game ever changes.
-    const collector1 = new Image(); collector1.src = "collector-1.png";
-    const collector2 = new Image(); collector2.src = "collector-2.png";
-    const collector3 = new Image(); collector3.src = "collector-3.png";
-    const collector4 = new Image(); collector4.src = "collector-4.png";
-    const collector5 = new Image(); collector5.src = "collector-5.png";
+    const collector1 = new Image();
+    const collector2 = new Image();
+    const collector3 = new Image();
+    const collector4 = new Image();
+    const collector5 = new Image();
 
     // --- NEW POWER-UP ICON PACK (15 user-supplied icons) ---
     // One dedicated <img>-ready data URI per Power-Up, keyed by that Power-Up's treeCategories
@@ -10495,17 +10474,17 @@ const GTDTutorial = (function () {
     // main node - exactly the POWER-UP -> UPGRADE -> UPGRADE identity chain the tree needs.
     const powerupIconSrc = {
         suit: "powerup-suit.png",
-        movement: "powerup-movement.png",
+        movement: "",
         energy: girlSources[1],
         drill: drillSources[1],
-        laser: "powerup-laser.png",
+        laser: "",
         fireball: FIREBALL_FRAME_SRCS[1],
         rocket: ROCKET_FRAME_SRCS[1],
         drone: DRONE_FRAME_SRCS[1],
-        clone: "powerup-clone.png",
-        pulse: "powerup-pulse.png",
-        acidsisters: "powerup-acidsisters.png",
-        shock: "powerup-shock.png",
+        clone: "",
+        pulse: "",
+        acidsisters: "",
+        shock: "",
         firesplit: FIRESPLIT_FRAME_SRCS[1],
         collector: collector2.src,
         pickaxe: AXE_FRAME_SRCS[1],
@@ -10641,13 +10620,13 @@ const GTDTutorial = (function () {
     // 96x96 image's own center (48, 48). That fixed offset is reused below (scaled by whatever
     // size the cannon is actually drawn at) to know exactly where each laser beam must originate.
     const PLASMA_CANNON_FRAME_SRCS = [
-        "plasma-frame-0.png",
+        "",
         powerupIconSrc.laser,
-        "plasma-frame-1.png",
-        "plasma-frame-2.png",
-        "plasma-frame-3.png"
+        "",
+        "",
+        ""
     ];
-    const plasmaCannonFrames = PLASMA_CANNON_FRAME_SRCS.map(src => { const img = new Image(); img.src = src; return img; });
+    const plasmaCannonFrames = PLASMA_CANNON_FRAME_SRCS.map(() => new Image());
     const PLASMA_CANNON_NATIVE_SIZE = 96;
     const PLASMA_CANNON_MUZZLE_OFFSET = 41; // px, at native 96x96 size, along the cannon's facing direction
     const PLASMA_CANNON_GIRL_DIST = 200; // px - exact distance each of the 4 cannons is kept from the Girl
@@ -11091,7 +11070,7 @@ const GTDTutorial = (function () {
         container.innerHTML = '';
         odSelectReadyKeys.forEach(key => {
             let od = overdrives[key];
-            let icon = odIconMap[key] || '<img class="icon-fill" src="hud-score.png" alt="">';
+            let icon = odIconMap[key] || '';
             let card = document.createElement('div');
             card.className = 'od-select-card';
             // OLD-OUTLINE REMOVED: this card no longer has a solid-color CSS border to tint
@@ -13450,6 +13429,82 @@ const GTDTutorial = (function () {
         }
         btn.addEventListener('contextmenu', e => e.preventDefault());
     })();
+
+    // --- EXTRA LEVEL TOUCH JOYSTICK: only produces a direction vector (esJoy, -1..1 on each axis, magnitude
+    // 0..1) that esMoveJet() reads. Touch devices only; visible only while gameState === 'EXTRA_SURVIVAL'. ---
+    const esJoy = { active: false, x: 0, y: 0 };
+    const ES_JOY_DEADZONE = 0.12;
+    const ES_TOUCH_SPEED_MULT = 0.85; // touch Jet top speed as a fraction of the normal (keyboard) Jet speed - single tuning knob
+    const esJoyEl = document.getElementById('es-joystick');
+    const esJoyKnobEl = esJoyEl ? esJoyEl.querySelector('.es-joy-knob') : null;
+    let esJoyPointerId = null;
+    function esJoyReset() {
+        esJoyPointerId = null; esJoy.active = false; esJoy.x = 0; esJoy.y = 0;
+        if (esJoyKnobEl) esJoyKnobEl.style.transform = '';
+        if (esJoyEl) esJoyEl.classList.remove('es-joy-held');
+    }
+    function esJoyUpdate(clientX, clientY) {
+        const r = esJoyEl.getBoundingClientRect();
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const travel = r.width * 0.32; // knob travel radius in px
+        let dx = clientX - cx, dy = clientY - cy;
+        const dist = Math.hypot(dx, dy);
+        let mag = Math.min(1, dist / travel);
+        const ux = dist > 0 ? dx / dist : 0, uy = dist > 0 ? dy / dist : 0;
+        if (esJoyKnobEl) esJoyKnobEl.style.transform = 'translate(' + (ux * mag * travel).toFixed(1) + 'px,' + (uy * mag * travel).toFixed(1) + 'px)';
+        // deadzone, then rescale so output still ramps smoothly from 0 to 1 (fine control near the centre)
+        mag = mag < ES_JOY_DEADZONE ? 0 : (mag - ES_JOY_DEADZONE) / (1 - ES_JOY_DEADZONE);
+        esJoy.x = ux * mag; esJoy.y = uy * mag; esJoy.active = true;
+    }
+    (function setupEsJoystick() {
+        if (!esJoyEl) return;
+        if (isLikelyMobile) document.documentElement.classList.add('touch-dash-enabled');
+        function down(id, cx, cy, e) {
+            if (esJoyPointerId !== null) return;
+            esJoyPointerId = id;
+            esJoyEl.classList.add('es-joy-held');
+            initAudio();
+            if (e.cancelable) e.preventDefault();
+            esJoyUpdate(cx, cy);
+        }
+        if (window.PointerEvent) {
+            esJoyEl.addEventListener('pointerdown', e => {
+                if (e.pointerType === 'mouse') return;
+                if (esJoyEl.setPointerCapture) { try { esJoyEl.setPointerCapture(e.pointerId); } catch (err) {} }
+                down(e.pointerId, e.clientX, e.clientY, e);
+            }, { passive: false });
+            esJoyEl.addEventListener('pointermove', e => {
+                if (e.pointerId !== esJoyPointerId) return;
+                if (e.cancelable) e.preventDefault();
+                esJoyUpdate(e.clientX, e.clientY);
+            }, { passive: false });
+            const up = e => { if (e.pointerId === esJoyPointerId) esJoyReset(); };
+            esJoyEl.addEventListener('pointerup', up);
+            esJoyEl.addEventListener('pointercancel', up);
+            esJoyEl.addEventListener('lostpointercapture', up);
+        } else {
+            esJoyEl.addEventListener('touchstart', e => { const t = e.changedTouches[0]; down(t.identifier, t.clientX, t.clientY, e); }, { passive: false });
+            esJoyEl.addEventListener('touchmove', e => {
+                for (const t of e.changedTouches) { if (t.identifier === esJoyPointerId) { esJoyUpdate(t.clientX, t.clientY); break; } }
+                if (e.cancelable) e.preventDefault();
+            }, { passive: false });
+            const end = e => { for (const t of e.changedTouches) { if (t.identifier === esJoyPointerId) { esJoyReset(); break; } } };
+            esJoyEl.addEventListener('touchend', end);
+            esJoyEl.addEventListener('touchcancel', end);
+        }
+        esJoyEl.addEventListener('contextmenu', e => e.preventDefault());
+    })();
+    // Called every frame from renderFrame: show only during a live Extra Level, release the stick otherwise
+    // (pause, menus, Normal Levels), so a stale touch can never keep steering from behind an overlay.
+    let esJoyShown = false;
+    function updateEsJoystickVisibility() {
+        if (!esJoyEl) return;
+        const want = isLikelyMobile && gameState === 'EXTRA_SURVIVAL';
+        if (want === esJoyShown) return;
+        esJoyShown = want;
+        esJoyEl.classList.toggle('es-joy-on', want);
+        if (!want) esJoyReset();
+    }
 
     // --- DASH TIMER (world-space, follows the Girl) ---------------------------------------
     // Drawn every frame, right after playerShip.draw() (same camera/scale transform she's
@@ -16332,7 +16387,7 @@ const GTDTutorial = (function () {
         shock: "shock.png",
         firesplit: "firesplit.png",
         clone: "clone.png",
-        collector: "collector.png",
+        collector: "",
         pickaxe: "pickaxe.png"
     };
     const treeIcon = {};
@@ -17373,7 +17428,7 @@ const GTDTutorial = (function () {
 
             if (od.unlocked) {
                 box.classList.remove('locked');
-                if (icon) { icon.innerHTML = odIconMap[key] || '<img class="icon-fill" src="hud-score.png" alt="">'; }
+                if (icon) { icon.innerHTML = odIconMap[key] || ''; }
                 if (justUnlocked) {
                     // Smooth unlock animation: icon pop/flip + a bright radial flash across the
                     // box, auto-removed once the CSS animation finishes so it only plays once.
@@ -17698,6 +17753,7 @@ const GTDTutorial = (function () {
         // reward, and because it runs before every early-return below it can't be bypassed by
         // any state path.
         setResourceHudFlyersHidden(gameState !== "PLAYING" && gameState !== "EXTRA_SURVIVAL");
+        updateEsJoystickVisibility(); // touch-only Extra Level joystick: shown during a live Extra Level only
 
         // EXTRA SURVIVAL LEVEL: fully separate self-contained mode - see the
         // dedicated module further down. One early-return gate here is the
@@ -21248,18 +21304,33 @@ const GTDTutorial = (function () {
             const vy = r.height > 0 ? (cy - r.top) * (viewportH / r.height) : cy;
             return { x: esCenterX + (vx - esCenterX) / esRenderScale, y: esCenterY + (vy - esCenterY) / esRenderScale };
         };
-        if (touchPointer.active) {
-            // Finger held on the canvas: direct finger-follow. Speed is never below keyboard speed, but
-            // closes most of the gap each frame so it feels attached to the finger (no slow chase).
-            const t = esClientToWorld(touchPointer.x, touchPointer.y);
-            let ddx = t.x - es.jet.x, ddy = t.y - es.jet.y;
-            let dist = Math.hypot(ddx, ddy);
-            if (dist > 0.5) {
-                let ease = 1 - Math.pow(1 - 0.35, dtScale);
-                let step = Math.min(dist, Math.max(speed, dist * ease));
-                es.jet.x += (ddx / dist) * step;
-                es.jet.y += (ddy / dist) * step;
+        // MOBILE TOUCH SPEED FIX (touch only - keyboard/gamepad/mouse branches below are unchanged): finger-follow
+        // used to close 35% of the gap to the finger EVERY frame (hundreds of px/frame for a distant finger), far
+        // faster than the Jet's keyboard speed. Touch input (joystick or finger on the canvas) now sets a TARGET
+        // velocity capped at ES_TOUCH_SPEED_MULT x the normal Jet speed, and the Jet's velocity eases toward it so
+        // starts/stops/direction changes are smooth. The finger-follow target also slows as the Jet nears the
+        // finger, so it settles precisely instead of overshooting. The joystick takes priority over a canvas finger.
+        const esTouchDriving = esJoy.active || touchPointer.active;
+        if (!esTouchDriving) { es.touchVx = 0; es.touchVy = 0; }
+        if (esTouchDriving) {
+            const touchMax = speed * ES_TOUCH_SPEED_MULT;
+            let tvx = 0, tvy = 0;
+            if (esJoy.active) {
+                tvx = esJoy.x * touchMax; tvy = esJoy.y * touchMax;
+            } else {
+                const t = esClientToWorld(touchPointer.x, touchPointer.y);
+                let ddx = t.x - es.jet.x, ddy = t.y - es.jet.y;
+                let dist = Math.hypot(ddx, ddy);
+                if (dist > 0.5) {
+                    const want = Math.min(touchMax, dist * 0.18 * dtScale);
+                    tvx = (ddx / dist) * want; tvy = (ddy / dist) * want;
+                }
             }
+            const k = 1 - Math.pow(1 - 0.22, dtScale);
+            es.touchVx = (es.touchVx || 0) + (tvx - (es.touchVx || 0)) * k;
+            es.touchVy = (es.touchVy || 0) + (tvy - (es.touchVy || 0)) * k;
+            es.jet.x += es.touchVx;
+            es.jet.y += es.touchVy;
         } else if (controllerMode === 'keyboard' || controllerMode === 'gamepad') {
             if (inputKeys['ArrowLeft'] || inputKeys['KeyA']) dx -= 1;
             if (inputKeys['ArrowRight'] || inputKeys['KeyD']) dx += 1;
