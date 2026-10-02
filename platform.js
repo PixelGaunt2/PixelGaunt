@@ -19,7 +19,7 @@
     const CONFIG = {
         // Base URL of your deployed pg-review-worker.js, no trailing slash (e.g. https://pg-review.yourname.workers.dev).
         // While this is empty, submitting a game shows "not connected yet" - it never pretends to succeed.
-        reviewEndpoint: '',
+        reviewEndpoint: 'https://pg-review.pixelgaunt.workers.dev',
         maxUploadBytes: 40 * 1024 * 1024,      // raw upload
         maxUnpackedBytes: 60 * 1024 * 1024,    // zip-bomb guard
         maxBundleBytes: 6 * 1024 * 1024,       // gzip bundle stored in Firestore (Spark plan)
