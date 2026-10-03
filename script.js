@@ -1,3 +1,5 @@
+// Review service (pg-review-worker.js on Cloudflare). Used by platform.js, firebase-auth.js and subscription.html.
+window.PG_REVIEW_ENDPOINT = 'https://pg-review.pixelgaunt.workers.dev';
         window.isLoggedIn = false;
         
         const games = [
@@ -596,6 +598,7 @@
         // Reads at most 24 published games (metadata + small thumbnail only) and caches them for the
         // session, so browsing costs almost no Firestore reads. Game files are fetched only on play.
         window.pgLoadCommunityGames = function(force) {
+            pingReviewSync();
             if (communityPromise && !force) return communityPromise;
             communityPromise = (async () => {
                 if (!force) {
@@ -625,6 +628,17 @@
             });
             return communityPromise;
         };
+
+        // Lets the review service carry out approvals/rejections you made in the Firebase console (cheap, once per page).
+        let syncPinged = false;
+        function pingReviewSync() {
+            if (syncPinged || !window.PG_REVIEW_ENDPOINT) return; syncPinged = true;
+            try {
+                fetch(window.PG_REVIEW_ENDPOINT + '/sync', { mode: 'cors' }).then(r => r.json()).then(r => {
+                    if (r && r.changed > 0) { try { sessionStorage.removeItem('pgCommunityList'); } catch (e) {} window.pgLoadCommunityGames(true); }   // a game was just published: show it now
+                }).catch(() => {});
+            } catch (e) { /* offline */ }
+        }
 
         function renderCommunity() {
             const shelf = document.getElementById('community-shelf');

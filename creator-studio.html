@@ -73,7 +73,7 @@
 
     <audio id="portal-bgm" loop style="display:none;"></audio>
     <header id="main-header">
-        <div class="logo pixel-font" onclick="window.location.href='index.html'">Pixel <span>Gaunt</span> Studios</div>
+        <div class="logo pixel-font" onclick="window.location.href='index.html'">Pixel <span>Gaunt</span></div>
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false">
             <i class="fas fa-bars"></i>
         </button>
@@ -127,7 +127,7 @@
                     <div class="cs-stat"><b id="cs-ov-games">0 / 1</b><span id="cs-ov-games-label">Games</span></div>
                     <div class="cs-stat"><b id="cs-ov-size">5 MB</b><span>Maximum file size</span></div>
                 </div>
-                <p class="pg-note">This is your Creator Studio - it's only visible to you while signed in. Use <b>Upload Game</b> to submit a game, <b>My Games</b> to follow its review, and <b>Upgrade</b> for 1 game every month and a bigger size limit. Each account can submit 1 game per month, and PixelGaunt accepts 3 games per day in total.</p>
+                <p class="pg-note">This is your Creator Studio - it's only visible to you while signed in. Use <b>Upload Game</b> to submit a game, <b>My Games</b> to follow its review, and <b>Upgrade</b> for 10 games a month (monthly plan) or 12 games a month (yearly plan) at up to 10 MB each. Each account can submit 1 game per day, and PixelGaunt accepts 3 games per day in total.</p>
             </section>
 
             <section class="cs-panel" id="cs-panel-games">
@@ -157,7 +157,7 @@
             </section>
 
             <section class="cs-panel" id="cs-panel-upgrade">
-                <p style="color:#94a3b8; max-width:560px;">You're currently on the <b id="cs-up-plan">Free</b> plan (1 game total, 5 MB max). Subscribers get 1 game every month at up to 10 MB each.</p>
+                <p style="color:#94a3b8; max-width:560px;">You're currently on the <b id="cs-up-plan">Free</b> plan (1 game total, 5 MB max). Subscribers get 10 games a month ($1.99/month) or 12 games a month ($10.99/year), up to 10 MB each.</p>
                 <button class="nav-btn primary pg-btn" style="margin-top:14px;" onclick="window.location.href='subscription.html'">View subscription plans</button>
             </section>
         </div>
@@ -170,7 +170,8 @@
             const guard = document.getElementById('cs-guard');
             const dash = document.getElementById('cs-dashboard');
             const PLAN_LIMITS = { free: { maxGames: 1, maxBytes: 5 * 1024 * 1024, period: null, label: 'Free' },
-                                   subscriber: { maxGames: 1, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber' } };
+                                   subscriber_monthly: { maxGames: 10, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber (monthly)' },
+                                   subscriber_yearly: { maxGames: 12, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber (yearly)' } };
             const STATUS_LABELS = { pending_review: 'Under review · within 7 working days', pending: 'Under review · within 7 working days', published: 'Published', approved: 'Published', rejected: 'Rejected' };
             function fmtMB(b) { return (b / (1024 * 1024)).toFixed(0) + ' MB'; }
 
@@ -264,7 +265,7 @@
             async function refresh() {
                 const user = window.pgFB && window.pgFB.auth.currentUser;
                 if (!user) return;
-                const plan = (window.pgUserPlan === 'subscriber') ? 'subscriber' : 'free';
+                const plan = PLAN_LIMITS[window.pgUserPlan] ? window.pgUserPlan : 'free';
                 const limits = PLAN_LIMITS[plan];
 
                 document.getElementById('cs-avatar').src = user.photoURL || 'https://via.placeholder.com/56';
@@ -274,8 +275,8 @@
                 document.getElementById('cs-ov-size').textContent = fmtMB(limits.maxBytes);
                 document.getElementById('cs-acc-email').textContent = user.email || '-';
                 document.getElementById('cs-acc-plan').textContent = limits.label;
-                document.getElementById('cs-acc-status').textContent = plan === 'subscriber' ? 'Active' : 'Not subscribed';
-                document.getElementById('cs-acc-renewal').textContent = plan === 'subscriber' ? 'Managed on subscription.html' : 'N/A';
+                document.getElementById('cs-acc-status').textContent = plan !== 'free' ? 'Active' : 'Not subscribed';
+                document.getElementById('cs-acc-renewal').textContent = plan !== 'free' ? 'Managed on subscription.html' : 'N/A';
                 document.getElementById('cs-up-plan').textContent = limits.label;
 
                 loadGames(user, limits);

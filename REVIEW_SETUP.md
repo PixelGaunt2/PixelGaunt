@@ -68,22 +68,42 @@ Approve / reject: the Worker exposes `POST /admin/approve` and `POST /admin/reje
 the Drive folder to `Approved` and sets the game to `published`, which is what the Games page lists. This ZIP does not contain an
 admin screen that calls these endpoints.
 
-## 6. Submission limits (enforced by the Worker - cannot be bypassed from the browser)
-- 1 game per account per month (so also max 1 per day). Free plan: 1 game in total.
-- PixelGaunt accepts 3 games per day in total (Pakistan time). The 4th person that day is asked to try tomorrow.
-- A submission that is not delivered (Drive/email failed) does not use up either limit.
-- To change them: `USER_MONTHLY_MAX` / `SITE_DAILY_MAX` in `pg-review-worker.js` (and the text in `LIMITS_INFO` in `platform.js`).
+## 6. Plans and limits (enforced by the Worker - cannot be bypassed from the browser)
+| `users/<uid>.plan` | Games | Max size | Price |
+|---|---|---|---|
+| `free` (or empty) | 1 game in total | 5 MB | - |
+| `subscriber_monthly` | 10 games per month | 10 MB | $1.99 (PKR 549.97) / month |
+| `subscriber_yearly` | 12 games per month = 144 per year | 10 MB | $10.99 (PKR 3,037.26) / year |
 
-## 7. Payments (no gateway) - fill in your details
-Open `subscription.html`, find the block **PIXELGAUNT PAYMENT SETTINGS - EDIT THESE VALUES** and fill in:
-- `whatsapp`: your official WhatsApp number, digits only with country code (0300-1234567 -> `923001234567`).
-- `accounts`: account title, account number (and IBAN for Meezan / Alfalah) for Meezan, Alfalah, Easypaisa, NayaPay, SadaPay.
-  An account left empty is simply not shown. While all are empty, buyers see "our payment accounts are being set up".
-- `prices.*.pkr` (optional): the PKR amount, e.g. `'Rs 560'`. If empty, only the $ price is shown.
+Also: 1 game per account per day, and PixelGaunt accepts 3 games per day in total (Pakistan time).
+A submission that is not delivered (Drive/email failed) does not use up any limit.
+Change them in `pg-review-worker.js` (`PLANS`, `USER_DAILY_MAX`, `SITE_DAILY_MAX`); the texts in `platform.js`, `creator-studio.html` and `subscription.html`.
 
-How a payment is confirmed (Firestore console -> `payments` collection, newest receipt `PG-YYYYMMDD-XXXXXX`):
-1. Match the receipt the buyer sent on WhatsApp with your bank/wallet (transaction ID, amount). The screenshot is in `receiptImage`.
-2. Set the receipt's `status` to `confirmed` (or `rejected`). The buyer sees this on the Subscription page.
-3. Activate the plan: `users/<buyer uid>` -> set field `plan` = `subscriber` (the uid is in the receipt). For a monthly plan,
-   set it back to `free` when it is not renewed.
-4. Review and publish their game as usual.
+## 7. Approving / rejecting a game (Firebase console)
+Every review email shows a **Submission ID**. Firebase -> Firestore Database -> `submissions` -> that ID:
+- **Approve:** set `status` to `approved`. The game is published in **Community games** on the Games page with the creator's name
+  ("by <name>"), the creator sees "Published", and the Drive folder moves to `Approved`.
+- **Reject:** set `status` to `rejected` and `rejection_reason` to your reason. The creator sees "Rejected" and the reason.
+
+You only change that one document. The Worker carries the decision out the next time anyone opens the Games page (at most
+30 seconds apart), and every 5 minutes if you add the Cron Trigger: Cloudflare -> pg-review -> Settings -> Triggers ->
+Cron Triggers -> Add -> `*/5 * * * *`. If something prevents it, the reason is written to `decision_error` on the submission.
+
+## 8. Payments (no gateway)
+Receipts are emailed to **pixelgaunt@gmail.com** with the payment screenshot attached (Worker variable `PAYMENT_EMAIL_TO`
+changes it) and saved in Firestore `payments/<receipt no.>`. Buyers must be logged in to pay and to see their receipts.
+
+Fill in your accounts in `subscription.html` -> block **PIXELGAUNT PAYMENT SETTINGS - EDIT THESE VALUES** (account title,
+number, IBAN for Meezan / Alfalah, Easypaisa, NayaPay, SadaPay). Empty accounts are hidden. `whatsapp` can stay empty; when you
+add the number (digits with country code, e.g. 923001234567) a "Send receipt on WhatsApp" button appears too.
+
+To confirm a payment (the email tells you the exact document names):
+1. Check the money arrived (transaction ID, amount).
+2. `payments/<receipt no.>` -> `status` = `confirmed` (or `rejected`). The buyer sees it on the Subscription page.
+3. `users/<user ID>` -> `plan` = `subscriber_monthly` or `subscriber_yearly`. Set it back to `free` when it is not renewed.
+
+## 9. Checking that the Worker and Drive really work
+- `https://pg-review.pixelgaunt.workers.dev/health` must show `"version": "2026-10-04"`. If it does not, Cloudflare is still
+  running an OLD copy of the Worker: paste the new `pg-review-worker.js` and press Deploy.
+- `https://pg-review.pixelgaunt.workers.dev/health?check=drive` runs a live Google Drive test and tells you exactly what to fix
+  (missing settings, expired token, wrong Google account, Drive API disabled). It must end with `"ok": true`.

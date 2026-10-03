@@ -284,14 +284,22 @@
         // limits and to gate the nav link. Fetched once per login, alongside - never instead
         // of - saveUserProfile, so a Firestore hiccup here still leaves the user validly logged in.
         window.pgUserPlan = null;
+        // users/<uid>.plan: 'free' | 'subscriber_monthly' (10 games/month) | 'subscriber_yearly' (12/month); old 'subscriber' = monthly.
+        function normalizePlan(p) { return p === 'subscriber_yearly' ? 'subscriber_yearly' : (p === 'subscriber_monthly' || p === 'subscriber') ? 'subscriber_monthly' : 'free'; }
         async function loadUserPlan(user) {
             try {
                 const snap = await getDoc(doc(db, "users", user.uid));
                 const data = snap.exists() ? snap.data() : {};
-                window.pgUserPlan = (data.plan === 'subscriber') ? 'subscriber' : 'free';
+                window.pgUserPlan = normalizePlan(data.plan);
             } catch (error) {
-                console.warn("Could not read plan, defaulting to free:", error);
-                window.pgUserPlan = 'free';
+                // Database rules not published yet / offline: ask the review service, which reads it with server access.
+                try {
+                    const q = await (await fetch((window.PG_REVIEW_ENDPOINT || '') + '/quota', { headers: { Authorization: 'Bearer ' + await user.getIdToken() } })).json();
+                    window.pgUserPlan = normalizePlan(q.planKey);
+                } catch (e2) {
+                    console.warn("Could not read plan, defaulting to free:", error);
+                    window.pgUserPlan = 'free';
+                }
             }
             window.dispatchEvent(new CustomEvent('pg-plan', { detail: { plan: window.pgUserPlan } }));
         }

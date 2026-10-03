@@ -56,10 +56,16 @@ const MAX_FILES = 800;
 const MAX_BUNDLE_BYTES = 6 * 1024 * 1024;         // gzip bundle stored in Firestore (same as the site)
 // Same list the in-browser check uses (platform.js BLOCKED_EXT) - keep the two in step.
 const BLOCKED_EXT = ['exe', 'dll', 'bat', 'cmd', 'sh', 'apk', 'msi', 'jar', 'php', 'dmg', 'com', 'scr', 'vbs', 'ps1', 'app', 'deb', 'pkg'];
+// users/<uid>.plan (set by you after confirming a payment): 'free' | 'subscriber_monthly' | 'subscriber_yearly'
+// ('subscriber' from before = monthly). Yearly: 12 games every month = 144 per year.
 const PLANS = {
-    free: { maxGames: 1, maxBytes: 5 * 1024 * 1024, period: null, label: 'free' },
-    subscriber: { maxGames: 1, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'subscriber' }
+    free:               { maxGames: 1,  maxBytes: 5 * 1024 * 1024,  period: null,    label: 'Free' },
+    subscriber_monthly: { maxGames: 10, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber (monthly)' },
+    subscriber_yearly:  { maxGames: 12, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber (yearly)' }
 };
+PLANS.subscriber = PLANS.subscriber_monthly;
+// Prices are fixed here (not taken from the browser) for payment receipts.
+const PRICES = { monthly: '$1.99 (PKR 549.97)', yearly: '$10.99 (PKR 3,037.26)' };
 
 class HttpError extends Error {
     constructor(status, message, extra) { super(message); this.status = status; this.extra = extra || {}; }
@@ -339,7 +345,7 @@ async function inspectZip(buf) {
 /* ------------------------------------------ request handlers ------------------------------------------ */
 async function planFor(env, uid) {
     const u = await fsGet(env, 'users/' + uid);
-    return (u && u.plan === 'subscriber') ? PLANS.subscriber : PLANS.free;   // plan lives in Firestore, editable only by you/the server (see firestore.rules)
+    return (u && PLANS[u.plan]) || PLANS.free;   // plan lives in Firestore, editable only by you/the server (see firestore.rules)
 }
 /* ------------------------------------------ submission limits ------------------------------------------
    Enforced here (not in the browser) with "slot" documents in the private `limits` collection. Creating a document that
@@ -347,7 +353,7 @@ async function planFor(env, uid) {
      user_<uid>_<YYYY-MM>   one per account per calendar month (=> also max 1 per day)
      site_<YYYY-MM-DD>_<n>  n = 1..SITE_DAILY_MAX, for the whole website per day
    Days/months follow Pakistan time (UTC+5). A slot is released again if the submission is not delivered. */
-const USER_MONTHLY_MAX = 1;      // games per account per month
+const USER_DAILY_MAX = 1;         // games per account per day
 const SITE_DAILY_MAX = 3;        // games per day for the whole website
 const PK_OFFSET_MS = 5 * 3600e3;
 const pkDay = (d = new Date()) => new Date(d.getTime() + PK_OFFSET_MS).toISOString().slice(0, 10);
@@ -356,30 +362,43 @@ function nextMonthLabel() {
     const [y, m] = pkMonth().split('-').map(Number);
     return new Date(Date.UTC(m === 12 ? y + 1 : y, m % 12, 1)).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
+const monthSlot = (uid, n) => `user_${uid}_${pkMonth()}` + (n > 1 ? '_' + n : '');   // n=1 keeps the name used before
 async function claimSlot(env, slotId, sid, uid) {   // true = this submission holds it
     if (await fsCreate(env, 'limits', slotId, { submission_id: sid, user_id: uid, at: new Date() })) return true;
     const cur = await fsGet(env, 'limits/' + slotId);
     return !!(cur && cur.submission_id === sid);
 }
-async function claimLimits(env, uid, sid) {
-    const userSlot = `user_${uid}_${pkMonth()}`;
-    if (!(await claimSlot(env, userSlot, sid, uid))) {
-        const holder = await fsGet(env, 'limits/' + userSlot);
-        const prev = holder && holder.submission_id ? await fsGet(env, 'submissions/' + holder.submission_id) : null;
-        if (prev && prev.user_id === uid && prev.status === 'pending_review') {
-            await backfillPreview(env, prev);   // make sure that game is visible in their dashboard
-            throw new HttpError(429, `You have already submitted "${prev.game_name}" this month and it is under review (we reply within 7 working days). Each account can submit 1 game per month - your next one from ${nextMonthLabel()}.`,
-                { limit: 'user_monthly', alreadySubmitted: { submissionId: prev.submission_id, title: prev.game_name, status: prev.status } });
-        }
-        throw new HttpError(429, `Each account can submit ${USER_MONTHLY_MAX} game per month, and you have already submitted this month. You can submit your next game from ${nextMonthLabel()}.`, { limit: 'user_monthly' });
+async function slotHolder(env, slotId) {
+    const h = await fsGet(env, 'limits/' + slotId);
+    return h && h.submission_id ? await fsGet(env, 'submissions/' + h.submission_id) : null;
+}
+async function claimLimits(env, uid, sid, plan) {
+    const held = [];
+    const giveBack = async () => releaseLimits(env, held);
+    // 1 per account per day
+    const daySlot = `userday_${uid}_${pkDay()}`;
+    if (!(await claimSlot(env, daySlot, sid, uid))) {
+        const prev = await slotHolder(env, daySlot);
+        if (prev && prev.status === 'pending_review') await backfillPreview(env, prev);
+        throw new HttpError(429, `Each account can submit ${USER_DAILY_MAX} game per day${prev ? ` and you already submitted "${prev.game_name}" today` : ''}. Please submit your next game tomorrow.`,
+            { limit: 'user_daily', alreadySubmitted: prev ? { submissionId: prev.submission_id, title: prev.game_name, status: prev.status } : undefined });
     }
+    held.push(daySlot);
+    // plan allowance per month (subscribers)
+    if (plan.period === 'month') {
+        let got = null;
+        for (let n = 1; n <= plan.maxGames && !got; n++) if (await claimSlot(env, monthSlot(uid, n), sid, uid)) got = monthSlot(uid, n);
+        if (!got) { await giveBack(); throw new HttpError(429, `You have submitted all ${plan.maxGames} games of your ${plan.label} plan this month. You can submit again from ${nextMonthLabel()}.`, { limit: 'user_monthly' }); }
+        held.push(got);
+    }
+    // whole website per day
     const day = pkDay();
     for (let n = 1; n <= SITE_DAILY_MAX; n++) {
         const siteSlot = `site_${day}_${n}`;
-        if (await claimSlot(env, siteSlot, sid, uid)) return [userSlot, siteSlot];
+        if (await claimSlot(env, siteSlot, sid, uid)) { held.push(siteSlot); return held; }
     }
-    await fsDelete(env, 'limits/' + userSlot);   // the account did not get to submit, so give its monthly slot back
-    throw new HttpError(429, `PixelGaunt accepts ${SITE_DAILY_MAX} game submissions per day and today's are all taken. Please try again tomorrow - your monthly submission is still available.`, { limit: 'site_daily' });
+    await giveBack();   // they did not get to submit, so give their own slots back
+    throw new HttpError(429, `PixelGaunt accepts ${SITE_DAILY_MAX} game submissions per day and today's are all taken. Please try again tomorrow - your own allowance is unchanged.`, { limit: 'site_daily' });
 }
 async function releaseLimits(env, slots) {
     for (const s of slots || []) { try { await fsDelete(env, 'limits/' + s); } catch (e) { console.error('slot release failed', s, e && e.message); } }
@@ -390,9 +409,16 @@ async function siteUsedToday(env) {
     return used;
 }
 async function handleQuota(req, env, cors) {
-    const out = { siteDailyMax: SITE_DAILY_MAX, siteDailyUsed: await siteUsedToday(env), userMonthlyMax: USER_MONTHLY_MAX, day: pkDay() };
+    const out = { siteDailyMax: SITE_DAILY_MAX, siteDailyUsed: await siteUsedToday(env), userDailyMax: USER_DAILY_MAX, day: pkDay() };
     if (req.headers.get('Authorization')) {
-        try { const u = await verifyFirebaseToken(env, req); out.userMonthlyUsed = (await fsGet(env, `limits/user_${u.uid}_${pkMonth()}`)) ? 1 : 0; out.nextMonth = nextMonthLabel(); } catch (e) { /* anonymous view */ }
+        try {
+            const u = await verifyFirebaseToken(env, req); const plan = await planFor(env, u.uid);
+            out.plan = plan.label; out.planKey = Object.keys(PLANS).find(k => PLANS[k] === plan && k !== 'subscriber') || 'free'; out.userDailyUsed = (await fsGet(env, `limits/userday_${u.uid}_${pkDay()}`)) ? 1 : 0;
+            if (plan.period === 'month') {
+                let used = 0; for (let n = 1; n <= plan.maxGames; n++) if (await fsGet(env, 'limits/' + monthSlot(u.uid, n))) used++;
+                Object.assign(out, { userMonthlyMax: plan.maxGames, userMonthlyUsed: used, nextMonth: nextMonthLabel() });
+            }
+        } catch (e) { /* anonymous view */ }
     }
     return json(out, 200, cors);
 }
@@ -445,10 +471,12 @@ async function handleSubmit(req, env, cors) {
                 .sort((a, b) => (Date.parse(b.submitted_at) || 0) - (Date.parse(a.submitted_at) || 0));
             if (subs[0]) {
                 await backfillPreview(env, subs[0]);
-                throw new HttpError(429, `You have already submitted "${subs[0].game_name}" and it is under review (we reply within 7 working days). ${plan.period ? 'Each account can submit 1 game per month - your next one from ' + nextMonthLabel() + '.' : 'The Free plan includes 1 game - subscribe to submit 1 game every month.'}`,
+                throw new HttpError(429, plan.period
+                    ? `You have submitted all ${plan.maxGames} games of your ${plan.label} plan this month ("${subs[0].game_name}" is under review). You can submit again from ${nextMonthLabel()}.`
+                    : `You have already submitted "${subs[0].game_name}" and it is under review (we reply within 7 working days). The Free plan includes 1 game - subscribe for 10 games a month.`,
                     { limit: plan.period ? 'user_monthly' : 'plan_total', alreadySubmitted: { submissionId: subs[0].submission_id || subs[0].id, title: subs[0].game_name, status: subs[0].status } });
             }
-            throw new HttpError(403, `You have used ${used} of ${plan.maxGames} game submission(s) on the ${plan.label} plan${plan.period ? ' this ' + plan.period + '. You can submit your next game from ' + nextMonthLabel() : '. Subscribe to submit 1 game every month'}.`, { limit: plan.period ? 'user_monthly' : 'plan_total' });
+            throw new HttpError(403, `You have used ${used} of ${plan.maxGames} game submission(s) on the ${plan.label} plan${plan.period ? ' this ' + plan.period + '. You can submit your next game from ' + nextMonthLabel() : '. Subscribe for 10 games a month'}.`, { limit: plan.period ? 'user_monthly' : 'plan_total' });
         }
     }
 
@@ -462,7 +490,7 @@ async function handleSubmit(req, env, cors) {
     const entryHash = await sha256hex(enc.encode(entryText));
 
     // 0) Monthly (per account) and daily (whole website) limits - claimed atomically, given back if not delivered.
-    const slots = await claimLimits(env, user.uid, id);
+    const slots = await claimLimits(env, user.uid, id, plan);
     try {
 
     // 1) Record the attempt as 'sending'. Not public, not counted against the plan, and firestore.rules refuse a playable
@@ -591,7 +619,7 @@ async function writePreviewCopy(env, d) {   // never throws
 }
 // For a submission that was delivered before this existed: rebuild the preview copy from the package in Drive.
 async function backfillPreview(env, sub) {
-    if (!sub || sub.status !== 'pending_review' || !sub.drive_file_id) return { ok: false };
+    if (!sub || !['pending_review', 'approved'].includes(sub.status) || !sub.drive_file_id) return { ok: false };
     if (await fsGet(env, 'community_games/' + sub.submission_id)) return { ok: true, existed: true };
     try {
         const res = await driveFetch(env, `https://www.googleapis.com/drive/v3/files/${sub.drive_file_id}?alt=media`);
@@ -692,18 +720,139 @@ async function verifyBundle(env, id, sub) {
     if ((await sha256hex(out)) !== sub.entry_sha256) throw new HttpError(409, 'The playable game does not match the package that was submitted. Reject it and ask the developer to resubmit.');
 }
 
+/* ---------------------------------- payment receipts (no gateway) ----------------------------------
+   The buyer pays by bank / wallet, then saves a receipt (details + screenshot). It is stored in payments/<ref> and emailed
+   to PAYMENT_EMAIL_TO (default pixelgaunt@gmail.com) with the screenshot attached. You confirm it by hand (REVIEW_SETUP.md). */
+const paymentTo = env => String(env.PAYMENT_EMAIL_TO || 'pixelgaunt@gmail.com').trim();
+const REF_RE = /^PG-\d{8}-[A-Z0-9]{6}$/;
+const METHODS = ['Bank account', 'Debit card', 'Credit card', 'Easypaisa', 'JazzCash', 'NayaPay', 'SadaPay'];
+async function sendPaymentEmail(env, p, imgB64, imgType) {
+    if (!env.RESEND_API_KEY) return { ok: false, error: 'Email is not configured on the review service (RESEND_API_KEY missing).' };
+    const rows = [['Receipt no.', p.ref], ['Plan', p.cycle === 'yearly' ? 'Subscriber - Yearly' : 'Subscriber - Monthly'], ['Amount', p.amount], ['Paid with', p.method], ['Paid to', p.paidTo || '-'],
+        ['Sender name', p.senderName], ['Sender account / number', p.senderAccount || '-'], ['Transaction ID', p.txnId], ['PixelGaunt account', p.email + ' (' + p.name + ')'], ['User ID', p.uid], ['Date (UTC)', new Date().toISOString()]];
+    const plan = p.cycle === 'yearly' ? 'subscriber_yearly' : 'subscriber_monthly';
+    const how = `To confirm: check the payment arrived, then in Firebase -> Firestore set payments/${p.ref} status = confirmed, and users/${p.uid} plan = ${plan}.`;
+    const body = {
+        from: String(env.REVIEW_EMAIL_FROM || 'PixelGaunt Review <onboarding@resend.dev>'), to: [paymentTo(env)], reply_to: p.email || undefined,
+        subject: '[PixelGaunt Payment] ' + p.ref + ' - ' + p.amount + ' - ' + (p.name || p.email),
+        text: 'PAYMENT RECEIPT - please confirm\n\n' + rows.map(r => r[0] + ': ' + r[1]).join('\n') + '\n\n' + how + '\n\nThe payment screenshot is attached.',
+        html: '<h2>Payment receipt - please confirm</h2><table cellpadding="6" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">' +
+            rows.map(r => '<tr><td style="border:1px solid #ddd"><b>' + escHtml(r[0]) + '</b></td><td style="border:1px solid #ddd">' + escHtml(r[1]) + '</td></tr>').join('') + '</table><p>' + escHtml(how) + '</p><p>The payment screenshot is attached.</p>',
+        attachments: [{ filename: p.ref + (imgType === 'image/png' ? '.png' : imgType === 'image/webp' ? '.webp' : '.jpg'), content: imgB64 }]
+    };
+    try {
+        const res = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json', 'Idempotency-Key': 'pg-pay-' + p.ref + '-' + (p.attempt || 1) }, body: JSON.stringify(body) });
+        const raw = await res.text(); let j = {}; try { j = JSON.parse(raw); } catch (e) {}
+        if (!res.ok || !j.id) { console.error('payment email failed', res.status, raw); return { ok: false, error: 'Resend rejected the email (HTTP ' + res.status + (j.message ? ': ' + String(j.message).slice(0, 200) : '') + ').' }; }
+        return { ok: true, id: j.id };
+    } catch (e) { return { ok: false, error: 'Could not reach the email provider (Resend).' }; }
+}
+async function handlePayment(req, env, cors) {
+    const user = await verifyFirebaseToken(env, req);
+    let form; try { form = await req.formData(); } catch (e) { throw new HttpError(400, 'The receipt could not be read.'); }
+    const ref = String(form.get('ref') || ''), cycle = String(form.get('cycle') || '');
+    const method = cleanText(form.get('method'), 30), paidTo = cleanText(form.get('paidTo'), 80), senderName = cleanText(form.get('senderName'), 60);
+    const senderAccount = cleanText(form.get('senderAccount'), 40), txnId = cleanText(form.get('txnId'), 60), img = form.get('receipt');
+    if (!REF_RE.test(ref)) throw new HttpError(400, 'Invalid receipt number.');
+    if (!PRICES[cycle]) throw new HttpError(400, 'Choose monthly or yearly.');
+    if (!METHODS.includes(method)) throw new HttpError(400, 'Choose how you paid.');
+    if (!senderName) throw new HttpError(400, 'Enter the sender name.');
+    if (!txnId) throw new HttpError(400, 'Enter the transaction ID.');
+    if (!img || typeof img === 'string' || !/^image\/(jpeg|png|webp)$/.test(img.type) || img.size > 900000) throw new HttpError(400, 'Attach your payment screenshot (JPG/PNG, under 900 KB).');
+    const u8 = new Uint8Array(await img.arrayBuffer()); let bin = ''; for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+    const b64 = btoa(bin);
+    let rec = await fsGet(env, 'payments/' + ref);
+    if (rec && rec.uid !== user.uid) throw new HttpError(409, 'Receipt number conflict - please try again.');
+    if (rec && rec.email_state === 'sent') return json({ ok: true, duplicate: true, ref, email: { ok: true, to: paymentTo(env) } }, 200, cors);
+    if (!rec) {
+        const today = pkDay(), mine = await fsQueryByField(env, 'payments', 'uid', user.uid);
+        if (mine.filter(p => String(p.created_day) === today).length >= 5) throw new HttpError(429, 'You have sent 5 receipts today. Please wait for us to confirm them, or try again tomorrow.');
+        rec = { ref, uid: user.uid, email: user.email || '', name: user.name || '', plan: cycle === 'yearly' ? 'subscriber_yearly' : 'subscriber_monthly', cycle, amount: PRICES[cycle], method, paidTo, senderName, senderAccount, txnId,
+            receiptImage: 'data:' + img.type + ';base64,' + b64, status: 'pending_verification', createdAt: new Date(), created_day: today, email_state: 'pending', email_attempts: 0 };
+        if (!(await fsCreate(env, 'payments', ref, rec))) throw new HttpError(409, 'Receipt number conflict - please try again.');
+    }
+    const attempt = (Number(rec.email_attempts) || 0) + 1;
+    const mail = await sendPaymentEmail(env, { ...rec, attempt }, b64, img.type);
+    await fsPatch(env, 'payments/' + ref, { email_state: mail.ok ? 'sent' : 'failed', email_error: mail.ok ? '' : mail.error, email_id: mail.id || '', email_attempts: attempt, email_to: paymentTo(env) });
+    return json({ ok: mail.ok, saved: true, ref, amount: rec.amount, email: { ok: mail.ok, to: paymentTo(env), error: mail.ok ? undefined : mail.error },
+        error: mail.ok ? undefined : 'Your receipt was saved, but it could not be emailed to PixelGaunt: ' + mail.error + ' Press Send again.' }, mail.ok ? 200 : 502, cors);
+}
+async function handleMyPayments(req, env, cors) {
+    const user = await verifyFirebaseToken(env, req);
+    const list = (await fsQueryByField(env, 'payments', 'uid', user.uid)).map(p => ({ ref: p.ref, cycle: p.cycle, amount: p.amount, method: p.method, txnId: p.txnId, status: p.status, createdAt: p.createdAt, emailed: p.email_state === 'sent' }))
+        .sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0));
+    return json({ ok: true, payments: list }, 200, cors);
+}
+
+/* ---------------------------------- approve / reject ----------------------------------
+   YOUR WAY TO DECIDE: Firebase console -> Firestore -> submissions -> <Submission ID from the email>:
+     status = approved                                  -> published on the Games page (Community games, "by <creator>")
+     status = rejected  (+ rejection_reason = "...")    -> creator sees "Rejected" and your reason
+   syncDecisions() carries the decision out: builds the playable copy if missing, checks it is exactly the reviewed game,
+   publishes/hides it, and moves the Drive folder to Approved / Rejected. It runs every few minutes (Cron Trigger), and
+   whenever someone opens the Games page (GET /sync), so nothing else is needed. */
+async function applyApproval(env, sub, by) {
+    const id = sub.submission_id || sub.id;
+    const pv = await backfillPreview(env, { ...sub, submission_id: id });
+    if (!pv.ok) throw new HttpError(409, 'The playable copy could not be built from the Drive package' + (pv.error ? ': ' + pv.error : '.'));
+    await verifyBundle(env, id, sub);
+    const warn = [];
+    if (sub.drive_folder_id) {
+        try { const folders = await ensureFolders(env, false); await driveMove(env, sub.drive_folder_id, folders.Approved); }
+        catch (e) { warn.push('Drive folder not moved: ' + (e && e.message)); }
+    }
+    const now = new Date(), game = await fsGet(env, 'community_games/' + id);
+    await fsPatch(env, 'community_games/' + id, { status: 'published', rejectionReason: '', reviewedAt: now, ownerName: (game && game.ownerName) || sub.developer_name || 'Community' });
+    await fsPatch(env, 'submissions/' + id, { status: 'approved', rejection_reason: '', reviewed_at: now, reviewed_by: by || sub.reviewed_by || 'firebase-console', synced_status: 'approved', decision_error: warn.join(' | ') });
+    return { ok: true, warnings: warn };
+}
+async function applyRejection(env, sub, why, by) {
+    const id = sub.submission_id || sub.id; const warn = [];
+    if (sub.drive_folder_id) {
+        try { const folders = await ensureFolders(env, false); await driveMove(env, sub.drive_folder_id, folders.Rejected); }
+        catch (e) { warn.push('Drive folder not moved: ' + (e && e.message)); }
+    }
+    const now = new Date();
+    if (await fsGet(env, 'community_games/' + id)) await fsPatch(env, 'community_games/' + id, { status: 'rejected', rejectionReason: why || '', reviewedAt: now });   // leaves the public list
+    await fsPatch(env, 'submissions/' + id, { status: 'rejected', rejection_reason: why || '', reviewed_at: now, reviewed_by: by || sub.reviewed_by || 'firebase-console', synced_status: 'rejected', decision_error: warn.join(' | ') });
+    return { ok: true, warnings: warn };
+}
+async function syncDecisions(env) {
+    const out = { published: [], rejected: [], errors: [] };
+    for (const sub of await fsQueryByField(env, 'submissions', 'status', 'approved')) {
+        if (sub.synced_status === 'approved') continue;
+        try { await applyApproval(env, sub); out.published.push(sub.game_name); }
+        catch (e) { out.errors.push(sub.id + ': ' + (e && e.message)); try { await fsPatch(env, 'submissions/' + sub.id, { decision_error: String(e && e.message || e).slice(0, 300) }); } catch (x) {} }
+    }
+    for (const sub of await fsQueryByField(env, 'submissions', 'status', 'rejected')) {
+        if (sub.synced_status === 'rejected') continue;
+        try { await applyRejection(env, sub, sub.rejection_reason); out.rejected.push(sub.game_name); }
+        catch (e) { out.errors.push(sub.id + ': ' + (e && e.message)); }
+    }
+    // Someone set the GAME document to 'approved' instead: the Games page lists 'published', so normalise it.
+    for (const g of await fsQueryByField(env, 'community_games', 'status', 'approved')) {
+        try { await fsPatch(env, 'community_games/' + g.id, { status: 'published' }); out.published.push(g.title); } catch (e) { out.errors.push(g.id + ': ' + (e && e.message)); }
+    }
+    if (out.published.length || out.rejected.length || out.errors.length) console.log('syncDecisions', JSON.stringify(out));
+    return out;
+}
+let lastSync = 0;
+async function handleSync(req, env, cors, ctx) {   // public + harmless: it only carries out decisions you already made
+    const gap = env.SYNC_THROTTLE_MS != null ? Number(env.SYNC_THROTTLE_MS) : 30e3;
+    if (Date.now() - lastSync < gap) return json({ ok: true, changed: 0, skipped: true }, 200, cors);
+    lastSync = Date.now();
+    const r = await syncDecisions(env).catch(e => { console.error('sync failed', e && e.message); return { published: [], rejected: [], errors: [String(e && e.message)] }; });
+    return json({ ok: true, changed: r.published.length + r.rejected.length }, 200, cors);
+}
+
 async function handleApprove(req, env, cors) {
     const admin = await requireAdmin(req, env);
     const { submissionId } = await readJson(req);
     const sub = await loadForReview(env, submissionId);
-    if (sub.status === 'approved') return json({ ok: true, status: 'approved', already: true }, 200, cors);
-    if (sub.status !== 'pending_review') throw new HttpError(409, `This submission is ${sub.status}, not pending review.`);
-    await verifyBundle(env, submissionId, sub);
-    if (sub.drive_folder_id) { const folders = await ensureFolders(env, false); await driveMove(env, sub.drive_folder_id, folders.Approved); }
-    const now = new Date();
-    await fsPatch(env, 'community_games/' + submissionId, { status: 'published', rejectionReason: '', reviewedAt: now });   // 'published' is what the Games page query and firestore.rules list
-    await fsPatch(env, 'submissions/' + submissionId, { status: 'approved', rejection_reason: '', reviewed_at: now, reviewed_by: admin.uid });
-    return json({ ok: true, status: 'approved' }, 200, cors);
+    if (sub.status === 'approved' && sub.synced_status === 'approved') return json({ ok: true, status: 'approved', already: true }, 200, cors);
+    if (!['pending_review', 'approved'].includes(sub.status)) throw new HttpError(409, `This submission is ${sub.status}, not pending review.`);
+    const r = await applyApproval(env, { ...sub, submission_id: submissionId }, admin.uid);
+    return json({ ok: true, status: 'approved', warnings: r.warnings }, 200, cors);
 }
 async function handleReject(req, env, cors) {
     const admin = await requireAdmin(req, env);
@@ -711,13 +860,9 @@ async function handleReject(req, env, cors) {
     const why = cleanText(reason, 500);
     if (why.length < 3) throw new HttpError(400, 'A rejection reason is required.');
     const sub = await loadForReview(env, submissionId);
-    if (sub.status === 'rejected') return json({ ok: true, status: 'rejected', already: true }, 200, cors);
-    if (sub.drive_folder_id) { const folders = await ensureFolders(env, false); await driveMove(env, sub.drive_folder_id, folders.Rejected); }
-    const now = new Date();
-    const game = await fsGet(env, 'community_games/' + submissionId);
-    if (game) await fsPatch(env, 'community_games/' + submissionId, { status: 'rejected', rejectionReason: why, reviewedAt: now });   // leaves the public list; owner sees the reason
-    await fsPatch(env, 'submissions/' + submissionId, { status: 'rejected', rejection_reason: why, reviewed_at: now, reviewed_by: admin.uid });
-    return json({ ok: true, status: 'rejected' }, 200, cors);
+    if (sub.status === 'rejected' && sub.synced_status === 'rejected') return json({ ok: true, status: 'rejected', already: true }, 200, cors);
+    const r = await applyRejection(env, { ...sub, submission_id: submissionId }, why, admin.uid);
+    return json({ ok: true, status: 'rejected', warnings: r.warnings }, 200, cors);
 }
 async function handleDownload(req, env, cors) {
     await requireAdmin(req, env);
@@ -734,15 +879,31 @@ async function handleDriveCheck(req, env, cors) {
 }
 
 export default {
-    async fetch(req, env) {
+    // Cron Trigger (Cloudflare -> Worker -> Settings -> Triggers -> Cron: */5 * * * *): carry out your decisions.
+    async scheduled(event, env, ctx) { ctx.waitUntil(syncDecisions(env).catch(e => console.error('scheduled sync failed', e && e.message))); },
+    async fetch(req, env, ctx) {
         const cors = corsHeaders(req, env), url = new URL(req.url);
         if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
         try {
+            if (req.method === 'GET' && url.pathname === '/health' && url.searchParams.get('check') === 'drive') {
+                // Live Drive test (no secrets shown): token works? which account? can it reach the review folders?
+                const r = { configured: !!(env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET && env.GOOGLE_OAUTH_REFRESH_TOKEN) };
+                if (!r.configured) return json({ ok: false, drive: r, fix: 'Add GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET and GOOGLE_OAUTH_REFRESH_TOKEN as Worker secrets (REVIEW_SETUP.md section 2).' }, 200, cors);
+                try { await driveToken(env); r.token = 'ok'; } catch (e) { r.token = 'failed: ' + (e && e.message); return json({ ok: false, drive: r, fix: 'The refresh token was refused by Google. If the OAuth consent screen is in "Testing", tokens expire after 7 days: set it to "In production" and create a new refresh token (REVIEW_SETUP.md section 2).' }, 200, cors); }
+                try { const a = await driveAccount(env); const want = expectedDriveAccount(env); r.account = a.replace(/^(.{3}).*(@.*)$/, '$1***$2'); r.account_matches = a === want; }
+                catch (e) { r.account = 'failed: ' + (e && e.message); return json({ ok: false, drive: r, fix: 'Enable the Google Drive API in Google Cloud for this project.' }, 200, cors); }
+                if (!r.account_matches) return json({ ok: false, drive: r, fix: `The token belongs to a different Google account. Create GOOGLE_OAUTH_REFRESH_TOKEN again while signed in as ${expectedDriveAccount(env)}.` }, 200, cors);
+                try { await ensureFolders(env, true); r.folders = 'ok'; } catch (e) { r.folders = 'failed: ' + (e && e.message); return json({ ok: false, drive: r }, 200, cors); }
+                return json({ ok: true, drive: r, note: 'Drive works. Files go to "' + DRIVE_ROOT + '" in My Drive of the account above.' }, 200, cors);
+            }
             if (req.method === 'GET' && url.pathname === '/health') {
-                return json({ ok: true, configured: { FIREBASE_PROJECT_ID: !!env.FIREBASE_PROJECT_ID, FIREBASE_SA_JSON: !!env.FIREBASE_SA_JSON, GOOGLE_OAUTH_CLIENT_ID: !!env.GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET: !!env.GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN: !!env.GOOGLE_OAUTH_REFRESH_TOKEN, RESEND_API_KEY: !!env.RESEND_API_KEY }, review_email_to: reviewTo(env), drive_expected_account: expectedDriveAccount(env), note: 'Drive (all three GOOGLE_OAUTH_* values) and RESEND_API_KEY are both required for submissions.' }, 200, cors);
+                return json({ ok: true, version: '2026-10-04', configured: { FIREBASE_PROJECT_ID: !!env.FIREBASE_PROJECT_ID, FIREBASE_SA_JSON: !!env.FIREBASE_SA_JSON, GOOGLE_OAUTH_CLIENT_ID: !!env.GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET: !!env.GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN: !!env.GOOGLE_OAUTH_REFRESH_TOKEN, RESEND_API_KEY: !!env.RESEND_API_KEY }, review_email_to: reviewTo(env), drive_expected_account: expectedDriveAccount(env), payment_email_to: paymentTo(env), note: 'Drive (all three GOOGLE_OAUTH_* values) and RESEND_API_KEY are both required for submissions. Live Drive test: /health?check=drive' }, 200, cors);
             }
             if (!env.FIREBASE_PROJECT_ID) throw new HttpError(503, 'Review service is not configured (FIREBASE_PROJECT_ID).');
             if (req.method === 'GET' && url.pathname === '/quota') return await handleQuota(req, env, cors);
+            if (req.method === 'GET' && url.pathname === '/sync') return await handleSync(req, env, cors, ctx);
+            if (req.method === 'POST' && url.pathname === '/payment') return await handlePayment(req, env, cors);
+            if (req.method === 'GET' && url.pathname === '/payments') return await handleMyPayments(req, env, cors);
             if (req.method === 'POST' && url.pathname === '/submit') return await handleSubmit(req, env, cors);
             if (req.method === 'POST' && url.pathname === '/admin/approve') return await handleApprove(req, env, cors);
             if (req.method === 'POST' && url.pathname === '/admin/reject') return await handleReject(req, env, cors);

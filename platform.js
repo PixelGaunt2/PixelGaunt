@@ -19,7 +19,7 @@
     const CONFIG = {
         // Base URL of your deployed pg-review-worker.js, no trailing slash (e.g. https://pg-review.yourname.workers.dev).
         // While this is empty, submitting a game shows "not connected yet" - it never pretends to succeed.
-        reviewEndpoint: 'https://pg-review.pixelgaunt.workers.dev',
+        reviewEndpoint: window.PG_REVIEW_ENDPOINT || 'https://pg-review.pixelgaunt.workers.dev',
         maxUploadBytes: 40 * 1024 * 1024,      // raw upload
         maxUnpackedBytes: 60 * 1024 * 1024,    // zip-bomb guard
         maxBundleBytes: 6 * 1024 * 1024,       // gzip bundle stored in Firestore (Spark plan)
@@ -41,10 +41,11 @@
        profile (users/{uid}.plan) after each login. */
     const PLAN_LIMITS = {
         free: { maxGames: 1, maxBytes: 5 * 1024 * 1024, period: null, label: 'Free' },
-        subscriber: { maxGames: 1, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber' }
+        subscriber_monthly: { maxGames: 10, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber (monthly)' },
+        subscriber_yearly: { maxGames: 12, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber (yearly)' }
     };
     // Also enforced by the review service (pg-review-worker.js), which is the real gate:
-    const LIMITS_INFO = { userMonthly: 1, siteDaily: 3, reviewDays: 7 };
+    const LIMITS_INFO = { userDaily: 1, siteDaily: 3, reviewDays: 7 };
     function planLimits() { return PLAN_LIMITS[window.pgUserPlan] || PLAN_LIMITS.free; }
     function monthStart() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); }
 
@@ -594,7 +595,7 @@
         const { limits, used } = await usageInfo();
         const periodLabel = limits.period === 'month' ? ' this month' : ' total';
         box.innerHTML = `<p class="pg-note"><b>${esc(limits.label)} plan</b> · ${used} / ${limits.maxGames} games${periodLabel} · up to ${fmtBytes(limits.maxBytes)} per game · <a class="pg-link" href="subscription.html" style="font-size:0.82rem;">${limits.label === 'Free' ? 'Upgrade' : 'Manage plan'}</a></p>` +
-            `<p class="pg-note" id="pg-quota-line" style="margin-top:4px;">Limits: ${LIMITS_INFO.userMonthly} game per account per month · PixelGaunt accepts ${LIMITS_INFO.siteDaily} games per day.</p>`;
+            `<p class="pg-note" id="pg-quota-line" style="margin-top:4px;">Limits: ${LIMITS_INFO.userDaily} game per account per day · PixelGaunt accepts ${LIMITS_INFO.siteDaily} games per day in total.</p>`;
         // Live count of today's website-wide submissions (read-only, from the review service).
         try {
             const headers = {}; try { headers.Authorization = 'Bearer ' + await user.getIdToken(); } catch (e) { /* anonymous */ }
@@ -602,7 +603,8 @@
             const line = $('#pg-quota-line', root);
             if (line && typeof q.siteDailyUsed === 'number') {
                 const left = Math.max(q.siteDailyMax - q.siteDailyUsed, 0);
-                line.innerHTML = `Limits: ${q.userMonthlyMax} game per account per month` + (q.userMonthlyUsed ? ` <b>(used - next from ${esc(q.nextMonth || 'next month')})</b>` : '') +
+                line.innerHTML = (q.userMonthlyMax ? `This month: <b>${q.userMonthlyUsed} of ${q.userMonthlyMax}</b> games used · ` : '') +
+                    `${q.userDailyMax || 1} game per account per day` + (q.userDailyUsed ? ' <b>(used today)</b>' : '') +
                     ` · Today: <b>${left} of ${q.siteDailyMax}</b> website submission slot${q.siteDailyMax === 1 ? '' : 's'} left` + (left ? '' : ' - please try again tomorrow');
             }
         } catch (e) { /* review service unreachable: keep the static line */ }
@@ -687,8 +689,8 @@
             if (usage && !usage.allowed) {
                 const { limits, used, pendingTitle } = usage;
                 const msg = pendingTitle
-                    ? `You have already submitted "${pendingTitle}" and it is under review - we reply within ${LIMITS_INFO.reviewDays} working days. Each account can submit ${LIMITS_INFO.userMonthly} game per month.`
-                    : `You've used ${used} of ${limits.maxGames} game(s) on the ${limits.label} plan${limits.period ? ' this month' : ''}. Each account can submit ${LIMITS_INFO.userMonthly} game per month.`;
+                    ? `You have already submitted "${pendingTitle}" and it is under review - we reply within ${LIMITS_INFO.reviewDays} working days. ${limits.period ? '' : 'The Free plan includes 1 game - subscribe for 10 games a month.'}`
+                    : `You've used ${used} of ${limits.maxGames} game(s) on the ${limits.label} plan${limits.period ? ' this month' : ''}.${limits.period ? '' : ' Subscribe for 10 games a month.'}`;
                 const banner = $('#pg-plan-banner', root);
                 if (banner) banner.insertAdjacentHTML('beforeend', `<div class="pg-verdict warn" role="alert" style="margin-top:10px;">Submission limit reached<small>${esc(msg)} <a class="pg-link" href="creator-studio.html#games">View it in your dashboard</a></small></div>`);
                 toast(msg);

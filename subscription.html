@@ -43,7 +43,7 @@
 
     <audio id="portal-bgm" loop style="display:none;"></audio>
     <header id="main-header">
-        <div class="logo pixel-font" onclick="window.location.href='index.html'">Pixel <span>Gaunt</span> Studios</div>
+        <div class="logo pixel-font" onclick="window.location.href='index.html'">Pixel <span>Gaunt</span></div>
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false">
             <i class="fas fa-bars"></i>
         </button>
@@ -99,7 +99,7 @@
                 <p class="pg-price-pkr" style="color: #cbd5e1; font-size: 1rem; font-weight: 700; margin-bottom: 15px;">(PKR 549.97 / month)</p>
 
                 <div class="plan-features">
-                    <div class="feature-item"><i class="fas fa-check"></i> 1 game every month (reviewed within 7 working days)</div>
+                    <div class="feature-item"><i class="fas fa-check"></i> 10 games every month (each reviewed within 7 working days)</div>
                     <div class="feature-item"><i class="fas fa-check"></i> 10 MB maximum per game</div>
                     <div class="feature-item"><i class="fas fa-check"></i> Everything in Free</div>
                 </div>
@@ -113,10 +113,10 @@
                 <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Billed once a year.</p>
                 <p style="color: #fff; font-size: 2.5rem; font-weight: 900; margin-bottom: 4px;">$10.99<span style="font-size: 1rem; color:#64748b;">/yr</span></p>
                 <p class="pg-price-pkr" style="color: #cbd5e1; font-size: 1rem; font-weight: 700; margin-bottom: 6px;">(PKR 3,037.26 / year)</p>
-                <p style="color: #34d399; font-size: 0.9rem; font-weight: 700; margin-bottom: 15px;">You saved $3.98 (PKR 1,099.94)</p>
+                <p style="color: #34d399; font-size: 0.9rem; font-weight: 700; margin-bottom: 15px;">You save $12.89 (PKR 3,562.38) vs paying monthly</p>
 
                 <div class="plan-features">
-                    <div class="feature-item"><i class="fas fa-check"></i> 1 game every month (reviewed within 7 working days)</div>
+                    <div class="feature-item"><i class="fas fa-check"></i> 12 games every month - 144 games a year</div>
                     <div class="feature-item"><i class="fas fa-check"></i> 10 MB maximum per game</div>
                     <div class="feature-item"><i class="fas fa-check"></i> Everything in Free</div>
                 </div>
@@ -181,22 +181,22 @@
             <!-- Step 3: payment details + receipt screenshot -->
             <div class="pay-step" id="pay-step-3">
                 <h3>Your payment details</h3>
-                <p class="pay-sub">We save these as your receipt and use them to confirm your payment.</p>
+                <p class="pay-sub">Your receipt is saved and sent to PixelGaunt (<b>pixelgaunt@gmail.com</b>) so we can confirm your payment.</p>
                 <div class="pay-field"><label for="pay-paid-to">Paid to</label><select id="pay-paid-to"></select></div>
                 <div class="pay-field"><label for="pay-sender">Sender name (as shown in your app / bank)</label><input id="pay-sender" maxlength="60" autocomplete="name"></div>
                 <div class="pay-field"><label for="pay-sender-acc">Your account / mobile number (optional)</label><input id="pay-sender-acc" maxlength="40" inputmode="tel"></div>
                 <div class="pay-field"><label for="pay-txn">Transaction ID / reference number</label><input id="pay-txn" maxlength="60"></div>
                 <div class="pay-field"><label for="pay-shot">Payment screenshot</label><input id="pay-shot" type="file" accept="image/*"></div>
                 <p class="pay-err" id="pay-err-3"></p>
-                <div class="pay-actions"><button class="action-btn" onclick="pgPay.go(2)">Back</button><button class="action-btn" id="pay-save-btn" style="background:var(--neon-cyan);color:#000;border:none;" onclick="pgPay.save()">Save receipt</button></div>
+                <div class="pay-actions"><button class="action-btn" onclick="pgPay.go(2)">Back</button><button class="action-btn" id="pay-save-btn" style="background:var(--neon-cyan);color:#000;border:none;" onclick="pgPay.save()">Send receipt</button></div>
             </div>
             <!-- Step 4: receipt saved -> WhatsApp -->
             <div class="pay-step" id="pay-step-4">
-                <h3>Receipt saved</h3>
-                <p class="pay-sub">Last step: send this receipt to our official WhatsApp so we can confirm your payment. Download it first, then attach it in the WhatsApp chat.</p>
+                <h3>Receipt sent to PixelGaunt</h3>
+                <p class="pay-sub" id="pay-sent-line">Your receipt and payment screenshot were sent to <b>pixelgaunt@gmail.com</b>. We will check your payment and activate your subscription. Keep a copy with the button below.</p>
                 <div class="pay-receipt" id="pay-receipt"></div>
                 <div class="pay-actions"><button class="action-btn" onclick="pgPay.download()"><i class="fas fa-download"></i>&nbsp;Download receipt</button></div>
-                <div class="pay-actions" style="margin-top:10px;"><button class="action-btn pay-wa" id="pay-wa-btn" onclick="pgPay.whatsapp()"><i class="fab fa-whatsapp"></i>&nbsp;Send receipt on WhatsApp</button></div>
+                <div class="pay-actions" id="pay-wa-row" style="margin-top:10px; display:none;"><button class="action-btn pay-wa" id="pay-wa-btn" onclick="pgPay.whatsapp()"><i class="fab fa-whatsapp"></i>&nbsp;Send receipt on WhatsApp</button></div>
                 <p class="pay-sub" style="margin-top:14px;">What happens next: we check your payment, activate your subscription, then review your game and publish it on PixelGaunt. You can see the status of this receipt on this page.</p>
             </div>
         </div>
@@ -209,7 +209,8 @@
        whatsapp: international format, digits only (e.g. 923001234567 for 0300-1234567).
        ===================================================================================== */
     window.PG_PAYMENT = {
-        whatsapp: '',
+        endpoint: window.PG_REVIEW_ENDPOINT || 'https://pg-review.pixelgaunt.workers.dev',   // receipts are emailed to pixelgaunt@gmail.com
+        whatsapp: '',   // optional, for later: when filled, a "Send receipt on WhatsApp" button also appears
         prices: {
             // Shown as "$1.99 (PKR 549.97)". If you change a price, also change it on the plan cards above.
             monthly: { label: 'Subscriber - Monthly', usd: '$1.99',  pkr: 'PKR 549.97' },
@@ -304,6 +305,7 @@
             rnd.forEach(x => r += a[x % a.length]);
             return 'PG-' + d + '-' + r;
         }
+        // The receipt is sent to the review service, which saves it and emails it (with the screenshot) to PixelGaunt.
         async function save() {
             const err = $('pay-err-3'); err.textContent = '';
             const u = window.pgFB && window.pgFB.auth.currentUser;
@@ -311,36 +313,45 @@
             const sender = $('pay-sender').value.trim(), txn = $('pay-txn').value.trim(), file = $('pay-shot').files[0];
             if (!sender) { err.textContent = 'Enter the sender name.'; return; }
             if (!txn) { err.textContent = 'Enter the transaction ID / reference number from your payment.'; return; }
-            if (!file) { err.textContent = 'Add the screenshot of your payment.'; return; }
-            const btn = $('pay-save-btn'); btn.disabled = true; btn.textContent = 'Saving...';
+            if (!file && !st.pendingImage) { err.textContent = 'Add the screenshot of your payment.'; return; }
+            const btn = $('pay-save-btn'); btn.disabled = true; btn.textContent = 'Sending...';
             try {
-                const image = await compress(file);
+                const image = st.pendingImage && !file ? st.pendingImage : await compress(file);
+                st.pendingImage = image;
                 const acc = CFG.accounts.find(a => a.key === $('pay-paid-to').value) || {};
-                const ref = newRef();
+                st.pendingRef = st.pendingRef || newRef();   // kept on retry, so a retry never creates a second receipt
                 const rec = {
-                    ref, uid: u.uid, email: u.email || '', name: u.displayName || '', plan: 'subscriber', cycle: st.cycle,
+                    ref: st.pendingRef, uid: u.uid, email: u.email || '', name: u.displayName || '', cycle: st.cycle,
                     amount: price(), method: METHODS.find(m => m.key === st.method).name, paidTo: acc.name || '', paidToNumber: acc.number || acc.iban || '',
-                    senderName: sender.slice(0, 60), senderAccount: $('pay-sender-acc').value.trim().slice(0, 40), txnId: txn.slice(0, 60),
-                    receiptImage: image, status: 'pending_verification'
+                    senderName: sender.slice(0, 60), senderAccount: $('pay-sender-acc').value.trim().slice(0, 40), txnId: txn.slice(0, 60), receiptImage: image
                 };
-                const { db, fs } = await fb();
-                await withTimeout(fs.setDoc(fs.doc(db, 'payments', ref), { ...rec, createdAt: fs.serverTimestamp() }), 20000);
-                st.receipt = { ...rec, date: new Date() };
+                const fd = new FormData();
+                ['ref', 'cycle', 'method', 'senderName', 'senderAccount', 'txnId'].forEach(k => fd.append(k, rec[k]));
+                fd.append('paidTo', rec.paidTo + (rec.paidToNumber ? ' (' + rec.paidToNumber + ')' : ''));
+                fd.append('receipt', await (await fetch(image)).blob(), rec.ref + '.jpg');
+                const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 45000);
+                let res, data = {};
+                try {
+                    res = await fetch(CFG.endpoint + '/payment', { method: 'POST', headers: { Authorization: 'Bearer ' + await u.getIdToken() }, body: fd, signal: ctrl.signal });
+                    try { data = await res.json(); } catch (e) { /* not JSON */ }
+                } catch (e) { throw new Error('Could not reach PixelGaunt. Check your connection and press Send receipt again - it will not be sent twice.'); }
+                finally { clearTimeout(t); }
+                if (!res.ok || !data.ok) throw new Error(data.error || ('Your receipt could not be sent (HTTP ' + res.status + '). Press Send receipt again.'));
+                st.receipt = { ...rec, amount: data.amount || rec.amount, date: new Date(), emailTo: data.email && data.email.to };
+                st.pendingRef = null; st.pendingImage = null;
                 renderReceipt(); go(4); loadMyPayments();
             } catch (e) {
-                console.error('Receipt save failed:', e);
-                err.textContent = e && e.message === 'timeout' ? 'Could not reach our server. Check your connection and try again.'
-                    : e && e.code === 'permission-denied' ? 'Your receipt could not be saved (permission denied). Please try again later or message us on WhatsApp.'
-                    : (e && e.message) || 'Your receipt could not be saved. Please try again.';
-            } finally { btn.disabled = false; btn.textContent = 'Save receipt'; }
+                console.error('Receipt send failed:', e);
+                err.textContent = (e && e.message) || 'Your receipt could not be sent. Please try again.';
+            } finally { btn.disabled = false; btn.textContent = 'Send receipt'; }
         }
         const receiptRows = r => [['Receipt no.', r.ref], ['Plan', CFG.prices[r.cycle].label], ['Amount', r.amount], ['Paid with', r.method], ['Paid to', r.paidTo + (r.paidToNumber ? ' (' + r.paidToNumber + ')' : '')],
-            ['Sender', r.senderName + (r.senderAccount ? ' (' + r.senderAccount + ')' : '')], ['Transaction ID', r.txnId], ['PixelGaunt account', r.email], ['Date', r.date.toLocaleString()], ['Status', 'Waiting for confirmation']];
+            ['Sender', r.senderName + (r.senderAccount ? ' (' + r.senderAccount + ')' : '')], ['Transaction ID', r.txnId], ['PixelGaunt account', r.email], ['Date', r.date.toLocaleString()], ['Status', 'Sent to PixelGaunt - waiting for confirmation']];
         function renderReceipt() {
             const r = st.receipt;
             $('pay-receipt').innerHTML = receiptRows(r).map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('') + `<img src="${r.receiptImage}" alt="Your payment screenshot">`;
-            $('pay-wa-btn').disabled = !String(CFG.whatsapp || '').replace(/\D/g, '');
-            if ($('pay-wa-btn').disabled) $('pay-wa-btn').title = 'WhatsApp number not set yet';
+            $('pay-wa-row').style.display = String(CFG.whatsapp || '').replace(/\D/g, '') ? 'flex' : 'none';   // only once you add the number
+            if (r.emailTo) $('pay-sent-line').innerHTML = 'Your receipt and payment screenshot were sent to <b>' + esc(r.emailTo) + '</b>. We will check your payment and activate your subscription. Keep a copy with the button below.';
         }
         function download() {
             const r = st.receipt, rows = receiptRows(r), img = new Image();
@@ -369,14 +380,12 @@
             const u = window.pgFB && window.pgFB.auth.currentUser, box = $('pg-my-payments');
             if (!u) { box.style.display = 'none'; return; }
             try {
-                const { db, fs } = await fb();
-                const snap = await withTimeout(fs.getDocs(fs.query(fs.collection(db, 'payments'), fs.where('uid', '==', u.uid))), 15000);
-                const list = snap.docs.map(d => d.data()).sort((a, b) => (b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0) - (a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0));
+                const data = await (await fetch(CFG.endpoint + '/payments', { headers: { Authorization: 'Bearer ' + await u.getIdToken() } })).json();
+                const list = (data && data.payments) || [];
                 if (!list.length) { box.style.display = 'none'; return; }
                 const label = { pending_verification: ['Waiting for confirmation', 'warn'], confirmed: ['Payment confirmed', 'ok'], rejected: ['Not confirmed - contact us', 'bad'] };
-                $('pg-my-payments-list').innerHTML = list.map((p, i) => { const l = label[p.status] || [p.status, 'warn'];
-                    return `<div class="pay-acc"><div class="row"><b>${esc(p.ref)}</b><span class="pg-pill ${l[1]}">${esc(l[0])}</span></div><div class="row"><span>${esc((CFG.prices[p.cycle] || {}).label || p.cycle)} · ${esc(p.amount)} · ${esc(p.method)} · Txn ${esc(p.txnId)}</span>${p.status === 'pending_verification' ? `<button type="button" class="pay-copy" data-i="${i}">WhatsApp</button>` : ''}</div></div>`; }).join('');
-                $('pg-my-payments-list').querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const p = list[+b.dataset.i]; whatsapp({ ...p, date: p.createdAt && p.createdAt.toDate ? p.createdAt.toDate() : new Date() }); });
+                $('pg-my-payments-list').innerHTML = list.map(p => { const l = label[p.status] || [p.status, 'warn'];
+                    return `<div class="pay-acc"><div class="row"><b>${esc(p.ref)}</b><span class="pg-pill ${l[1]}">${esc(l[0])}</span></div><div class="row"><span>${esc((CFG.prices[p.cycle] || {}).label || p.cycle)} · ${esc(p.amount)} · ${esc(p.method)} · Txn ${esc(p.txnId)}${p.emailed ? ' · sent to PixelGaunt' : ' · <b>not sent yet</b>'}</span></div></div>`; }).join('');
                 box.style.display = 'block';
             } catch (e) { console.warn('Payment receipts unavailable:', e); }
         }
@@ -389,17 +398,17 @@
             const pillWrap = document.getElementById('sub-current-plan');
             const pill = document.getElementById('sub-current-plan-pill');
             if (!window.isLoggedIn) { pillWrap.style.display = 'none'; $('pg-my-payments').style.display = 'none'; return; }
-            const plan = (window.pgUserPlan === 'subscriber') ? 'subscriber' : 'free';
+            const plan = (window.pgUserPlan === 'subscriber_monthly' || window.pgUserPlan === 'subscriber_yearly') ? window.pgUserPlan : 'free';
             pillWrap.style.display = 'block';
-            pill.className = 'pg-pill ' + (plan === 'subscriber' ? 'ok' : '');
-            pill.textContent = plan === 'subscriber' ? "You're subscribed" : "You're on the Free plan";
+            pill.className = 'pg-pill ' + (plan !== 'free' ? 'ok' : '');
+            pill.textContent = plan === 'subscriber_yearly' ? "You're subscribed (yearly - 12 games a month)" : plan === 'subscriber_monthly' ? "You're subscribed (monthly - 10 games a month)" : "You're on the Free plan";
             document.getElementById('sub-free-btn').textContent = plan === 'free' ? 'Current Plan' : 'Downgrade to Free';
         }
         window.addEventListener('pg-auth', () => { reflectPlan(); loadMyPayments(); });
         window.addEventListener('pg-plan', reflectPlan);
         window.pgSubscribeClick = function (cycle) {
             if (!window.isLoggedIn) { openModal('login-modal'); return; }
-            st.cycle = cycle === 'yearly' ? 'yearly' : 'monthly'; st.method = null;
+            st.cycle = cycle === 'yearly' ? 'yearly' : 'monthly'; st.method = null; st.pendingRef = null; st.pendingImage = null;
             $('pay-plan-line').innerHTML = `${esc(CFG.prices[st.cycle].label)} &nbsp;·&nbsp; <b>${esc(price())}</b>`;
             ['pay-txn', 'pay-sender-acc', 'pay-shot'].forEach(id => $(id).value = '');
             $('pay-err-1').textContent = ''; $('pay-err-3').textContent = '';
