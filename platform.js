@@ -111,7 +111,13 @@
     function statusInfo(st) {
         if (st === 'approved' || st === 'published') return { label: 'Approved / Published', cls: 'ok' };
         if (st === 'rejected') return { label: 'Rejected', cls: 'bad' };
-        return { label: 'Pending Review', cls: 'warn' };   // pending_review (and the old 'pending')
+        if (st === 'pending_review' || st === 'pending') return { label: 'Pending Review', cls: 'warn' };
+        // Anything else is NOT pending review - never dress a failed/unfinished submission up as one.
+        if (st === 'email_failed') return { label: 'Email Failed', cls: 'bad' };
+        if (st === 'drive_failed') return { label: 'Drive Upload Failed', cls: 'bad' };
+        if (st === 'submission_failed') return { label: 'Submission Failed', cls: 'bad' };
+        if (st === 'sending') return { label: 'Submitting', cls: 'warn' };
+        return { label: String(st || 'Unknown'), cls: 'bad' };
     }
     function newId() {
         if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -453,8 +459,9 @@
             if (gz.length > CONFIG.maxBundleBytes) throw new Error('This game packages to more than ' + fmtBytes(CONFIG.maxBundleBytes) + ' after compression. Inline assets as data: URLs and stay under the limit.');
             const pkgBlob = pubState.sourceZip || buildZip(pubState.files);
 
-            // 1) The review service re-validates the package, enforces the plan from the database, stores it in Drive
-            //    (Pending) and records the submission as pending_review. Re-sending the same id is safe.
+            // 1) The review service re-validates the package, enforces the plan from the database, uploads the complete
+            //    package to Google Drive, emails the review inbox, and answers with the real result of EACH step.
+            //    Only when both succeeded is the submission pending_review. Re-sending the same id retries only what failed.
             const form = new FormData();
             form.append('submissionId', id);
             form.append('title', meta.title);
@@ -466,10 +473,23 @@
                 res = await fetch(CONFIG.reviewEndpoint.replace(/\/+$/, '') + '/submit', { method: 'POST', headers: { Authorization: 'Bearer ' + await user.getIdToken() }, body: form });
             } catch (netErr) { throw new Error('Could not reach the submission service. Check your connection and press Submit again - nothing will be duplicated.'); }
             let data = {}; try { data = await res.json(); } catch (e) { /* non-JSON error page */ }
-            if (!res.ok || !data.ok) {
+            // The ONLY success condition: the review service says both Drive and the email were delivered.
+            const delivered = res.ok && data.ok === true && data.status === 'pending_review';
+            if (!delivered) {
                 const details = Array.isArray(data.details) && data.details.length ? data.details : null;
                 if (details) { box.innerHTML = `<div class="pg-verdict bad">Basic validation failed<small>${details.map(esc).join('<br>')}</small></div>`; }
-                throw new Error(data.error || ('Submission failed (HTTP ' + res.status + ').'));
+                else if (data.drive || data.email) {
+                    // Per-step result straight from the backend (Drive and email are tracked separately).
+                    const line = (name, r, okText) => `<li class="${r && r.ok ? 'pass' : 'fail'}"><span class="g">${r && r.ok ? '✓' : '✗'}</span><span>${esc(name)}: ${esc(r && r.ok ? okText : ((r && r.error) || 'failed'))}</span></li>`;
+                    const title = data.status === 'email_failed' ? 'Email failed - your game is in Google Drive, but the review email was not sent'
+                        : data.status === 'drive_failed' ? 'Drive upload failed - the review email was sent, but your game is not in Google Drive'
+                        : 'Submission could not be completed. Please try again.';
+                    box.innerHTML = `<div class="pg-verdict bad">${esc(title)}<small>Status: ${esc(statusInfo(data.status).label)}. Press Submit again to retry only the failed step - nothing is duplicated.</small></div>` +
+                        `<ul class="pg-checks" style="margin-top:10px;">${line('Google Drive upload', data.drive, 'stored')}${line('Email to ' + ((data.email && data.email.to) || 'pixelgaunt@gmail.com'), data.email, 'sent')}</ul>`;
+                }
+                const e = new Error(data.error || ('Submission failed (HTTP ' + res.status + ').'));
+                e.shown = !!(details || data.drive || data.email);
+                throw e;
             }
 
             // 2) Write the playable bundle under the SAME id. Its status is forced to pending_review by firestore.rules,
@@ -494,15 +514,15 @@
             }));
 
             Core.invalidateCommunity();
-            root.innerHTML = `<div class="pg-verdict ok">Submitted for Review.<small>Your game was sent to PixelGaunt and is now pending manual review.</small></div><p style="margin-top:12px;"><b>${esc(meta.title)}</b> <span class="pg-pill warn">Pending Review</span></p><button type="button" class="pg-btn primary" style="margin-top:14px;" onclick="window.pgLoadPlatform().then(m=>m.resetPublish())">Submit another game</button>`;
+            root.innerHTML = `<div class="pg-verdict ok">Submission successfully sent for manual review.<small>Google Drive: stored. Email to ${esc((data.email && data.email.to) || 'pixelgaunt@gmail.com')}: sent. Submission ID ${esc(id)}.</small></div><p style="margin-top:12px;"><b>${esc(meta.title)}</b> <span class="pg-pill warn">Pending Review</span></p><button type="button" class="pg-btn primary" style="margin-top:14px;" onclick="window.pgLoadPlatform().then(m=>m.resetPublish())">Submit another game</button>`;
         } catch (err) {
             console.error('Submit failed:', err);
             // Turn raw Firestore/network codes into something understandable; the technical error stays in the console.
             let msg = err && err.message ? err.message : 'Submission failed.';
-            if (err && err.code === 'permission-denied') msg = 'Database permission denied. Your game was stored for review, but the playable copy could not be saved - the latest firestore.rules may not be published yet. Press Submit again after that; nothing will be duplicated.';
+            if (err && err.code === 'permission-denied') msg = 'Your game WAS delivered for review (Google Drive + email), but the playable preview copy could not be saved: database permission denied - the latest firestore.rules are not published yet. Press Submit again after that; nothing will be duplicated.';
             else if (err && err.code === 'unavailable') msg = 'The database is temporarily unreachable. Press Submit again - nothing will be duplicated.';
             else if (err && err.code === 'unauthenticated') msg = 'Authentication required. Sign in again and press Submit.';
-            toast(msg);
+            if (!err || !err.shown) toast(msg); else toast('Submission not completed - see the details above.');
             if (pubState) pubState.submitting = false;   // allow a retry (same submission id, so nothing is duplicated)
             btn.disabled = false; btn.textContent = oldLabel;
         }
@@ -639,8 +659,15 @@
         try {
             const { db, fs } = await fb();
             const snap = await fs.getDocs(fs.query(fs.collection(db, 'community_games'), fs.where('ownerUid', '==', user.uid)));
-            if (!snap.docs.length) { box.innerHTML = ''; return; }
-            const rows = snap.docs.map(d => { const g = d.data(); const si = statusInfo(g.status); return `<li><span>${esc(g.title)}${g.status === 'rejected' && g.rejectionReason ? '<small style="display:block;color:#fca5a5;">Reason: ' + esc(g.rejectionReason) + '</small>' : ''}</span><span class="pg-pill ${si.cls}">${esc(si.label)}</span></li>`; }).join('');
+            const items = snap.docs.map(d => d.data());
+            // Submissions that did not finish delivery have no playable copy, so show them from the review record itself.
+            try {
+                const have = new Set(snap.docs.map(d => d.id));
+                const subs = await fs.getDocs(fs.query(fs.collection(db, 'submissions'), fs.where('user_id', '==', user.uid)));
+                subs.docs.forEach(d => { const r = d.data(); if (!have.has(d.id) && r.status !== 'pending_review') items.push({ title: r.game_name, status: r.status, rejectionReason: r.rejection_reason }); });
+            } catch (e) { /* older rules without the submissions read rule: list the games only */ }
+            if (!items.length) { box.innerHTML = ''; return; }
+            const rows = items.map(g => { const si = statusInfo(g.status); return `<li><span>${esc(g.title)}${g.status === 'rejected' && g.rejectionReason ? '<small style="display:block;color:#fca5a5;">Reason: ' + esc(g.rejectionReason) + '</small>' : ''}</span><span class="pg-pill ${si.cls}">${esc(si.label)}</span></li>`; }).join('');
             box.innerHTML = `<div class="pg-shelf-head" style="margin:26px 0 8px;"><div><h2 class="pixel-font" style="font-size:1.1rem;">Your submitted games</h2></div></div><ul class="pg-mine">${rows}</ul>`;
         } catch (err) { console.warn('My games unavailable:', err); }
     }

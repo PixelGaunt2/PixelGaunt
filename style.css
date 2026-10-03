@@ -203,8 +203,6 @@
         .hero-desc { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
         
         .hero-stats-row { display: flex; gap: 30px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px; margin-top: auto; }
-        .hero-play-options { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 18px; margin-bottom: 18px; }
-        .hero-play-options .hero-play-tile { flex: 0 1 clamp(220px, 26vw, 300px); }
         .stat-item { display: flex; flex-direction: column; gap: 4px; }
         .stat-num { font-size: 1.3rem; font-weight: 800; color: #fff; }
         .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -510,38 +508,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .pg-tile-info b { display: block; font-family: 'Space Grotesk', sans-serif; color: #fff; font-size: 1.05rem; line-height: 1.25; }
 .pg-tile-info span { font-size: 0.78rem; color: var(--neon-cyan); font-weight: 600; }
 .pg-tile:hover { border-color: var(--neon-cyan); }
-/* Trending: all 5 cards share one row (no sideways scrolling); wraps to 3 / 2 columns on smaller screens */
-#featured-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; overflow: visible; scroll-snap-type: none; }
-#featured-strip .pg-tile { flex: none; width: 100%; min-width: 0; }
-#featured-strip .pg-tile-info { left: 10px; right: 10px; bottom: 8px; }
-#featured-strip .pg-tile-info b { font-size: 0.85rem; line-height: 1.2; }
-#featured-strip .pg-tile-info span { font-size: 0.7rem; }
-@media (max-width: 900px) { #featured-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 560px) { #featured-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } #featured-strip .pg-tile-info b { font-size: 0.8rem; } }
-
-/* ===== Game Library (games.html): image-first tiles, tight gaps, big first "top pick" tile ===== */
-#games-section .game-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); grid-auto-flow: dense; gap: 10px; max-width: 1400px; }
-#games-section #game-grid > .game-card:first-child { grid-column: span 2; grid-row: span 2; }
-#games-section .game-card { display: block; aspect-ratio: 16 / 9; clip-path: none; border: 0; border-radius: 14px; background: #0c0f18; box-shadow: none; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-#games-section .game-card:hover { transform: scale(1.04); z-index: 5; box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 0 0 2px var(--neon-cyan); }
-#games-section .game-card.showcase-highlight { box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.7); }
-#games-section .card-thumb { position: absolute; inset: 0; aspect-ratio: auto; height: 100%; }
-#games-section .card-thumb-img { object-position: center; }
-#games-section .card-thumb::before { display: none; }
-#games-section .play-overlay { display: none; }
-#games-section .card-info { position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 12px 10px; background: linear-gradient(to top, rgba(6, 8, 13, 0.92), rgba(6, 8, 13, 0)); opacity: 0; transition: opacity 0.2s ease; pointer-events: none; }
-#games-section .game-card:hover .card-info, #games-section .game-card:focus-within .card-info { opacity: 1; }
-#games-section .card-genre { font-size: 0.66rem; margin-bottom: 2px; }
-#games-section .card-title { font-size: 0.95rem; margin-bottom: 0; }
-#games-section #game-grid > .game-card:first-child .card-title { font-size: 1.3rem; }
-#games-section .card-stars-layer { display: none; }
-#games-section .pg-cats { display: flex; flex-wrap: wrap; gap: 8px; }
-#games-section .pg-cat { --s: 0px; clip-path: none; border-radius: 999px; padding: 8px 14px; gap: 8px; }
-#games-section .pg-cat i { width: auto; font-size: 0.95rem; }
-#games-section .pg-cat > span { display: flex; align-items: baseline; gap: 6px; }
-#games-section .pg-cat small { display: inline; margin: 0; }
-@media (hover: none) { #games-section .card-info { opacity: 1; } }
-@media (max-width: 560px) { #games-section .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } #games-section .card-title { font-size: 0.85rem; } #games-section #game-grid > .game-card:first-child .card-title { font-size: 1.05rem; } }
 
 /* ---- category tiles ---- */
 .pg-cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }

@@ -1,7 +1,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, increment, collection, addDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp, Timestamp, Bytes, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBN_MStg8ff8XW_IUceq9bMDDYb-zYqw6A",
@@ -14,7 +13,12 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
+        // Analytics is loaded on its own and may fail. It used to be a static import: privacy/ad blockers commonly block
+        // firebase-analytics.js, and a failed static import kills THIS WHOLE MODULE - no auth listener, no pgFB - so every
+        // page rendered as logged out even though the Firebase session was still saved in the browser.
+        import("https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js")
+            .then(m => m.isSupported().then(ok => { if (ok) m.getAnalytics(app); }))
+            .catch(e => console.warn("Analytics unavailable (blocked or offline) - login is not affected:", e && e.message));
         
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -47,25 +51,19 @@
         // the callback shows the Continue step instead and holds back the "logged in" UI events
         // (pg-auth / plan load / nav change / redirect) until Continue is pressed.
         //
-        // `awaitingContinue` only controls UI sequencing. Identity always comes from Firebase
-        // (auth.currentUser); the sessionStorage flag exists solely so the Continue step also
-        // appears after a signInWithRedirect round-trip (which reloads the page).
+        // `awaitingContinue` only controls UI sequencing on the page where the login was started.
+        // Identity always comes from Firebase (auth.currentUser), which persists the session in
+        // IndexedDB (browserLocal persistence - the getAuth() default).
+        //
+        // SESSION FIX: this flag used to be stored in sessionStorage and re-read on every page load, so for
+        // 3 minutes after signing in, any refresh or navigation (before pressing Continue) rendered the site
+        // as LOGGED OUT - no pg-auth event, "Login" in the nav, Creator Studio's sign-in guard - although the
+        // Firebase session was valid. It is now in-memory only: a page load with a saved session is always
+        // shown as logged in.
         // ---------------------------------------------------------------------------------
-        const AWAIT_KEY = "pgAwaitContinue";
         let awaitingContinue = false;
-        // The flag stores a timestamp and only counts for AWAIT_MAX_MS. A stale flag (tab closed or page
-        // reloaded mid-login) must never leave a valid Firebase session hidden behind the Continue step.
-        const AWAIT_MAX_MS = 3 * 60 * 1000;
-        try {
-            const raw = sessionStorage.getItem(AWAIT_KEY);
-            const t = raw === "1" ? 0 : Number(raw);          // "1" = old-format flag, treated as already expired
-            awaitingContinue = !!t && (Date.now() - t) < AWAIT_MAX_MS;
-            if (!awaitingContinue && raw) sessionStorage.removeItem(AWAIT_KEY);
-        } catch (e) { /* storage unavailable */ }
-        function setAwaiting(v) {
-            awaitingContinue = v;
-            try { if (v) sessionStorage.setItem(AWAIT_KEY, String(Date.now())); else sessionStorage.removeItem(AWAIT_KEY); } catch (e) { /* ignore */ }
-        }
+        try { sessionStorage.removeItem("pgAwaitContinue"); } catch (e) { /* clear flags left by the old code */ }
+        function setAwaiting(v) { awaitingContinue = v; }
 
         const loginStep = loginModal ? loginModal.querySelector(".modal-step") : null;
         let loginMsgEl = null, continueStepEl = null, contAvatar = null, contName = null, contEmail = null, contMsg = null, contBtn = null, switchBtn = null;
@@ -178,7 +176,9 @@
                 case "auth/operation-not-allowed":
                     return "Google sign-in is not enabled for this Firebase project.";
                 case "auth/popup-blocked":
-                    return "Your browser blocked the sign-in popup. Please allow popups and try again.";
+                    return "Your browser blocked the Google sign-in window. Allow popups for pixelgaunt.com, then tap \"Login with Google\" again.";
+                case "auth/operation-not-supported-in-this-environment":
+                    return "Google sign-in cannot open inside this app's built-in browser. Open pixelgaunt.com in Chrome or Safari and log in there.";
                 case "auth/popup-closed-by-user":
                 case "auth/user-cancelled":
                 case "auth/redirect-cancelled-by-user":
@@ -203,23 +203,10 @@
             if (typeof window.openModal === "function") window.openModal("login-modal");
         }
 
-        // If we came back from a redirect-based sign-in, finish it here.
-        getRedirectResult(auth)
-            .then((result) => {
-                if (result && result.user) {
-                    saveUserProfile(result.user);
-                    if (awaitingContinue) showContinueStep(result.user);
-                } else if (awaitingContinue && !auth.currentUser) {
-                    // Flag was set but no sign-in came back (cancelled / stale flag).
-                    setAwaiting(false);
-                    reportLoginError({ code: "auth/redirect-cancelled-by-user" });
-                }
-            })
-            .catch((error) => {
-                console.error("Redirect login error:", error);
-                setAwaiting(false);
-                reportLoginError(error);
-            });
+        // NOTE: there is deliberately no signInWithRedirect fallback any more. authDomain is
+        // pixelgaunt-e5235.firebaseapp.com while the site runs on pixelgaunt.com; current Chrome, Safari and
+        // Firefox partition third-party storage, so a redirect sign-in returned to pixelgaunt.com with NO user
+        // (Google account chosen, then "logged out"). signInWithPopup is not affected by this.
 
         if (googleLoginBtn) {
             googleLoginBtn.addEventListener("click", async () => {
@@ -232,23 +219,6 @@
                     showContinueStep(result.user);
                 } catch (error) {
                     console.error("Popup login error:", error);
-                    // Popups are unreliable on mobile / in-app browsers - fall back to redirect.
-                    if (
-                        error && (
-                            error.code === "auth/popup-blocked" ||
-                            error.code === "auth/operation-not-supported-in-this-environment"
-                        )
-                    ) {
-                        try {
-                            await signInWithRedirect(auth, googleProvider);   // keeps awaitingContinue flag across the reload
-                            return;
-                        } catch (redirectError) {
-                            console.error("Redirect login error:", redirectError);
-                            setAwaiting(false);
-                            reportLoginError(redirectError);
-                            return;
-                        }
-                    }
                     setAwaiting(false);
                     reportLoginError(error);
                 } finally {
@@ -299,7 +269,10 @@
             }
         }
 
+        // Logout only happens on an explicit, confirmed request. The nav button shows the avatar + "Logout",
+        // and a single accidental tap on it used to end the session immediately.
         window.logoutUser = async () => {
+            if (!window.confirm("Log out of PixelGaunt?")) return;
             try {
                 await signOut(auth);
             } catch (error) {
