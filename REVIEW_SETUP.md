@@ -103,7 +103,25 @@ To confirm a payment (the email tells you the exact document names):
 3. `users/<user ID>` -> `plan` = `subscriber_monthly` or `subscriber_yearly`. Set it back to `free` when it is not renewed.
 
 ## 9. Checking that the Worker and Drive really work
-- `https://pg-review.pixelgaunt.workers.dev/health` must show `"version": "2026-10-04"`. If it does not, Cloudflare is still
+- `https://pg-review.pixelgaunt.workers.dev/health` must show `"version": "2026-10-04b"`. If it does not, Cloudflare is still
   running an OLD copy of the Worker: paste the new `pg-review-worker.js` and press Deploy.
 - `https://pg-review.pixelgaunt.workers.dev/health?check=drive` runs a live Google Drive test and tells you exactly what to fix
   (missing settings, expired token, wrong Google account, Drive API disabled). It must end with `"ok": true`.
+
+## 10. Revenue share (90% developer / 10% PixelGaunt Studios) and plays
+- **Developer Agreement:** `developer-agreement.html` (linked in every footer and on the Publish checkbox). Creators must accept
+  it to submit; the accepted version is saved on each submission (`agreement_version`). If you change the agreement, change the
+  version in three places: `AGREEMENT_VERSION` in `pg-review-worker.js` and `platform.js`, and the date at the top of the page.
+- **Plays are counted by the Worker** for published community games only (`game_stats/<game id>`: `plays`, `players`,
+  `m_YYYY_MM` = plays that month, `excluded_own`; `site_stats/plays` = all counted plays per month). NOT counted: the
+  developer's own account, any device they used while logged in, their IP address (seen in the last 30 days), and repeats
+  (same device within 30 min, same network within 5 min). Only salted hashes of devices / IPs are stored.
+- **No ads for a developer on their own game:** `games.html` holds ad requests until it knows who is playing, and keeps them off
+  for the game's owner (AdSense `pauseAdRequests`). Everyone else gets ads as normal (at most 5 seconds later).
+- **Paying developers, each month:**
+  1. In AdSense, note the revenue Google paid for the month.
+  2. Each game's part = that revenue x (game's `m_YYYY_MM` / `site_stats/plays` `m_YYYY_MM`). Add up a developer's games.
+  3. Firestore -> collection `earnings` -> Add document (any ID) with fields: `uid` (string, the developer's user ID),
+     `month` (string, e.g. `2026-10`), `revenue_usd` (number, their games' part), `status` (string `pending`, later `paid`),
+     optional `note`. Their dashboard (Creator Studio -> Earnings & Plays) shows it with their 90% and PixelGaunt's 10%.
+  4. Pay their 90%, then set `status` to `paid`.

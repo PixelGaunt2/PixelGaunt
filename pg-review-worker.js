@@ -448,6 +448,8 @@ async function handleSubmit(req, env, cors) {
         thumb: cleanThumb(form.get('thumb')), tournamentServer: cleanText(form.get('tournamentServer'), 120), checkVerdict: cleanText(form.get('checkVerdict'), 10) };
     const pkg = form.get('package');
     if (!title) throw new HttpError(400, 'A game title is required.');
+    if (String(form.get('agreement') || '') !== AGREEMENT_VERSION) throw new HttpError(400, 'Please read and accept the PixelGaunt Developer Agreement (developer-agreement.html), then submit again. If you just accepted it, refresh the page first.');
+    try { await rememberUser(env, req, user.uid, String(form.get('deviceId') || '')); } catch (e) { console.error('rememberUser at submit', e && e.message); }
     if (!pkg || typeof pkg === 'string' || !pkg.size) throw new HttpError(400, 'The game package is missing.');
 
     // Retry safety: same id + same owner = finish only what is still missing, never a second copy / second email.
@@ -496,7 +498,7 @@ async function handleSubmit(req, env, cors) {
     // 1) Record the attempt as 'sending'. Not public, not counted against the plan, and firestore.rules refuse a playable
     //    game for anything that is not 'pending_review'.
     const submittedAt = existing && existing.submitted_at ? new Date(existing.submitted_at) : new Date();
-    const record = { submission_id: id, game_id: id, user_id: user.uid, developer_name: user.name, developer_email: user.email, game_name: title, description, version, file_name: fileName, file_size: pkg.size, subscription_type: plan.label, status: 'sending', rejection_reason: '', submitted_at: submittedAt, reviewed_at: null, reviewed_by: '', entry_file: info.entry, entry_sha256: entryHash, file_count: info.fileCount, validation_warnings: info.warnings, drive_state: 'pending', email_state: 'pending', email_attempts: 0 };
+    const record = { submission_id: id, game_id: id, user_id: user.uid, developer_name: user.name, developer_email: user.email, game_name: title, description, version, file_name: fileName, file_size: pkg.size, subscription_type: plan.label, status: 'sending', rejection_reason: '', submitted_at: submittedAt, reviewed_at: null, reviewed_by: '', entry_file: info.entry, entry_sha256: entryHash, file_count: info.fileCount, validation_warnings: info.warnings, drive_state: 'pending', email_state: 'pending', email_attempts: 0, agreement_version: AGREEMENT_VERSION, agreement_accepted_at: new Date() };
     if (!existing) {
         const created = await fsCreate(env, 'submissions', id, record);
         if (!created) {   // a parallel request won the race: let that one finish, do not upload/email twice
@@ -720,6 +722,91 @@ async function verifyBundle(env, id, sub) {
     if ((await sha256hex(out)) !== sub.entry_sha256) throw new HttpError(409, 'The playable game does not match the package that was submitted. Reject it and ask the developer to resubmit.');
 }
 
+/* ---------------------------------- plays, revenue share, developer agreement ----------------------------------
+   Ad revenue from pixelgaunt.com is shared: 90% to the game's developer, 10% to PixelGaunt Studios (DEV_SHARE).
+   Plays are counted HERE, not in the browser, and only for published games. A play is NOT counted when it comes from
+   the game's developer - same account, a device the developer has used while logged in, or the developer's network
+   (IP address seen with their account in the last 30 days) - nor when the same device/network repeats it too quickly.
+   This follows Google AdSense's invalid-traffic rules: earnings must not come from the developer's own activity.
+   Only salted SHA-256 hashes of IP addresses and device ids are stored, never the raw values. */
+const DEV_SHARE = 0.9;
+const AGREEMENT_VERSION = '2026-10-04';
+const OWNER_IP_DAYS = 30, DEVICE_REPEAT_MIN = 30, IP_REPEAT_MIN = 5;
+const DEVICE_RE = /^[a-z0-9-]{16,64}$/;
+const monthField = () => 'm_' + pkMonth().replace('-', '_');            // e.g. m_2026_10
+const hashId = async (env, kind, v) => (await sha256hex(enc.encode(kind + ':' + v + ':' + (env.PLAY_SALT || 'pg-' + env.FIREBASE_PROJECT_ID)))).slice(0, 40);
+const clientIp = req => req.headers.get('CF-Connecting-IP') || req.headers.get('X-Forwarded-For') || '';
+async function fsUpsert(env, path, obj) {   // set the listed fields, creating the document if needed
+    const keys = Object.keys(obj), fields = {}; keys.forEach(k => { fields[k] = toFs(obj[k]); });
+    const q = keys.map(k => 'updateMask.fieldPaths=' + encodeURIComponent(k)).join('&');
+    const res = await fsFetch(env, 'PATCH', `${fsBase(env)}/${path}?${q}`, { fields });
+    if (!res.ok) { console.error('firestore upsert', path, res.status, await res.text()); throw new HttpError(502, 'The database did not accept the update.'); }
+}
+async function fsIncrement(env, path, incs) {   // atomic counters (creates the document if needed)
+    const name = `projects/${env.FIREBASE_PROJECT_ID}/databases/(default)/documents/${path}`;
+    const fieldTransforms = Object.keys(incs).map(k => ({ fieldPath: k, increment: { integerValue: String(incs[k]) } }));
+    const res = await fsFetch(env, 'POST', `${fsBase(env)}:commit`, { writes: [{ transform: { document: name, fieldTransforms } }] });
+    if (!res.ok) { console.error('firestore increment', path, res.status, await res.text()); throw new HttpError(502, 'The database did not accept the update.'); }
+}
+// Remember which devices / networks a logged-in person uses (to recognise a developer playing their own game).
+async function rememberUser(env, req, uid, deviceId) {
+    const now = new Date(), jobs = [];
+    if (DEVICE_RE.test(String(deviceId || ''))) jobs.push(fsUpsert(env, 'seen/dev_' + await hashId(env, 'dev', deviceId), { ['u_' + uid]: now }));
+    const ip = clientIp(req); if (ip) jobs.push(fsUpsert(env, 'seen/ip_' + await hashId(env, 'ip', ip), { ['u_' + uid]: now }));
+    await Promise.all(jobs);
+}
+async function handleSeen(req, env, cors) {
+    const user = await verifyFirebaseToken(env, req);
+    const b = await readJson(req);
+    await rememberUser(env, req, user.uid, b.deviceId);
+    return json({ ok: true }, 200, cors);
+}
+async function handlePlay(req, env, cors) {
+    const b = await readJson(req);
+    const gameId = String(b.gameId || ''), deviceId = String(b.deviceId || '');
+    if (!UUID_RE.test(gameId) || !DEVICE_RE.test(deviceId)) throw new HttpError(400, 'Bad play report.');
+    let uid = null;
+    const tok = req.headers.get('Authorization') || (typeof b.token === 'string' && b.token ? 'Bearer ' + b.token : '');
+    if (tok) { try { uid = (await verifyFirebaseToken(env, new Request(req.url, { headers: { Authorization: tok } }))).uid; } catch (e) { /* counted as a guest */ } }
+    if (uid) await rememberUser(env, req, uid, deviceId);
+    const game = await fsGet(env, 'community_games/' + gameId);
+    if (!game || game.status !== 'published') return json({ ok: true, counted: false, reason: 'not_published' }, 200, cors);
+    const owner = game.ownerUid, devH = await hashId(env, 'dev', deviceId), ip = clientIp(req), ipH = ip ? await hashId(env, 'ip', ip) : '';
+    let reason = null;
+    if (uid && uid === owner) reason = 'own_account';
+    if (!reason) { const d = await fsGet(env, 'seen/dev_' + devH); if (d && d['u_' + owner]) reason = 'own_device'; }
+    if (!reason && ipH) { const n = await fsGet(env, 'seen/ip_' + ipH); const t = n && n['u_' + owner] ? Date.parse(n['u_' + owner]) : 0; if (t && Date.now() - t < OWNER_IP_DAYS * 864e5) reason = 'own_network'; }
+    if (reason) { await fsIncrement(env, 'game_stats/' + gameId, { excluded_own: 1 }); return json({ ok: true, counted: false, reason }, 200, cors); }
+    // too-fast repeats from the same device or network are not counted
+    const now = Date.now();
+    const dm = await fsGet(env, `play_marks/${gameId}_d_${devH}`);
+    if (dm && now - Date.parse(dm.t) < DEVICE_REPEAT_MIN * 60e3) return json({ ok: true, counted: false, reason: 'repeat' }, 200, cors);
+    if (ipH) { const im = await fsGet(env, `play_marks/${gameId}_i_${ipH}`); if (im && now - Date.parse(im.t) < IP_REPEAT_MIN * 60e3) return json({ ok: true, counted: false, reason: 'repeat' }, 200, cors); }
+    await fsUpsert(env, `play_marks/${gameId}_d_${devH}`, { t: new Date() });
+    if (ipH) await fsUpsert(env, `play_marks/${gameId}_i_${ipH}`, { t: new Date() });
+    const mf = monthField(), isNew = await fsCreate(env, 'game_stats/' + gameId + '/players', devH, { first: new Date() });
+    await fsIncrement(env, 'game_stats/' + gameId, Object.assign({ plays: 1, [mf]: 1 }, isNew ? { players: 1 } : {}));
+    await fsIncrement(env, 'site_stats/plays', { [mf]: 1 });   // all counted plays on the site this month
+    return json({ ok: true, counted: true }, 200, cors);
+}
+async function handleMyStats(req, env, cors) {
+    const user = await verifyFirebaseToken(env, req);
+    const mf = monthField();
+    const games = await fsQueryByField(env, 'community_games', 'ownerUid', user.uid);
+    const site = (await fsGet(env, 'site_stats/plays')) || {};
+    const list = [];
+    for (const g of games) {
+        const st = (await fsGet(env, 'game_stats/' + g.id)) || {};
+        list.push({ id: g.id, title: g.title, status: g.status, plays: Number(st.plays) || 0, players: Number(st.players) || 0, thisMonth: Number(st[mf]) || 0, excludedOwn: Number(st.excluded_own) || 0 });
+    }
+    const monthPlays = list.reduce((a, g) => a + g.thisMonth, 0), siteMonth = Number(site[mf]) || 0;
+    const earnings = (await fsQueryByField(env, 'earnings', 'uid', user.uid)).map(e => {
+        const rev = Number(e.revenue_usd) || 0;
+        return { month: e.month || '', revenue: rev, devShare: Math.round(rev * DEV_SHARE * 100) / 100, pgShare: Math.round(rev * (1 - DEV_SHARE) * 100) / 100, status: e.status || 'pending', note: e.note || '' };
+    }).sort((a, b) => String(b.month).localeCompare(String(a.month)));
+    return json({ ok: true, devShare: DEV_SHARE, month: pkMonth(), games: list, monthPlays, siteMonthPlays: siteMonth, playShare: siteMonth ? monthPlays / siteMonth : 0, earnings, agreementVersion: AGREEMENT_VERSION }, 200, cors);
+}
+
 /* ---------------------------------- payment receipts (no gateway) ----------------------------------
    The buyer pays by bank / wallet, then saves a receipt (details + screenshot). It is stored in payments/<ref> and emailed
    to PAYMENT_EMAIL_TO (default pixelgaunt@gmail.com) with the screenshot attached. You confirm it by hand (REVIEW_SETUP.md). */
@@ -897,11 +984,14 @@ export default {
                 return json({ ok: true, drive: r, note: 'Drive works. Files go to "' + DRIVE_ROOT + '" in My Drive of the account above.' }, 200, cors);
             }
             if (req.method === 'GET' && url.pathname === '/health') {
-                return json({ ok: true, version: '2026-10-04', configured: { FIREBASE_PROJECT_ID: !!env.FIREBASE_PROJECT_ID, FIREBASE_SA_JSON: !!env.FIREBASE_SA_JSON, GOOGLE_OAUTH_CLIENT_ID: !!env.GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET: !!env.GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN: !!env.GOOGLE_OAUTH_REFRESH_TOKEN, RESEND_API_KEY: !!env.RESEND_API_KEY }, review_email_to: reviewTo(env), drive_expected_account: expectedDriveAccount(env), payment_email_to: paymentTo(env), note: 'Drive (all three GOOGLE_OAUTH_* values) and RESEND_API_KEY are both required for submissions. Live Drive test: /health?check=drive' }, 200, cors);
+                return json({ ok: true, version: '2026-10-04b', configured: { FIREBASE_PROJECT_ID: !!env.FIREBASE_PROJECT_ID, FIREBASE_SA_JSON: !!env.FIREBASE_SA_JSON, GOOGLE_OAUTH_CLIENT_ID: !!env.GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET: !!env.GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN: !!env.GOOGLE_OAUTH_REFRESH_TOKEN, RESEND_API_KEY: !!env.RESEND_API_KEY }, review_email_to: reviewTo(env), drive_expected_account: expectedDriveAccount(env), payment_email_to: paymentTo(env), note: 'Drive (all three GOOGLE_OAUTH_* values) and RESEND_API_KEY are both required for submissions. Live Drive test: /health?check=drive' }, 200, cors);
             }
             if (!env.FIREBASE_PROJECT_ID) throw new HttpError(503, 'Review service is not configured (FIREBASE_PROJECT_ID).');
             if (req.method === 'GET' && url.pathname === '/quota') return await handleQuota(req, env, cors);
             if (req.method === 'GET' && url.pathname === '/sync') return await handleSync(req, env, cors, ctx);
+            if (req.method === 'POST' && url.pathname === '/play') return await handlePlay(req, env, cors);
+            if (req.method === 'POST' && url.pathname === '/seen') return await handleSeen(req, env, cors);
+            if (req.method === 'GET' && url.pathname === '/my-stats') return await handleMyStats(req, env, cors);
             if (req.method === 'POST' && url.pathname === '/payment') return await handlePayment(req, env, cors);
             if (req.method === 'GET' && url.pathname === '/payments') return await handleMyPayments(req, env, cors);
             if (req.method === 'POST' && url.pathname === '/submit') return await handleSubmit(req, env, cors);

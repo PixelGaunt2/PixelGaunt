@@ -46,6 +46,7 @@
     };
     // Also enforced by the review service (pg-review-worker.js), which is the real gate:
     const LIMITS_INFO = { userDaily: 1, siteDaily: 3, reviewDays: 7 };
+    const AGREEMENT_VERSION = '2026-10-04';   // must match AGREEMENT_VERSION in pg-review-worker.js and developer-agreement.html
     function planLimits() { return PLAN_LIMITS[window.pgUserPlan] || PLAN_LIMITS.free; }
     function monthStart() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); }
 
@@ -492,6 +493,8 @@
             form.append('description', meta.description || '');
             form.append('packageName', (pubState.sourceZip && pubState.sourceZip.name) || 'game.zip');
             // Listing details for the preview copy the review service saves (shown in My Games / Creator Studio).
+            form.append('agreement', AGREEMENT_VERSION);   // the Developer Agreement version the creator accepted
+            form.append('deviceId', window.pgDeviceId ? window.pgDeviceId() : '');
             form.append('genre', meta.genre || ''); form.append('controls', meta.controls || ''); form.append('orientation', meta.orientation || 'landscape');
             form.append('thumb', meta.thumbDataUrl || ''); form.append('tournamentServer', meta.tournamentServer || ''); form.append('checkVerdict', pubState.verdict || '');
             form.append('package', pkgBlob, 'game.zip');
@@ -638,7 +641,7 @@
                 <div class="pg-field" style="margin-top:12px;"><label for="pg-desc">Short description</label><textarea id="pg-desc" maxlength="240" placeholder="What is your game about?"></textarea></div>
                 <label class="pg-check-inline" style="margin-top:12px;"><input type="checkbox" id="pg-tournament-check"><span>This game reports scores to a server I control, so it can host a tournament. <a href="#" class="pg-link" id="pg-tournament-help" style="font-size:0.82rem;">How does that work?</a></span></label>
                 <div class="pg-field pg-hidden" id="pg-server-field" style="margin-top:8px;"><label for="pg-server">Score-reporting host (domain only)</label><input id="pg-server" placeholder="scores.mygame.com"></div>
-                <label class="pg-check-inline" style="margin-top:12px;"><input type="checkbox" id="pg-terms-check"><span>This is my own work (or I have the rights to publish it), and it follows the <a href="#" onclick="event.preventDefault(); openPageModal && openPageModal('Terms of Service','pg-terms')" class="pg-link" style="font-size:0.82rem;">PixelGaunt content rules</a>.</span></label>
+                <label class="pg-check-inline" style="margin-top:12px;"><input type="checkbox" id="pg-terms-check"><span>I have read and agree to the <a href="developer-agreement.html" target="_blank" rel="noopener" class="pg-link" style="font-size:0.82rem;">PixelGaunt Developer Agreement</a> (requirements, content rules, 90% / 10% ad revenue share, fair-play rules), and this is my own work or I have the rights to publish it.</span></label>
                 <button type="button" class="pg-btn primary pg-publish-btn" style="margin-top:16px;" disabled>Submit for review</button>
             </div>
             <div id="pg-my-games"></div>
@@ -660,7 +663,7 @@
             if (!pubState) why = 'Upload your game first.';
             else if (pubState.verdict === 'bad') why = 'Fix the problems found in the check above, then upload again.';
             else if (!$('#pg-title', root).value.trim()) why = 'Enter a game title to enable Submit.';
-            else if (!$('#pg-terms-check', root).checked) why = 'Tick the box confirming this is your own work to enable Submit.';
+            else if (!$('#pg-terms-check', root).checked) why = 'Tick the box to accept the Developer Agreement to enable Submit.';
             btn.disabled = !!why;
             let hint = $('#pg-submit-hint', root);
             if (!hint) { hint = document.createElement('p'); hint.id = 'pg-submit-hint'; hint.className = 'pg-note'; hint.style.marginTop = '8px'; btn.insertAdjacentElement('afterend', hint); }

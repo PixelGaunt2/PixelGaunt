@@ -310,6 +310,14 @@
         // signed in on page load, logout) and, for a fresh login, only after Continue.
         function applyAuthState(user) {
             window.dispatchEvent(new CustomEvent('pg-auth', { detail: { user: user || null } }));
+            if (user && window.PG_REVIEW_ENDPOINT && window.pgDeviceId) {
+                try {
+                    if (sessionStorage.getItem('pgSeen') !== user.uid) {
+                        user.getIdToken().then(t => fetch(window.PG_REVIEW_ENDPOINT + '/seen', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify({ deviceId: window.pgDeviceId() }) }))
+                            .then(r => { if (r && r.ok) sessionStorage.setItem('pgSeen', user.uid); }).catch(() => {});
+                    }
+                } catch (e) { /* storage blocked */ }
+            }
             if (user) {
                 window.isLoggedIn = true; 
                 if(typeof window.updatePromptVisibility === 'function') window.updatePromptVisibility(); 

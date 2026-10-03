@@ -62,6 +62,19 @@
         .cs-account-field span{display:block;font-size:0.78rem;color:#64748b;margin-bottom:4px;}
         .cs-account-field b{font-size:1rem;color:#fff;}
     </style>
+    <style>
+        .cs-rev-box { border: 1px solid rgba(56,189,248,0.35); background: rgba(56,189,248,0.07); border-radius: 16px; padding: 18px 20px; margin-bottom: 18px; color: #cbd5e1; }
+        .cs-rev-box h3, .cs-fair h3, .cs-h3 { color: #fff; font-size: 1.05rem; margin: 0 0 10px; }
+        .cs-h3 { margin-top: 22px; }
+        .cs-rev-split { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+        .cs-rev-split div { flex: 1 1 160px; background: rgba(0,0,0,0.25); border-radius: 12px; padding: 12px 14px; }
+        .cs-rev-split b { display: block; font-size: 1.9rem; color: #fff; }
+        .cs-rev-split div:first-child b { color: #34d399; }
+        .cs-rev-split span { font-size: 0.85rem; color: #94a3b8; }
+        .cs-fair { border: 1px solid rgba(248,113,113,0.35); background: rgba(248,113,113,0.07); border-radius: 16px; padding: 16px 20px; margin-top: 22px; color: #cbd5e1; }
+        .cs-fair ul { padding-left: 20px; margin: 0; } .cs-fair li { margin: 6px 0; font-size: 0.92rem; }
+        .cs-table-wrap { overflow-x: auto; }
+    </style>
 </head>
 <body class="theme-blue" data-pg-page="creator-studio">
     <div id="scroll-progress"></div>
@@ -116,6 +129,7 @@
             <div class="cs-tabs" role="tablist">
                 <button class="cs-tab active" data-tab="overview">Overview</button>
                 <button class="cs-tab" data-tab="games">My Games</button>
+                <button class="cs-tab" data-tab="earnings">Earnings &amp; Plays</button>
                 <button class="cs-tab" data-tab="upload">Upload Game</button>
                 <button class="cs-tab" data-tab="account">Account</button>
                 <button class="cs-tab" data-tab="upgrade">Upgrade</button>
@@ -127,11 +141,37 @@
                     <div class="cs-stat"><b id="cs-ov-games">0 / 1</b><span id="cs-ov-games-label">Games</span></div>
                     <div class="cs-stat"><b id="cs-ov-size">5 MB</b><span>Maximum file size</span></div>
                 </div>
-                <p class="pg-note">This is your Creator Studio - it's only visible to you while signed in. Use <b>Upload Game</b> to submit a game, <b>My Games</b> to follow its review, and <b>Upgrade</b> for 10 games a month (monthly plan) or 12 games a month (yearly plan) at up to 10 MB each. Each account can submit 1 game per day, and PixelGaunt accepts 3 games per day in total.</p>
+                <p class="pg-note">This is your Creator Studio - it's only visible to you while signed in. Use <b>Upload Game</b> to submit a game, <b>My Games</b> to follow its review, and <b>Upgrade</b> for 10 games a month (monthly plan) or 12 games a month (yearly plan) at up to 10 MB each. Each account can submit 1 game per day, and PixelGaunt accepts 3 games per day in total. <b>Earnings &amp; Plays</b> shows your counted plays and your <b>90%</b> share of the ad revenue (<a class="pg-link" href="developer-agreement.html">Developer Agreement</a>).</p>
             </section>
 
             <section class="cs-panel" id="cs-panel-games">
                 <div id="cs-games-list"><p class="pg-muted">Loading your games...</p></div>
+            </section>
+
+            <section class="cs-panel" id="cs-panel-earnings">
+                <div class="cs-rev-box">
+                    <h3>Revenue share</h3>
+                    <div class="cs-rev-split"><div><b>90%</b><span>to you (the developer)</span></div><div><b>10%</b><span>to PixelGaunt Studios</span></div></div>
+                    <p>Your earnings come from the <b>ads shown on pixelgaunt.com</b> (Google AdSense). Each month the ad revenue PixelGaunt receives is divided between the published community games by their <b>counted plays</b>; your games' part is shared 90% to you and 10% to PixelGaunt Studios. Full terms: <a class="pg-link" href="developer-agreement.html">Developer Agreement</a>.</p>
+                </div>
+                <div class="cs-stats" id="cs-earn-stats">
+                    <div class="cs-stat"><b id="cs-earn-total">-</b><span>Counted plays (all time)</span></div>
+                    <div class="cs-stat"><b id="cs-earn-month">-</b><span id="cs-earn-month-label">Counted plays this month</span></div>
+                    <div class="cs-stat"><b id="cs-earn-players">-</b><span>Different players</span></div>
+                    <div class="cs-stat"><b id="cs-earn-share">-</b><span>Your share of all plays this month</span></div>
+                </div>
+                <h3 class="cs-h3">Plays per game</h3>
+                <div id="cs-earn-games"><p class="pg-muted">Loading...</p></div>
+                <h3 class="cs-h3">Monthly earnings</h3>
+                <div id="cs-earn-list"><p class="pg-muted">Loading...</p></div>
+                <div class="cs-fair">
+                    <h3>Fair play - Google AdSense policy</h3>
+                    <ul>
+                        <li><b>Your own plays are not counted:</b> plays from your account, from any computer or phone you have used while logged in, or from your internet connection (same IP address) do not count.</li>
+                        <li><b>You will not see ads on your own game.</b> When you play your own game, PixelGaunt does not show you ads, so you cannot see or click ads on it.</li>
+                        <li><b>Never click ads on pixelgaunt.com</b> and never ask friends, groups or "click exchanges" to click ads or play your game for you, or use bots, VPNs or extra accounts. Google forbids it, and it cancels your earnings and can close your account.</li>
+                    </ul>
+                </div>
             </section>
 
             <section class="cs-panel" id="cs-panel-upload">
@@ -166,7 +206,7 @@
     <script>
         (function () {
             // Read before script.js (deferred) tidies the URL: creator-studio.html#games opens My Games (used after a submission).
-            let startTab = location.hash === '#games' ? 'games' : null;
+            let startTab = location.hash === '#games' ? 'games' : location.hash === '#earnings' ? 'earnings' : null;
             const guard = document.getElementById('cs-guard');
             const dash = document.getElementById('cs-dashboard');
             const PLAN_LIMITS = { free: { maxGames: 1, maxBytes: 5 * 1024 * 1024, period: null, label: 'Free' },
@@ -181,6 +221,7 @@
                     document.querySelectorAll('.cs-panel').forEach(p => p.classList.remove('active'));
                     btn.classList.add('active');
                     document.getElementById('cs-panel-' + btn.dataset.tab).classList.add('active');
+                    if (btn.dataset.tab === 'earnings') loadEarnings();
                 });
             });
 
@@ -280,6 +321,36 @@
                 document.getElementById('cs-up-plan').textContent = limits.label;
 
                 loadGames(user, limits);
+            }
+
+            // Plays and earnings come from the review service (it counts plays; you enter monthly revenue in Firestore `earnings`).
+            const PKR_PER_USD = 549.97 / 1.99;
+            const usd = n => '$' + (Number(n) || 0).toFixed(2), pkr = n => 'PKR ' + ((Number(n) || 0) * PKR_PER_USD).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            let earningsLoading = false;
+            async function loadEarnings() {
+                const user = window.pgFB && window.pgFB.auth.currentUser;
+                if (!user || earningsLoading) return; earningsLoading = true;
+                const gbox = document.getElementById('cs-earn-games'), ebox = document.getElementById('cs-earn-list');
+                try {
+                    const res = await fetch((window.PG_REVIEW_ENDPOINT || '') + '/my-stats', { headers: { Authorization: 'Bearer ' + await user.getIdToken() } });
+                    const d = await res.json();
+                    if (!res.ok || !d.ok) throw new Error(d.error || ('HTTP ' + res.status));
+                    const tot = d.games.reduce((a, g) => a + g.plays, 0), pl = d.games.reduce((a, g) => a + g.players, 0);
+                    document.getElementById('cs-earn-total').textContent = tot.toLocaleString();
+                    document.getElementById('cs-earn-month').textContent = d.monthPlays.toLocaleString();
+                    document.getElementById('cs-earn-players').textContent = pl.toLocaleString();
+                    document.getElementById('cs-earn-share').textContent = d.siteMonthPlays ? (d.playShare * 100).toFixed(1) + '%' : '-';
+                    gbox.innerHTML = d.games.length ? '<div class="cs-table-wrap"><table class="cs-games-table"><thead><tr><th>Game</th><th>Status</th><th>Counted plays</th><th>This month</th><th>Players</th><th>Your own plays (not counted)</th></tr></thead><tbody>' +
+                        d.games.map(g => '<tr><td>' + esc(g.title) + '</td><td>' + esc(STATUS_LABELS[g.status] || g.status) + '</td><td>' + g.plays.toLocaleString() + '</td><td>' + g.thisMonth.toLocaleString() + '</td><td>' + g.players.toLocaleString() + '</td><td>' + g.excludedOwn.toLocaleString() + '</td></tr>').join('') +
+                        '</tbody></table></div><p class="pg-muted" style="font-size:0.85rem;">Only published games earn plays. A play counts once per device every 30 minutes.</p>'
+                        : '<p class="pg-muted">No games yet. Plays are counted once a game is published.</p>';
+                    ebox.innerHTML = d.earnings.length ? '<div class="cs-table-wrap"><table class="cs-games-table"><thead><tr><th>Month</th><th>Ad revenue of your games</th><th>Your 90%</th><th>PixelGaunt 10%</th><th>Status</th></tr></thead><tbody>' +
+                        d.earnings.map(e => '<tr><td>' + esc(e.month) + '</td><td>' + usd(e.revenue) + '</td><td><b>' + usd(e.devShare) + '</b><br><small class="pg-muted">' + pkr(e.devShare) + '</small></td><td>' + usd(e.pgShare) + '</td><td><span class="pg-pill ' + (e.status === 'paid' ? 'ok' : 'warn') + '">' + esc(e.status === 'paid' ? 'Paid' : 'Pending') + '</span>' + (e.note ? '<br><small class="pg-muted">' + esc(e.note) + '</small>' : '') + '</td></tr>').join('') + '</tbody></table></div>'
+                        : '<p class="pg-muted">No earnings yet. Each month\'s amount appears here after Google pays PixelGaunt for that month and we calculate every game\'s share.</p>';
+                } catch (e) {
+                    gbox.innerHTML = '<p class="pg-muted">Plays could not be loaded right now. Please try again later.</p>'; ebox.innerHTML = '';
+                    console.warn('Earnings unavailable:', e);
+                } finally { earningsLoading = false; }
             }
 
             function openTab(name) { const b = document.querySelector('.cs-tab[data-tab="' + name + '"]'); if (b) b.click(); }
@@ -385,6 +456,7 @@
                 <a onclick="openPageModal('About Us', 'pg-about')">About Us</a>
                 <a onclick="openPageModal('Privacy Policy', 'pg-privacy')">Privacy Policy</a>
                 <a onclick="openPageModal('Disclaimer', 'pg-disclaimer')">Disclaimer</a>
+                <a href="developer-agreement.html">Developer Agreement</a>
             </div>
         </div>
     </footer>

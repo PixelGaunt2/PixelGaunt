@@ -1,5 +1,23 @@
 // Review service (pg-review-worker.js on Cloudflare). Used by platform.js, firebase-auth.js and subscription.html.
 window.PG_REVIEW_ENDPOINT = 'https://pg-review.pixelgaunt.workers.dev';
+// A random id for this browser (not personal data). Lets the review service recognise a developer's own device,
+// so their own plays of their own games are not counted for revenue (Google AdSense invalid-traffic rules).
+window.pgDeviceId = function () {
+    try { let id = localStorage.getItem('pgDeviceId'); if (!id) { id = (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2))).toLowerCase(); localStorage.setItem('pgDeviceId', id); } return id; }
+    catch (e) { return window.__pgDevId || (window.__pgDevId = (Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)).toLowerCase()); }
+};
+/* ADS AND YOUR OWN GAME: a developer must not see (or click) ads on pages where they play their own game - their revenue
+   share comes from those ads. games.html holds ad requests (adsbygoogle.pauseAdRequests = 1, set in its <head>) until
+   we know who is playing; they are released for everyone except the owner of the community game being played. */
+window.pgAdsDecided = false;
+window.pgReleaseAds = function () {
+    if (window.pgAdsDecided) return; window.pgAdsDecided = true;
+    try { (window.adsbygoogle = window.adsbygoogle || []).pauseAdRequests = 0; } catch (e) { /* ad blocker */ }
+};
+window.pgBlockAdsForOwner = function () {
+    window.pgAdsDecided = true; window.pgOwnGameNoAds = true;
+    document.body.classList.add('pg-owner-no-ads');
+};
         window.isLoggedIn = false;
         
         const games = [
@@ -91,12 +109,23 @@ window.PG_REVIEW_ENDPOINT = 'https://pg-review.pixelgaunt.workers.dev';
         }
 
         // Call this whenever a game is played to bump its popularity and refresh the UI.
+        // Community games: report the play to the review service, which counts it (or not - see pg-review-worker.js).
+        function reportCommunityPlay(game) {
+            if (!game || !game.community || !window.PG_REVIEW_ENDPOINT) return;
+            // A "simple" request (text/plain, token in the body): no CORS pre-check, so it also survives leaving the page.
+            const send = (token) => fetch(window.PG_REVIEW_ENDPOINT + '/play', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ gameId: game.docId, deviceId: window.pgDeviceId(), token: token || undefined }) }).catch(() => {});
+            const u = window.pgFB && window.pgFB.auth.currentUser;
+            if (u) u.getIdToken().then(send, () => send(null)); else send(null);
+        }
+
         window.registerGamePlay = function(gameId) {
             playCounts[gameId] = (playCounts[gameId] || 0) + 1;
             savePlayCounts(playCounts);
 
             const game = findGame(gameId);
             if (game) game.playCount = playCounts[gameId];
+            reportCommunityPlay(game);
 
             window.updateFeaturedPanels();
             window.renderGames(currentDisplayedList);
@@ -400,6 +429,11 @@ window.PG_REVIEW_ENDPOINT = 'https://pg-review.pixelgaunt.workers.dev';
 
             const game = findGame(gameId);
             if (!game) return;
+            const me = window.pgFB && window.pgFB.auth.currentUser;
+            if (game.community && me && game.ownerUid === me.uid && !window.pgOwnGameNoAds) {
+                if (!window.pgAdsDecided && window.adsbygoogle && window.adsbygoogle.pauseAdRequests === 1) window.pgBlockAdsForOwner();   // ads still held: keep them off
+                else { window.location.href = 'games.html?play=' + playParam(game); return; }   // ads already shown: reopen the page without ads
+            }
 
             const gameplayPage = document.getElementById('gameplay-page');
             const alreadyRunning = activeGameId === gameId && gameplayPage && gameplayPage.style.display === 'block';
@@ -757,6 +791,28 @@ window.PG_REVIEW_ENDPOINT = 'https://pg-review.pixelgaunt.workers.dev';
             };
         };
 
+        // Release the held ads unless the logged-in person is the developer of the community game in the URL.
+        function decideAds(playQuery) {
+            if (!(window.adsbygoogle && window.adsbygoogle.pauseAdRequests === 1)) { window.pgAdsDecided = true; return; }   // page does not hold ads
+            const ownId = playQuery && playQuery.indexOf('c-') === 0 ? playQuery.slice(2) : null;
+            if (!ownId) { window.pgReleaseAds(); return; }
+            const check = async (user) => {
+                if (window.pgAdsDecided) return;
+                if (!user) { window.pgReleaseAds(); return; }
+                try {
+                    let owner = null;
+                    const list = await window.pgLoadCommunityGames();   // public list of published games (has ownerUid)
+                    const g = (list || []).find(x => x.docId === ownId);
+                    if (g) owner = g.ownerUid;
+                    else { const fb = await whenFirebase(); const snap = await fb.fs.getDoc(fb.fs.doc(fb.db, 'community_games', ownId)); if (snap.exists()) owner = snap.data().ownerUid; }
+                    if (owner && owner === user.uid) window.pgBlockAdsForOwner(); else window.pgReleaseAds();
+                } catch (e) { window.pgReleaseAds(); }
+            };
+            if (window.pgFB && window.pgFB.auth.currentUser) check(window.pgFB.auth.currentUser);
+            window.addEventListener('pg-auth', e => check(e.detail && e.detail.user));
+            setTimeout(() => { if (!window.pgAdsDecided) window.pgReleaseAds(); }, 5000);   // never hold ads longer than 5 s
+        }
+
         async function openCommunityById(docId) {
             try {
                 const fb = await whenFirebase();
@@ -948,6 +1004,7 @@ window.PG_REVIEW_ENDPOINT = 'https://pg-review.pixelgaunt.workers.dev';
             
             const urlParams = new URLSearchParams(window.location.search);
             const playQuery = urlParams.get('play');
+            decideAds(playQuery);
             const pageQuery = urlParams.get('page');
 
             // This page has no game viewport (e.g. the showcase homepage) - a play

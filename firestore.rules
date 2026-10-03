@@ -33,6 +33,13 @@ service cloud.firestore {
     // ---- submission limit slots (pg-review-worker.js only) ------------------------------------
     match /limits/{doc} { allow read, write: if false; }
 
+    // ---- plays / revenue (pg-review-worker.js only; the dashboard reads them through the Worker) ----
+    match /game_stats/{doc=**} { allow read, write: if false; }
+    match /site_stats/{doc=**} { allow read, write: if false; }
+    match /play_marks/{doc} { allow read, write: if false; }
+    match /seen/{doc} { allow read, write: if false; }        // hashed device ids / IP addresses
+    match /earnings/{doc} { allow read, write: if false; }    // you add these in the Firebase console
+
     // ---- payment receipts (subscription.html; no gateway) ----------------------------------
     // The user saves their own receipt as 'pending_verification'. Only you change it (Firestore console):
     // set status to 'confirmed' / 'rejected', and set users/{uid}.plan = 'subscriber' to activate.
