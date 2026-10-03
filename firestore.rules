@@ -30,6 +30,26 @@ service cloud.firestore {
     }
     match /system/{doc=**} { allow read, write: if false; }
 
+    // ---- submission limit slots (pg-review-worker.js only) ------------------------------------
+    match /limits/{doc} { allow read, write: if false; }
+
+    // ---- payment receipts (subscription.html; no gateway) ----------------------------------
+    // The user saves their own receipt as 'pending_verification'. Only you change it (Firestore console):
+    // set status to 'confirmed' / 'rejected', and set users/{uid}.plan = 'subscriber' to activate.
+    match /payments/{ref} {
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.ref == ref
+                    && request.resource.data.status == 'pending_verification'
+                    && request.resource.data.plan == 'subscriber'
+                    && request.resource.data.cycle in ['monthly', 'yearly']
+                    && request.resource.data.txnId is string && request.resource.data.txnId.size() > 0 && request.resource.data.txnId.size() <= 60
+                    && request.resource.data.senderName is string && request.resource.data.senderName.size() <= 60
+                    && request.resource.data.receiptImage is string && request.resource.data.receiptImage.size() < 800000;
+      allow update, delete: if false;
+    }
+
     // ---- likes (firebase-auth.js like button: +1 on `likes` only) ---------------------------
     match /games/{gid} {
       allow read: if true;

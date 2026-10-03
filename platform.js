@@ -41,8 +41,10 @@
        profile (users/{uid}.plan) after each login. */
     const PLAN_LIMITS = {
         free: { maxGames: 1, maxBytes: 5 * 1024 * 1024, period: null, label: 'Free' },
-        subscriber: { maxGames: 10, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber' }
+        subscriber: { maxGames: 1, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber' }
     };
+    // Also enforced by the review service (pg-review-worker.js), which is the real gate:
+    const LIMITS_INFO = { userMonthly: 1, siteDaily: 3, reviewDays: 7 };
     function planLimits() { return PLAN_LIMITS[window.pgUserPlan] || PLAN_LIMITS.free; }
     function monthStart() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); }
 
@@ -111,7 +113,7 @@
     function statusInfo(st) {
         if (st === 'approved' || st === 'published') return { label: 'Approved / Published', cls: 'ok' };
         if (st === 'rejected') return { label: 'Rejected', cls: 'bad' };
-        if (st === 'pending_review' || st === 'pending') return { label: 'Pending Review', cls: 'warn' };
+        if (st === 'pending_review' || st === 'pending') return { label: 'Under review · within 7 working days', cls: 'warn' };
         // Anything else is NOT pending review - never dress a failed/unfinished submission up as one.
         if (st === 'email_failed') return { label: 'Email Failed', cls: 'bad' };
         if (st === 'drive_failed') return { label: 'Drive Upload Failed', cls: 'bad' };
@@ -514,7 +516,17 @@
             }));
 
             Core.invalidateCommunity();
-            root.innerHTML = `<div class="pg-verdict ok">Submission successfully sent for manual review.<small>Google Drive: stored. Email to ${esc((data.email && data.email.to) || 'pixelgaunt@gmail.com')}: sent. Submission ID ${esc(id)}.</small></div><p style="margin-top:12px;"><b>${esc(meta.title)}</b> <span class="pg-pill warn">Pending Review</span></p><button type="button" class="pg-btn primary" style="margin-top:14px;" onclick="window.pgLoadPlatform().then(m=>m.resetPublish())">Submit another game</button>`;
+            // Thank-you screen, then straight to the creator's dashboard (My Games), where the game shows as under review.
+            const DASH = 'creator-studio.html#games';
+            root.innerHTML = `<div class="pg-verdict ok" role="status">Thanks for your game submission!<small>Submission successfully sent for manual review. Google Drive: stored. Email to ${esc((data.email && data.email.to) || 'pixelgaunt@gmail.com')}: sent.</small></div>` +
+                `<p style="margin-top:12px;"><b>${esc(meta.title)}</b> <span class="pg-pill warn">Under review</span></p>` +
+                `<p class="pg-note" style="margin-top:6px;">Our team reviews every game by hand. You'll hear from us <b>within ${LIMITS_INFO.reviewDays} working days</b>. Submission ID ${esc(id)}.</p>` +
+                `<p class="pg-note" style="margin-top:10px;">Taking you to your dashboard in <b id="pg-redirect-count">5</b> s... <a class="pg-link" href="${DASH}">Go now</a></p>`;
+            let left = 5;
+            const tick = setInterval(() => {
+                left--; const c = document.getElementById('pg-redirect-count'); if (c) c.textContent = String(Math.max(left, 0));
+                if (left <= 0) { clearInterval(tick); window.location.href = DASH; }
+            }, 1000);
         } catch (err) {
             console.error('Submit failed:', err);
             // Turn raw Firestore/network codes into something understandable; the technical error stays in the console.
@@ -555,7 +567,19 @@
         if (!user) { box.innerHTML = '<p class="pg-note">Sign in to see your plan, usage and upload limit.</p>'; return; }
         const { limits, used } = await usageInfo();
         const periodLabel = limits.period === 'month' ? ' this month' : ' total';
-        box.innerHTML = `<p class="pg-note"><b>${esc(limits.label)} plan</b> · ${used} / ${limits.maxGames} games${periodLabel} · up to ${fmtBytes(limits.maxBytes)} per game · <a class="pg-link" href="subscription.html" style="font-size:0.82rem;">${limits.label === 'Free' ? 'Upgrade' : 'Manage plan'}</a></p>`;
+        box.innerHTML = `<p class="pg-note"><b>${esc(limits.label)} plan</b> · ${used} / ${limits.maxGames} games${periodLabel} · up to ${fmtBytes(limits.maxBytes)} per game · <a class="pg-link" href="subscription.html" style="font-size:0.82rem;">${limits.label === 'Free' ? 'Upgrade' : 'Manage plan'}</a></p>` +
+            `<p class="pg-note" id="pg-quota-line" style="margin-top:4px;">Limits: ${LIMITS_INFO.userMonthly} game per account per month · PixelGaunt accepts ${LIMITS_INFO.siteDaily} games per day.</p>`;
+        // Live count of today's website-wide submissions (read-only, from the review service).
+        try {
+            const headers = {}; try { headers.Authorization = 'Bearer ' + await user.getIdToken(); } catch (e) { /* anonymous */ }
+            const q = await (await fetch(CONFIG.reviewEndpoint.replace(/\/+$/, '') + '/quota', { headers })).json();
+            const line = $('#pg-quota-line', root);
+            if (line && typeof q.siteDailyUsed === 'number') {
+                const left = Math.max(q.siteDailyMax - q.siteDailyUsed, 0);
+                line.innerHTML = `Limits: ${q.userMonthlyMax} game per account per month` + (q.userMonthlyUsed ? ` <b>(used - next from ${esc(q.nextMonth || 'next month')})</b>` : '') +
+                    ` · Today: <b>${left} of ${q.siteDailyMax}</b> website submission slot${q.siteDailyMax === 1 ? '' : 's'} left` + (left ? '' : ' - please try again tomorrow');
+            }
+        } catch (e) { /* review service unreachable: keep the static line */ }
     }
 
     function mountPublish(root) {

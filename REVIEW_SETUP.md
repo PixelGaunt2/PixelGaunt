@@ -67,3 +67,23 @@ Open `https://pg-review.pixelgaunt.workers.dev/health` - every value must say tr
 Approve / reject: the Worker exposes `POST /admin/approve` and `POST /admin/reject` (admin Firebase token required). Approval moves
 the Drive folder to `Approved` and sets the game to `published`, which is what the Games page lists. This ZIP does not contain an
 admin screen that calls these endpoints.
+
+## 6. Submission limits (enforced by the Worker - cannot be bypassed from the browser)
+- 1 game per account per month (so also max 1 per day). Free plan: 1 game in total.
+- PixelGaunt accepts 3 games per day in total (Pakistan time). The 4th person that day is asked to try tomorrow.
+- A submission that is not delivered (Drive/email failed) does not use up either limit.
+- To change them: `USER_MONTHLY_MAX` / `SITE_DAILY_MAX` in `pg-review-worker.js` (and the text in `LIMITS_INFO` in `platform.js`).
+
+## 7. Payments (no gateway) - fill in your details
+Open `subscription.html`, find the block **PIXELGAUNT PAYMENT SETTINGS - EDIT THESE VALUES** and fill in:
+- `whatsapp`: your official WhatsApp number, digits only with country code (0300-1234567 -> `923001234567`).
+- `accounts`: account title, account number (and IBAN for Meezan / Alfalah) for Meezan, Alfalah, Easypaisa, NayaPay, SadaPay.
+  An account left empty is simply not shown. While all are empty, buyers see "our payment accounts are being set up".
+- `prices.*.pkr` (optional): the PKR amount, e.g. `'Rs 560'`. If empty, only the $ price is shown.
+
+How a payment is confirmed (Firestore console -> `payments` collection, newest receipt `PG-YYYYMMDD-XXXXXX`):
+1. Match the receipt the buyer sent on WhatsApp with your bank/wallet (transaction ID, amount). The screenshot is in `receiptImage`.
+2. Set the receipt's `status` to `confirmed` (or `rejected`). The buyer sees this on the Subscription page.
+3. Activate the plan: `users/<buyer uid>` -> set field `plan` = `subscriber` (the uid is in the receipt). For a monthly plan,
+   set it back to `free` when it is not renewed.
+4. Review and publish their game as usual.

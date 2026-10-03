@@ -127,7 +127,7 @@
                     <div class="cs-stat"><b id="cs-ov-games">0 / 1</b><span id="cs-ov-games-label">Games</span></div>
                     <div class="cs-stat"><b id="cs-ov-size">5 MB</b><span>Maximum file size</span></div>
                 </div>
-                <p class="pg-note">This is your Creator Studio - it's only visible to you while signed in. Use <b>Upload Game</b> to publish, <b>My Games</b> to manage what's live, and <b>Upgrade</b> for more games per month and a bigger size limit.</p>
+                <p class="pg-note">This is your Creator Studio - it's only visible to you while signed in. Use <b>Upload Game</b> to submit a game, <b>My Games</b> to follow its review, and <b>Upgrade</b> for 1 game every month and a bigger size limit. Each account can submit 1 game per month, and PixelGaunt accepts 3 games per day in total.</p>
             </section>
 
             <section class="cs-panel" id="cs-panel-games">
@@ -157,7 +157,7 @@
             </section>
 
             <section class="cs-panel" id="cs-panel-upgrade">
-                <p style="color:#94a3b8; max-width:560px;">You're currently on the <b id="cs-up-plan">Free</b> plan (1 game total, 5 MB max). Subscribers get 10 games per month at up to 10 MB each.</p>
+                <p style="color:#94a3b8; max-width:560px;">You're currently on the <b id="cs-up-plan">Free</b> plan (1 game total, 5 MB max). Subscribers get 1 game every month at up to 10 MB each.</p>
                 <button class="nav-btn primary pg-btn" style="margin-top:14px;" onclick="window.location.href='subscription.html'">View subscription plans</button>
             </section>
         </div>
@@ -165,10 +165,13 @@
 
     <script>
         (function () {
+            // Read before script.js (deferred) tidies the URL: creator-studio.html#games opens My Games (used after a submission).
+            let startTab = location.hash === '#games' ? 'games' : null;
             const guard = document.getElementById('cs-guard');
             const dash = document.getElementById('cs-dashboard');
             const PLAN_LIMITS = { free: { maxGames: 1, maxBytes: 5 * 1024 * 1024, period: null, label: 'Free' },
-                                   subscriber: { maxGames: 10, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber' } };
+                                   subscriber: { maxGames: 1, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'Subscriber' } };
+            const STATUS_LABELS = { pending_review: 'Under review · within 7 working days', pending: 'Under review · within 7 working days', published: 'Published', approved: 'Published', rejected: 'Rejected' };
             function fmtMB(b) { return (b / (1024 * 1024)).toFixed(0) + ' MB'; }
 
             document.querySelectorAll('.cs-tab').forEach(btn => {
@@ -197,18 +200,18 @@
                         used = docs.filter(g => g.createdAt && g.createdAt.toDate && g.createdAt.toDate() >= start).length;
                     }
                     document.getElementById('cs-ov-games').textContent = used + ' / ' + limits.maxGames;
-                    document.getElementById('cs-ov-games-label').textContent = 'Games' + (limits.period === 'month' ? ' this month' : '');
+                    document.getElementById('cs-ov-games-label').textContent = 'Games submitted' + (limits.period === 'month' ? ' this month' : '');
 
-                    if (!docs.length) { box.innerHTML = '<p class="pg-muted">You have not published any games yet. Use the Upload Game tab to publish your first one.</p>'; return; }
+                    if (!docs.length) { box.innerHTML = '<p class="pg-muted">You have not submitted any games yet. Use the Upload Game tab to submit your first one.</p>'; return; }
                     const rows = docs.map(g => {
                         const created = g.createdAt && g.createdAt.toDate ? g.createdAt.toDate().toLocaleDateString() : '-';
                         const thumb = g.thumb ? '<img class="cs-thumb" src="' + esc(g.thumb) + '" alt="">' : '<div class="cs-thumb" style="display:flex;align-items:center;justify-content:center;color:#475569;">?</div>';
-                        const statusCls = g.status === 'published' ? 'ok' : 'warn';
+                        const statusCls = g.status === 'published' ? 'ok' : g.status === 'rejected' ? 'bad' : 'warn';
                         const canEdit = g.status !== 'published';
                         return '<tr>' +
                             '<td>' + thumb + '</td>' +
                             '<td>' + esc(g.title) + '</td>' +
-                            '<td><span class="pg-pill ' + statusCls + '">' + esc(g.status) + '</span></td>' +
+                            '<td><span class="pg-pill ' + statusCls + '">' + esc(STATUS_LABELS[g.status] || g.status) + '</span>' + (g.status === 'rejected' && g.rejectionReason ? '<br><small class="pg-muted">' + esc(g.rejectionReason) + '</small>' : '') + '</td>' +
                             '<td>' + created + '</td>' +
                             '<td><div class="cs-row-actions">' +
                                 '<a href="games.html?play=c-' + encodeURIComponent(g.id) + '" target="_blank" rel="noopener">Play</a>' +
@@ -217,7 +220,9 @@
                             '</div></td>' +
                         '</tr>';
                     }).join('');
-                    box.innerHTML = '<table class="cs-games-table"><thead><tr><th></th><th>Game</th><th>Status</th><th>Uploaded</th><th>Actions</th></tr></thead><tbody>' + rows + '</tbody></table>';
+                    const nSub = docs.length, nReview = docs.filter(g => g.status === 'pending_review' || g.status === 'pending').length;
+                    box.innerHTML = '<p style="margin-bottom:12px;"><b>' + nSub + ' game' + (nSub === 1 ? '' : 's') + ' submitted</b>' + (nReview ? ' · <span class="pg-pill warn">' + nReview + ' under review</span> <span class="pg-muted" style="font-size:0.85rem;">We review every game within 7 working days.</span>' : '') + '</p>' +
+                        '<table class="cs-games-table"><thead><tr><th></th><th>Game</th><th>Status</th><th>Uploaded</th><th>Actions</th></tr></thead><tbody>' + rows + '</tbody></table>';
                 } catch (err) {
                     console.warn('My games unavailable:', err);
                     box.innerHTML = '<p class="pg-muted">Could not load your games right now.</p>';
@@ -265,7 +270,8 @@
                 loadGames(user, limits);
             }
 
-            function showDashboard() { guard.style.display = 'none'; dash.style.display = 'block'; refresh(); }
+            function openTab(name) { const b = document.querySelector('.cs-tab[data-tab="' + name + '"]'); if (b) b.click(); }
+            function showDashboard() { guard.style.display = 'none'; dash.style.display = 'block'; refresh(); if (startTab) { openTab(startTab); startTab = null; } }
             function showGuard() { guard.style.display = 'block'; dash.style.display = 'none'; }
 
             window.addEventListener('pg-auth', e => { if (e.detail.user) showDashboard(); else showGuard(); });

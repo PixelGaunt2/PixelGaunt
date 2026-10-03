@@ -98,7 +98,7 @@
                 <p style="color: #fff; font-size: 2.5rem; font-weight: 900; margin-bottom: 15px;">$1.99<span style="font-size: 1rem; color:#64748b;">/mo</span></p>
 
                 <div class="plan-features">
-                    <div class="feature-item"><i class="fas fa-check"></i> 10 games per month</div>
+                    <div class="feature-item"><i class="fas fa-check"></i> 1 game every month (reviewed within 7 working days)</div>
                     <div class="feature-item"><i class="fas fa-check"></i> 10 MB maximum per game</div>
                     <div class="feature-item"><i class="fas fa-check"></i> Everything in Free</div>
                 </div>
@@ -113,7 +113,7 @@
                 <p style="color: #fff; font-size: 2.5rem; font-weight: 900; margin-bottom: 15px;">$10.99<span style="font-size: 1rem; color:#64748b;">/yr</span></p>
 
                 <div class="plan-features">
-                    <div class="feature-item"><i class="fas fa-check"></i> 10 games per month</div>
+                    <div class="feature-item"><i class="fas fa-check"></i> 1 game every month (reviewed within 7 working days)</div>
                     <div class="feature-item"><i class="fas fa-check"></i> 10 MB maximum per game</div>
                     <div class="feature-item"><i class="fas fa-check"></i> Everything in Free</div>
                 </div>
@@ -122,29 +122,285 @@
             </div>
         </div>
 
-        <p class="pg-note" style="text-align:center; max-width:640px; margin: 26px auto 0;">Payment processing is not connected yet, so Subscribe buttons don't charge you or change your account - your limits stay on the Free plan until a real payment gateway is wired up here.</p>
+        <p class="pg-note" style="text-align:center; max-width:680px; margin: 26px auto 0;">No online payment gateway: you pay by bank transfer, card (from your banking app) or mobile wallet to one of our official accounts, then send us your receipt on WhatsApp. Your subscription is activated after we confirm the payment, and then we review and publish your game.</p>
+
+        <section id="pg-my-payments" style="max-width:760px; margin: 30px auto 0; display:none;">
+            <h3 style="color:#fff; margin-bottom:10px;">Your payment receipts</h3>
+            <div id="pg-my-payments-list"></div>
+        </section>
     </main>
 
+    <style>
+        #pay-modal .modal-content { max-width: 560px; max-height: 92vh; overflow-y: auto; padding: 30px 26px; }
+        .pay-step { display: none; } .pay-step.active { display: block; }
+        .pay-step h3 { color: #fff; font-size: 1.25rem; margin-bottom: 4px; }
+        .pay-sub { color: #94a3b8; font-size: 0.9rem; margin-bottom: 16px; }
+        .pay-amount { background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.3); border-radius: 12px; padding: 10px 14px; color: #e2e8f0; margin-bottom: 14px; font-size: 0.95rem; }
+        .pay-methods { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+        .pay-method { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; border: 1px solid rgba(148,163,184,0.25); background: rgba(255,255,255,0.03); color: #e2e8f0; cursor: pointer; font-size: 0.95rem; text-align: left; }
+        .pay-method i { width: 22px; text-align: center; color: var(--neon-cyan); }
+        .pay-method[aria-pressed="true"] { border-color: var(--neon-cyan); background: rgba(56,189,248,0.12); box-shadow: 0 0 0 1px var(--neon-cyan) inset; }
+        .pay-acc { border: 1px solid rgba(148,163,184,0.22); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; background: rgba(255,255,255,0.03); }
+        .pay-acc.match { border-color: var(--neon-cyan); }
+        .pay-acc b { color: #fff; } .pay-acc .row { display: flex; justify-content: space-between; gap: 10px; align-items: center; font-size: 0.9rem; color: #cbd5e1; margin-top: 4px; word-break: break-all; }
+        .pay-copy { flex: none; font-size: 0.75rem; padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(148,163,184,0.35); background: transparent; color: #e2e8f0; cursor: pointer; }
+        .pay-field { margin-bottom: 12px; } .pay-field label { display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 5px; }
+        .pay-field input, .pay-field select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(148,163,184,0.3); background: #0b1020; color: #fff; font-size: 0.95rem; }
+        .pay-actions { display: flex; gap: 10px; margin-top: 18px; } .pay-actions .action-btn { flex: 1; justify-content: center; }
+        .pay-err { color: #f87171; font-size: 0.88rem; margin-top: 10px; min-height: 1em; }
+        .pay-receipt { border: 1px dashed rgba(148,163,184,0.45); border-radius: 12px; padding: 14px; color: #e2e8f0; font-size: 0.9rem; }
+        .pay-receipt div { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; } .pay-receipt span { color: #94a3b8; }
+        .pay-receipt img { max-width: 100%; max-height: 220px; border-radius: 8px; margin-top: 10px; display: block; }
+        .pay-wa { background: #25d366 !important; border-color: #25d366 !important; color: #052e16 !important; font-weight: 700; }
+        @media (max-width: 480px) { .pay-methods { grid-template-columns: 1fr; } }
+    </style>
+
+    <div class="modal-overlay" id="pay-modal" role="dialog" aria-modal="true" aria-labelledby="pay-title">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModals()">&times;</span>
+            <!-- Step 1: how will you pay -->
+            <div class="pay-step active" id="pay-step-1">
+                <h3 id="pay-title">How will you pay?</h3>
+                <p class="pay-sub" id="pay-plan-line"></p>
+                <div class="pay-methods" id="pay-methods"></div>
+                <p class="pay-err" id="pay-err-1"></p>
+                <div class="pay-actions"><button class="action-btn" onclick="closeModals()">Cancel</button><button class="action-btn" style="background:var(--neon-cyan);color:#000;border:none;" onclick="pgPay.next1()">Next</button></div>
+            </div>
+            <!-- Step 2: our official accounts -->
+            <div class="pay-step" id="pay-step-2">
+                <h3>Send your payment to an official PixelGaunt account</h3>
+                <p class="pay-sub" id="pay-method-hint"></p>
+                <div class="pay-amount" id="pay-amount"></div>
+                <div id="pay-accounts"></div>
+                <p class="pay-sub" style="margin-top:8px;">Only pay to the accounts shown here. Keep your payment screenshot - you'll need it in the next step.</p>
+                <div class="pay-actions"><button class="action-btn" onclick="pgPay.go(1)">Back</button><button class="action-btn" id="pay-next-2" style="background:var(--neon-cyan);color:#000;border:none;" onclick="pgPay.go(3)">I've paid - Next</button></div>
+            </div>
+            <!-- Step 3: payment details + receipt screenshot -->
+            <div class="pay-step" id="pay-step-3">
+                <h3>Your payment details</h3>
+                <p class="pay-sub">We save these as your receipt and use them to confirm your payment.</p>
+                <div class="pay-field"><label for="pay-paid-to">Paid to</label><select id="pay-paid-to"></select></div>
+                <div class="pay-field"><label for="pay-sender">Sender name (as shown in your app / bank)</label><input id="pay-sender" maxlength="60" autocomplete="name"></div>
+                <div class="pay-field"><label for="pay-sender-acc">Your account / mobile number (optional)</label><input id="pay-sender-acc" maxlength="40" inputmode="tel"></div>
+                <div class="pay-field"><label for="pay-txn">Transaction ID / reference number</label><input id="pay-txn" maxlength="60"></div>
+                <div class="pay-field"><label for="pay-shot">Payment screenshot</label><input id="pay-shot" type="file" accept="image/*"></div>
+                <p class="pay-err" id="pay-err-3"></p>
+                <div class="pay-actions"><button class="action-btn" onclick="pgPay.go(2)">Back</button><button class="action-btn" id="pay-save-btn" style="background:var(--neon-cyan);color:#000;border:none;" onclick="pgPay.save()">Save receipt</button></div>
+            </div>
+            <!-- Step 4: receipt saved -> WhatsApp -->
+            <div class="pay-step" id="pay-step-4">
+                <h3>Receipt saved</h3>
+                <p class="pay-sub">Last step: send this receipt to our official WhatsApp so we can confirm your payment. Download it first, then attach it in the WhatsApp chat.</p>
+                <div class="pay-receipt" id="pay-receipt"></div>
+                <div class="pay-actions"><button class="action-btn" onclick="pgPay.download()"><i class="fas fa-download"></i>&nbsp;Download receipt</button></div>
+                <div class="pay-actions" style="margin-top:10px;"><button class="action-btn pay-wa" id="pay-wa-btn" onclick="pgPay.whatsapp()"><i class="fab fa-whatsapp"></i>&nbsp;Send receipt on WhatsApp</button></div>
+                <p class="pay-sub" style="margin-top:14px;">What happens next: we check your payment, activate your subscription, then review your game and publish it on PixelGaunt. You can see the status of this receipt on this page.</p>
+            </div>
+        </div>
+    </div>
+
     <script>
-        (function () {
-            function reflectPlan() {
-                const pillWrap = document.getElementById('sub-current-plan');
-                const pill = document.getElementById('sub-current-plan-pill');
-                if (!window.isLoggedIn) { pillWrap.style.display = 'none'; return; }
-                const plan = (window.pgUserPlan === 'subscriber') ? 'subscriber' : 'free';
-                pillWrap.style.display = 'block';
-                pill.className = 'pg-pill ' + (plan === 'subscriber' ? 'ok' : '');
-                pill.textContent = plan === 'subscriber' ? "You're subscribed" : "You're on the Free plan";
-                document.getElementById('sub-free-btn').textContent = plan === 'free' ? 'Current Plan' : 'Downgrade to Free';
+    /* =====================================================================================
+       PIXELGAUNT PAYMENT SETTINGS  -  EDIT THESE VALUES
+       No payment gateway is used. Accounts with an empty `number` are hidden automatically.
+       whatsapp: international format, digits only (e.g. 923001234567 for 0300-1234567).
+       ===================================================================================== */
+    window.PG_PAYMENT = {
+        whatsapp: '',
+        prices: {
+            monthly: { label: 'Subscriber - Monthly', usd: '$1.99', pkr: '' },   // pkr e.g. 'Rs 560'
+            yearly:  { label: 'Subscriber - Yearly',  usd: '$10.99', pkr: '' }
+        },
+        accounts: [
+            { key: 'meezan',    name: 'Meezan Bank',  title: '', number: '', iban: '' },
+            { key: 'alfalah',   name: 'Bank Alfalah', title: '', number: '', iban: '' },
+            { key: 'easypaisa', name: 'Easypaisa',    title: '', number: '' },
+            { key: 'nayapay',   name: 'NayaPay',      title: '', number: '' },
+            { key: 'sadapay',   name: 'SadaPay',      title: '', number: '' }
+        ]
+    };
+    /* ===================================================================================== */
+
+    (function () {
+        const CFG = window.PG_PAYMENT;
+        const METHODS = [
+            { key: 'bank', name: 'Bank account', icon: 'fa-building-columns', pref: ['meezan', 'alfalah'], hint: 'Transfer from your bank app (IBFT / Raast) to one of our bank accounts or wallets below.' },
+            { key: 'debit', name: 'Debit card', icon: 'fa-credit-card', pref: ['meezan', 'alfalah'], hint: 'Card payments are made as a transfer: open your card\'s banking app or ATM and transfer to one of the accounts below.' },
+            { key: 'credit', name: 'Credit card', icon: 'fa-credit-card', pref: ['meezan', 'alfalah'], hint: 'Use your credit card bank\'s app to transfer (IBFT) to one of the accounts below.' },
+            { key: 'easypaisa', name: 'Easypaisa', icon: 'fa-mobile-screen-button', pref: ['easypaisa'], hint: 'Send money from Easypaisa to our Easypaisa account, or to a bank account below.' },
+            { key: 'jazzcash', name: 'JazzCash', icon: 'fa-mobile-screen-button', pref: ['easypaisa', 'meezan', 'alfalah'], hint: 'JazzCash can send to our Easypaisa wallet or to a bank account below (Send Money / IBFT).' },
+            { key: 'nayapay', name: 'NayaPay', icon: 'fa-wallet', pref: ['nayapay'], hint: 'Send from NayaPay to our NayaPay account, or to a bank account below.' },
+            { key: 'sadapay', name: 'SadaPay', icon: 'fa-wallet', pref: ['sadapay'], hint: 'Send from SadaPay to our SadaPay account, or to a bank account below.' }
+        ];
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const $ = id => document.getElementById(id);
+        const st = { cycle: 'monthly', method: null, receipt: null };
+        const accounts = () => CFG.accounts.filter(a => String(a.number || a.iban || '').trim());
+        const price = () => { const p = CFG.prices[st.cycle]; return p.pkr ? p.pkr + ' (' + p.usd + ')' : p.usd; };
+        const fb = () => new Promise(res => { if (window.pgFB) return res(window.pgFB); document.addEventListener('pg-firebase-ready', () => res(window.pgFB), { once: true }); });
+        const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+
+        function go(n) {
+            document.querySelectorAll('#pay-modal .pay-step').forEach(s => s.classList.remove('active'));
+            $('pay-step-' + n).classList.add('active');
+            if (n === 2) renderAccounts();
+            if (n === 3) renderPaidTo();
+            $('pay-modal').querySelector('.modal-content').scrollTop = 0;
+        }
+        function renderMethods() {
+            $('pay-methods').innerHTML = METHODS.map(m => `<button type="button" class="pay-method" data-key="${m.key}" aria-pressed="${st.method === m.key}"><i class="fas ${m.icon}"></i>${esc(m.name)}</button>`).join('');
+            $('pay-methods').querySelectorAll('.pay-method').forEach(b => b.onclick = () => { st.method = b.dataset.key; $('pay-err-1').textContent = ''; renderMethods(); });
+        }
+        function renderAccounts() {
+            const m = METHODS.find(x => x.key === st.method);
+            $('pay-method-hint').textContent = m.hint;
+            $('pay-amount').innerHTML = `Plan: <b>${esc(CFG.prices[st.cycle].label)}</b> &nbsp;·&nbsp; Amount to pay: <b>${esc(price())}</b>`;
+            const list = accounts().sort((a, b) => (m.pref.includes(b.key) ? 1 : 0) - (m.pref.includes(a.key) ? 1 : 0));
+            if (!list.length) {
+                $('pay-accounts').innerHTML = '<div class="pay-acc">Our official payment accounts are being set up. Please message us on WhatsApp to pay.</div>';
+                $('pay-next-2').disabled = true; return;
             }
-            window.addEventListener('pg-auth', reflectPlan);
-            window.addEventListener('pg-plan', reflectPlan);
-            window.pgSubscribeClick = function (cycle) {
-                if (!window.isLoggedIn) { openModal('login-modal'); return; }
-                alert('Payment gateway connecting soon! Your account stays on the Free plan until then.');
+            $('pay-next-2').disabled = false;
+            const row = (label, val) => val ? `<div class="row"><span>${label}: <b>${esc(val)}</b></span><button type="button" class="pay-copy" data-copy="${esc(val)}">Copy</button></div>` : '';
+            $('pay-accounts').innerHTML = list.map(a => `<div class="pay-acc${m.pref.includes(a.key) ? ' match' : ''}"><b>${esc(a.name)}</b>${m.pref.includes(a.key) ? ' <span class="pg-pill ok" style="font-size:0.7rem;">Best for ' + esc(m.name) + '</span>' : ''}` +
+                row('Account title', a.title) + row(a.key === 'meezan' || a.key === 'alfalah' ? 'Account no.' : 'Number', a.number) + row('IBAN', a.iban) + '</div>').join('');
+            $('pay-accounts').querySelectorAll('.pay-copy').forEach(b => b.onclick = () => {
+                (navigator.clipboard ? navigator.clipboard.writeText(b.dataset.copy) : Promise.reject()).then(() => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); }).catch(() => prompt('Copy this:', b.dataset.copy));
+            });
+        }
+        function renderPaidTo() {
+            const m = METHODS.find(x => x.key === st.method);
+            const list = accounts().sort((a, b) => (m.pref.includes(b.key) ? 1 : 0) - (m.pref.includes(a.key) ? 1 : 0));
+            $('pay-paid-to').innerHTML = list.map(a => `<option value="${esc(a.key)}">${esc(a.name)}${a.number ? ' - ' + esc(a.number) : ''}</option>`).join('');
+            const u = window.pgFB && window.pgFB.auth.currentUser;
+            if (u && !$('pay-sender').value) $('pay-sender').value = u.displayName || '';
+        }
+        // Screenshot -> small JPEG (fits in the receipt record; the full image goes to WhatsApp).
+        function compress(file) {
+            return new Promise((res, rej) => {
+                const img = new Image(), url = URL.createObjectURL(file);
+                img.onload = () => {
+                    let w = img.naturalWidth, h = img.naturalHeight; const maxSide = 1100;
+                    if (Math.max(w, h) > maxSide) { const k = maxSide / Math.max(w, h); w = Math.round(w * k); h = Math.round(h * k); }
+                    const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h);
+                    URL.revokeObjectURL(url);
+                    let q = 0.75, out = c.toDataURL('image/jpeg', q);
+                    while (out.length > 600000 && q > 0.3) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+                    res(out);
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('That file is not an image.')); };
+                img.src = url;
+            });
+        }
+        function newRef() {
+            const d = new Date(Date.now() + 5 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '');
+            const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let r = ''; const rnd = crypto.getRandomValues(new Uint8Array(6));
+            rnd.forEach(x => r += a[x % a.length]);
+            return 'PG-' + d + '-' + r;
+        }
+        async function save() {
+            const err = $('pay-err-3'); err.textContent = '';
+            const u = window.pgFB && window.pgFB.auth.currentUser;
+            if (!u) { err.textContent = 'Please log in again.'; return; }
+            const sender = $('pay-sender').value.trim(), txn = $('pay-txn').value.trim(), file = $('pay-shot').files[0];
+            if (!sender) { err.textContent = 'Enter the sender name.'; return; }
+            if (!txn) { err.textContent = 'Enter the transaction ID / reference number from your payment.'; return; }
+            if (!file) { err.textContent = 'Add the screenshot of your payment.'; return; }
+            const btn = $('pay-save-btn'); btn.disabled = true; btn.textContent = 'Saving...';
+            try {
+                const image = await compress(file);
+                const acc = CFG.accounts.find(a => a.key === $('pay-paid-to').value) || {};
+                const ref = newRef();
+                const rec = {
+                    ref, uid: u.uid, email: u.email || '', name: u.displayName || '', plan: 'subscriber', cycle: st.cycle,
+                    amount: price(), method: METHODS.find(m => m.key === st.method).name, paidTo: acc.name || '', paidToNumber: acc.number || acc.iban || '',
+                    senderName: sender.slice(0, 60), senderAccount: $('pay-sender-acc').value.trim().slice(0, 40), txnId: txn.slice(0, 60),
+                    receiptImage: image, status: 'pending_verification'
+                };
+                const { db, fs } = await fb();
+                await withTimeout(fs.setDoc(fs.doc(db, 'payments', ref), { ...rec, createdAt: fs.serverTimestamp() }), 20000);
+                st.receipt = { ...rec, date: new Date() };
+                renderReceipt(); go(4); loadMyPayments();
+            } catch (e) {
+                console.error('Receipt save failed:', e);
+                err.textContent = e && e.message === 'timeout' ? 'Could not reach our server. Check your connection and try again.'
+                    : e && e.code === 'permission-denied' ? 'Your receipt could not be saved (permission denied). Please try again later or message us on WhatsApp.'
+                    : (e && e.message) || 'Your receipt could not be saved. Please try again.';
+            } finally { btn.disabled = false; btn.textContent = 'Save receipt'; }
+        }
+        const receiptRows = r => [['Receipt no.', r.ref], ['Plan', CFG.prices[r.cycle].label], ['Amount', r.amount], ['Paid with', r.method], ['Paid to', r.paidTo + (r.paidToNumber ? ' (' + r.paidToNumber + ')' : '')],
+            ['Sender', r.senderName + (r.senderAccount ? ' (' + r.senderAccount + ')' : '')], ['Transaction ID', r.txnId], ['PixelGaunt account', r.email], ['Date', r.date.toLocaleString()], ['Status', 'Waiting for confirmation']];
+        function renderReceipt() {
+            const r = st.receipt;
+            $('pay-receipt').innerHTML = receiptRows(r).map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('') + `<img src="${r.receiptImage}" alt="Your payment screenshot">`;
+            $('pay-wa-btn').disabled = !String(CFG.whatsapp || '').replace(/\D/g, '');
+            if ($('pay-wa-btn').disabled) $('pay-wa-btn').title = 'WhatsApp number not set yet';
+        }
+        function download() {
+            const r = st.receipt, rows = receiptRows(r), img = new Image();
+            img.onload = () => {
+                const W = 900, pad = 40, lh = 40, imgH = Math.min(520, Math.round(img.height * (W - 2 * pad) / img.width));
+                const c = document.createElement('canvas'); c.width = W; c.height = 140 + rows.length * lh + imgH + 80;
+                const x = c.getContext('2d');
+                x.fillStyle = '#ffffff'; x.fillRect(0, 0, c.width, c.height);
+                x.fillStyle = '#0b1020'; x.font = 'bold 34px Arial'; x.fillText('PixelGaunt - Payment Receipt', pad, 70);
+                x.font = '18px Arial'; x.fillStyle = '#64748b'; x.fillText('pixelgaunt.com', pad, 100);
+                rows.forEach(([k, v], i) => { const y = 150 + i * lh; x.fillStyle = '#64748b'; x.font = '20px Arial'; x.fillText(k, pad, y); x.fillStyle = '#0b1020'; x.font = 'bold 20px Arial'; x.fillText(String(v).slice(0, 60), 280, y); });
+                const iw = Math.round(img.width * imgH / img.height);
+                x.drawImage(img, pad, 150 + rows.length * lh, Math.min(iw, W - 2 * pad), imgH);
+                const a = document.createElement('a'); a.download = r.ref + '.png'; a.href = c.toDataURL('image/png'); document.body.appendChild(a); a.click(); a.remove();
             };
-            reflectPlan();
-        })();
+            img.src = r.receiptImage;
+        }
+        function whatsapp(rec) {
+            const r = rec || st.receipt, num = String(CFG.whatsapp || '').replace(/\D/g, '');
+            if (!num) { alert('Our WhatsApp number is not set up yet.'); return; }
+            const text = 'Assalam o Alaikum PixelGaunt, I have paid for my subscription. Please confirm my payment.\n\n' +
+                receiptRows(r).map(([k, v]) => k + ': ' + v).join('\n') + '\n\n(Receipt screenshot attached)';
+            window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(text), '_blank', 'noopener');
+        }
+        async function loadMyPayments() {
+            const u = window.pgFB && window.pgFB.auth.currentUser, box = $('pg-my-payments');
+            if (!u) { box.style.display = 'none'; return; }
+            try {
+                const { db, fs } = await fb();
+                const snap = await withTimeout(fs.getDocs(fs.query(fs.collection(db, 'payments'), fs.where('uid', '==', u.uid))), 15000);
+                const list = snap.docs.map(d => d.data()).sort((a, b) => (b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0) - (a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0));
+                if (!list.length) { box.style.display = 'none'; return; }
+                const label = { pending_verification: ['Waiting for confirmation', 'warn'], confirmed: ['Payment confirmed', 'ok'], rejected: ['Not confirmed - contact us', 'bad'] };
+                $('pg-my-payments-list').innerHTML = list.map((p, i) => { const l = label[p.status] || [p.status, 'warn'];
+                    return `<div class="pay-acc"><div class="row"><b>${esc(p.ref)}</b><span class="pg-pill ${l[1]}">${esc(l[0])}</span></div><div class="row"><span>${esc((CFG.prices[p.cycle] || {}).label || p.cycle)} · ${esc(p.amount)} · ${esc(p.method)} · Txn ${esc(p.txnId)}</span>${p.status === 'pending_verification' ? `<button type="button" class="pay-copy" data-i="${i}">WhatsApp</button>` : ''}</div></div>`; }).join('');
+                $('pg-my-payments-list').querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const p = list[+b.dataset.i]; whatsapp({ ...p, date: p.createdAt && p.createdAt.toDate ? p.createdAt.toDate() : new Date() }); });
+                box.style.display = 'block';
+            } catch (e) { console.warn('Payment receipts unavailable:', e); }
+        }
+        window.pgPay = {
+            go, save, download, whatsapp: () => whatsapp(),
+            next1() { if (!st.method) { $('pay-err-1').textContent = 'Choose how you will pay.'; return; } go(2); }
+        };
+
+        function reflectPlan() {
+            const pillWrap = document.getElementById('sub-current-plan');
+            const pill = document.getElementById('sub-current-plan-pill');
+            if (!window.isLoggedIn) { pillWrap.style.display = 'none'; $('pg-my-payments').style.display = 'none'; return; }
+            const plan = (window.pgUserPlan === 'subscriber') ? 'subscriber' : 'free';
+            pillWrap.style.display = 'block';
+            pill.className = 'pg-pill ' + (plan === 'subscriber' ? 'ok' : '');
+            pill.textContent = plan === 'subscriber' ? "You're subscribed" : "You're on the Free plan";
+            document.getElementById('sub-free-btn').textContent = plan === 'free' ? 'Current Plan' : 'Downgrade to Free';
+        }
+        window.addEventListener('pg-auth', () => { reflectPlan(); loadMyPayments(); });
+        window.addEventListener('pg-plan', reflectPlan);
+        window.pgSubscribeClick = function (cycle) {
+            if (!window.isLoggedIn) { openModal('login-modal'); return; }
+            st.cycle = cycle === 'yearly' ? 'yearly' : 'monthly'; st.method = null;
+            $('pay-plan-line').innerHTML = `${esc(CFG.prices[st.cycle].label)} &nbsp;·&nbsp; <b>${esc(price())}</b>`;
+            ['pay-txn', 'pay-sender-acc', 'pay-shot'].forEach(id => $(id).value = '');
+            $('pay-err-1').textContent = ''; $('pay-err-3').textContent = '';
+            renderMethods(); go(1); openModal('pay-modal');
+        };
+        reflectPlan();
+    })();
     </script>
 
     <div class="modal-overlay" id="login-modal">

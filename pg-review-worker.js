@@ -58,7 +58,7 @@ const MAX_BUNDLE_BYTES = 6 * 1024 * 1024;         // gzip bundle stored in Fires
 const BLOCKED_EXT = ['exe', 'dll', 'bat', 'cmd', 'sh', 'apk', 'msi', 'jar', 'php', 'dmg', 'com', 'scr', 'vbs', 'ps1', 'app', 'deb', 'pkg'];
 const PLANS = {
     free: { maxGames: 1, maxBytes: 5 * 1024 * 1024, period: null, label: 'free' },
-    subscriber: { maxGames: 10, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'subscriber' }
+    subscriber: { maxGames: 1, maxBytes: 10 * 1024 * 1024, period: 'month', label: 'subscriber' }
 };
 
 class HttpError extends Error {
@@ -340,6 +340,55 @@ async function planFor(env, uid) {
     const u = await fsGet(env, 'users/' + uid);
     return (u && u.plan === 'subscriber') ? PLANS.subscriber : PLANS.free;   // plan lives in Firestore, editable only by you/the server (see firestore.rules)
 }
+/* ------------------------------------------ submission limits ------------------------------------------
+   Enforced here (not in the browser) with "slot" documents in the private `limits` collection. Creating a document that
+   already exists fails atomically, so two people pressing Submit at the same second cannot both get the last slot.
+     user_<uid>_<YYYY-MM>   one per account per calendar month (=> also max 1 per day)
+     site_<YYYY-MM-DD>_<n>  n = 1..SITE_DAILY_MAX, for the whole website per day
+   Days/months follow Pakistan time (UTC+5). A slot is released again if the submission is not delivered. */
+const USER_MONTHLY_MAX = 1;      // games per account per month
+const SITE_DAILY_MAX = 3;        // games per day for the whole website
+const PK_OFFSET_MS = 5 * 3600e3;
+const pkDay = (d = new Date()) => new Date(d.getTime() + PK_OFFSET_MS).toISOString().slice(0, 10);
+const pkMonth = (d = new Date()) => pkDay(d).slice(0, 7);
+function nextMonthLabel() {
+    const [y, m] = pkMonth().split('-').map(Number);
+    return new Date(Date.UTC(m === 12 ? y + 1 : y, m % 12, 1)).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+async function claimSlot(env, slotId, sid, uid) {   // true = this submission holds it
+    if (await fsCreate(env, 'limits', slotId, { submission_id: sid, user_id: uid, at: new Date() })) return true;
+    const cur = await fsGet(env, 'limits/' + slotId);
+    return !!(cur && cur.submission_id === sid);
+}
+async function claimLimits(env, uid, sid) {
+    const userSlot = `user_${uid}_${pkMonth()}`;
+    if (!(await claimSlot(env, userSlot, sid, uid))) {
+        throw new HttpError(429, `Each account can submit ${USER_MONTHLY_MAX} game per month, and you have already submitted this month. You can submit your next game from ${nextMonthLabel()}.`, { limit: 'user_monthly' });
+    }
+    const day = pkDay();
+    for (let n = 1; n <= SITE_DAILY_MAX; n++) {
+        const siteSlot = `site_${day}_${n}`;
+        if (await claimSlot(env, siteSlot, sid, uid)) return [userSlot, siteSlot];
+    }
+    await fsDelete(env, 'limits/' + userSlot);   // the account did not get to submit, so give its monthly slot back
+    throw new HttpError(429, `PixelGaunt accepts ${SITE_DAILY_MAX} game submissions per day and today's are all taken. Please try again tomorrow - your monthly submission is still available.`, { limit: 'site_daily' });
+}
+async function releaseLimits(env, slots) {
+    for (const s of slots || []) { try { await fsDelete(env, 'limits/' + s); } catch (e) { console.error('slot release failed', s, e && e.message); } }
+}
+async function siteUsedToday(env) {
+    let used = 0; const day = pkDay();
+    for (let n = 1; n <= SITE_DAILY_MAX; n++) if (await fsGet(env, `limits/site_${day}_${n}`)) used++;
+    return used;
+}
+async function handleQuota(req, env, cors) {
+    const out = { siteDailyMax: SITE_DAILY_MAX, siteDailyUsed: await siteUsedToday(env), userMonthlyMax: USER_MONTHLY_MAX, day: pkDay() };
+    if (req.headers.get('Authorization')) {
+        try { const u = await verifyFirebaseToken(env, req); out.userMonthlyUsed = (await fsGet(env, `limits/user_${u.uid}_${pkMonth()}`)) ? 1 : 0; out.nextMonth = nextMonthLabel(); } catch (e) { /* anonymous view */ }
+    }
+    return json(out, 200, cors);
+}
+
 const COUNTED_STATUSES = ['pending_review', 'approved', 'rejected', 'published'];
 // Statuses that mean "not fully delivered yet": a retry with the same submission id finishes ONLY the missing step(s).
 const RETRYABLE_STATUSES = ['sending', 'drive_failed', 'email_failed', 'submission_failed'];
@@ -379,7 +428,7 @@ async function handleSubmit(req, env, cors) {
     if (pkg.size > Math.min(plan.maxBytes, HARD_MAX_BYTES)) throw new HttpError(413, `The package is ${(pkg.size / 1048576).toFixed(1)} MB. The ${plan.label} plan allows ${plan.maxBytes / 1048576} MB per game.`);
     if (!existing) {
         const used = await usedGames(env, user.uid, plan);
-        if (used >= plan.maxGames) throw new HttpError(403, `You have used ${used} of ${plan.maxGames} game submission(s) on the ${plan.label} plan${plan.period ? ' this ' + plan.period : ''}.`);
+        if (used >= plan.maxGames) throw new HttpError(403, `You have used ${used} of ${plan.maxGames} game submission(s) on the ${plan.label} plan${plan.period ? ' this ' + plan.period + '. You can submit your next game from ' + nextMonthLabel() : '. Subscribe to submit 1 game every month'}.`, { limit: plan.period ? 'user_monthly' : 'plan_total' });
     }
 
     const buf = await pkg.arrayBuffer();
@@ -390,6 +439,10 @@ async function handleSubmit(req, env, cors) {
     // so approval can prove the live game is the one that was reviewed.
     const entryText = dec.decode(info.entryHtml);
     const entryHash = await sha256hex(enc.encode(entryText));
+
+    // 0) Monthly (per account) and daily (whole website) limits - claimed atomically, given back if not delivered.
+    const slots = await claimLimits(env, user.uid, id);
+    try {
 
     // 1) Record the attempt as 'sending'. Not public, not counted against the plan, and firestore.rules refuse a playable
     //    game for anything that is not 'pending_review'.
@@ -447,8 +500,10 @@ async function handleSubmit(req, env, cors) {
     if (!body.ok) body.error = status === 'submission_failed' ? 'Submission could not be completed. Please try again.'
         : status === 'email_failed' ? 'The game was uploaded to Google Drive, but the review email could not be sent: ' + email.error
         : 'The review email was sent, but the Google Drive upload failed: ' + drive.error;
+    if (status !== 'pending_review') await releaseLimits(env, slots);   // a failed/partial attempt does not use up a limit
     // 200 for partial success too: the body carries exactly which step failed. 502 when nothing was delivered.
     return json(body, status === 'submission_failed' ? 502 : 200, cors);
+    } catch (e) { await releaseLimits(env, slots); throw e; }
 }
 
 // Uploads the package to Drive. Never throws: returns { ok, ... } or { ok:false, error } so the caller can report it.
@@ -623,6 +678,7 @@ export default {
                 return json({ ok: true, configured: { FIREBASE_PROJECT_ID: !!env.FIREBASE_PROJECT_ID, FIREBASE_SA_JSON: !!env.FIREBASE_SA_JSON, GOOGLE_OAUTH_CLIENT_ID: !!env.GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET: !!env.GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN: !!env.GOOGLE_OAUTH_REFRESH_TOKEN, RESEND_API_KEY: !!env.RESEND_API_KEY }, review_email_to: reviewTo(env), drive_expected_account: expectedDriveAccount(env), note: 'Drive (all three GOOGLE_OAUTH_* values) and RESEND_API_KEY are both required for submissions.' }, 200, cors);
             }
             if (!env.FIREBASE_PROJECT_ID) throw new HttpError(503, 'Review service is not configured (FIREBASE_PROJECT_ID).');
+            if (req.method === 'GET' && url.pathname === '/quota') return await handleQuota(req, env, cors);
             if (req.method === 'POST' && url.pathname === '/submit') return await handleSubmit(req, env, cors);
             if (req.method === 'POST' && url.pathname === '/admin/approve') return await handleApprove(req, env, cors);
             if (req.method === 'POST' && url.pathname === '/admin/reject') return await handleReject(req, env, cors);
