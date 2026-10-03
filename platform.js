@@ -430,13 +430,22 @@
         const v = verdictBanner(res);
         verdictBox.innerHTML = `<div class="pg-verdict ${v.cls}">${esc(v.title)}<small>${esc(v.sub)}</small></div>`;
         publishBtn.disabled = v.cls === 'bad';
+        root.dispatchEvent(new Event('change'));   // re-evaluate title/terms and show why Submit is disabled, if it is
         // submissionId is created once per selected upload, so a retry after a network error re-uses it (no duplicates)
         pubState = { files, entry: res.entry, verdict: v.cls, sizeTotal: res.sizeTotal, submissionId: newId(), sourceZip: null };
         return res;
     }
 
+    // A promise that gives up after `ms` (resolves to `fallback`) so a slow/blocked database can never freeze the button.
+    const within = (p, ms, fallback) => Promise.race([p, new Promise(r => setTimeout(() => r(fallback), ms))]);
+    function showSubmitError(root, title, detail) {
+        const box = $('.pg-verdict-box', root);
+        if (box) box.innerHTML = `<div class="pg-verdict bad" role="alert">${esc(title)}${detail ? `<small>${esc(detail)}</small>` : ''}</div>`;
+    }
+
     async function submitGame(root, meta) {
-        if (!pubState || !pubState.entry) return;
+        if (!pubState || !pubState.entry) { toast('Upload your game first, then press Submit for review.'); return; }
+        if (pubState.submitting) { toast('Your game is already being sent - please wait.'); return; }
         if (needLogin('Sign in to submit your game.')) return;
         const btn = $('.pg-publish-btn', root);
         const box = $('.pg-verdict-box', root);
@@ -446,11 +455,15 @@
             toast('Submission service is not configured on this site yet (review service URL missing). This is a site setup issue, not a problem with your game - your files were not sent.');
             return;
         }
-        const { allowed, limits, used } = await usageInfo();
-        if (!allowed) { toast(`You've used ${used} of ${limits.maxGames} games on the ${limits.label} plan. Upgrade to submit more.`); return; }
-        if (pubState.submitting) return;   // double-click guard: one send at a time
-        pubState.submitting = true;
-        btn.disabled = true; const oldLabel = btn.textContent; btn.textContent = 'Sending...';
+        pubState.submitting = true;   // double-click guard: one send at a time
+        btn.disabled = true; const oldLabel = 'Submit for review'; btn.textContent = 'Checking...';   // visible the instant it is clicked
+        // Quick plan check in the browser (the review service enforces the real limits anyway). Max 8 s, then carry on.
+        const usage = await within(usageInfo(), 8000, null);
+        if (usage && !usage.allowed) {
+            showSubmitError(root, 'Submission limit reached', `You've used ${usage.used} of ${usage.limits.maxGames} game(s) on the ${usage.limits.label} plan. Each account can submit 1 game per month.`);
+            pubState.submitting = false; btn.disabled = false; btn.textContent = oldLabel; return;
+        }
+        let ticker = null;
         try {
             const user = getUser();
             const id = pubState.submissionId;
@@ -470,10 +483,27 @@
             form.append('description', meta.description || '');
             form.append('packageName', (pubState.sourceZip && pubState.sourceZip.name) || 'game.zip');
             form.append('package', pkgBlob, 'game.zip');
+            // Normal time: about 5-20 seconds (upload + Google Drive + email). Show it, so it never looks frozen.
+            const t0 = Date.now(), mb = (pkgBlob.size / 1048576).toFixed(1);
+            const showProgress = () => {
+                const sec = Math.round((Date.now() - t0) / 1000);
+                btn.textContent = `Sending... ${sec}s`;
+                box.innerHTML = `<div class="pg-verdict" role="status"><i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Sending your game (${mb} MB) for review...<small>Uploading to Google Drive and emailing the review team. This usually takes 5-20 seconds${sec > 25 ? ' - a slow connection can take longer, please keep this page open' : ''}.</small></div>`;
+            };
+            showProgress(); ticker = setInterval(showProgress, 1000);
+            const ctrl = new AbortController(); const killer = setTimeout(() => ctrl.abort(), 150000);
             let res;
             try {
-                res = await fetch(CONFIG.reviewEndpoint.replace(/\/+$/, '') + '/submit', { method: 'POST', headers: { Authorization: 'Bearer ' + await user.getIdToken() }, body: form });
-            } catch (netErr) { throw new Error('Could not reach the submission service. Check your connection and press Submit again - nothing will be duplicated.'); }
+                const token = await within(user.getIdToken(), 15000, null);
+                if (!token) throw Object.assign(new Error('Your login could not be confirmed. Refresh the page, sign in again and press Submit.'), { auth: true });
+                res = await fetch(CONFIG.reviewEndpoint.replace(/\/+$/, '') + '/submit', { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: form, signal: ctrl.signal });
+            } catch (netErr) {
+                if (netErr && netErr.auth) throw netErr;
+                const timedOut = netErr && netErr.name === 'AbortError';
+                showSubmitError(root, timedOut ? 'The review service did not answer in time' : 'Could not reach the review service',
+                    (timedOut ? 'Nothing was confirmed after 2.5 minutes. ' : 'Your game was not sent. ') + 'Check your internet connection and press Submit again - nothing will be duplicated. If this keeps happening, the review service (' + CONFIG.reviewEndpoint + ') may not be deployed or set up yet.');
+                const e = new Error(timedOut ? 'Review service timed out.' : 'Could not reach the review service.'); e.shown = true; throw e;
+            } finally { clearTimeout(killer); clearInterval(ticker); }
             let data = {}; try { data = await res.json(); } catch (e) { /* non-JSON error page */ }
             // The ONLY success condition: the review service says both Drive and the email were delivered.
             const delivered = res.ok && data.ok === true && data.status === 'pending_review';
@@ -534,7 +564,8 @@
             if (err && err.code === 'permission-denied') msg = 'Your game WAS delivered for review (Google Drive + email), but the playable preview copy could not be saved: database permission denied - the latest firestore.rules are not published yet. Press Submit again after that; nothing will be duplicated.';
             else if (err && err.code === 'unavailable') msg = 'The database is temporarily unreachable. Press Submit again - nothing will be duplicated.';
             else if (err && err.code === 'unauthenticated') msg = 'Authentication required. Sign in again and press Submit.';
-            if (!err || !err.shown) toast(msg); else toast('Submission not completed - see the details above.');
+            if (ticker) clearInterval(ticker);
+            if (!err || !err.shown) { showSubmitError(root, 'Submission not completed', msg); toast(msg); } else toast('Submission not completed - see the details above.');
             if (pubState) pubState.submitting = false;   // allow a retry (same submission id, so nothing is duplicated)
             btn.disabled = false; btn.textContent = oldLabel;
         }
@@ -627,8 +658,16 @@
         $('#pg-tournament-help', root).addEventListener('click', e => { e.preventDefault(); toast('Your game posts match results to your own server; PixelGaunt links to it from the tournament page. See the Tournaments section below for the full flow.'); });
         const syncPublishEnabled = () => {
             const btn = $('.pg-publish-btn', root);
-            if (!pubState || pubState.verdict === 'bad') { btn.disabled = true; return; }
-            btn.disabled = !($('#pg-title', root).value.trim() && $('#pg-terms-check', root).checked);
+            if (pubState && pubState.submitting) return;
+            let why = '';
+            if (!pubState) why = 'Upload your game first.';
+            else if (pubState.verdict === 'bad') why = 'Fix the problems found in the check above, then upload again.';
+            else if (!$('#pg-title', root).value.trim()) why = 'Enter a game title to enable Submit.';
+            else if (!$('#pg-terms-check', root).checked) why = 'Tick the box confirming this is your own work to enable Submit.';
+            btn.disabled = !!why;
+            let hint = $('#pg-submit-hint', root);
+            if (!hint) { hint = document.createElement('p'); hint.id = 'pg-submit-hint'; hint.className = 'pg-note'; hint.style.marginTop = '8px'; btn.insertAdjacentElement('afterend', hint); }
+            hint.textContent = why;
         };
         root.addEventListener('input', syncPublishEnabled);
         root.addEventListener('change', syncPublishEnabled);
