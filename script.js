@@ -16,7 +16,8 @@
             { id: 13, studio: 'Pixel Gaunt', title: 'SnakeScape', genre: 'Arcade', controls: 'Keyboard / Touch.', howToPlay: 'Classic snake action — grow long, avoid the walls.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'SnakeScape.png', url: 'snakescape.html', bgm: 'SnakeScape.mp3', orientation: 'landscape' },
             { id: 14, studio: 'Pixel Gaunt', title: 'Stick Man Velocity', genre: 'Action', controls: 'Mouse / Touch. Tap to play.', howToPlay: 'Tap to keep Stick Man moving at full velocity.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Stick Man Velocity.png', url: 'stick-man-velocity.html', bgm: 'Stick Man Velocity.mp3', orientation: 'landscape' },
             { id: 15, studio: 'Pixel Gaunt', title: 'Tetris Reimagine', genre: 'Puzzle', controls: 'Keyboard / Touch.', howToPlay: 'Clear lines across 100 levels of reimagined Tetris.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Tetris Reimagine.png', url: 'tetris-reimagine.html', bgm: 'Tetris Reimagine.mp3', orientation: 'portrait' },
-            { id: 16, studio: 'Pixel Gaunt', title: 'Girl The Driller', genre: 'Adventure', controls: 'Mouse / Touch.', howToPlay: 'Click to Go & Eat Mouse.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'August 20, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Girl The Driller.png', preview: 'Girl The Driller.gif', url: 'girl-the-driller.html', bgm: 'Girl The Driller.mp3', orientation: 'landscape' }
+            { id: 16, studio: 'Pixel Gaunt', title: 'Girl The Driller', genre: 'Adventure', controls: 'Mouse / Touch.', howToPlay: 'Click to Go & Eat Mouse.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'August 20, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Girl The Driller.png', preview: 'Girl The Driller.gif', url: 'girl-the-driller.html', bgm: 'Girl The Driller.mp3', orientation: 'landscape' },
+            { id: 17, studio: 'Pixel Gaunt', title: 'Girl The Driller 2.5D', genre: 'Adventure', controls: 'Mouse / Touch.', howToPlay: 'Click to Go & Eat Mouse.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Girl The Driller.png', preview: 'Girl The Driller.gif', url: 'girl-the-driller25d.html', bgm: 'Girl The Driller.mp3', orientation: 'landscape' }
         ];
 
         /* ================= POPULARITY / PLAY-COUNT RANKING SYSTEM ================= */
@@ -758,12 +759,16 @@
         }
 
         /* ================= FEATURED RAIL, CATEGORIES, SEARCH ================= */
-        // Featured = the 3 games with the most plays across all visitors TODAY (UTC), read from
-        // the shared Firestore daily counter. This curated trio is only the fallback shown before
-        // that loads (or if it's ever unavailable) - not an editorial pick.
-        // (The hero above the rail stays fixed on Girl The Driller regardless of any of this.)
-        const FEATURED_FALLBACK_IDS = [16, 15, 12];
-        const FEATURED_COUNT = 3;
+        // "Trending" rail = a fixed, hand-picked list (in this order). The `label` only changes the
+        // text on the rail tile; the game's own title in the library stays as it is.
+        // To change the rail, edit this list (ids are the `id` values in the games array above).
+        const TRENDING = [
+            { id: 16, label: 'Girl The Driller (Demo 2D)' },
+            { id: 17, label: 'Girl The Driller (Demo 2.5D)' },
+            { id: 15 },   // Tetris Reimagine
+            { id: 12 },   // Serpent Relic
+            { id: 7 }     // Mimi Merge
+        ];
         const GENRE_ICONS = { Arcade: 'fa-gamepad', Puzzle: 'fa-puzzle-piece', Racing: 'fa-flag-checkered', Action: 'fa-bolt', Adventure: 'fa-compass', Card: 'fa-clone' };
         let activeGenre = 'All';
         let searchQuery = '';
@@ -774,32 +779,21 @@
             const rail = document.getElementById('featured-strip');
             if (!rail) return;
             rail.innerHTML = '';
-            list.forEach(g => {
+            list.forEach(({ g, label }) => {
+                const title = label || g.title;
                 const a = document.createElement('a');
                 a.className = 'pg-tile';
                 a.href = gameHref(g);
-                a.setAttribute('aria-label', g.title + ', ' + g.genre + ' game');
+                a.setAttribute('aria-label', title + ', ' + g.genre + ' game');
                 const img = g.community ? (g.thumb ? encodeURI(g.thumb) : '') : encodeURI(g.image);
-                a.innerHTML = (img ? `<img src="${esc(img)}" alt="" loading="lazy" decoding="async" width="310" height="194">` : `<div class="pg-thumb-fallback" aria-hidden="true">${esc((g.title || '?').charAt(0).toUpperCase())}</div>`)
-                    + `<div class="pg-tile-info"><b>${esc(g.title)}</b><span>${esc(g.genre)}</span></div>`;
+                a.innerHTML = (img ? `<img src="${esc(img)}" alt="" loading="lazy" decoding="async" width="310" height="194">` : `<div class="pg-thumb-fallback" aria-hidden="true">${esc((title || '?').charAt(0).toUpperCase())}</div>`)
+                    + `<div class="pg-tile-info"><b>${esc(title)}</b><span>${esc(g.genre)}</span></div>`;
                 rail.appendChild(a);
             });
         }
 
         function renderFeatured() {
-            // Paint the curated fallback immediately so the section is never empty, then try to
-            // replace it with today's real top 3 once (or if) that loads.
-            paintFeatured(FEATURED_FALLBACK_IDS.map(id => games.find(g => g.id === id)).filter(Boolean));
-            Core_whenFirebase().then(async fb => {
-                const { db, fs } = fb;
-                const snap = await fs.getDocs(fs.query(fs.collection(db, 'daily_plays', todayKey(), 'games'), fs.orderBy('count', 'desc'), fs.limit(FEATURED_COUNT)));
-                if (!snap.docs.length) return; // no plays recorded yet today - keep the fallback
-                const top = snap.docs.map(d => {
-                    const idStr = d.id;
-                    return idStr.indexOf('c_') === 0 ? window.communityGames.find(g => g.id === idStr) : games.find(g => String(g.id) === idStr);
-                }).filter(Boolean);
-                if (top.length) paintFeatured(top);
-            }).catch(err => console.warn('Daily featured ranking unavailable, showing fallback:', err));
+            paintFeatured(TRENDING.map(t => ({ g: games.find(g => g.id === t.id), label: t.label })).filter(t => t.g));
         }
 
         function syncCategoryButtons() {
