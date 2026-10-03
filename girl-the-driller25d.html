@@ -410,7 +410,12 @@
            art shows with no CSS background behind it) completely untouched. No border/outline/
            box-shadow is added in its place - the icon art now sits directly in the HUD with
            nothing drawn around it, same size/position/spacing as before. */
-        .res-icon { width: calc(var(--ui-scale) * 19px); height: calc(var(--ui-scale) * 19px); margin-right: calc(var(--ui-scale) * 8px); display: inline-block; object-fit: contain; border: none; outline: none; box-shadow: none; }
+        /* Mineral HUD icons are live Three.js canvases. The game's global `canvas { position:absolute }` rule
+           must not apply to them (it pulled them out of the row and collapsed the whole HUD), so they stay in
+           normal flow. Layout footprint is IDENTICAL to the old 19px icons (19px box + 8px gap per row, 19px row
+           height), so the HUD panel keeps its original size; the icon itself is drawn larger (31px) by letting it
+           extend slightly past its slot via negative margins, with the transparent corners clear of the text. */
+        .res-icon { position: relative; top: auto; left: auto; z-index: auto; flex: 0 0 auto; display: block; width: calc(var(--ui-scale) * 31px); height: calc(var(--ui-scale) * 31px); margin: calc(var(--ui-scale) * -6px) calc(var(--ui-scale) * 2px) calc(var(--ui-scale) * -6px) calc(var(--ui-scale) * -6px); border: none; outline: none; box-shadow: none; image-rendering: auto; filter: drop-shadow(0 calc(var(--ui-scale) * 1px) calc(var(--ui-scale) * 1.5px) rgba(0,0,0,.55)); pointer-events: none; }
         .icon-iron, .icon-bronze, .icon-gold, .icon-uranium, .icon-diamond { background: transparent; }
 
         /* --- SCORE BOARD (sci-fi badge artwork) ---
@@ -2964,11 +2969,11 @@
          showing Girl there exactly as in Normal Levels, with no Jet art ever drawn into it. -->
 <div id="girl-face-hud"><canvas id="girl-face-hud-canvas"></canvas></div>
 <div id="hud">
-<div class="resource-row"><img alt="" class="res-icon icon-iron" src="mineral-icon-iron.png"/> Iron: <span id="val-iron">0</span></div>
-<div class="resource-row"><img alt="" class="res-icon icon-bronze" src="mineral-icon-bronze.png"/> Bronze: <span id="val-bronze">0</span></div>
-<div class="resource-row"><img alt="" class="res-icon icon-gold" src="mineral-icon-gold.png"/> Gold: <span id="val-gold">0</span></div>
-<div class="resource-row"><img alt="" class="res-icon icon-diamond" src="mineral-icon-diamond.png"/> Diamond: <span id="val-diamond">0</span></div>
-<div class="resource-row"><img alt="" class="res-icon icon-uranium" src="mineral-icon-uranium.png"/> Uranium: <span id="val-uranium">0</span></div>
+<div class="resource-row"><canvas class="res-icon icon-iron" data-mineral="iron" width="72" height="72" aria-hidden="true"></canvas> Iron: <span id="val-iron">0</span></div>
+<div class="resource-row"><canvas class="res-icon icon-bronze" data-mineral="bronze" width="72" height="72" aria-hidden="true"></canvas> Bronze: <span id="val-bronze">0</span></div>
+<div class="resource-row"><canvas class="res-icon icon-gold" data-mineral="gold" width="72" height="72" aria-hidden="true"></canvas> Gold: <span id="val-gold">0</span></div>
+<div class="resource-row"><canvas class="res-icon icon-diamond" data-mineral="diamond" width="72" height="72" aria-hidden="true"></canvas> Diamond: <span id="val-diamond">0</span></div>
+<div class="resource-row"><canvas class="res-icon icon-uranium" data-mineral="uranium" width="72" height="72" aria-hidden="true"></canvas> Uranium: <span id="val-uranium">0</span></div>
 </div>
 <div id="tool-status-hud">
 <div style="color: #fff; font-size: calc(var(--ui-scale) * 12px); text-align: center; margin-bottom: 8px; border-bottom: 1px solid #444; padding-bottom: 4px;">ACTIVE SYSTEMS</div>
@@ -13176,7 +13181,17 @@ const GTDTutorial = (function () {
                 fxShadow(suitTier.color, suitTier.glow + (gpActive ? gpRamp * 20 : 0));
             }
 
-            if (activeFrame && activeFrame.complete && activeFrame.naturalWidth !== 0) { 
+            if (g3on() && window.GTD3D.girlReady && girlFrames === GIRL0_GAMEPLAY_FRAMES && girlBaseScale && !suitTier.color) {
+                // 2.5D Three.js Girl (visual only): same position, same facing + capture spin and same scale as the sprite below. Her flying / walking cycle runs at the speed of the
+                // game's own animation clock (cycles/sec = 60 ticks / (frame threshold x 8-step cycle), using the existing idle / moving / thrusting thresholds) + activity (0 idle,
+                // 1 moving, 2 thrusting); the phase itself is integrated in the 3D layer so it is continuous. The boot-thrust fire below is unchanged (same local anchor).
+                {
+                    const gMoving = Math.hypot(this.velocityX, this.velocityY) > 0.5;
+                    const gThr = this.isThrusting ? girlFrameThresholds.thrust : (gMoving ? girlFrameThresholds.moving : girlFrameThresholds.idle);
+                    window.GTD3D.girl(this.x, this.y, this.drawAngle + this.deathSpinAngle, this.currentFrameIndex, girlBaseScale,
+                        60 / (gThr * Math.max(1, girlFrames.length - 1)), this.isThrusting ? 2 : (gMoving ? 1 : 0));
+                }
+            } else if (activeFrame && activeFrame.complete && activeFrame.naturalWidth !== 0) { 
                 if (suitTier.color) {
                     // Tint the sprite with the current suit-tier color on an isolated
                     // offscreen buffer (source-atop there, not on the main canvas) so the
@@ -13365,6 +13380,12 @@ const GTDTutorial = (function () {
             let srcX = 0, srcY = 0, srcW = frame.naturalWidth, srcH = frame.naturalHeight;
             if (bbox && girlBaseScale) { curW = bbox.width * girlBaseScale; curH = bbox.height * girlBaseScale; srcX = bbox.x; srcY = bbox.y; srcW = bbox.width; srcH = bbox.height; }
 
+            if (g3on() && window.GTD3D.girlReady && girlFrames === GIRL0_GAMEPLAY_FRAMES && girlBaseScale) {
+                // 2.5D Three.js dash afterimage (visual only): same position / angle, same fade (alpha) and proportional shrink as the sprite ghost below; posed at the point of the
+                // step cycle its captured animation frame corresponds to
+                window.GTD3D.girlGhost(g.x, g.y, g.drawAngle, g.frameIndex, girlBaseScale * scale, alpha, 2 * Math.PI * g.frameIndex / Math.max(1, girlFrames.length - 1));
+                continue;
+            }
             ctx.save();
             ctx.translate(g.x, g.y);
             ctx.rotate(g.drawAngle);
@@ -13713,8 +13734,10 @@ const GTDTutorial = (function () {
         let size = Math.max(10, Math.round(16 * uiScale));
         let flyer = document.createElement('div');
         flyer.className = 'resource-collect-fly-icon';
-        if (iconImg && iconImg.src) {
-            flyer.style.backgroundImage = `url(${iconImg.src})`;
+        let flySrc = (iconImg && iconImg.src) || null;
+        if (kindName !== 'coin' && g3on() && window.GTD3D.hudIconURL) flySrc = window.GTD3D.hudIconURL(kindName) || flySrc; // same gem the drop/HUD show
+        if (flySrc) {
+            flyer.style.backgroundImage = `url(${flySrc})`;
             flyer.style.backgroundSize = 'contain';
             flyer.style.backgroundRepeat = 'no-repeat';
             flyer.style.backgroundPosition = 'center';
@@ -17994,7 +18017,16 @@ const GTDTutorial = (function () {
         // with no added rotation, glow, border or background beyond what's in the sprite itself.
         const bhSpriteLength = blackHole.radius * 3.5;
         let bhFrameIdx = Math.floor(timeNow / 140) % blackHoleFrames.length;
+        if (g3on()) {
+            // 2.5D Three.js Black Hole (visual only) - the SAME model the Extra Level uses (GTD3D.blackHole). Same centre, same frame cycle (timeNow/140),
+            // and the same on-screen footprint the sprite had: drawBlackHoleSprite scales the art by bhSpriteLength / (frame-0 art height), so the
+            // 256px frame box is 256 * that scale wide, and the model's box is radius*2.1. The disc turns at the Extra Level giant's rate (0.02 rad / 60fps tick);
+            // this is draw-only - blackHole.spinAngle (gameplay state) is not touched.
+            let bhRefH = blackHoleRefHeight || (blackHoleFrames[0] && blackHoleFrames[0].naturalHeight) || 256;
+            window.GTD3D.blackHole(blackHole.x, blackHole.y, (256 * bhSpriteLength / bhRefH) / 2.1, timeNow * 0.0012, bhFrameIdx, 0, 200);
+        } else {
         drawBlackHoleSprite(blackHole.x, blackHole.y, bhSpriteLength, bhFrameIdx);
+        }
         // TEXT-FIX: own save/restore + explicit clean-state reset for this label, independent
         // of whatever state the black hole sprite draw above left behind - text should never
         // inherit sprite/effect state, only its own.
@@ -18332,6 +18364,10 @@ const GTDTutorial = (function () {
                 // Reuses the exact same asset/bboxes/sizing-ratio as the Jet's own rocket
                 // thrust in Extra Levels (ROCKET_THRUST_BBOXES / ROCKET_THRUST_WIDTH_RATIO /
                 // getRocketThrustFrame) - not a new effect.
+                if (g3on()) {
+                    // 2.5D Three.js Mining Rocket (visual only) - same position / heading / frame / drawn size / thrust frame as the sprite + thrust below
+                    window.GTD3D.rocket(rk.x, rk.y, rk.angle, rkIdx, rw, rh, rk.thrustFrameIndex || 0);
+                } else {
                 let tImg = getRocketThrustFrame(rk.thrustFrameIndex || 0);
                 if (tImg) {
                     let tBox = ROCKET_THRUST_BBOXES[(rk.thrustFrameIndex || 0) % ROCKET_THRUST_BBOXES.length];
@@ -18346,6 +18382,7 @@ const GTDTutorial = (function () {
                     else { ctx.drawImage(rkFrame, -rw / 2, -rh / 2, rw, rh); }
                 } else {
                     ctx.fillStyle = '#39ff14'; ctx.fillRect(-11, -6, 22, 11);
+                }
                 }
                 ctx.restore();
             }
@@ -18392,10 +18429,7 @@ const GTDTutorial = (function () {
             }
 
             let floatY = Math.sin(timeNow*0.003+i)*10;
-            // Ring is drawn unconditionally (not gated on the image having loaded) so the
-            // circular indicator is always present even if a specific item's sprite is
-            // missing/broken - matching how the asteroid ring never depends on ast.img.
-            drawObjectRing(item.x, item.y + floatY, Math.max(item.width, item.height) / 2 + 5, 'rgba(0, 243, 255, 0.35)', 2);
+            // CIRCLE REMOVED: the cyan circle that used to surround each mineral collectable is gone (the collectable and its pickup range are unchanged).
             if (item.img && item.img.complete && item.img.naturalWidth !== 0) {
                 // Task 2/5/6 fix: crop to the sprite's actual visible pixels and contain-fit
                 // (preserve aspect ratio) inside the item's box instead of stretching the
@@ -18564,8 +18598,13 @@ const GTDTutorial = (function () {
             }
 
             let antiqueFloatY = Math.sin(timeNow * 0.003 + i) * 10;
-            drawObjectRing(item.x, item.y + antiqueFloatY, Math.max(item.width, item.height) / 2 + 5, 'rgba(255,182,193,0.35)', 2);
-            if (item.img && item.img.complete && item.img.naturalWidth !== 0) {
+            // CIRCLE REMOVED: the pink circle that used to surround each Dragon Skull / Flower collectable is gone (the collectable and its pickup range are unchanged).
+            if (g3on() && (item.typeIndex === ANTIQUE_TYPE_DRAGON_SKULL || item.typeIndex === ANTIQUE_TYPE_FLOWER) && item.img && item.img.complete && item.img.naturalWidth !== 0) {
+                // 2.5D Three.js Dragon Skull / Flower (visual only) - same position (incl. the float bob) / same fit scale and anchor the sprite below uses
+                let vb3 = getVisibleBBox(item.img);
+                (item.typeIndex === ANTIQUE_TYPE_FLOWER ? window.GTD3D.flower : window.GTD3D.dragonSkull)(item.x, item.y + antiqueFloatY, vb3 ? Math.min(item.width / vb3.width, item.height / vb3.height) : item.width / item.img.naturalWidth,
+                    vb3 ? vb3.x + vb3.width / 2 : item.img.naturalWidth / 2, vb3 ? vb3.y + vb3.height / 2 : item.img.naturalHeight / 2, i);
+            } else if (item.img && item.img.complete && item.img.naturalWidth !== 0) {
                 let vb = getVisibleBBox(item.img);
                 if (vb) {
                     let fitScale = Math.min(item.width / vb.width, item.height / vb.height);
@@ -19208,7 +19247,7 @@ const GTDTutorial = (function () {
         if (drillsList.length > 0) AudioManager.startLoop('drill'); else AudioManager.stopLoop('drill');
 
         for (let i = drillsList.length - 1; i >= 0; i--) {
-            let drill = drillsList[i]; drill.life--;
+            let drill = drillsList[i]; drill.life--; const dFlamePad = g3on() ? 4 : 0; // 3D drill draws UNDER the 2D particle pass (the sprite used to draw over it), so start the flame just outside the model instead of inside it
             // SHARED TARGET: every Drill just follows sharedDrillTarget (resolved once per
             // frame above, before the spawn block) instead of independently judging its own
             // target's validity and searching for a replacement. That per-Drill approach was
@@ -19229,7 +19268,7 @@ const GTDTutorial = (function () {
                 // never carry over a retreat phase that belonged to the previous target.
                 drill.retreating = false;
             }
-            let drawX = drill.x; let drawY = drill.y; createThrustParticle(drill.x - Math.cos(drill.angle)*15, drill.y - Math.sin(drill.angle)*15, drillMissileFlameColor(), -Math.cos(drill.angle)*2, -Math.sin(drill.angle)*2, 0.1, 4);
+            let drawX = drill.x; let drawY = drill.y; createThrustParticle(drill.x - Math.cos(drill.angle)*(15 + dFlamePad), drill.y - Math.sin(drill.angle)*(15 + dFlamePad), drillMissileFlameColor(), -Math.cos(drill.angle)*2, -Math.sin(drill.angle)*2, 0.1, 4);
 
             if (drill.target) {
                 let dx = drill.target.x - drill.x; let dy = drill.target.y - drill.y; let dist = Math.hypot(dx, dy); let activeTargetRadius = drill.target.radius * (1 + (1 - (drill.target.health / drill.target.maxHealth)) * 0.4);
@@ -19246,11 +19285,11 @@ const GTDTutorial = (function () {
                     // threshold.
                     drill.x -= Math.cos(drill.angle) * playerStats.drillFlySpeed;
                     drill.y -= Math.sin(drill.angle) * playerStats.drillFlySpeed;
-                    createThrustParticle(drill.x + Math.cos(drill.angle)*16, drill.y + Math.sin(drill.angle)*16, drillMissileFlameColor(), Math.cos(drill.angle)*2, Math.sin(drill.angle)*2, 0.1, 2.5);
+                    createThrustParticle(drill.x + Math.cos(drill.angle)*(16 + dFlamePad), drill.y + Math.sin(drill.angle)*(16 + dFlamePad), drillMissileFlameColor(), Math.cos(drill.angle)*2, Math.sin(drill.angle)*2, 0.1, 2.5);
                     if (dist >= retreatDist) drill.retreating = false; // far enough back - approach again next frame
                 } else if (dist > contactDist) {
                     // APPROACH (unchanged from before)
-                    drill.x += Math.cos(drill.angle) * playerStats.drillFlySpeed; drill.y += Math.sin(drill.angle) * playerStats.drillFlySpeed; createThrustParticle(drill.x - Math.cos(drill.angle)*16, drill.y - Math.sin(drill.angle)*16, drillMissileFlameColor(), -Math.cos(drill.angle)*2, -Math.sin(drill.angle)*2, 0.1, 2.5);
+                    drill.x += Math.cos(drill.angle) * playerStats.drillFlySpeed; drill.y += Math.sin(drill.angle) * playerStats.drillFlySpeed; createThrustParticle(drill.x - Math.cos(drill.angle)*(16 + dFlamePad), drill.y - Math.sin(drill.angle)*(16 + dFlamePad), drillMissileFlameColor(), -Math.cos(drill.angle)*2, -Math.sin(drill.angle)*2, 0.1, 2.5);
                 } else {
                     // CONTACT: exactly ONE valid hit is registered here per approach - immediately
                     // afterward the drill is put into RETREAT so it can never re-enter this branch
@@ -19276,7 +19315,8 @@ const GTDTutorial = (function () {
             drill.spinFrame = (drill.spinFrame + 1) % (drillFrames.length * 4);
             let dIdx = Math.floor(drill.spinFrame / 4) % drillFrames.length;
             let dImg = drillFrames[dIdx];
-            if (dImg && dImg.complete && dImg.naturalWidth !== 0) {
+            if (g3on()) { window.GTD3D.drill(drawX, drawY, drill.angle, drill.spinFrame, DRILL_TARGET_LENGTH); } // 2.5D Three.js drill (visual only) - same position/angle/spin/size as the sprite below
+            else if (dImg && dImg.complete && dImg.naturalWidth !== 0) {
                 let dBox = drillFrameBBoxes[dIdx];
                 ctx.save(); ctx.translate(drawX, drawY); ctx.rotate(drill.angle);
                 // PIXEL-PERFECT RENDERING: drill continuously rotates to its live travel/approach angle -
@@ -19793,13 +19833,8 @@ const GTDTutorial = (function () {
             // indicator is consistently present across the whole object field. All three route
             // through the same drawObjectRing helper, sized/centered to that object's own
             // radius (post-bloat), so it always fits the object it belongs to.
-            if (ast.tier === 'hardened') {
-                drawObjectRing(ast.x, ast.y, ast.radius * bloatScale + 6, 'rgba(255, 120, 0, 0.75)', 3);
-            } else if (ast.tier === 'weak') {
-                drawObjectRing(ast.x, ast.y, ast.radius * bloatScale + 4, 'rgba(255, 255, 255, 0.25)', 1.5);
-            } else {
-                drawObjectRing(ast.x, ast.y, ast.radius * bloatScale + 5, 'rgba(0, 243, 255, 0.35)', 2);
-            }
+            // CIRCLE REMOVED: the circular outline that used to be drawn around every destroyable object here (orange hardened /
+            // dim white weak / cyan normal) is gone. The object itself, its 2.5D model and its health bar below are unchanged.
             ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(ast.x - 20, ast.y - (ast.radius * bloatScale) - 15, 40, 5); ctx.fillStyle = ast.typeInfo.color; ctx.fillRect(ast.x - 20, ast.y - (ast.radius * bloatScale) - 15, 40 * healthPercent, 5);
 
             // --- MISSILE PRE-LAUNCH TARGET INDICATOR ---------------------------------------
@@ -19827,7 +19862,7 @@ const GTDTutorial = (function () {
 
         }
 
-        if (g3on()) window.GTD3D.end();
+        // (GTD3D.end() now runs right after the Pickaxe/Axe block below, so the 2.5D axe is positioned before the 3D frame renders)
         // Draw/update any active electric connections using this frame's just-updated object
         // positions (see the connected-object energy cluster system defined above).
         updateAndDrawEnergyConnections(timeNow);
@@ -19941,16 +19976,19 @@ const GTDTutorial = (function () {
                     let swing = Math.sin(swingPhase * Math.PI * 2) * 1.5;
                     ctx.rotate(drawAngle + swing); 
                     let axeFrame = axeFrames[axeFrameIdx];
-                    if (axeFrame.complete && axeFrame.naturalWidth !== 0) { ctx.drawImage(axeFrame, -10, -40, 50, 50); } else { ctx.fillStyle = '#ff9900'; ctx.fillRect(-10,-40,30,30); }
+                    if (g3on()) { window.GTD3D.axe(hm.x, hm.y, drawAngle + swing, axeFrameIdx, true); } // 2.5D Three.js axe (visual only) - same position/rotation/swing/frame as the sprite below
+                    else if (axeFrame.complete && axeFrame.naturalWidth !== 0) { ctx.drawImage(axeFrame, -10, -40, 50, 50); } else { ctx.fillStyle = '#ff9900'; ctx.fillRect(-10,-40,30,30); }
                 } else {
                     ctx.rotate(drawAngle); 
                     let axeFrame = axeFrames[0];
-                    if (axeFrame.complete && axeFrame.naturalWidth !== 0) { ctx.drawImage(axeFrame, -25, -25, 50, 50); } else { ctx.fillStyle = '#ff9900'; ctx.fillRect(-25,-25,30,30); }
+                    if (g3on()) { window.GTD3D.axe(hm.x, hm.y, drawAngle, 0, false); } // 2.5D Three.js axe (visual only) - same position/rotation/frame as the sprite below
+                    else if (axeFrame.complete && axeFrame.naturalWidth !== 0) { ctx.drawImage(axeFrame, -25, -25, 50, 50); } else { ctx.fillStyle = '#ff9900'; ctx.fillRect(-25,-25,30,30); }
                 }
                 ctx.restore();
             }
             }
         }
+        if (g3on()) window.GTD3D.end();
 
         if (playerStats.hasDrone && mainDrone && playerShip.deathState === PLAYER_STATE_NORMAL) {
             let isDroneOd = overdrives.drone.activeTimer > 0;
@@ -22599,7 +22637,13 @@ const GTDTutorial = (function () {
         ctx.restore();
     }
 
-    function esDrawBlackHoleSprite(x, y, radius, spinAngle, flashAlpha) {
+    function esDrawBlackHoleSprite(x, y, radius, spinAngle, flashAlpha, isGiant) {
+        if (g3on()) {
+            // 2.5D Three.js Black Hole (visual only) - same position / radius (sprite box = radius*2.1) / spin / frame / hit-flash as the sprite below.
+            // Small hazards sit behind the projectiles, the giant boss in front of everything - the same stacking the 2D sprites had.
+            window.GTD3D.blackHole(x, y, radius, spinAngle, Math.floor((spinAngle * 2) % blackHoleFrames.length), flashAlpha || 0, isGiant ? 420 : 200);
+            return;
+        }
         let frame = blackHoleFrames && blackHoleFrames[Math.floor((spinAngle * 2) % blackHoleFrames.length)];
         if (frame && frame.complete && frame.naturalWidth !== 0) {
             let size = radius * 2.1;
@@ -22829,7 +22873,7 @@ const GTDTutorial = (function () {
             // hit-shake offset) to match how the normal-level ring/bar are drawn relative to
             // the hit-shaken sprite above them.
             let oHealthPercent = o.hp / o.maxHp;
-            drawObjectRing(o.x, o.y, o.radius + 5, 'rgba(0, 243, 255, 0.35)', 2);
+            // CIRCLE REMOVED: the cyan circle around Extra Level destroyable objects is gone (object, 2.5D model and health bar unchanged).
             ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(o.x - 20, o.y - o.radius - 15, 40, 5);
             ctx.fillStyle = o.typeInfo.color; ctx.fillRect(o.x - 20, o.y - o.radius - 15, 40 * oHealthPercent, 5);
         });
@@ -22837,6 +22881,8 @@ const GTDTutorial = (function () {
         // Jet-fire projectiles: the existing jet-fire sprite/animation, already drawn nose-right
         // (no rotation needed - see Section 6), traveling right toward incoming targets.
         es.projectiles.forEach(p => {
+            // 2.5D Three.js jet fireball (visual only) - same position / existing frame cycle / same 34*ES_SIZE_MULT footprint as the sprite below
+            if (g3on()) { window.GTD3D.jetFire(p.x, p.y, p.frameIndex || 0, p.frameTimer || 0, 34 * ES_SIZE_MULT); return; }
             let fImg = getJetFireFrame(p.frameIndex || 0);
             if (fImg) {
                 let fw = 34 * ES_SIZE_MULT, fh = 34 * ES_SIZE_MULT;
@@ -22885,6 +22931,10 @@ const GTDTutorial = (function () {
                 mh = ES_JET_MISSILE_DRAW_LENGTH; mw = mh * rocketArtAspect;
             }
 
+            if (g3on()) {
+                // 2.5D Three.js jet missile (visual only) - the SAME rocket model the Normal-level Mining Rocket uses; same position / live homing angle / frame / drawn size / thrust frame as the sprite + thrust below
+                window.GTD3D.rocket(m.x, m.y, m.angle || 0, mIdx, mw, mh, m.thrustFrameIndex || 0);
+            } else {
             // ROCKET THRUST: drawn FIRST/behind the rocket body, inside this same
             // translate+rotate transform, so it inherits this missile's exact position AND
             // rotation every frame with zero separate tracking - it is always attached and
@@ -22914,6 +22964,8 @@ const GTDTutorial = (function () {
                 ctx.fillStyle = '#39ff14';
                 ctx.fillRect(-6, -3, 12, 6);
             }
+            }
+
             ctx.restore();
         });
 
@@ -22958,7 +23010,7 @@ const GTDTutorial = (function () {
             // HIT JUICE (Section 10): same shake/flash treatment as a regular object.
             let bhShake = esGetHitShakeOffset(bh, now);
             let bhFlash = esGetHitFlashAlpha(bh, now);
-            esDrawBlackHoleSprite(bh.x + bhShake.x, bh.y + bhShake.y, bh.radius, bh.spinAngle, bhFlash);
+            esDrawBlackHoleSprite(bh.x + bhShake.x, bh.y + bhShake.y, bh.radius, bh.spinAngle, bhFlash, true);
             // GIANT BLACK HOLE OVERHAUL: Power/HP display is the ONLY readout for this phase -
             // there is no timer anymore (IMPORTANT: "Show ONLY its Power/HP indicator"). Same
             // black-backed colored bar every destroyable object in this mode already draws above
