@@ -191,6 +191,16 @@
                     const { db, fs } = window.pgFB;
                     const snap = await fs.getDocs(fs.query(fs.collection(db, 'community_games'), fs.where('ownerUid', '==', user.uid)));
                     const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    // Backup source: the review record itself (covers a delivered game whose preview copy is still missing).
+                    try {
+                        const have = new Set(docs.map(d => d.id));
+                        const subs = await fs.getDocs(fs.query(fs.collection(db, 'submissions'), fs.where('user_id', '==', user.uid)));
+                        subs.docs.forEach(d => { const r = d.data();
+                            if (have.has(d.id) || !['pending_review', 'approved', 'rejected'].includes(r.status)) return;
+                            const at = r.submitted_at && r.submitted_at.toDate ? r.submitted_at : null;
+                            docs.push({ id: d.id, title: r.game_name, status: r.status === 'approved' ? 'published' : r.status, rejectionReason: r.rejection_reason, createdAt: at, chunkCount: 0, fromReview: true });
+                        });
+                    } catch (e) { /* rules without the submissions read: community games only */ }
                     docs.sort((a, b) => { const ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate() : 0; const tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate() : 0; return tb - ta; });
 
                     // Overview + Account + Upgrade counters
@@ -207,7 +217,8 @@
                         const created = g.createdAt && g.createdAt.toDate ? g.createdAt.toDate().toLocaleDateString() : '-';
                         const thumb = g.thumb ? '<img class="cs-thumb" src="' + esc(g.thumb) + '" alt="">' : '<div class="cs-thumb" style="display:flex;align-items:center;justify-content:center;color:#475569;">?</div>';
                         const statusCls = g.status === 'published' ? 'ok' : g.status === 'rejected' ? 'bad' : 'warn';
-                        const canEdit = g.status !== 'published';
+                        const canEdit = g.status !== 'published' && !g.fromReview;
+                        if (g.fromReview) return '<tr><td>' + thumb + '</td><td>' + esc(g.title) + '</td><td><span class="pg-pill ' + statusCls + '">' + esc(STATUS_LABELS[g.status] || g.status) + '</span></td><td>' + created + '</td><td><span class="pg-muted" style="font-size:0.8rem;">Preview being prepared</span></td></tr>';
                         return '<tr>' +
                             '<td>' + thumb + '</td>' +
                             '<td>' + esc(g.title) + '</td>' +

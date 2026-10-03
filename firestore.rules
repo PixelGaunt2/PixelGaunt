@@ -60,8 +60,10 @@ service cloud.firestore {
     // ---- community games (Publish) --------------------------------------------------------
     // Public: only 'published' games (set by the review service on approval). Owner: all of their own.
     match /community_games/{gameId} {
-      allow read: if resource.data.status == 'published'
+      allow read: if resource == null   // checking whether a document exists is not a leak
+                  || resource.data.status == 'published'
                   || (request.auth != null && request.auth.uid == resource.data.ownerUid);
+      // Normally written by pg-review-worker.js (service account) right after delivery.
       // The playable copy can only be created for a submission that the review service has DELIVERED
       // (Drive + email both succeeded => submissions/{id}.status == 'pending_review') for this same user.
       // A browser can no longer create a game as 'published' itself.

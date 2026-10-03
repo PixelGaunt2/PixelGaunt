@@ -168,6 +168,7 @@ function toFs(v) {
     if (typeof v === 'boolean') return { booleanValue: v };
     if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
     if (typeof v === 'string') return { stringValue: v };
+    if (v instanceof Uint8Array) { let b = ''; for (let i = 0; i < v.length; i += 0x8000) b += String.fromCharCode.apply(null, v.subarray(i, i + 0x8000)); return { bytesValue: btoa(b) }; }
     if (Array.isArray(v)) return { arrayValue: { values: v.map(toFs) } };
     const fields = {}; Object.keys(v).forEach(k => { fields[k] = toFs(v[k]); }); return { mapValue: { fields } };
 }
@@ -363,6 +364,13 @@ async function claimSlot(env, slotId, sid, uid) {   // true = this submission ho
 async function claimLimits(env, uid, sid) {
     const userSlot = `user_${uid}_${pkMonth()}`;
     if (!(await claimSlot(env, userSlot, sid, uid))) {
+        const holder = await fsGet(env, 'limits/' + userSlot);
+        const prev = holder && holder.submission_id ? await fsGet(env, 'submissions/' + holder.submission_id) : null;
+        if (prev && prev.user_id === uid && prev.status === 'pending_review') {
+            await backfillPreview(env, prev);   // make sure that game is visible in their dashboard
+            throw new HttpError(429, `You have already submitted "${prev.game_name}" this month and it is under review (we reply within 7 working days). Each account can submit 1 game per month - your next one from ${nextMonthLabel()}.`,
+                { limit: 'user_monthly', alreadySubmitted: { submissionId: prev.submission_id, title: prev.game_name, status: prev.status } });
+        }
         throw new HttpError(429, `Each account can submit ${USER_MONTHLY_MAX} game per month, and you have already submitted this month. You can submit your next game from ${nextMonthLabel()}.`, { limit: 'user_monthly' });
     }
     const day = pkDay();
@@ -410,6 +418,8 @@ async function handleSubmit(req, env, cors) {
     if (!UUID_RE.test(id)) throw new HttpError(400, 'Missing or invalid submission id.');
     const title = cleanText(form.get('title'), 60), description = cleanText(form.get('description'), 240), version = cleanText(form.get('version'), 20);
     const fileName = safeName(form.get('packageName') || 'game.zip', 80);
+    const listing = { genre: cleanText(form.get('genre'), 20), controls: cleanText(form.get('controls'), 200), orientation: cleanText(form.get('orientation'), 12),
+        thumb: cleanThumb(form.get('thumb')), tournamentServer: cleanText(form.get('tournamentServer'), 120), checkVerdict: cleanText(form.get('checkVerdict'), 10) };
     const pkg = form.get('package');
     if (!title) throw new HttpError(400, 'A game title is required.');
     if (!pkg || typeof pkg === 'string' || !pkg.size) throw new HttpError(400, 'The game package is missing.');
@@ -419,7 +429,8 @@ async function handleSubmit(req, env, cors) {
     if (existing) {
         if (existing.user_id !== user.uid) throw new HttpError(403, 'This submission id belongs to someone else.');
         if (!RETRYABLE_STATUSES.includes(existing.status)) {
-            return json({ ok: existing.status === 'pending_review' || existing.status === 'approved' || existing.status === 'published', duplicate: true, submissionId: id, status: existing.status,
+            const preview = await backfillPreview(env, existing);   // delivered earlier but not visible in the dashboard -> fix it now
+            return json({ preview: { ok: !!preview.ok }, ok: existing.status === 'pending_review' || existing.status === 'approved' || existing.status === 'published', duplicate: true, submissionId: id, status: existing.status,
                 drive: { ok: existing.drive_state === 'stored', link: existing.drive_link || '' }, email: { ok: !!existing.email_id, to: existing.email_to || reviewTo(env) } }, 200, cors);
         }
     }
@@ -428,7 +439,17 @@ async function handleSubmit(req, env, cors) {
     if (pkg.size > Math.min(plan.maxBytes, HARD_MAX_BYTES)) throw new HttpError(413, `The package is ${(pkg.size / 1048576).toFixed(1)} MB. The ${plan.label} plan allows ${plan.maxBytes / 1048576} MB per game.`);
     if (!existing) {
         const used = await usedGames(env, user.uid, plan);
-        if (used >= plan.maxGames) throw new HttpError(403, `You have used ${used} of ${plan.maxGames} game submission(s) on the ${plan.label} plan${plan.period ? ' this ' + plan.period + '. You can submit your next game from ' + nextMonthLabel() : '. Subscribe to submit 1 game every month'}.`, { limit: plan.period ? 'user_monthly' : 'plan_total' });
+        if (used >= plan.maxGames) {
+            // If one of their games is waiting for review, say so (and make sure it shows in their dashboard).
+            const subs = (await fsQueryByField(env, 'submissions', 'user_id', user.uid)).filter(x => x.status === 'pending_review')
+                .sort((a, b) => (Date.parse(b.submitted_at) || 0) - (Date.parse(a.submitted_at) || 0));
+            if (subs[0]) {
+                await backfillPreview(env, subs[0]);
+                throw new HttpError(429, `You have already submitted "${subs[0].game_name}" and it is under review (we reply within 7 working days). ${plan.period ? 'Each account can submit 1 game per month - your next one from ' + nextMonthLabel() + '.' : 'The Free plan includes 1 game - subscribe to submit 1 game every month.'}`,
+                    { limit: plan.period ? 'user_monthly' : 'plan_total', alreadySubmitted: { submissionId: subs[0].submission_id || subs[0].id, title: subs[0].game_name, status: subs[0].status } });
+            }
+            throw new HttpError(403, `You have used ${used} of ${plan.maxGames} game submission(s) on the ${plan.label} plan${plan.period ? ' this ' + plan.period + '. You can submit your next game from ' + nextMonthLabel() : '. Subscribe to submit 1 game every month'}.`, { limit: plan.period ? 'user_monthly' : 'plan_total' });
+        }
     }
 
     const buf = await pkg.arrayBuffer();
@@ -500,6 +521,10 @@ async function handleSubmit(req, env, cors) {
     if (!body.ok) body.error = status === 'submission_failed' ? 'Submission could not be completed. Please try again.'
         : status === 'email_failed' ? 'The game was uploaded to Google Drive, but the review email could not be sent: ' + email.error
         : 'The review email was sent, but the Google Drive upload failed: ' + drive.error;
+    if (status === 'pending_review') {
+        body.preview = await writePreviewCopy(env, { id, uid: user.uid, title, description, ownerName: user.name, entryText, createdAt: submittedAt, ...listing });
+        if (!body.preview.ok) console.error('submission delivered but preview copy missing', id, body.preview.error);
+    }
     if (status !== 'pending_review') await releaseLimits(env, slots);   // a failed/partial attempt does not use up a limit
     // 200 for partial success too: the body carries exactly which step failed. 502 when nothing was delivered.
     return json(body, status === 'submission_failed' ? 502 : 200, cors);
@@ -537,6 +562,45 @@ async function storeInDrive(env, d) {
         return { ok: false, error: (e && e.message) || 'Google Drive upload failed.' };
     }
 }
+
+/* ------------------------------------ playable preview copy ------------------------------------
+   community_games/<id> + chunks/<n> is what Creator Studio > My Games, the Publish page list and (after approval)
+   the Games page read. It used to be written by the BROWSER after delivery, which Firestore rules refused (the
+   page's existence check reads a document that does not exist yet = always "permission denied"), so a delivered
+   game never appeared in the dashboard. The review service now writes it with its service account. */
+const PREVIEW_CHUNK = 900000;   // Firestore documents max out at 1 MiB
+const GENRES = ['Arcade', 'Puzzle', 'Action', 'Adventure', 'Card', 'Strategy', 'Racing', 'Sports', 'Casual', 'Shooter', 'Platformer', 'Simulation', 'RPG', 'Horror', 'Other'];
+async function gzipBytes(text) {
+    return new Uint8Array(await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+}
+async function writePreviewCopy(env, d) {   // never throws
+    try {
+        if (await fsGet(env, 'community_games/' + d.id)) return { ok: true, existed: true };
+        const gz = await gzipBytes(d.entryText);
+        if (gz.length > MAX_BUNDLE_BYTES) return { ok: false, error: 'The game is too large for the on-site preview (more than ' + (MAX_BUNDLE_BYTES / 1048576) + ' MB compressed).' };
+        const n = Math.max(1, Math.ceil(gz.length / PREVIEW_CHUNK));
+        for (let i = 0; i < n; i++) await fsCreate(env, 'community_games/' + d.id + '/chunks', String(i), { i, b: gz.subarray(i * PREVIEW_CHUNK, (i + 1) * PREVIEW_CHUNK) });
+        await fsCreate(env, 'community_games', d.id, {   // written last, so a listed game always has all of its chunks
+            title: d.title, genre: GENRES.includes(d.genre) ? d.genre : 'Other', description: d.description || '', controls: d.controls || '',
+            orientation: d.orientation === 'portrait' ? 'portrait' : 'landscape', thumb: d.thumb || '', ownerUid: d.uid, ownerName: d.ownerName || '',
+            status: 'pending_review', chunkCount: n, tournament: d.tournamentServer ? { reporting: 'score', server: d.tournamentServer } : null,
+            createdAt: d.createdAt || new Date(), checkVerdict: d.checkVerdict || '', submissionId: d.id
+        });
+        return { ok: true };
+    } catch (e) { console.error('preview copy failed', d.id, e && e.message); return { ok: false, error: (e && e.message) || 'The preview copy could not be saved.' }; }
+}
+// For a submission that was delivered before this existed: rebuild the preview copy from the package in Drive.
+async function backfillPreview(env, sub) {
+    if (!sub || sub.status !== 'pending_review' || !sub.drive_file_id) return { ok: false };
+    if (await fsGet(env, 'community_games/' + sub.submission_id)) return { ok: true, existed: true };
+    try {
+        const res = await driveFetch(env, `https://www.googleapis.com/drive/v3/files/${sub.drive_file_id}?alt=media`);
+        const info = await inspectZip(await res.arrayBuffer());
+        if (!info.entryHtml) return { ok: false, error: 'Could not read the package from Drive.' };
+        return await writePreviewCopy(env, { id: sub.submission_id, uid: sub.user_id, title: sub.game_name, description: sub.description, ownerName: sub.developer_name, entryText: dec.decode(info.entryHtml), createdAt: sub.submitted_at ? new Date(sub.submitted_at) : new Date(), checkVerdict: 'backfilled' });
+    } catch (e) { console.error('preview backfill failed', e && e.message); return { ok: false, error: (e && e.message) || 'backfill failed' }; }
+}
+const cleanThumb = t => (typeof t === 'string' && /^data:image\/(png|jpe?g|webp|gif);base64,/.test(t) && t.length <= 400000) ? t : '';
 
 /* ------------------------------------ review e-mail (Resend API) ------------------------------------ */
 const reviewTo = env => String(env.REVIEW_EMAIL_TO || 'pixelgaunt@gmail.com').trim();

@@ -443,6 +443,14 @@
         if (box) box.innerHTML = `<div class="pg-verdict bad" role="alert">${esc(title)}${detail ? `<small>${esc(detail)}</small>` : ''}</div>`;
     }
 
+    function redirectToDashboard(sec) {
+        let left = sec;
+        const tick = setInterval(() => {
+            left--; const c = document.getElementById('pg-redirect-count'); if (c) c.textContent = String(Math.max(left, 0));
+            if (left <= 0) { clearInterval(tick); window.location.href = 'creator-studio.html#games'; }
+        }, 1000);
+    }
+
     async function submitGame(root, meta) {
         if (!pubState || !pubState.entry) { toast('Upload your game first, then press Submit for review.'); return; }
         if (pubState.submitting) { toast('Your game is already being sent - please wait.'); return; }
@@ -482,6 +490,9 @@
             form.append('title', meta.title);
             form.append('description', meta.description || '');
             form.append('packageName', (pubState.sourceZip && pubState.sourceZip.name) || 'game.zip');
+            // Listing details for the preview copy the review service saves (shown in My Games / Creator Studio).
+            form.append('genre', meta.genre || ''); form.append('controls', meta.controls || ''); form.append('orientation', meta.orientation || 'landscape');
+            form.append('thumb', meta.thumbDataUrl || ''); form.append('tournamentServer', meta.tournamentServer || ''); form.append('checkVerdict', pubState.verdict || '');
             form.append('package', pkgBlob, 'game.zip');
             // Normal time: about 5-20 seconds (upload + Google Drive + email). Show it, so it never looks frozen.
             const t0 = Date.now(), mb = (pkgBlob.size / 1048576).toFixed(1);
@@ -507,6 +518,11 @@
             let data = {}; try { data = await res.json(); } catch (e) { /* non-JSON error page */ }
             // The ONLY success condition: the review service says both Drive and the email were delivered.
             const delivered = res.ok && data.ok === true && data.status === 'pending_review';
+            if (!delivered && data.alreadySubmitted) {
+                root.innerHTML = `<div class="pg-verdict warn" role="status">You have already submitted a game this month<small>${esc(data.error || '')}</small></div>` +
+                    `<p class="pg-note" style="margin-top:10px;">Taking you to your dashboard in <b id="pg-redirect-count">6</b> s... <a class="pg-link" href="creator-studio.html#games">Go now</a></p>`;
+                pubState = null; redirectToDashboard(6); return;
+            }
             if (!delivered) {
                 const details = Array.isArray(data.details) && data.details.length ? data.details : null;
                 if (details) { box.innerHTML = `<div class="pg-verdict bad">Basic validation failed<small>${details.map(esc).join('<br>')}</small></div>`; }
@@ -524,27 +540,8 @@
                 throw e;
             }
 
-            // 2) Write the playable bundle under the SAME id. Its status is forced to pending_review by firestore.rules,
-            //    and the rules only allow it when the service has already recorded this submission for this user.
-            const { db, fs } = await fb();
-            const gameRef = fs.doc(db, 'community_games', id);
-            const chunkBytes = [];
-            for (let i = 0; i < gz.length; i += CONFIG.chunkBytes) chunkBytes.push(gz.subarray(i, i + CONFIG.chunkBytes));
-            if (!(await fs.getDoc(gameRef)).exists()) {
-                await fs.setDoc(gameRef, {
-                    title: meta.title, genre: meta.genre, description: meta.description || '',
-                    controls: meta.controls || '', orientation: meta.orientation || 'landscape',
-                    thumb: meta.thumbDataUrl || '', ownerUid: user.uid, ownerName: cleanName(user),
-                    status: 'pending_review', chunkCount: chunkBytes.length,
-                    tournament: meta.tournamentServer ? { reporting: 'score', server: meta.tournamentServer } : null,
-                    createdAt: fs.serverTimestamp(), checkVerdict: pubState.verdict
-                });
-            }
-            await Promise.all(chunkBytes.map(async (b, i) => {
-                const cref = fs.doc(db, 'community_games', id, 'chunks', String(i));
-                if (!(await fs.getDoc(cref)).exists()) await fs.setDoc(cref, { i, b: fs.Bytes.fromUint8Array(b) });
-            }));
-
+            // The review service has already saved the dashboard/preview copy (data.preview). Nothing else to write here:
+            // the browser's own Firestore write was refused by the security rules and blocked this success screen.
             Core.invalidateCommunity();
             // Thank-you screen, then straight to the creator's dashboard (My Games), where the game shows as under review.
             const DASH = 'creator-studio.html#games';
@@ -552,11 +549,8 @@
                 `<p style="margin-top:12px;"><b>${esc(meta.title)}</b> <span class="pg-pill warn">Under review</span></p>` +
                 `<p class="pg-note" style="margin-top:6px;">Our team reviews every game by hand. You'll hear from us <b>within ${LIMITS_INFO.reviewDays} working days</b>. Submission ID ${esc(id)}.</p>` +
                 `<p class="pg-note" style="margin-top:10px;">Taking you to your dashboard in <b id="pg-redirect-count">5</b> s... <a class="pg-link" href="${DASH}">Go now</a></p>`;
-            let left = 5;
-            const tick = setInterval(() => {
-                left--; const c = document.getElementById('pg-redirect-count'); if (c) c.textContent = String(Math.max(left, 0));
-                if (left <= 0) { clearInterval(tick); window.location.href = DASH; }
-            }, 1000);
+            pubState = null;   // done: the Submit button is gone and cannot send this game twice
+            redirectToDashboard(5);
         } catch (err) {
             console.error('Submit failed:', err);
             // Turn raw Firestore/network codes into something understandable; the technical error stays in the console.
@@ -585,7 +579,8 @@
                 const start = monthStart();
                 used = snap.docs.filter(d => { const c = d.data().createdAt; return c && c.toDate && c.toDate() >= start; }).length;
             }
-            return { limits, used, allowed: used < limits.maxGames };
+            const pending = snap.docs.map(d => d.data()).find(g => g.status === 'pending_review' || g.status === 'pending');
+            return { limits, used, allowed: used < limits.maxGames, pendingTitle: pending ? pending.title : '' };
         } catch (err) {
             console.warn('Usage check unavailable:', err);
             return { limits, used: 0, allowed: true };
@@ -688,9 +683,15 @@
     async function handleUpload(root, fileList) {
         const drop = $('#pg-drop', root); const oldHtml = drop.innerHTML;
         if (getUser()) {
-            const { allowed, limits, used } = await usageInfo();
-            if (!allowed) {
-                toast(`You've used ${used} of ${limits.maxGames} games on the ${limits.label} plan. Upgrade to submit more.`);
+            const usage = await within(usageInfo(), 8000, null);   // never let a slow database freeze the upload
+            if (usage && !usage.allowed) {
+                const { limits, used, pendingTitle } = usage;
+                const msg = pendingTitle
+                    ? `You have already submitted "${pendingTitle}" and it is under review - we reply within ${LIMITS_INFO.reviewDays} working days. Each account can submit ${LIMITS_INFO.userMonthly} game per month.`
+                    : `You've used ${used} of ${limits.maxGames} game(s) on the ${limits.label} plan${limits.period ? ' this month' : ''}. Each account can submit ${LIMITS_INFO.userMonthly} game per month.`;
+                const banner = $('#pg-plan-banner', root);
+                if (banner) banner.insertAdjacentHTML('beforeend', `<div class="pg-verdict warn" role="alert" style="margin-top:10px;">Submission limit reached<small>${esc(msg)} <a class="pg-link" href="creator-studio.html#games">View it in your dashboard</a></small></div>`);
+                toast(msg);
                 return;
             }
         }
