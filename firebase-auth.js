@@ -286,16 +286,20 @@
         window.pgUserPlan = null;
         // users/<uid>.plan: 'free' | 'subscriber_monthly' (10 games/month) | 'subscriber_yearly' (12/month); old 'subscriber' = monthly.
         function normalizePlan(p) { return p === 'subscriber_yearly' ? 'subscriber_yearly' : (p === 'subscriber_monthly' || p === 'subscriber') ? 'subscriber_monthly' : 'free'; }
+        // Called when the review service has just started a subscription you approved (script.js).
+        window.pgReloadPlan = () => { const u = auth.currentUser; if (u) loadUserPlan(u); };
         async function loadUserPlan(user) {
             try {
                 const snap = await getDoc(doc(db, "users", user.uid));
                 const data = snap.exists() ? snap.data() : {};
-                window.pgUserPlan = normalizePlan(data.plan);
+                const ends = data.plan_expires && data.plan_expires.toDate ? data.plan_expires.toDate() : null;
+                window.pgPlanExpires = ends ? ends.toISOString() : null;
+                window.pgUserPlan = ends && ends < new Date() ? 'free' : normalizePlan(data.plan);   // subscription ended
             } catch (error) {
                 // Database rules not published yet / offline: ask the review service, which reads it with server access.
                 try {
                     const q = await (await fetch((window.PG_REVIEW_ENDPOINT || '') + '/quota', { headers: { Authorization: 'Bearer ' + await user.getIdToken() } })).json();
-                    window.pgUserPlan = normalizePlan(q.planKey);
+                    window.pgUserPlan = normalizePlan(q.planKey); window.pgPlanExpires = q.planExpires || null;
                 } catch (e2) {
                     console.warn("Could not read plan, defaulting to free:", error);
                     window.pgUserPlan = 'free';

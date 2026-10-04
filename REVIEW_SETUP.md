@@ -97,13 +97,20 @@ Fill in your accounts in `subscription.html` -> block **PIXELGAUNT PAYMENT SETTI
 number, IBAN for Meezan / Alfalah, Easypaisa, NayaPay, SadaPay). Empty accounts are hidden. `whatsapp` can stay empty; when you
 add the number (digits with country code, e.g. 923001234567) a "Send receipt on WhatsApp" button appears too.
 
-To confirm a payment (the email tells you the exact document names):
-1. Check the money arrived (transaction ID, amount).
-2. `payments/<receipt no.>` -> `status` = `confirmed` (or `rejected`). The buyer sees it on the Subscription page.
-3. `users/<user ID>` -> `plan` = `subscriber_monthly` or `subscriber_yearly`. Set it back to `free` when it is not renewed.
+While no account numbers are filled in, buyers see: "Our official payment accounts are being set up. Please message us
+on email (pixelgaunt@gmail.com) or WhatsApp to pay." They can still continue, attach their payment screenshot with a message
+(transaction ID optional) and submit; you receive it by email.
+
+To approve a payment (the email tells you the exact receipt number):
+1. Check the money arrived.
+2. Firebase -> Firestore -> `payments` -> `<receipt no.>` -> set `status` to `confirmed` (or `rejected` to decline).
+3. That's all. The subscription the buyer chose starts automatically (when anyone next opens a page, or within 5 minutes
+   with the Cron Trigger): `users/<uid>.plan` = `subscriber_monthly` (1 month) or `subscriber_yearly` (1 year), with
+   `plan_expires`. Renewing the same plan early adds the time on top. After `plan_expires` the account is Free again.
+   The buyer sees "Approved - active until <date>".
 
 ## 9. Checking that the Worker and Drive really work
-- `https://pg-review.pixelgaunt.workers.dev/health` must show `"version": "2026-10-04b"`. If it does not, Cloudflare is still
+- `https://pg-review.pixelgaunt.workers.dev/health` must show `"version": "2026-10-04c"`. If it does not, Cloudflare is still
   running an OLD copy of the Worker: paste the new `pg-review-worker.js` and press Deploy.
 - `https://pg-review.pixelgaunt.workers.dev/health?check=drive` runs a live Google Drive test and tells you exactly what to fix
   (missing settings, expired token, wrong Google account, Drive API disabled). It must end with `"ok": true`.

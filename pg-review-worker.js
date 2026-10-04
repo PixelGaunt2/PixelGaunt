@@ -345,6 +345,7 @@ async function inspectZip(buf) {
 /* ------------------------------------------ request handlers ------------------------------------------ */
 async function planFor(env, uid) {
     const u = await fsGet(env, 'users/' + uid);
+    if (u && u.plan_expires && Date.parse(u.plan_expires) < Date.now()) return PLANS.free;   // subscription ended
     return (u && PLANS[u.plan]) || PLANS.free;   // plan lives in Firestore, editable only by you/the server (see firestore.rules)
 }
 /* ------------------------------------------ submission limits ------------------------------------------
@@ -413,7 +414,8 @@ async function handleQuota(req, env, cors) {
     if (req.headers.get('Authorization')) {
         try {
             const u = await verifyFirebaseToken(env, req); const plan = await planFor(env, u.uid);
-            out.plan = plan.label; out.planKey = Object.keys(PLANS).find(k => PLANS[k] === plan && k !== 'subscriber') || 'free'; out.userDailyUsed = (await fsGet(env, `limits/userday_${u.uid}_${pkDay()}`)) ? 1 : 0;
+            out.plan = plan.label; out.planKey = Object.keys(PLANS).find(k => PLANS[k] === plan && k !== 'subscriber') || 'free';
+            if (plan !== PLANS.free) { const ud = await fsGet(env, 'users/' + u.uid); out.planExpires = (ud && ud.plan_expires) || null; } out.userDailyUsed = (await fsGet(env, `limits/userday_${u.uid}_${pkDay()}`)) ? 1 : 0;
             if (plan.period === 'month') {
                 let used = 0; for (let n = 1; n <= plan.maxGames; n++) if (await fsGet(env, 'limits/' + monthSlot(u.uid, n))) used++;
                 Object.assign(out, { userMonthlyMax: plan.maxGames, userMonthlyUsed: used, nextMonth: nextMonthLabel() });
@@ -816,9 +818,9 @@ const METHODS = ['Bank account', 'Debit card', 'Credit card', 'Easypaisa', 'Jazz
 async function sendPaymentEmail(env, p, imgB64, imgType) {
     if (!env.RESEND_API_KEY) return { ok: false, error: 'Email is not configured on the review service (RESEND_API_KEY missing).' };
     const rows = [['Receipt no.', p.ref], ['Plan', p.cycle === 'yearly' ? 'Subscriber - Yearly' : 'Subscriber - Monthly'], ['Amount', p.amount], ['Paid with', p.method], ['Paid to', p.paidTo || '-'],
-        ['Sender name', p.senderName], ['Sender account / number', p.senderAccount || '-'], ['Transaction ID', p.txnId], ['PixelGaunt account', p.email + ' (' + p.name + ')'], ['User ID', p.uid], ['Date (UTC)', new Date().toISOString()]];
+        ['Sender name', p.senderName], ['Sender account / number', p.senderAccount || '-'], ['Transaction ID', p.txnId || '-'], ['Message from the buyer', p.message || '-'], ['PixelGaunt account', p.email + ' (' + p.name + ')'], ['User ID', p.uid], ['Date (UTC)', new Date().toISOString()]];
     const plan = p.cycle === 'yearly' ? 'subscriber_yearly' : 'subscriber_monthly';
-    const how = `To confirm: check the payment arrived, then in Firebase -> Firestore set payments/${p.ref} status = confirmed, and users/${p.uid} plan = ${plan}.`;
+    const how = `To approve: check the payment arrived, then in Firebase -> Firestore -> payments -> ${p.ref} set status = confirmed. The ${p.cycle === 'yearly' ? 'yearly' : 'monthly'} subscription then starts automatically (within a few minutes). To decline: set status = rejected.`;
     const body = {
         from: String(env.REVIEW_EMAIL_FROM || 'PixelGaunt Review <onboarding@resend.dev>'), to: [paymentTo(env)], reply_to: p.email || undefined,
         subject: '[PixelGaunt Payment] ' + p.ref + ' - ' + p.amount + ' - ' + (p.name || p.email),
@@ -840,11 +842,12 @@ async function handlePayment(req, env, cors) {
     const ref = String(form.get('ref') || ''), cycle = String(form.get('cycle') || '');
     const method = cleanText(form.get('method'), 30), paidTo = cleanText(form.get('paidTo'), 80), senderName = cleanText(form.get('senderName'), 60);
     const senderAccount = cleanText(form.get('senderAccount'), 40), txnId = cleanText(form.get('txnId'), 60), img = form.get('receipt');
+    const message = cleanText(form.get('message'), 600);
     if (!REF_RE.test(ref)) throw new HttpError(400, 'Invalid receipt number.');
     if (!PRICES[cycle]) throw new HttpError(400, 'Choose monthly or yearly.');
     if (!METHODS.includes(method)) throw new HttpError(400, 'Choose how you paid.');
     if (!senderName) throw new HttpError(400, 'Enter the sender name.');
-    if (!txnId) throw new HttpError(400, 'Enter the transaction ID.');
+    if (!txnId && !message) throw new HttpError(400, 'Enter the transaction ID, or write us a message about your payment.');
     if (!img || typeof img === 'string' || !/^image\/(jpeg|png|webp)$/.test(img.type) || img.size > 900000) throw new HttpError(400, 'Attach your payment screenshot (JPG/PNG, under 900 KB).');
     const u8 = new Uint8Array(await img.arrayBuffer()); let bin = ''; for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
     const b64 = btoa(bin);
@@ -854,7 +857,7 @@ async function handlePayment(req, env, cors) {
     if (!rec) {
         const today = pkDay(), mine = await fsQueryByField(env, 'payments', 'uid', user.uid);
         if (mine.filter(p => String(p.created_day) === today).length >= 5) throw new HttpError(429, 'You have sent 5 receipts today. Please wait for us to confirm them, or try again tomorrow.');
-        rec = { ref, uid: user.uid, email: user.email || '', name: user.name || '', plan: cycle === 'yearly' ? 'subscriber_yearly' : 'subscriber_monthly', cycle, amount: PRICES[cycle], method, paidTo, senderName, senderAccount, txnId,
+        rec = { ref, uid: user.uid, email: user.email || '', name: user.name || '', plan: cycle === 'yearly' ? 'subscriber_yearly' : 'subscriber_monthly', cycle, amount: PRICES[cycle], method, paidTo, senderName, senderAccount, txnId, message,
             receiptImage: 'data:' + img.type + ';base64,' + b64, status: 'pending_verification', createdAt: new Date(), created_day: today, email_state: 'pending', email_attempts: 0 };
         if (!(await fsCreate(env, 'payments', ref, rec))) throw new HttpError(409, 'Receipt number conflict - please try again.');
     }
@@ -866,7 +869,7 @@ async function handlePayment(req, env, cors) {
 }
 async function handleMyPayments(req, env, cors) {
     const user = await verifyFirebaseToken(env, req);
-    const list = (await fsQueryByField(env, 'payments', 'uid', user.uid)).map(p => ({ ref: p.ref, cycle: p.cycle, amount: p.amount, method: p.method, txnId: p.txnId, status: p.status, createdAt: p.createdAt, emailed: p.email_state === 'sent' }))
+    const list = (await fsQueryByField(env, 'payments', 'uid', user.uid)).map(p => ({ ref: p.ref, cycle: p.cycle, amount: p.amount, method: p.method, txnId: p.txnId, status: p.status, createdAt: p.createdAt, emailed: p.email_state === 'sent', activeUntil: p.plan_expires || null }))
         .sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0));
     return json({ ok: true, payments: list }, 200, cors);
 }
@@ -916,6 +919,12 @@ async function syncDecisions(env) {
         try { await applyRejection(env, sub, sub.rejection_reason); out.rejected.push(sub.game_name); }
         catch (e) { out.errors.push(sub.id + ': ' + (e && e.message)); }
     }
+    // Payments you set to 'confirmed' -> start the subscription the buyer paid for (monthly = 1 month, yearly = 1 year).
+    for (const pay of await fsQueryByField(env, 'payments', 'status', 'confirmed')) {
+        if (pay.synced_status === 'confirmed') continue;
+        try { const r = await activateSubscription(env, pay); out.activated = (out.activated || 0) + 1; console.log('subscription started', pay.id, r.plan, r.until); }
+        catch (e) { out.errors.push(pay.id + ': ' + (e && e.message)); }
+    }
     // Someone set the GAME document to 'approved' instead: the Games page lists 'published', so normalise it.
     for (const g of await fsQueryByField(env, 'community_games', 'status', 'approved')) {
         try { await fsPatch(env, 'community_games/' + g.id, { status: 'published' }); out.published.push(g.title); } catch (e) { out.errors.push(g.id + ': ' + (e && e.message)); }
@@ -923,13 +932,25 @@ async function syncDecisions(env) {
     if (out.published.length || out.rejected.length || out.errors.length) console.log('syncDecisions', JSON.stringify(out));
     return out;
 }
+function addPeriod(from, cycle) { const d = new Date(from); if (cycle === 'yearly') d.setUTCFullYear(d.getUTCFullYear() + 1); else d.setUTCMonth(d.getUTCMonth() + 1); return d; }
+async function activateSubscription(env, pay) {
+    const plan = pay.cycle === 'yearly' ? 'subscriber_yearly' : 'subscriber_monthly';
+    const user = await fsGet(env, 'users/' + pay.uid);
+    // Renewing the same plan before it ends adds the new period to the remaining time.
+    const curEnd = user && user.plan === plan && user.plan_expires ? Date.parse(user.plan_expires) : 0;
+    const start = new Date(Math.max(Date.now(), curEnd || 0));
+    const until = addPeriod(start, pay.cycle);
+    await fsUpsert(env, 'users/' + pay.uid, { plan, plan_expires: until, plan_started: new Date(), plan_payment_ref: pay.ref || pay.id });
+    await fsPatch(env, 'payments/' + (pay.ref || pay.id), { synced_status: 'confirmed', activated_at: new Date(), plan_expires: until });
+    return { plan, until };
+}
 let lastSync = 0;
 async function handleSync(req, env, cors, ctx) {   // public + harmless: it only carries out decisions you already made
     const gap = env.SYNC_THROTTLE_MS != null ? Number(env.SYNC_THROTTLE_MS) : 30e3;
     if (Date.now() - lastSync < gap) return json({ ok: true, changed: 0, skipped: true }, 200, cors);
     lastSync = Date.now();
     const r = await syncDecisions(env).catch(e => { console.error('sync failed', e && e.message); return { published: [], rejected: [], errors: [String(e && e.message)] }; });
-    return json({ ok: true, changed: r.published.length + r.rejected.length }, 200, cors);
+    return json({ ok: true, changed: r.published.length + r.rejected.length + (r.activated || 0), plansChanged: r.activated || 0 }, 200, cors);
 }
 
 async function handleApprove(req, env, cors) {
@@ -984,7 +1005,7 @@ export default {
                 return json({ ok: true, drive: r, note: 'Drive works. Files go to "' + DRIVE_ROOT + '" in My Drive of the account above.' }, 200, cors);
             }
             if (req.method === 'GET' && url.pathname === '/health') {
-                return json({ ok: true, version: '2026-10-04b', configured: { FIREBASE_PROJECT_ID: !!env.FIREBASE_PROJECT_ID, FIREBASE_SA_JSON: !!env.FIREBASE_SA_JSON, GOOGLE_OAUTH_CLIENT_ID: !!env.GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET: !!env.GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN: !!env.GOOGLE_OAUTH_REFRESH_TOKEN, RESEND_API_KEY: !!env.RESEND_API_KEY }, review_email_to: reviewTo(env), drive_expected_account: expectedDriveAccount(env), payment_email_to: paymentTo(env), note: 'Drive (all three GOOGLE_OAUTH_* values) and RESEND_API_KEY are both required for submissions. Live Drive test: /health?check=drive' }, 200, cors);
+                return json({ ok: true, version: '2026-10-04c', configured: { FIREBASE_PROJECT_ID: !!env.FIREBASE_PROJECT_ID, FIREBASE_SA_JSON: !!env.FIREBASE_SA_JSON, GOOGLE_OAUTH_CLIENT_ID: !!env.GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET: !!env.GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN: !!env.GOOGLE_OAUTH_REFRESH_TOKEN, RESEND_API_KEY: !!env.RESEND_API_KEY }, review_email_to: reviewTo(env), drive_expected_account: expectedDriveAccount(env), payment_email_to: paymentTo(env), note: 'Drive (all three GOOGLE_OAUTH_* values) and RESEND_API_KEY are both required for submissions. Live Drive test: /health?check=drive' }, 200, cors);
             }
             if (!env.FIREBASE_PROJECT_ID) throw new HttpError(503, 'Review service is not configured (FIREBASE_PROJECT_ID).');
             if (req.method === 'GET' && url.pathname === '/quota') return await handleQuota(req, env, cors);

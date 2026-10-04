@@ -669,10 +669,14 @@ window.pgBlockAdsForOwner = function () {
             if (syncPinged || !window.PG_REVIEW_ENDPOINT) return; syncPinged = true;
             try {
                 fetch(window.PG_REVIEW_ENDPOINT + '/sync', { mode: 'cors' }).then(r => r.json()).then(r => {
-                    if (r && r.changed > 0) { try { sessionStorage.removeItem('pgCommunityList'); } catch (e) {} window.pgLoadCommunityGames(true); }   // a game was just published: show it now
+                    if (r && r.changed > 0) { try { sessionStorage.removeItem('pgCommunityList'); } catch (e) {} if (document.getElementById('community-grid')) window.pgLoadCommunityGames(true); }   // a game was just published: show it now
+                    if (r && r.plansChanged > 0 && window.pgReloadPlan) window.pgReloadPlan();   // a payment you approved: the subscription is now active
                 }).catch(() => {});
             } catch (e) { /* offline */ }
         }
+
+        // Every page: let the review service carry out what you approved in Firebase (games, payments). Throttled server-side.
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(pingReviewSync, 1500)); else setTimeout(pingReviewSync, 1500);
 
         function renderCommunity() {
             const shelf = document.getElementById('community-shelf');
