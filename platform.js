@@ -23,6 +23,7 @@
         maxUploadBytes: 40 * 1024 * 1024,      // raw upload
         maxUnpackedBytes: 60 * 1024 * 1024,    // zip-bomb guard
         maxBundleBytes: 6 * 1024 * 1024,       // gzip bundle stored in Firestore (Spark plan)
+        maxPlayBytes: 15 * 1024 * 1024,        // self-contained play.html (must match MAX_PLAY_BYTES in pg-review-worker.js)
         maxFiles: 600,
         chunkBytes: 900000,                    // Firestore document limit is 1 MiB
         smokeTestMs: 3500,
@@ -46,7 +47,9 @@
     };
     // Also enforced by the review service (pg-review-worker.js), which is the real gate:
     const LIMITS_INFO = { userDaily: 1, siteDaily: 3, reviewDays: 7 };
-    const AGREEMENT_VERSION = '2026-10-04';   // must match AGREEMENT_VERSION in pg-review-worker.js and developer-agreement.html
+    const AGREEMENT_VERSION = '2026-10-04';
+    // publish.html?update=<game id>&title=<title>  ->  send NEW FILES for an existing game (Creator Studio > My Games > Update files)
+    const UPDATE = (() => { try { const q = new URLSearchParams(window.pgStartSearch || location.search); const id = q.get('update') || ''; return /^[0-9a-f-]{36}$/i.test(id) ? { id, title: (q.get('title') || '').slice(0, 60) } : null; } catch (e) { return null; } })();   // must match AGREEMENT_VERSION in pg-review-worker.js and developer-agreement.html
     function planLimits() { return PLAN_LIMITS[window.pgUserPlan] || PLAN_LIMITS.free; }
     function monthStart() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); }
 
@@ -93,6 +96,90 @@
         for (let i = 0; i < u8.length; i += step) s += String.fromCharCode.apply(null, u8.subarray(i, i + step));
         return btoa(s);
     }
+    /* ---------------- PLAYABLE COPY: one self-contained play.html ----------------
+       The website plays community games from a single HTML document inside a locked sandbox (no network). So every file
+       of the game must travel inside that document:
+       - <script src>, <link rel=stylesheet> are inlined; CSS url() becomes data: URLs;
+       - <img>/<audio>/<video>/<source>/icons get their file from the in-game file table when the page loads;
+       - files the game loads while running (fetch, XMLHttpRequest, new Image/Audio, script/link/media src, Worker,
+         FontFace) are answered from the same table by a tiny "file server" placed first in the page.
+       The exact same play.html is stored in Google Drive for review and is what goes live. */
+    const PG_BUNDLE_MARK = '<!--pg-bundle v1-->';
+    const PG_SHIM = function (FILES, BASE) {
+        var cache = {};
+        function key(u) {
+            if (typeof u !== 'string' && !(u && u.href)) return null;
+            u = String(u && u.href || u);
+            if (/^(data:|blob:|about:|javascript:|mailto:)/i.test(u)) return null;
+            if (/^(https?:)?\/\//i.test(u) && !/^https?:\/\/pg-game\.local\//i.test(u)) return null;
+            var p;
+            try { p = new URL(u, 'https://pg-game.local/' + BASE).pathname; } catch (e) { return null; }
+            try { p = decodeURIComponent(p); } catch (e) { }
+            p = p.replace(/^\/+/, '');
+            return FILES[p] ? p : null;
+        }
+        function bytes(k) { var b = atob(FILES[k][1]), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
+        function url(u, asData) {
+            var k = key(u); if (!k) return null;
+            if (asData) return 'data:' + FILES[k][0] + ';base64,' + FILES[k][1];
+            return cache[k] || (cache[k] = URL.createObjectURL(new Blob([bytes(k)], { type: FILES[k][0] })));
+        }
+        window.__pgFile = url;
+        var f = window.fetch; if (f) window.fetch = function (input, init) { var r = url(typeof input === 'string' ? input : input && input.url); return f.call(this, r || input, init); };
+        var xo = XMLHttpRequest.prototype.open; XMLHttpRequest.prototype.open = function (m, u) { var r = url(u); var a = Array.prototype.slice.call(arguments); if (r) a[1] = r; return xo.apply(this, a); };
+        function hook(proto, prop, asData) {
+            var d = proto && Object.getOwnPropertyDescriptor(proto, prop); if (!d || !d.set) return;
+            Object.defineProperty(proto, prop, { configurable: true, enumerable: d.enumerable, get: d.get, set: function (v) { d.set.call(this, url(v, asData) || v); } });
+        }
+        hook(HTMLImageElement.prototype, 'src'); hook(HTMLMediaElement.prototype, 'src'); hook(HTMLSourceElement.prototype, 'src');
+        hook(HTMLScriptElement.prototype, 'src'); hook(HTMLLinkElement.prototype, 'href'); if (window.HTMLVideoElement) hook(HTMLVideoElement.prototype, 'poster');
+        var sa = Element.prototype.setAttribute; Element.prototype.setAttribute = function (n, v) {
+            var ln = String(n).toLowerCase(); if ((ln === 'src' || ln === 'href' || ln === 'poster') && typeof v === 'string') { var r = url(v); if (r) v = r; } return sa.call(this, n, v);
+        };
+        var A = window.Audio; if (A) { window.Audio = function (s) { var a = new A(); if (s !== undefined) a.src = url(s) || s; return a; }; window.Audio.prototype = A.prototype; }
+        var W = window.Worker; if (W) window.Worker = function (s, o) { return new W(url(s) || s, o); };
+        var FF = window.FontFace; if (FF) window.FontFace = function (fam, src, d) {
+            if (typeof src === 'string') src = src.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, function (m, q, p) { var r = url(p, true); return r ? 'url(' + r + ')' : m; });
+            return new FF(fam, src, d);
+        };
+        function fix(el) {
+            ['src', 'href', 'poster'].forEach(function (a) { var v = el.getAttribute('data-pg-' + a); if (v != null) { el.removeAttribute('data-pg-' + a); el.setAttribute(a, url(v) || v); } });
+        }
+        function fixAll() { var l = document.querySelectorAll('[data-pg-src],[data-pg-href],[data-pg-poster]'); for (var i = 0; i < l.length; i++) fix(l[i]); }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fixAll); else fixAll();
+        new MutationObserver(fixAll).observe(document.documentElement, { childList: true, subtree: true });
+    };
+    function buildPlayable(files, entry) {
+        const base = dirOf(entry), doc = new DOMParser().parseFromString(utf8.decode(files.get(entry)), 'text/html');
+        const local = ref => { if (!ref || isInline(ref) || isRemote(ref)) return null; const p = resolvePath(base, ref); return files.has(p) ? p : null; };
+        const dataUrl = p => 'data:' + (MIME[extOf(p)] || 'application/octet-stream') + ';base64,' + b64(files.get(p));
+        const cssUrls = (css, cssBase) => css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (m, q, ref) => {
+            if (isInline(ref) || isRemote(ref)) return m; const p = resolvePath(cssBase, ref); return files.has(p) ? 'url(' + dataUrl(p) + ')' : m;
+        });
+        const inlined = new Set();
+        doc.querySelectorAll('script[src]').forEach(s => {
+            const p = local(s.getAttribute('src')); if (!p) return;
+            s.removeAttribute('src'); s.textContent = utf8.decode(files.get(p)).replace(/<\/script/gi, '<\\/script'); inlined.add(p);
+        });
+        doc.querySelectorAll('link[rel~="stylesheet" i][href]').forEach(l => {
+            const p = local(l.getAttribute('href')); if (!p) return;
+            const st = doc.createElement('style'); st.textContent = cssUrls(utf8.decode(files.get(p)), dirOf(p)); l.replaceWith(st); inlined.add(p);
+        });
+        doc.querySelectorAll('style').forEach(st => { st.textContent = cssUrls(st.textContent, base); });
+        doc.querySelectorAll('[style]').forEach(el => el.setAttribute('style', cssUrls(el.getAttribute('style'), base)));
+        doc.querySelectorAll('[src],[href],[poster]').forEach(el => ['src', 'href', 'poster'].forEach(a => {
+            const v = el.getAttribute(a); if (v == null || el.tagName === 'A' || el.tagName === 'SCRIPT') return;
+            if (local(v)) { el.removeAttribute(a); el.setAttribute('data-pg-' + a, v); }   // filled from the file table on load
+        }));
+        const table = {};
+        files.forEach((u8, p) => { if (p !== entry && !inlined.has(p)) table[p] = [MIME[extOf(p)] || 'application/octet-stream', b64(u8)]; });
+        const shim = doc.createElement('script');
+        shim.textContent = '(' + PG_SHIM.toString() + ')(' + JSON.stringify(table).replace(/<\//g, '<\\/') + ',' + JSON.stringify(base) + ');';
+        const head = doc.head || doc.documentElement.insertBefore(doc.createElement('head'), doc.body);
+        head.insertBefore(shim, head.firstChild);
+        return PG_BUNDLE_MARK + '\n<!DOCTYPE html>' + doc.documentElement.outerHTML;
+    }
+
     async function gzip(text) {
         const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
         return new Uint8Array(await new Response(stream).arrayBuffer());
@@ -376,7 +463,9 @@
             const frame = document.createElement('iframe');
             frame.setAttribute('sandbox', 'allow-scripts');
             frame.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;top:-9999px;';
-            const csp = "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob:; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; connect-src 'none'; frame-src 'none'";
+            // Same rules as the live player (script.js pgHarden), so a game that passes here also works on the site.
+            // blob:/data: connections are the game's OWN files (served by the playable copy's file server) - no network.
+            const csp = "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data:; connect-src data: blob:; worker-src blob:; frame-src 'none'";
             const doc = new DOMParser().parseFromString(html, 'text/html');
             const meta = doc.createElement('meta'); meta.setAttribute('http-equiv', 'Content-Security-Policy'); meta.setAttribute('content', csp);
             doc.head.insertBefore(meta, doc.head.firstChild);
@@ -421,9 +510,17 @@
         setProgress(15);
         const res = await runLocalCheck(files, problems);
         setProgress(55);
-        let smokeErrors = [];
+        let smokeErrors = [], bundle = null;
         if (res.entry) {
-            try { smokeErrors = await smokeTest(utf8.decode(files.get(res.entry))); } catch (e) { /* ignore - local checks stand */ }
+            // Build the self-contained playable copy (every image/sound/script inside) and test THAT in the sandbox.
+            try { bundle = buildPlayable(files, res.entry); }
+            catch (e) { res.checks.push({ level: 'fail', text: 'The playable copy could not be built', detail: String(e && e.message || e).slice(0, 200) }); res.verdict = 'bad'; res.fails = (res.fails || 0) + 1; }
+            if (bundle) {
+                const bytes = new Blob([bundle]).size;
+                if (bytes > CONFIG.maxPlayBytes) { res.checks.push({ level: 'fail', text: 'The playable copy is too large (' + fmtBytes(bytes) + ', limit ' + fmtBytes(CONFIG.maxPlayBytes) + ')', detail: 'Use smaller or compressed images and sounds (e.g. WEBP, MP3/OGG).' }); res.verdict = 'bad'; res.fails = (res.fails || 0) + 1; }
+                else res.checks.push({ level: 'pass', text: 'All game files (images, sounds, scripts) packed into the playable copy - ' + fmtBytes(bytes) });
+            }
+            try { smokeErrors = await smokeTest(bundle || utf8.decode(files.get(res.entry))); } catch (e) { /* ignore - local checks stand */ }
         }
         if (smokeErrors.length) { res.checks.push({ level: 'fail', text: 'The game threw an error when it ran in the sandbox', detail: smokeErrors.slice(0, 3).join(' | ') }); res.verdict = 'bad'; res.fails = (res.fails || 0) + 1; }
         else if (res.entry) res.checks.push({ level: 'pass', text: 'Loaded and ran in the sandbox test with no errors' });
@@ -434,7 +531,7 @@
         publishBtn.disabled = v.cls === 'bad';
         root.dispatchEvent(new Event('change'));   // re-evaluate title/terms and show why Submit is disabled, if it is
         // submissionId is created once per selected upload, so a retry after a network error re-uses it (no duplicates)
-        pubState = { files, entry: res.entry, verdict: v.cls, sizeTotal: res.sizeTotal, submissionId: newId(), sourceZip: null };
+        pubState = { files, entry: res.entry, verdict: v.cls, sizeTotal: res.sizeTotal, submissionId: newId(), sourceZip: null, bundle, updateId: newId() };
         return res;
     }
 
@@ -468,7 +565,7 @@
         pubState.submitting = true;   // double-click guard: one send at a time
         btn.disabled = true; const oldLabel = 'Submit for review'; btn.textContent = 'Checking...';   // visible the instant it is clicked
         // Quick plan check in the browser (the review service enforces the real limits anyway). Max 8 s, then carry on.
-        const usage = await within(usageInfo(), 8000, null);
+        const usage = UPDATE ? null : await within(usageInfo(), 8000, null);   // updates do not use the game allowance
         if (usage && !usage.allowed) {
             showSubmitError(root, 'Submission limit reached', `You've used ${usage.used} of ${usage.limits.maxGames} game(s) on the ${usage.limits.label} plan. Each account can submit 1 game per month.`);
             pubState.submitting = false; btn.disabled = false; btn.textContent = oldLabel; return;
@@ -498,6 +595,8 @@
             form.append('genre', meta.genre || ''); form.append('controls', meta.controls || ''); form.append('orientation', meta.orientation || 'landscape');
             form.append('thumb', meta.thumbDataUrl || ''); form.append('tournamentServer', meta.tournamentServer || ''); form.append('checkVerdict', pubState.verdict || '');
             form.append('package', pkgBlob, 'game.zip');
+            if (pubState.bundle) form.append('bundle', new Blob([pubState.bundle], { type: 'text/html' }), 'play.html');   // every asset inside
+            if (UPDATE) { form.append('gameId', UPDATE.id); form.append('updateId', pubState.updateId); }
             // Normal time: about 5-20 seconds (upload + Google Drive + email). Show it, so it never looks frozen.
             const t0 = Date.now(), mb = (pkgBlob.size / 1048576).toFixed(1);
             const showProgress = () => {
@@ -511,7 +610,7 @@
             try {
                 const token = await within(user.getIdToken(), 15000, null);
                 if (!token) throw Object.assign(new Error('Your login could not be confirmed. Refresh the page, sign in again and press Submit.'), { auth: true });
-                res = await fetch(CONFIG.reviewEndpoint.replace(/\/+$/, '') + '/submit', { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: form, signal: ctrl.signal });
+                res = await fetch(CONFIG.reviewEndpoint.replace(/\/+$/, '') + (UPDATE ? '/update' : '/submit'), { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: form, signal: ctrl.signal });
             } catch (netErr) {
                 if (netErr && netErr.auth) throw netErr;
                 const timedOut = netErr && netErr.name === 'AbortError';
@@ -549,6 +648,11 @@
             Core.invalidateCommunity();
             // Thank-you screen, then straight to the creator's dashboard (My Games), where the game shows as under review.
             const DASH = 'creator-studio.html#games';
+            if (UPDATE) {
+                root.innerHTML = `<div class="pg-verdict ok" role="status">Thanks! Your update was sent for review.<small>The current version of "${esc(UPDATE.title || meta.title)}" stays live until our team approves the new files (within ${LIMITS_INFO.reviewDays} working days).</small></div>` +
+                    `<p class="pg-note" style="margin-top:10px;">Taking you to your dashboard in <b id="pg-redirect-count">5</b> s... <a class="pg-link" href="creator-studio.html#games">Go now</a></p>`;
+                pubState = null; redirectToDashboard(5); return;
+            }
             root.innerHTML = `<div class="pg-verdict ok" role="status">Thanks for your game submission!<small>Submission successfully sent for manual review. Google Drive: stored. Email to ${esc((data.email && data.email.to) || 'pixelgaunt@gmail.com')}: sent.</small></div>` +
                 `<p style="margin-top:12px;"><b>${esc(meta.title)}</b> <span class="pg-pill warn">Under review</span></p>` +
                 `<p class="pg-note" style="margin-top:6px;">Our team reviews every game by hand. You'll hear from us <b>within ${LIMITS_INFO.reviewDays} working days</b>. Submission ID ${esc(id)}.</p>` +
@@ -618,6 +722,7 @@
         const limits = planLimits();
         CONFIG.maxUploadBytes = limits.maxBytes;
         root.innerHTML = `
+            ${UPDATE ? `<div class="pg-verdict warn" style="margin-bottom:14px;">Updating: ${esc(UPDATE.title || 'your game')}<small>Upload the complete, fixed game (all files). The new version is reviewed again; the current version stays live until it is approved. This does not use your game allowance.</small></div>` : ''}
             <div class="pg-plan-banner" id="pg-plan-banner" style="margin-bottom:14px;"></div>
             <div class="pg-drop" id="pg-drop" tabindex="0" role="button" aria-label="Choose game files or a zip">
                 <i class="fas fa-cloud-arrow-up" aria-hidden="true"></i>
@@ -633,7 +738,7 @@
             <div class="pg-panel pg-cut pg-hidden" id="pg-meta-panel" style="margin-top:16px; padding: 18px;">
                 <h3>Game details</h3>
                 <div class="pg-grid2" style="margin-top:10px;">
-                    <div class="pg-field"><label for="pg-title">Title</label><input id="pg-title" maxlength="60" placeholder="My Game"></div>
+                    <div class="pg-field"><label for="pg-title">Title</label><input id="pg-title" maxlength="60" placeholder="My Game" ${UPDATE ? `value="${esc(UPDATE.title)}" readonly title="The title of the game you are updating"` : ''}></div>
                     <div class="pg-field"><label for="pg-genre">Genre</label><select id="pg-genre"><option>Arcade</option><option>Puzzle</option><option>Action</option><option>Adventure</option><option>Racing</option><option>Card</option></select></div>
                     <div class="pg-field"><label for="pg-orientation">Orientation</label><select id="pg-orientation"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></div>
                     <div class="pg-field"><label for="pg-controls">Controls</label><input id="pg-controls" maxlength="80" placeholder="Arrow keys, Space to jump"></div>
@@ -687,7 +792,7 @@
 
     async function handleUpload(root, fileList) {
         const drop = $('#pg-drop', root); const oldHtml = drop.innerHTML;
-        if (getUser()) {
+        if (getUser() && !UPDATE) {
             const usage = await within(usageInfo(), 8000, null);   // never let a slow database freeze the upload
             if (usage && !usage.allowed) {
                 const { limits, used, pendingTitle } = usage;
@@ -1334,5 +1439,5 @@
         Core.invalidateCommunity();
     }
 
-    window.PG = { CONFIG, statusInfo, resetPublish, mountAll, planLimits, usageInfo, deleteMyGame, Bracket };
+    window.PG = { CONFIG, statusInfo, resetPublish, mountAll, planLimits, usageInfo, deleteMyGame, Bracket, buildPlayable };
 })();

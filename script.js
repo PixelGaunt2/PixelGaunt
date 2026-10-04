@@ -1,3 +1,5 @@
+// The address as it was when the page opened (before any tidying of the address bar) - e.g. publish.html?update=<id>.
+window.pgStartSearch = location.search;
 // Review service (pg-review-worker.js on Cloudflare). Used by platform.js, firebase-auth.js and subscription.html.
 window.PG_REVIEW_ENDPOINT = 'https://pg-review.pixelgaunt.workers.dev';
 // A random id for this browser (not personal data). Lets the review service recognise a developer's own device,
@@ -634,7 +636,7 @@ window.pgBlockAdsForOwner = function () {
                 controls: d.controls || '', howToPlay: d.description || '', rating: '', releaseDate: '',
                 platform: 'Web Browser', technology: 'HTML5 Web Technologies.', aiPrompt: '',
                 thumb: d.thumb || '', orientation: d.orientation === 'portrait' ? 'portrait' : 'landscape',
-                tournament: d.tournament || null, chunkCount: d.chunkCount || 0, ownerUid: d.ownerUid || '',
+                tournament: d.tournament || null, chunkCount: d.chunkCount || 0, ownerUid: d.ownerUid || '', liveVersion: d.liveVersion || '',
                 createdMs: (d.createdAt && d.createdAt.toMillis) ? d.createdAt.toMillis() : 0,
                 playCount: playCounts['c_' + id] || 0
             };
@@ -788,6 +790,14 @@ window.pgBlockAdsForOwner = function () {
             if (typeof DecompressionStream === 'undefined') throw new Error('This browser is too old to unpack community games. Please update it.');
             const fb = await whenFirebase();
             const { collection, getDocs } = fb.fs;
+            if (game.liveVersion) {   // self-contained play.html stored as text pieces (every image/sound/script inside)
+                const vs = await getDocs(collection(fb.db, 'community_games', game.docId, 'versions', game.liveVersion, 'chunks'));
+                const vp = vs.docs.map(d => d.data()).sort((a, b) => a.i - b.i);
+                if (!vp.length || (game.chunkCount && vp.length !== game.chunkCount)) throw new Error('This game\'s files are incomplete.');
+                const page = vp.map(p => p.s).join('');
+                communityHtmlCache.set(game.docId, page);
+                return page;
+            }
             const snap = await getDocs(collection(fb.db, 'community_games', game.docId, 'chunks'));
             const parts = snap.docs.map(d => d.data()).sort((a, b) => a.i - b.i);
             if (!parts.length || (game.chunkCount && parts.length !== game.chunkCount)) throw new Error('This game\'s files are incomplete.');

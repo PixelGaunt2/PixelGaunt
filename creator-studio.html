@@ -247,6 +247,8 @@
                         const have = new Set(docs.map(d => d.id));
                         const subs = await fs.getDocs(fs.query(fs.collection(db, 'submissions'), fs.where('user_id', '==', user.uid)));
                         subs.docs.forEach(d => { const r = d.data();
+                            const g0 = docs.find(x => x.id === d.id);
+                            if (g0) { g0.updatePending = !!r.pending_version && r.status === 'pending_review'; g0.updateRejected = r.update_rejection_reason || ''; }
                             if (have.has(d.id) || !['pending_review', 'approved', 'rejected'].includes(r.status)) return;
                             const at = r.submitted_at && r.submitted_at.toDate ? r.submitted_at : null;
                             docs.push({ id: d.id, title: r.game_name, status: r.status === 'approved' ? 'published' : r.status, rejectionReason: r.rejection_reason, createdAt: at, chunkCount: 0, fromReview: true });
@@ -269,15 +271,17 @@
                         const thumb = g.thumb ? '<img class="cs-thumb" src="' + esc(g.thumb) + '" alt="">' : '<div class="cs-thumb" style="display:flex;align-items:center;justify-content:center;color:#475569;">?</div>';
                         const statusCls = g.status === 'published' ? 'ok' : g.status === 'rejected' ? 'bad' : 'warn';
                         const canEdit = g.status !== 'published' && !g.fromReview;
-                        if (g.fromReview) return '<tr><td>' + thumb + '</td><td>' + esc(g.title) + '</td><td><span class="pg-pill ' + statusCls + '">' + esc(STATUS_LABELS[g.status] || g.status) + '</span></td><td>' + created + '</td><td><span class="pg-muted" style="font-size:0.8rem;">Preview being prepared</span></td></tr>';
+                        if (g.fromReview) return '<tr><td>' + thumb + '</td><td>' + esc(g.title) + '</td><td><span class="pg-pill ' + statusCls + '">' + esc(STATUS_LABELS[g.status] || g.status) + '</span></td><td>' + created + '</td><td><div class="cs-row-actions"><a href="publish.html?update=' + encodeURIComponent(g.id) + '&title=' + encodeURIComponent(g.title || '') + '">Update files</a></div></td></tr>';
                         return '<tr>' +
                             '<td>' + thumb + '</td>' +
                             '<td>' + esc(g.title) + '</td>' +
-                            '<td><span class="pg-pill ' + statusCls + '">' + esc(STATUS_LABELS[g.status] || g.status) + '</span>' + (g.status === 'rejected' && g.rejectionReason ? '<br><small class="pg-muted">' + esc(g.rejectionReason) + '</small>' : '') + '</td>' +
+                            '<td><span class="pg-pill ' + statusCls + '">' + esc(STATUS_LABELS[g.status] || g.status) + '</span>' + (g.status === 'rejected' && g.rejectionReason ? '<br><small class="pg-muted">' + esc(g.rejectionReason) + '</small>' : '') +
+                                (g.updatePending ? '<br><span class="pg-pill warn" style="margin-top:4px;">Update under review</span>' : '') + (g.updateRejected && !g.updatePending ? '<br><small class="pg-muted">Last update not accepted: ' + esc(g.updateRejected) + '</small>' : '') + '</td>' +
                             '<td>' + created + '</td>' +
                             '<td><div class="cs-row-actions">' +
                                 '<a href="games.html?play=c-' + encodeURIComponent(g.id) + '" target="_blank" rel="noopener">Play</a>' +
                                 '<button ' + (canEdit ? '' : 'disabled title="Published games cannot be edited here - contact pixelgaunt@gmail.com"') + ' onclick="window.pgCsEdit(\'' + g.id + '\',\'' + esc(g.title).replace(/'/g, "&#39;") + '\')">Edit</button>' +
+                                '<a href="publish.html?update=' + encodeURIComponent(g.id) + '&title=' + encodeURIComponent(g.title || '') + '" title="Send fixed or new files - reviewed again, the current version stays live">Update files</a>' +
                                 '<button class="danger" onclick="window.pgCsDelete(\'' + g.id + '\',' + (g.chunkCount || 0) + ',\'' + esc(g.title).replace(/'/g, "&#39;") + '\')">Delete</button>' +
                             '</div></td>' +
                         '</tr>';
