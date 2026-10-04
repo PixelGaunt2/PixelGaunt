@@ -191,9 +191,11 @@
                     <div class="cs-account-field"><span>Email</span><b id="cs-acc-email">-</b></div>
                     <div class="cs-account-field"><span>Account type</span><b id="cs-acc-plan">Free</b></div>
                     <div class="cs-account-field"><span>Subscription status</span><b id="cs-acc-status">Not subscribed</b></div>
-                    <div class="cs-account-field"><span>Renewal</span><b id="cs-acc-renewal">-</b></div>
+                    <div class="cs-account-field"><span>Active until</span><b id="cs-acc-renewal">-</b></div>
                 </div>
-                <button class="nav-btn primary pg-btn" style="margin-top:20px;" onclick="window.location.href='subscription.html'">Upgrade account</button>
+                <h3 class="cs-h3">Your payments</h3>
+                <div id="cs-payments"><p class="pg-muted">Loading...</p></div>
+                <button class="nav-btn primary pg-btn" style="margin-top:20px;" onclick="window.location.href='subscription.html'">Upgrade / renew</button>
             </section>
 
             <section class="cs-panel" id="cs-panel-upgrade">
@@ -206,7 +208,7 @@
     <script>
         (function () {
             // Read before script.js (deferred) tidies the URL: creator-studio.html#games opens My Games (used after a submission).
-            let startTab = location.hash === '#games' ? 'games' : location.hash === '#earnings' ? 'earnings' : null;
+            let startTab = ['#games', '#earnings', '#account'].includes(location.hash) ? location.hash.slice(1) : null;
             const guard = document.getElementById('cs-guard');
             const dash = document.getElementById('cs-dashboard');
             const PLAN_LIMITS = { free: { maxGames: 1, maxBytes: 5 * 1024 * 1024, period: null, label: 'Free' },
@@ -222,6 +224,7 @@
                     btn.classList.add('active');
                     document.getElementById('cs-panel-' + btn.dataset.tab).classList.add('active');
                     if (btn.dataset.tab === 'earnings') loadEarnings();
+                    if (btn.dataset.tab === 'account') loadPayments();
                 });
             });
 
@@ -317,7 +320,7 @@
                 document.getElementById('cs-acc-email').textContent = user.email || '-';
                 document.getElementById('cs-acc-plan').textContent = limits.label;
                 document.getElementById('cs-acc-status').textContent = plan !== 'free' ? 'Active' : 'Not subscribed';
-                document.getElementById('cs-acc-renewal').textContent = plan !== 'free' ? 'Managed on subscription.html' : 'N/A';
+                document.getElementById('cs-acc-renewal').textContent = plan !== 'free' ? (window.pgPlanExpires ? new Date(window.pgPlanExpires).toLocaleDateString() : 'Active') : '-';
                 document.getElementById('cs-up-plan').textContent = limits.label;
 
                 loadGames(user, limits);
@@ -352,6 +355,24 @@
                     console.warn('Earnings unavailable:', e);
                 } finally { earningsLoading = false; }
             }
+
+            // The signed-in user's OWN payment receipts (the review service only returns receipts of the logged-in account).
+            async function loadPayments() {
+                const user = window.pgFB && window.pgFB.auth.currentUser, box = document.getElementById('cs-payments');
+                if (!user || !box) return;
+                try {
+                    const res = await fetch((window.PG_REVIEW_ENDPOINT || '') + '/payments', { headers: { Authorization: 'Bearer ' + await user.getIdToken() } });
+                    const d = await res.json(); if (!res.ok || !d.ok) throw new Error(d.error || 'HTTP ' + res.status);
+                    if (!d.payments.length) { box.innerHTML = '<p class="pg-muted">No payments yet. Subscribe on the <a class="pg-link" href="subscription.html">Subscription</a> page.</p>'; return; }
+                    const lbl = p => p.status === 'confirmed' ? ['ok', p.activeUntil ? 'Approved - active until ' + new Date(p.activeUntil).toLocaleDateString() : 'Approved'] : p.status === 'rejected' ? ['bad', 'Not approved - contact us'] : ['warn', 'Waiting for approval'];
+                    box.innerHTML = '<div class="cs-table-wrap"><table class="cs-games-table"><thead><tr><th>Receipt</th><th>Plan</th><th>Amount</th><th>Paid with</th><th>Date</th><th>Status</th></tr></thead><tbody>' +
+                        d.payments.map(p => { const l = lbl(p); return '<tr><td>' + esc(p.ref) + '</td><td>' + (p.cycle === 'yearly' ? 'Yearly' : 'Monthly') + '</td><td>' + esc(p.amount) + '</td><td>' + esc(p.method) + '</td><td>' + (p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '-') + '</td><td><span class="pg-pill ' + l[0] + '">' + esc(l[1]) + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
+                } catch (e) { box.innerHTML = '<p class="pg-muted">Payments could not be loaded right now.</p>'; console.warn('Payments unavailable:', e); }
+            }
+
+            // Links like creator-studio.html#account on this same page. 'popstate' fires before script.js tidies the address.
+            const tabFromHash = () => { const h = location.hash.slice(1); if (['games', 'earnings', 'account'].includes(h) && dash.style.display === 'block') openTab(h); };
+            window.addEventListener('popstate', tabFromHash); window.addEventListener('hashchange', tabFromHash);
 
             function openTab(name) { const b = document.querySelector('.cs-tab[data-tab="' + name + '"]'); if (b) b.click(); }
             function showDashboard() { guard.style.display = 'none'; dash.style.display = 'block'; refresh(); if (startTab) { openTab(startTab); startTab = null; } }

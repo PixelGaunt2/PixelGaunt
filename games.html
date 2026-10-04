@@ -90,6 +90,15 @@
                     <a class="pg-link" href="publish.html">Publish your game</a>
                 </div>
                 <div class="game-grid" id="community-grid"></div>
+                <div class="pg-bugbox" id="community-bugbox">
+                    <h3><i class="fas fa-bug" aria-hidden="true"></i> Report a bug or problem</h3>
+                    <p>Found a game that doesn't work, broken content, or something that shouldn't be here? Tell us - our team checks every report.</p>
+                    <label for="bug-game" class="pg-sr">Game (optional)</label>
+                    <input id="bug-game" maxlength="120" placeholder="Game name (optional)">
+                    <label for="bug-text" class="pg-sr">What is wrong?</label>
+                    <textarea id="bug-text" maxlength="1000" rows="3" placeholder="What is wrong? (max 1000 characters)"></textarea>
+                    <div class="pg-bugbox-row"><span id="bug-status" role="status"></span><button type="button" class="pg-btn primary" id="bug-send">Send report</button></div>
+                </div>
             </div>
         </section>
     </main>

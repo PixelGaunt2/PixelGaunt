@@ -1035,7 +1035,8 @@
                         <button type="button" class="pg-btn primary" data-act="start" style="margin-top:14px;" ${players.length < 2 ? 'disabled' : ''}>Start tournament</button>
                         <p class="pg-note">Seeds follow the order in the list. Any empty spots up to the next power of two become BYEs - those players advance automatically.</p>
                     ` : `<p class="pg-note" style="margin-top:8px;">Click a match in the bracket to enter its result. Winners move on automatically.</p>`}
-                    <button type="button" class="pg-btn sm danger" data-act="delete" style="margin-top:14px;">Delete tournament</button>
+                    ${champ ? `<div class="pg-verdict ok" style="margin-top:12px;">This tournament has finished.<small>As the organizer you can delete it now to keep the Tournaments page tidy.</small></div>` : ''}
+                    <button type="button" class="pg-btn ${champ ? 'danger' : 'sm danger'}" data-act="delete" style="margin-top:14px;">${champ ? 'Delete finished tournament' : 'Delete tournament'}</button>
                 </div>` : ''}
             </div>
 
@@ -1327,8 +1328,8 @@
     // this just removes the listing doc and its gzip chunk docs for a game the caller owns.
     async function deleteMyGame(gameId, chunkCount) {
         const { db, fs } = await fb();
-        const n = Math.max(0, Number(chunkCount) || 0);
-        await Promise.all(Array.from({ length: n }, (_, i) => fs.deleteDoc(fs.doc(db, 'community_games', gameId, 'chunks', String(i)))));
+        // Removing the listing is enough: the code chunks become unreadable without it (firestore.rules), and they
+        // are locked so nobody can swap a reviewed game's code.
         await fs.deleteDoc(fs.doc(db, 'community_games', gameId));
         Core.invalidateCommunity();
     }

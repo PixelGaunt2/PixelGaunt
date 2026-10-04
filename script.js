@@ -9,6 +9,19 @@ window.pgDeviceId = function () {
 /* ADS AND YOUR OWN GAME: a developer must not see (or click) ads on pages where they play their own game - their revenue
    share comes from those ads. games.html holds ad requests (adsbygoogle.pauseAdRequests = 1, set in its <head>) until
    we know who is playing; they are released for everyone except the owner of the community game being played. */
+// Small friendly banner (welcome messages).
+window.pgWelcome = function (text) {
+    try {
+        const el = document.createElement('div'); el.className = 'pg-welcome'; el.setAttribute('role', 'status'); el.textContent = text;
+        document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('show'));
+        setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 4500);
+    } catch (e) { /* page not ready */ }
+};
+// First visit ever on this browser: welcome the new visitor.
+(function () {
+    const show = () => { try { if (!localStorage.getItem('pgVisited')) { localStorage.setItem('pgVisited', '1'); setTimeout(() => window.pgWelcome('Welcome to PixelGaunt! 🎮 Play free browser games or publish your own.'), 1200); } } catch (e) {} };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', show); else show();
+})();
 window.pgAdsDecided = false;
 window.pgReleaseAds = function () {
     if (window.pgAdsDecided) return; window.pgAdsDecided = true;
@@ -678,6 +691,24 @@ window.pgBlockAdsForOwner = function () {
         // Every page: let the review service carry out what you approved in Firebase (games, payments). Throttled server-side.
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(pingReviewSync, 1500)); else setTimeout(pingReviewSync, 1500);
 
+        // Community bug report box (games.html)
+        (function wireBugBox() {
+            const btn = document.getElementById('bug-send'); if (!btn) return;
+            btn.addEventListener('click', async () => {
+                const status = document.getElementById('bug-status'), text = document.getElementById('bug-text').value.trim(), game = document.getElementById('bug-game').value.trim();
+                if (!window.isLoggedIn) { window.openModal('login-modal'); status.textContent = 'Please log in to send a report.'; return; }
+                if (!text) { status.textContent = 'Please describe the problem.'; return; }
+                btn.disabled = true; status.textContent = 'Sending...';
+                try {
+                    const fb = await whenFirebase();
+                    await fb.fs.addDoc(fb.fs.collection(fb.db, 'bug_reports'), { game: game.slice(0, 120), report: text.slice(0, 1000), status: 'open', date: new Date(), uid: fb.auth.currentUser.uid, area: 'community', page: 'games' });
+                    document.getElementById('bug-text').value = ''; document.getElementById('bug-game').value = '';
+                    status.textContent = 'Thank you! Your report was sent to our team.';
+                } catch (e) { console.error('Bug report failed:', e); status.textContent = 'Could not send. Please email pixelgaunt@gmail.com.'; }
+                finally { btn.disabled = false; }
+            });
+        })();
+
         function renderCommunity() {
             const shelf = document.getElementById('community-shelf');
             const grid = document.getElementById('community-grid');
@@ -786,7 +817,7 @@ window.pgBlockAdsForOwner = function () {
                 if (!text || !text.trim()) return;
                 try {
                     const fb = await whenFirebase();
-                    await fb.fs.addDoc(fb.fs.collection(fb.db, 'bug_reports'), { game: game.title, communityId: game.docId, report: text.trim().slice(0, 500), status: 'open', date: new Date() });
+                    await fb.fs.addDoc(fb.fs.collection(fb.db, 'bug_reports'), { game: String(game.title).slice(0, 120), communityId: game.docId, report: text.trim().slice(0, 1000), status: 'open', date: new Date(), uid: fb.auth.currentUser.uid, area: 'game' });
                     alert('Thanks. Your report was sent.');
                 } catch (err) {
                     console.error('Report failed:', err);

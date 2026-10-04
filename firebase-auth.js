@@ -314,6 +314,38 @@
         // signed in on page load, logout) and, for a fresh login, only after Continue.
         function applyAuthState(user) {
             window.dispatchEvent(new CustomEvent('pg-auth', { detail: { user: user || null } }));
+            // LOGIN SELF-CHECK (once per visit): renew the login token now, the way Firebase does every hour.
+            // If Google refuses (most often: the Firebase API key is restricted without "Token Service API"),
+            // Firebase would silently log the user out later - so say exactly why, instead of a mystery logout.
+            if (user) {
+                try {
+                    if (sessionStorage.getItem('pgTokenCheck') !== user.uid) {
+                        const done = () => { try { sessionStorage.setItem('pgTokenCheck', user.uid); } catch (e) {} };   // only once it really finished
+                        user.getIdToken(true).then(() => { done(); try { localStorage.removeItem('pgAuthProblem'); } catch (e) {} }).catch(err => {
+                            const code = String((err && err.code) || err), net = /network-request-failed/.test(code);
+                            if (net) return;   // offline, or the page changed mid-check: try again on the next page
+                            done();
+                            console.error('[PixelGaunt login check] Login renewal failed:', code, err && err.message);
+                            try { localStorage.setItem('pgAuthProblem', JSON.stringify({ code, msg: String(err && err.message || '').slice(0, 300), at: new Date().toISOString() })); } catch (e) {}
+                            if (/blocked|api-key|apikey|referer|referrer|securetoken/i.test(code + ' ' + (err && err.message)) && window.pgWelcome) {
+                                window.pgWelcome('Login problem on this website: Google refused to renew your login (' + code + '). Please tell pixelgaunt@gmail.com.');
+                            }
+                        });
+                    }
+                } catch (e) { /* storage blocked */ }
+            }
+            if (user && window.pgWelcome) {
+                try {
+                    if (sessionStorage.getItem('pgWelcomedUser') !== user.uid) {
+                        // Marked as shown after 2.5 s: if the page changes sooner (e.g. the jump to Creator Studio right
+                        // after logging in), the welcome is shown again on the next page instead of being lost.
+                        setTimeout(() => { try { sessionStorage.setItem('pgWelcomedUser', user.uid); } catch (e) {} }, 2500);
+                        const first = (user.displayName || '').split(' ')[0] || 'player';
+                        const isNew = user.metadata && user.metadata.creationTime && user.metadata.creationTime === user.metadata.lastSignInTime;
+                        window.pgWelcome(isNew ? `Welcome to PixelGaunt, ${first}! 🎉 Your account is ready.` : `Welcome back, ${first}! 👋`);
+                    }
+                } catch (e) { /* storage blocked */ }
+            }
             if (user && window.PG_REVIEW_ENDPOINT && window.pgDeviceId) {
                 try {
                     if (sessionStorage.getItem('pgSeen') !== user.uid) {
@@ -385,8 +417,10 @@
                     const gameTitle = document.getElementById('current-game-title').innerText;
                     try {
                         await addDoc(collection(db, "bug_reports"), {
-                            game: gameTitle,
-                            report: bugDetails,
+                            game: String(gameTitle).slice(0, 120),
+                            report: bugDetails.trim().slice(0, 1000),
+                            uid: auth.currentUser.uid,
+                            area: 'game',
                             status: "open",
                             date: new Date()
                         });
