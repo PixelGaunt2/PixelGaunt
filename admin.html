@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LRDNJ69KD1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-LRDNJ69KD1');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Pixel Gaunt</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="Upload your browser game to Pixel Gaunt Studios. See supported formats, upload limits, and the publishing workflow.">
+    <link rel="canonical" href="https://pixelgaunt.com/admin.html">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+	<!-- Open Graph / Social Media Meta Tags -->
+<meta property="og:title" content="Publish Your Game - Pixel Gaunt Studios">
+<meta property="og:description" content="Upload your browser game to Pixel Gaunt Studios. See supported formats, upload limits, and the publishing workflow.">
+<meta property="og:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
+<meta property="og:url" content="https://pixelgaunt.com/admin.html">
+<meta property="og:type" content="website">
+
+<!-- Twitter Card Tags -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Publish Your Game - Pixel Gaunt Studios">
+<meta name="twitter:description" content="Upload your browser game to Pixel Gaunt Studios. See supported formats, upload limits, and the publishing workflow.">
+<meta name="twitter:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
+</head>
+<body class="theme-blue">
+    <div id="scroll-progress"></div>
+    <div class="aurora-bg">
+        <div class="aurora-blob blob1"></div>
+        <div class="aurora-blob blob2"></div>
+        <div class="aurora-blob blob3"></div>
+    </div>
+
+    <audio id="portal-bgm" loop style="display:none;"></audio>
+    <header id="main-header">
+        <div class="logo pixel-font" onclick="window.location.href='index.html'">Pixel <span>Gaunt</span></div>
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false">
+            <i class="fas fa-bars"></i>
+        </button>
+        <nav class="nav-links" id="main-nav-links">
+            <div class="nav-menu-links">
+                <a href="index.html">Home</a>
+                <a href="games.html">Games</a>
+                <a href="publish.html">Publish</a>
+                <a href="tournaments.html">Tournaments</a>
+                <a href="merch.html">Merch</a>
+                <a href="subscription.html">Subscription</a>
+                <a href="creator-studio.html" id="nav-creator-studio-link" style="display:none;">Creator Studio</a>
+            </div>
+            <div class="theme-select-container" title="Select Theme Color Core">
+                <div class="theme-dot t-blue active" onclick="setGlobalTheme('blue', this)"></div>
+                <div class="theme-dot t-purple" onclick="setGlobalTheme('purple', this)"></div>
+                <div class="theme-dot t-emerald" onclick="setGlobalTheme('emerald', this)"></div>
+                <div class="theme-dot t-cyber" onclick="setGlobalTheme('cyber', this)"></div>
+            </div>
+            <button class="nav-btn primary" id="main-login-btn" onclick="openModal('login-modal')">Login</button>
+        </nav>
+    </header>
+
+    <main class="container" id="homepage-page" style="padding-top: 40px;">
+        <div class="page-header" style="text-align:center; margin-bottom: 18px;">
+            <h1 class="pixel-font portfolio-section-title">Admin</h1>
+            <p class="portfolio-section-subtitle">Review and control everything users send: games, payments, merch, tournaments, bug reports and accounts.</p>
+        </div>
+        <div id="admin-root"><p class="pg-muted" style="text-align:center;">Checking your access...</p></div>
+        <style>
+            .ad-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+            .ad-tab { padding: 9px 14px; border-radius: 10px; border: 1px solid rgba(148,163,184,0.25); background: rgba(255,255,255,0.03); color: #cbd5e1; cursor: pointer; font: inherit; font-weight: 600; }
+            .ad-tab[aria-selected="true"] { background: rgba(56,189,248,0.15); border-color: var(--neon-cyan, #38bdf8); color: #fff; }
+            .ad-badge:not(:empty) { margin-left: 6px; background: #ef4444; color: #fff; border-radius: 99px; padding: 1px 7px; font-size: 0.75rem; }
+            .ad-note { min-height: 1em; font-weight: 600; } .ad-note.ok { color: #34d399; } .ad-note.bad { color: #f87171; }
+            .ad-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+            .ad-card { text-align: left; padding: 16px; border-radius: 14px; border: 1px solid rgba(148,163,184,0.25); background: rgba(255,255,255,0.03); color: #cbd5e1; cursor: pointer; font: inherit; }
+            .ad-card b { display: block; font-size: 2rem; color: #fff; } .ad-card span { display: block; font-weight: 700; color: #e2e8f0; } .ad-card small { color: #64748b; }
+            .ad-item { border: 1px solid rgba(148,163,184,0.22); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; color: #cbd5e1; background: rgba(255,255,255,0.03); }
+            .ad-item-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; } .ad-item-head b { color: #fff; font-size: 1.05rem; } .ad-item-head small { color: #94a3b8; }
+            .ad-item p { margin: 6px 0; }
+            .ad-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+            .ad-wrap { overflow-x: auto; } .ad-table { width: 100%; border-collapse: collapse; color: #cbd5e1; font-size: 0.9rem; }
+            .ad-table th { text-align: left; color: #94a3b8; font-weight: 600; padding: 8px; border-bottom: 1px solid rgba(148,163,184,0.25); white-space: nowrap; }
+            .ad-table td { padding: 8px; border-bottom: 1px solid rgba(148,163,184,0.12); vertical-align: top; } .ad-table small { color: #94a3b8; }
+            .ad-table select, .ad-filter input, .ad-filter select, .ad-rev { padding: 7px 9px; border-radius: 8px; border: 1px solid rgba(148,163,184,0.3); background: #0b1020; color: #fff; font: inherit; }
+            .ad-rev { width: 110px; }
+            .ad-filter { display: inline-flex; gap: 8px; align-items: center; margin: 0 14px 12px 0; color: #cbd5e1; flex-wrap: wrap; }
+            .ad-row { display: flex; flex-wrap: wrap; }
+            .ad-thumb { width: 64px; height: 64px; object-fit: contain; background: #fff; border-radius: 8px; cursor: zoom-in; }
+            .ad-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9998; display: flex; align-items: center; justify-content: center; padding: 16px; }
+            .ad-modal[hidden] { display: none; }
+            .ad-modal-box { position: relative; background: #0b1020; border: 1px solid rgba(148,163,184,0.3); border-radius: 16px; padding: 18px; width: min(1000px, 100%); max-height: 92vh; overflow: auto; color: #cbd5e1; }
+            .ad-x { position: absolute; right: 10px; top: 6px; background: none; border: 0; color: #94a3b8; font-size: 2rem; cursor: pointer; }
+            .ad-game { width: 100%; height: 70vh; border: 0; border-radius: 10px; background: #000; }
+            .ad-gate { max-width: 640px; margin: 20px auto; text-align: center; color: #cbd5e1; border: 1px solid rgba(148,163,184,0.25); border-radius: 16px; padding: 24px; }
+            .ad-gate h3 { color: #fff; } .ad-uid { display: inline-block; margin: 10px 0; padding: 8px 12px; background: #0b1020; border-radius: 8px; color: #fbbf24; user-select: all; word-break: break-all; }
+        </style>
+    </main>
+
+    <div class="modal-overlay" id="login-modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModals()">&times;</span>
+            <div class="modal-step active">
+                <h3 class="modal-title pixel-font">Authentication</h3>
+                <div class="option-grid">
+                    <button class="opt-btn" id="google-login-btn">
+                        <span><i class="fab fa-google"></i></span> Login with Google
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pg-info-modal">
+        <div class="info-modal-wrapper">
+            <span onclick="closePageModal()" style="position: absolute; right: 24px; top: 20px; color: #64748b; font-size: 35px; cursor: pointer; font-weight: bold; line-height: 1; transition: 0.2s;">&times;</span>
+            <h2 id="pg-info-title" style="color: var(--neon-cyan); text-transform: uppercase; font-family: 'Press Start 2P', cursive; font-size: 1.2rem; text-align: center; margin-bottom: 25px;">Title</h2>
+            <div id="pg-info-body" style="color: #e2e8f0; font-size: 1.05rem; line-height: 1.7; font-family: 'Inter', sans-serif;"></div>
+        </div>
+    </div>
+
+    <div id="pg-comingsoon" style="display:none;">
+        <p style="text-align:center; font-size: 3rem; color: var(--neon-cyan); text-shadow: 0 0 20px rgba(56, 189, 248, 0.325); margin-bottom: 10px;"><i class="fas fa-hourglass-half"></i></p>
+        <p style="text-align:center;">This section is currently under construction. We're working hard to bring you an amazing experience — check back soon!</p>
+    </div>
+
+    <div id="pg-about" style="display:none;">
+        <p><strong>Pixel Gaunt Studios</strong> is an independent game development studio. It started as a solo project — learning game development from scratch by building small HTML5 browser games one at a time — and has since grown into a real body of work, including our debut commercial release, <strong>Girl The Driller</strong>.</p>
+        <p><br>Along the way we've shipped more than a dozen free prototypes across genres — fighting, puzzle, racing, 3D shooting, and more — each one teaching us something new about game feel, physics, and polish.</p>
+        <p><br>Every game is built with HTML5, CSS3, JavaScript, and Three.js/WebGL, and designed to run straight from the browser on PC, Android, iOS, Mac, and Linux — no installs, no downloads.</p>
+        <p><br>Pixel Gaunt stays small and independent on purpose. We'd rather ship fewer games and make them good than chase volume, and there's always something new in the works.</p>
+    </div>
+
+    <div id="pg-contact" style="display:none;">
+        <p>Got feedback on <strong>Girl The Driller</strong>, spotted a bug, or have a question about one of our prototypes? We read everything that comes in — it's what shapes what we fix and build next.</p>
+        <p><br>You can also report a bug directly from inside a game while signed in, using the <strong>Report Bug</strong> button on the game screen.</p>
+        <p><br>For business inquiries, collaborations, or copyright/content concerns, email us directly and we'll get back to you.</p>
+        <p><br><strong>Email:</strong> pixelgaunt@gmail.com</p>
+        <p><br><strong>Community:</strong> Join our <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" style="color: var(--neon-cyan); text-decoration: underline;">WhatsApp Group</a> or <a href="https://discord.gg/DfHFVNMBQF" target="_blank" style="color: var(--neon-cyan); text-decoration: underline;">Discord</a> for quick discussion and updates.</p>
+    </div>
+
+    <div id="pg-faq" style="display:none;">
+        <p><strong>Q: Are the games free to play?</strong><br>A: Yes, all games on Pixel Gaunt are 100% free to play directly in your browser.</p>
+        <p><br><strong>Q: Do I need to download anything?</strong><br>A: No downloads are required. Just click and play!</p>
+        <p><br><strong>Q: Can I play on my phone?</strong><br>A: Absolutely! Our games are fully optimized for mobile devices (Android & iOS) as well as PC, Mac, and Linux.</p>
+    </div>
+
+    <div id="pg-privacy" style="display:none;">
+        <p><strong>Privacy Policy</strong></p>
+        <p><br>This explains what data Pixel Gaunt Studios collects and how it's used. We keep this as limited as possible, and you never need an account to play any game.</p>
+        <p><br><strong>Signing in:</strong> If you choose to sign in with Google, we receive your name, email address, and profile photo, and store this in our database (Firebase) to identify your account — for example, so likes and bug reports can be linked to you.</p>
+        <p><br><strong>Likes & bug reports:</strong> When you like a game or submit a bug report while signed in, that action (game title, report text, and timestamp) is saved to our database so we can track feedback and fix issues.</p>
+        <p><br><strong>Published games, tournaments & creator requests:</strong> If you publish a game, join or create a tournament, or save a creator request, what you submit (game files, title, cover image, your display name, scores and request details) is stored in our database. Games and tournament leaderboards are shown publicly; creator requests are visible only to you and us. Ask us at pixelgaunt@gmail.com to remove anything you submitted.</p>
+        <p><br><strong>Analytics:</strong> We use Google Analytics and Firebase Analytics to understand overall site traffic and which games are played most. This data is aggregated and isn't tied to your identity.</p>
+        <p><br><strong>Advertising:</strong> This site uses Google AdSense, which may use cookies to serve ads. Google's own privacy policy governs how that data is handled.</p>
+        <p><br><strong>Local storage:</strong> To rank games by popularity, play counts are saved in your browser's local storage. This stays on your device and is never sent to us.</p>
+        <p><br><strong>What we don't do:</strong> We don't sell your data, and we don't collect personal information beyond what's described above.</p>
+        <p><br>Questions about your data? Contact us at pixelgaunt@gmail.com.</p>
+    </div>
+
+    <div id="pg-disclaimer" style="display:none;">
+        <p><strong>Disclaimer</strong></p>
+        <p><br>All games, logos, and assets on this site — including the Pixel Gaunt branding — belong to Pixel Gaunt Studios unless stated otherwise.</p>
+        <p><br>Games are provided "as is." While we test everything before release, browser games can behave differently across devices and browsers, and occasional bugs or downtime may occur. We're not liable for any loss or issue arising from use of this website.</p>
+        <p><br>Links to our Discord, WhatsApp, YouTube, and other social channels lead to third-party platforms we don't control, and we're not responsible for their content or availability.</p>
+        <p><br>Games on this site may be updated, changed, or removed over time as development continues.</p>
+        <p><br>Community games are published by their creators, not by Pixel Gaunt Studios. They run in an isolated sandbox, but we cannot guarantee their content. To report a game or a copyright concern, email pixelgaunt@gmail.com.</p>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="social-icons">
+                <a href="https://www.youtube.com/channel/UCmCPkHm7yRadCKcv_ugE4uQ" target="_blank" class="yt" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                <a href="https://www.facebook.com/profile.php?id=61583034586770" target="_blank" class="fb" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                <a href="https://www.reddit.com/user/Real_Network860/" target="_blank" class="rd" title="Reddit"><i class="fa-brands fa-reddit-alien"></i></a>
+                <a href="https://discord.gg/DfHFVNMBQF" target="_blank" class="dc" title="Discord"><i class="fa-brands fa-discord"></i></a>
+                <a href="https://www.tiktok.com/@pixelgaunt" target="_blank" class="tk" title="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+                <a href="mailto:pixelgaunt@gmail.com" class="gm" title="Gmail"><i class="fa-solid fa-envelope"></i></a>
+                <a href="https://whatsapp.com/channel/0029VbBo20lLo4hmsAJODc2u" target="_blank" class="wa-channel" title="WhatsApp Channel"><i class="fa-brands fa-whatsapp"></i></a>
+                <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" class="wa-group" title="WhatsApp Group"><i class="fa-solid fa-user-group"></i></a>
+            </div>
+            <p class="pixel-font footer-copyright">&copy; 2026 Pixel Gaunt Studios. All Rights Reserved.</p>
+            <div class="footer-links">
+                <a onclick="openPageModal('FAQ', 'pg-faq')">FAQ</a>
+                <a onclick="openPageModal('Contact', 'pg-contact')">Contact</a>
+                <a onclick="openPageModal('About Us', 'pg-about')">About Us</a>
+                <a onclick="openPageModal('Privacy Policy', 'pg-privacy')">Privacy Policy</a>
+                <a onclick="openPageModal('Disclaimer', 'pg-disclaimer')">Disclaimer</a>
+                <a href="developer-agreement.html">Developer Agreement</a>
+            </div>
+        </div>
+    </footer>
+
+    <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
+
+    <script src="script.js" defer></script>
+    <script src="admin.js" defer></script>
+
+    <script type="module" src="firebase-auth.js"></script>
+</body>
+</html>

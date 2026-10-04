@@ -1,3 +1,6 @@
+// ONE ADDRESS: www.pixelgaunt.com and pixelgaunt.com are separate websites to the browser, each with its own login.
+// Moving between them looks like "I was logged out". Always use pixelgaunt.com.
+if (location.hostname === 'www.pixelgaunt.com') location.replace('https://pixelgaunt.com' + location.pathname + location.search + location.hash);
 // The address as it was when the page opened (before any tidying of the address bar) - e.g. publish.html?update=<id>.
 window.pgStartSearch = location.search;
 // Review service (pg-review-worker.js on Cloudflare). Used by platform.js, firebase-auth.js and subscription.html.

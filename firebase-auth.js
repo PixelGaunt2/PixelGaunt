@@ -149,6 +149,7 @@
         };
         async function cancelPendingLogin() {
             setAwaiting(false);
+            try { localStorage.setItem('pgExplicitLogout', '1'); } catch (e) {}   // the user chose this - not a problem to report
             try { await signOut(auth); } catch (error) { console.error("Logout Error:", error); }
         }
 
@@ -274,6 +275,7 @@
         window.logoutUser = async () => {
             if (!window.confirm("Log out of PixelGaunt?")) return;
             try {
+                try { localStorage.setItem('pgExplicitLogout', '1'); localStorage.removeItem('pgSession'); } catch (e) {}
                 await signOut(auth);
             } catch (error) {
                 console.error("Logout Error:", error);
@@ -312,11 +314,35 @@
 
         // The "logged in / logged out" UI. Called directly for normal auth changes (already
         // signed in on page load, logout) and, for a fresh login, only after Continue.
-        function applyAuthState(user) {
-            window.dispatchEvent(new CustomEvent('pg-auth', { detail: { user: user || null } }));
-            // LOGIN SELF-CHECK (once per visit): renew the login token now, the way Firebase does every hour.
-            // If Google refuses (most often: the Firebase API key is restricted without "Token Service API"),
-            // Firebase would silently log the user out later - so say exactly why, instead of a mystery logout.
+        // ---- LOGIN DIAGNOSTICS: if a session ends without the user pressing Logout, record why (admin dashboard > Login problems)
+        function sessionMark(user) {
+            try {
+                if (user) { const s = JSON.parse(localStorage.getItem('pgSession') || 'null'); if (!s || s.uid !== user.uid) localStorage.setItem('pgSession', JSON.stringify({ uid: user.uid, at: Date.now(), host: location.hostname })); localStorage.removeItem('pgExplicitLogout'); return; }
+                const s = JSON.parse(localStorage.getItem('pgSession') || 'null'), explicit = localStorage.getItem('pgExplicitLogout') === '1';
+                localStorage.removeItem('pgSession');
+                if (!s || explicit) return;
+                const problem = (() => { try { const p = JSON.parse(localStorage.getItem('pgAuthProblem') || 'null'); return p ? p.code + ' ' + (p.msg || '') : ''; } catch (e) { return ''; } })();
+                const report = { kind: 'unexpected_logout', host: location.hostname + (s.host && s.host !== location.hostname ? ' (logged in on ' + s.host + ')' : ''), afterMin: Math.round((Date.now() - s.at) / 60000),
+                    problem: problem || 'no error recorded (browser storage cleared, private window, or a different browser/device)', ua: navigator.userAgent.slice(0, 200), standalone: !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches), uidHint: s.uid.slice(0, 6) };
+                if (window.PG_REVIEW_ENDPOINT && navigator.sendBeacon) navigator.sendBeacon(window.PG_REVIEW_ENDPOINT + '/diag', new Blob([JSON.stringify(report)], { type: 'text/plain' }));
+                if (window.pgWelcome) window.pgWelcome('You were signed out without pressing Logout. We recorded the reason so it can be fixed - please log in again.');
+            } catch (e) { /* storage blocked */ }
+        }
+        // Check the login can be renewed every 25 minutes while the page is open (Firebase renews it every hour).
+        setInterval(() => { const u = auth.currentUser; if (u && !document.hidden) { try { sessionStorage.removeItem('pgTokenCheck'); } catch (e) {} applyTokenCheck(u); } }, 25 * 60e3);
+        // Show the Admin link to administrators only (the review service decides; admins/<uid> in Firestore).
+        function adminLink(user) {
+            const old = document.getElementById('nav-admin-link'); if (!user) { if (old) old.remove(); return; }
+            if (!window.PG_REVIEW_ENDPOINT) return;
+            user.getIdToken().then(t => fetch(window.PG_REVIEW_ENDPOINT + '/admin/me', { headers: { Authorization: 'Bearer ' + t } })).then(r => r.ok ? r.json() : null).then(d => {
+                if (!d || !d.admin || document.getElementById('nav-admin-link')) return;
+                const ref = document.getElementById('nav-creator-studio-link'); if (!ref || !ref.parentNode) return;
+                const a = document.createElement('a'); a.id = 'nav-admin-link'; a.href = 'admin.html'; a.textContent = 'Admin'; a.style.color = '#fbbf24';
+                ref.parentNode.insertBefore(a, ref.nextSibling);
+            }).catch(() => {});
+        }
+
+        function applyTokenCheck(user) {
             if (user) {
                 try {
                     if (sessionStorage.getItem('pgTokenCheck') !== user.uid) {
@@ -334,6 +360,16 @@
                     }
                 } catch (e) { /* storage blocked */ }
             }
+
+        }
+
+        function applyAuthState(user) {
+            window.dispatchEvent(new CustomEvent('pg-auth', { detail: { user: user || null } }));
+            sessionMark(user); adminLink(user);
+            // LOGIN SELF-CHECK (once per visit): renew the login token now, the way Firebase does every hour.
+            // If Google refuses (most often: the Firebase API key is restricted without "Token Service API"),
+            // Firebase would silently log the user out later - so say exactly why, instead of a mystery logout.
+            if (user) applyTokenCheck(user);
             if (user && window.pgWelcome) {
                 try {
                     if (sessionStorage.getItem('pgWelcomedUser') !== user.uid) {
