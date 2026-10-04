@@ -709,6 +709,38 @@ window.pgBlockAdsForOwner = function () {
             });
         })();
 
+        // ---- Live activity feed (home page) ----
+        (function liveFeed() {
+            const list = document.getElementById('live-list'); if (!list || !window.PG_REVIEW_ENDPOINT) return;
+            const ago = t => { const s = Math.max(1, Math.round((Date.now() - Date.parse(t)) / 1000)); return s < 60 ? 'just now' : s < 3600 ? Math.round(s / 60) + ' min ago' : Math.round(s / 3600) + ' h ago'; };
+            const line = e => { const w = esc(e.who), g = esc(e.game);
+                return { new_user: `👋 <b>${w}</b> just joined PixelGaunt - welcome!`, online: `🟢 <b>${w}</b> is online`, playing: `🎮 <b>${w}</b> is playing <b>${g}</b>`,
+                    left: `🚪 <b>${w}</b> left - see you soon`, subscribed: `⭐ <b>${w}</b> just subscribed`, uploaded: `🚀 <b>${w}</b> uploaded a new game for review`,
+                    merch: `👕 <b>${w}</b> ordered a custom ${g || 'merch item'}` }[e.type] || ''; };
+            async function load() {
+                try {
+                    const d = await (await fetch(window.PG_REVIEW_ENDPOINT + '/activity')).json();
+                    const items = (d.items || []).filter(line);
+                    list.innerHTML = items.length ? items.map(e => `<li><span>${line(e)}</span><small>${ago(e.at)}</small></li>`).join('') : '<li class="pg-muted">Quiet right now - be the first to play!</li>';
+                    document.getElementById('live-playing').textContent = d.playingNow ? '🎮 ' + d.playingNow + ' playing right now' : '';
+                } catch (e) { list.innerHTML = '<li class="pg-muted">Live activity is not available right now.</li>'; }
+            }
+            load(); setInterval(() => { if (!document.hidden) load(); }, 30000);
+        })();
+
+        // ---- "left the site" signal for logged-in visitors (not sent when moving between our own pages) ----
+        (function byeBeacon() {
+            let tok = null;
+            const refresh = () => { const u = window.pgFB && window.pgFB.auth.currentUser; if (u) u.getIdToken().then(t => { tok = t; }).catch(() => {}); else tok = null; };
+            window.addEventListener('pg-auth', refresh); setInterval(refresh, 40 * 60e3);
+            document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (a && a.origin === location.origin) { try { sessionStorage.setItem('pgInternalNav', String(Date.now())); } catch (x) {} } }, true);
+            window.addEventListener('pagehide', () => {
+                if (!tok || !window.PG_REVIEW_ENDPOINT || !navigator.sendBeacon) return;
+                try { const t = Number(sessionStorage.getItem('pgInternalNav') || 0); if (Date.now() - t < 3000) return; } catch (x) {}
+                navigator.sendBeacon(window.PG_REVIEW_ENDPOINT + '/bye', new Blob([JSON.stringify({ token: tok })], { type: 'text/plain' }));
+            });
+        })();
+
         function renderCommunity() {
             const shelf = document.getElementById('community-shelf');
             const grid = document.getElementById('community-grid');

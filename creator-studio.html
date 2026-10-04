@@ -74,6 +74,8 @@
         .cs-fair { border: 1px solid rgba(248,113,113,0.35); background: rgba(248,113,113,0.07); border-radius: 16px; padding: 16px 20px; margin-top: 22px; color: #cbd5e1; }
         .cs-fair ul { padding-left: 20px; margin: 0; } .cs-fair li { margin: 6px 0; font-size: 0.92rem; }
         .cs-table-wrap { overflow-x: auto; }
+        .cs-privacy { margin-top: 18px; padding: 12px 14px; border: 1px solid rgba(148,163,184,0.25); border-radius: 12px; color: #cbd5e1; }
+        .cs-privacy label { display: flex; gap: 8px; align-items: center; cursor: pointer; } .cs-privacy small { color: #64748b; display: block; margin-top: 4px; }
     </style>
 </head>
 <body class="theme-blue" data-pg-page="creator-studio">
@@ -193,6 +195,10 @@
                     <div class="cs-account-field"><span>Subscription status</span><b id="cs-acc-status">Not subscribed</b></div>
                     <div class="cs-account-field"><span>Active until</span><b id="cs-acc-renewal">-</b></div>
                 </div>
+                <div class="cs-privacy">
+                    <label><input type="checkbox" id="cs-show-activity" checked> Show my first name in "Live on PixelGaunt" on the home page</label>
+                    <small id="cs-privacy-note">When off, your activity shows as "A player".</small>
+                </div>
                 <h3 class="cs-h3">Your payments</h3>
                 <div id="cs-payments"><p class="pg-muted">Loading...</p></div>
                 <button class="nav-btn primary pg-btn" style="margin-top:20px;" onclick="window.location.href='subscription.html'">Upgrade / renew</button>
@@ -224,7 +230,7 @@
                     btn.classList.add('active');
                     document.getElementById('cs-panel-' + btn.dataset.tab).classList.add('active');
                     if (btn.dataset.tab === 'earnings') loadEarnings();
-                    if (btn.dataset.tab === 'account') loadPayments();
+                    if (btn.dataset.tab === 'account') { loadPayments(); loadPrivacy(); }
                 });
             });
 
@@ -373,6 +379,22 @@
             // Links like creator-studio.html#account on this same page. 'popstate' fires before script.js tidies the address.
             const tabFromHash = () => { const h = location.hash.slice(1); if (['games', 'earnings', 'account'].includes(h) && dash.style.display === 'block') openTab(h); };
             window.addEventListener('popstate', tabFromHash); window.addEventListener('hashchange', tabFromHash);
+
+            async function loadPrivacy() {
+                const user = window.pgFB && window.pgFB.auth.currentUser, box = document.getElementById('cs-show-activity');
+                if (!user || !box) return;
+                try {
+                    const d = await (await fetch((window.PG_REVIEW_ENDPOINT || '') + '/privacy', { headers: { Authorization: 'Bearer ' + await user.getIdToken() } })).json();
+                    box.checked = d.showInActivity !== false;
+                    document.getElementById('cs-privacy-note').textContent = 'Shown as "' + (d.publicName || 'A player') + '" when on, "A player" when off.';
+                } catch (e) { /* keep default */ }
+                box.onchange = async () => {
+                    box.disabled = true;
+                    try { await fetch((window.PG_REVIEW_ENDPOINT || '') + '/privacy', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await user.getIdToken() }, body: JSON.stringify({ showInActivity: box.checked }) }); }
+                    catch (e) { box.checked = !box.checked; alert('Could not save. Please try again.'); }
+                    finally { box.disabled = false; }
+                };
+            }
 
             function openTab(name) { const b = document.querySelector('.cs-tab[data-tab="' + name + '"]'); if (b) b.click(); }
             function showDashboard() { guard.style.display = 'none'; dash.style.display = 'block'; refresh(); if (startTab) { openTab(startTab); startTab = null; } }
