@@ -120,6 +120,83 @@ window.pgOpenDonate = function () {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add); else add();
 })();
 
+// ---- FLOATING LIVE NOTIFICATIONS (every page) ----
+// One small card about every 12 s: live activity, our social channels, subscription offers / renewal reminders,
+// open tournaments (free or paid) and merch news. Pauses while a game is playing or the tab is hidden; can be turned off.
+(function pgFloatNotes() {
+    const OFF = 'pgNotesOff', EVERY = 12000, SHOW = 7000;
+    const SOCIALS = [
+        ['fa-youtube', 'YouTube', 'Subscribe to our YouTube channel', 'https://www.youtube.com/channel/UCmCPkHm7yRadCKcv_ugE4uQ', '#ff0000'],
+        ['fa-facebook-f', 'Facebook', 'Follow our Facebook page', 'https://www.facebook.com/profile.php?id=61583034586770', '#1877f2'],
+        ['fa-reddit-alien', 'Reddit', 'Follow us on Reddit', 'https://www.reddit.com/user/Real_Network860/', '#ff4500'],
+        ['fa-discord', 'Discord', 'Join our Discord server', 'https://discord.gg/DfHFVNMBQF', '#5865f2'],
+        ['fa-tiktok', 'TikTok', 'Follow us on TikTok', 'https://www.tiktok.com/@pixelgaunt', '#ff0050'],
+        ['fa-whatsapp', 'WhatsApp Channel', 'Follow our WhatsApp channel', 'https://whatsapp.com/channel/0029VbBo20lLo4hmsAJODc2u', '#25d366'],
+        ['fa-whatsapp', 'WhatsApp Group', 'Join our WhatsApp group', 'https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc', '#25d366']
+    ];
+    const e2 = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let queue = [], i = 0, si = 0, timer = null, el = null, hideT = null, hovering = false, feed = [], tours = [];
+    const off = () => { try { return localStorage.getItem(OFF) === '1'; } catch (e) { return false; } };
+    const playing = () => { const f = document.getElementById('game-canvas'); const gp = document.getElementById('gameplay-page'); return !!(f && f.getAttribute('src') && gp && gp.style.display !== 'none'); };
+    function feedLine(e) {
+        const w = e2(e.who), g = e2(e.game);
+        return { new_user: ['👋', `<b>${w}</b> just joined PixelGaunt`], online: ['🟢', `<b>${w}</b> is online`], playing: ['🎮', `<b>${w}</b> is playing <b>${g}</b>`],
+            subscribed: ['⭐', `<b>${w}</b> just subscribed`], uploaded: ['🚀', `<b>${w}</b> uploaded a new game`], merch: ['👕', `<b>${w}</b> ordered a custom ${g || 'merch item'}`],
+            donated: ['💖', `<b>${w}</b> donated - thank you!`], joined_paid: ['🏆', `<b>${w}</b> joined the paid tournament <b>${g}</b>`] }[e.type];
+    }
+    function build() {
+        const q = [], u = window.pgFB && window.pgFB.auth && window.pgFB.auth.currentUser;
+        const end = window.pgPlanExpires ? Date.parse(window.pgPlanExpires) : 0, days = end ? Math.ceil((end - Date.now()) / 864e5) : -1;
+        if (u && window.pgUserPlan && window.pgUserPlan !== 'free' && days >= 0 && days <= 3) q.push({ ico: '⏳', html: `Your subscription ends ${days === 0 ? 'today' : 'in ' + days + ' day' + (days === 1 ? '' : 's')} - <b>renew now</b>`, href: 'subscription.html', urgent: true });
+        feed.slice(0, 6).forEach(ev => { const l = feedLine(ev); if (l) q.push({ ico: l[0], html: l[1], href: 'index.html#live-activity' }); });
+        tours.slice(0, 3).forEach(t => q.push({ ico: '🏆', html: `Tournament <b>${e2(t.name)}</b> - ${Number(t.entryFee) > 0 ? 'PKR ' + e2(Number(t.entryFee).toLocaleString()) + ' entry' : 'FREE'}${t.prize ? ' · ' + e2(t.prize) : ''} - join or watch`, href: 'tournaments.html' }));
+        if (!u || !window.pgUserPlan || window.pgUserPlan === 'free') q.push({ ico: '⭐', html: 'Publish your games: <b>10 games a month</b> for $1.99 - subscribe', href: 'subscription.html' });
+        q.push({ ico: '👕', html: '<b>Merch Studio coming soon</b> - custom T-shirts &amp; 3D prints, also made with AI', href: 'merch.html' });
+        // mix: one social channel after every two other notes
+        const out = []; q.forEach((n, k) => { out.push(n); if (k % 2 === 1) { const sc = SOCIALS[si++ % SOCIALS.length]; out.push({ social: sc }); } });
+        if (out.length < 3) SOCIALS.forEach(sc => out.push({ social: sc }));
+        return out;
+    }
+    function render(n) {
+        if (!el) { el = document.createElement('div'); el.className = 'pg-float'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); document.body.appendChild(el);
+            el.addEventListener('mouseenter', () => { hovering = true; }); el.addEventListener('mouseleave', () => { hovering = false; }); }
+        const body = n.social ? `<a class="pg-float-main" href="${n.social[3]}" target="_blank" rel="noopener"><span class="pg-float-ico pg-float-brand" style="background:${n.social[4]}"><i class="fa-brands ${n.social[0]}" aria-hidden="true"></i></span><span><b>${n.social[1]}</b><br>${n.social[2]}</span></a>`
+            : `<a class="pg-float-main" href="${n.href}"><span class="pg-float-ico">${n.ico}</span><span>${n.html}</span></a>`;
+        el.className = 'pg-float' + (n.urgent ? ' urgent' : '');
+        el.innerHTML = body + `<button type="button" class="pg-float-x" aria-label="Close">&times;</button><button type="button" class="pg-float-off">Turn off</button>`;
+        el.querySelector('.pg-float-x').onclick = () => el.classList.remove('show');
+        el.querySelector('.pg-float-off').onclick = () => { try { localStorage.setItem(OFF, '1'); } catch (e) {} el.classList.remove('show'); stop(); bell(); };
+        requestAnimationFrame(() => el.classList.add('show'));
+        clearTimeout(hideT); const hide = () => { if (hovering) { hideT = setTimeout(hide, 1500); return; } el.classList.remove('show'); }; hideT = setTimeout(hide, SHOW);
+    }
+    function tick() {
+        if (off() || document.hidden || playing() || document.querySelector('.modal-overlay.active, #pg-donate-modal')) return;
+        if (!queue.length || i >= queue.length) { queue = build(); i = 0; }
+        if (queue.length) render(queue[i++]);
+    }
+    function stop() { clearInterval(timer); timer = null; }
+    function start() { if (timer || off()) return; setTimeout(tick, 6000); timer = setInterval(tick, EVERY); }
+    function bell() {   // small button to switch the notifications back on
+        if (document.getElementById('pg-float-bell')) return;
+        const b = document.createElement('button'); b.id = 'pg-float-bell'; b.type = 'button'; b.className = 'pg-float-bell'; b.title = 'Turn live notifications on'; b.setAttribute('aria-label', 'Turn live notifications on');
+        b.innerHTML = '<i class="fas fa-bell" aria-hidden="true"></i>';
+        b.onclick = () => { try { localStorage.removeItem(OFF); } catch (e) {} b.remove(); start(); };
+        document.body.appendChild(b);
+    }
+    async function loadData() {
+        try { if (window.PG_REVIEW_ENDPOINT) { const d = await (await fetch(window.PG_REVIEW_ENDPOINT + '/activity')).json(); feed = d.items || []; } } catch (e) {}
+        try {
+            if (window.pgFB && window.pgFB.fs) { const { db, fs } = window.pgFB;
+                const snap = await fs.getDocs(fs.query(fs.collection(db, 'tournaments'), fs.orderBy('createdAt', 'desc'), fs.limit(10)));
+                tours = snap.docs.map(d => d.data()).filter(t => (t.status === 'registration' || !t.format) && t.registration !== 'closed'); }
+        } catch (e) {}
+        queue = [];
+    }
+    const boot = () => { if (off()) { bell(); return; } loadData(); setInterval(loadData, 60000); start(); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+    window.addEventListener('pg-auth', () => { queue = []; }); window.addEventListener('pg-plan', () => { queue = []; });
+})();
+
 window.pgAdsDecided = false;
 window.pgReleaseAds = function () {
     if (window.pgAdsDecided) return; window.pgAdsDecided = true;
@@ -300,6 +377,7 @@ window.pgBlockAdsForOwner = function () {
             if (gameIframe) { gameIframe.removeAttribute('srcdoc'); gameIframe.removeAttribute('sandbox'); gameIframe.src = ''; }
             const communityMeta = document.getElementById('community-meta');
             if (communityMeta) communityMeta.classList.add('pg-hidden');
+            const socialBox = document.getElementById('pg-social'); if (socialBox) socialBox.classList.add('pg-hidden');
             if (portalBgm) portalBgm.pause();
 
             exitElementFullscreen();
@@ -818,7 +896,7 @@ window.pgBlockAdsForOwner = function () {
             const line = e => { const w = esc(e.who), g = esc(e.game);
                 return { new_user: `👋 <b>${w}</b> just joined PixelGaunt - welcome!`, online: `🟢 <b>${w}</b> is online`, playing: `🎮 <b>${w}</b> is playing <b>${g}</b>`,
                     left: `🚪 <b>${w}</b> left - see you soon`, subscribed: `⭐ <b>${w}</b> just subscribed`, uploaded: `🚀 <b>${w}</b> uploaded a new game for review`,
-                    merch: `👕 <b>${w}</b> ordered a custom ${g || 'merch item'}`, donated: `💖 <b>${w}</b> donated to PixelGaunt - thank you!` }[e.type] || ''; };
+                    merch: `👕 <b>${w}</b> ordered a custom ${g || 'merch item'}`, donated: `💖 <b>${w}</b> donated to PixelGaunt - thank you!`, joined_paid: `🏆 <b>${w}</b> joined the paid tournament <b>${g}</b>` }[e.type] || ''; };
             async function load() {
                 try {
                     const d = await (await fetch(window.PG_REVIEW_ENDPOINT + '/activity')).json();
@@ -947,12 +1025,51 @@ window.pgBlockAdsForOwner = function () {
             }
         };
 
+        // ---- Likes / share / comments under a community game (handled by the review service) ----
+        async function pgLoadSocial(game) {
+            const box = document.getElementById('pg-social'); if (!box || !window.PG_REVIEW_ENDPOINT) return;
+            box.classList.remove('pg-hidden');
+            const ep = window.PG_REVIEW_ENDPOINT, id = game.docId, $s = x => document.getElementById(x);
+            const auth = async () => { const u = window.pgFB && window.pgFB.auth.currentUser; return u ? { Authorization: 'Bearer ' + await u.getIdToken() } : {}; };
+            const ago = t => { const s2 = Math.max(1, Math.round((Date.now() - Date.parse(t)) / 1000)); return s2 < 3600 ? Math.max(1, Math.round(s2 / 60)) + ' min ago' : s2 < 86400 ? Math.round(s2 / 3600) + ' h ago' : new Date(t).toLocaleDateString(); };
+            async function refresh() {
+                try {
+                    const d = await (await fetch(ep + '/social?game=' + encodeURIComponent(id), { headers: await auth() })).json();
+                    $s('pg-like-count').textContent = d.likes || 0;
+                    $s('pg-like-btn').setAttribute('aria-pressed', String(!!d.liked)); $s('pg-like-label').textContent = d.liked ? 'Liked' : 'Like';
+                    $s('pg-comments').innerHTML = (d.comments || []).length ? d.comments.map(c => `<li>${c.photo ? `<img src="${esc(c.photo)}" alt="" class="pg-c-av">` : '<span class="pg-c-av"></span>'}<div><b>${esc(c.name)}</b> <small>${ago(c.at)}</small><p>${esc(c.text)}</p></div></li>`).join('')
+                        : '<li class="pg-muted">No comments yet - be the first.</li>';
+                } catch (e) { $s('pg-comments').innerHTML = '<li class="pg-muted">Comments are not available right now.</li>'; }
+            }
+            $s('pg-like-btn').onclick = async () => {
+                if (!window.isLoggedIn) return window.openModal('login-modal');
+                try { const r = await fetch(ep + '/like', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, await auth()), body: JSON.stringify({ gameId: id }) }); const d = await r.json(); if (!r.ok) throw new Error(d.error); refresh(); }
+                catch (e) { $s('pg-comment-msg').textContent = e.message || 'Could not like right now.'; }
+            };
+            $s('pg-share-btn').onclick = async () => {
+                const url = location.origin + location.pathname.replace(/[^/]*$/, '') + 'games.html?play=c-' + encodeURIComponent(id), title = game.title + ' on PixelGaunt';
+                try { if (navigator.share) { await navigator.share({ title, text: 'Play ' + game.title + ' free on PixelGaunt', url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+                try { await navigator.clipboard.writeText(url); $s('pg-comment-msg').textContent = 'Link copied - paste it anywhere to share.'; } catch (e) { prompt('Copy this link:', url); }
+            };
+            $s('pg-comment-form').onsubmit = async e => {
+                e.preventDefault();
+                if (!window.isLoggedIn) return window.openModal('login-modal');
+                const t = $s('pg-comment-text').value.trim(); if (t.length < 2) return;
+                const msg = $s('pg-comment-msg'); msg.textContent = 'Posting...';
+                try { const r = await fetch(ep + '/comment', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, await auth()), body: JSON.stringify({ gameId: id, text: t }) }); const d = await r.json(); if (!r.ok) throw new Error(d.error);
+                    $s('pg-comment-text').value = ''; msg.textContent = ''; refresh(); }
+                catch (err) { msg.textContent = err.message || 'Could not post.'; }
+            };
+            refresh();
+        }
+
         window.pgShowCommunityMeta = function(game) {
             const meta = document.getElementById('community-meta');
             if (!meta) return;
             if (!game.community) { meta.classList.add('pg-hidden'); return; }
             document.getElementById('community-author').textContent = game.studio;
             meta.classList.remove('pg-hidden');
+            pgLoadSocial(game);
             document.getElementById('report-community-btn').onclick = async () => {
                 if (!window.isLoggedIn) return window.openModal('login-modal');
                 const text = prompt('What is wrong with this game?');

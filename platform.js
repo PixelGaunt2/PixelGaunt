@@ -742,6 +742,10 @@
                     <div class="pg-field"><label for="pg-genre">Genre</label><select id="pg-genre"><option>Arcade</option><option>Puzzle</option><option>Action</option><option>Adventure</option><option>Racing</option><option>Card</option></select></div>
                     <div class="pg-field"><label for="pg-orientation">Orientation</label><select id="pg-orientation"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></div>
                     <div class="pg-field"><label for="pg-controls">Controls</label><input id="pg-controls" maxlength="80" placeholder="Arrow keys, Space to jump"></div>
+                    <div class="pg-field pg-cover-field"><label for="pg-cover">Cover image ${UPDATE ? '(optional - only to change it)' : '(required)'}</label>
+                        <input id="pg-cover" type="file" accept="image/png,image/jpeg,image/webp">
+                        <img id="pg-cover-preview" alt="Cover preview" hidden style="margin-top:8px; width:100%; max-width:320px; aspect-ratio:16/9; object-fit:cover;">
+                        <small class="pg-muted">Shown on the Games page with your name. Use a picture of YOUR game (16:9 works best). Only approved games are shown.</small></div>
                 </div>
                 <div class="pg-field" style="margin-top:12px;"><label for="pg-desc">Short description</label><textarea id="pg-desc" maxlength="240" placeholder="What is your game about?"></textarea></div>
                 <label class="pg-check-inline" style="margin-top:12px;"><input type="checkbox" id="pg-tournament-check"><span>This game reports scores to a server I control, so it can host a tournament. <a href="#" class="pg-link" id="pg-tournament-help" style="font-size:0.82rem;">How does that work?</a></span></label>
@@ -761,6 +765,18 @@
         $('#pg-file-input-single', root).addEventListener('change', e => { if (e.target.files.length) handleUpload(root, [...e.target.files]); e.target.value = ''; });
         $('#pg-tournament-check', root).addEventListener('change', e => $('#pg-server-field', root).classList.toggle('pg-hidden', !e.target.checked));
         $('#pg-tournament-help', root).addEventListener('click', e => { e.preventDefault(); toast('Your game posts match results to your own server; PixelGaunt links to it from the tournament page. See the Tournaments section below for the full flow.'); });
+        root.addEventListener('change', async e => {
+            if (!e.target || e.target.id !== 'pg-cover' || !pubState) return;
+            const f = e.target.files[0]; if (!f) return;
+            try {
+                const url = await new Promise((res, rej) => { const im = new Image(), u = URL.createObjectURL(f); im.onload = () => {
+                    const k = Math.min(1, 640 / im.width, 360 / im.height), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+                    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); let q = .85, d = c.toDataURL('image/jpeg', q); while (d.length > 380000 && q > .4) { q -= .1; d = c.toDataURL('image/jpeg', q); } res(d); };
+                    im.onerror = () => rej(new Error('That file is not an image.')); im.src = u; });
+                pubState.thumbDataUrl = url; const pv = $('#pg-cover-preview', root); pv.src = url; pv.hidden = false;
+            } catch (err) { toast(err.message); }
+            root.dispatchEvent(new Event('input'));
+        });
         const syncPublishEnabled = () => {
             const btn = $('.pg-publish-btn', root);
             if (pubState && pubState.submitting) return;
@@ -768,6 +784,7 @@
             if (!pubState) why = 'Upload your game first.';
             else if (pubState.verdict === 'bad') why = 'Fix the problems found in the check above, then upload again.';
             else if (!$('#pg-title', root).value.trim()) why = 'Enter a game title to enable Submit.';
+            else if (!UPDATE && !pubState.thumbDataUrl) why = 'Add a cover image of your game to enable Submit.';
             else if (!$('#pg-terms-check', root).checked) why = 'Tick the box to accept the Developer Agreement to enable Submit.';
             btn.disabled = !!why;
             let hint = $('#pg-submit-hint', root);
@@ -987,13 +1004,14 @@
         } catch (err) { console.error(err); body.innerHTML = '<div class="pg-empty">Tournaments are unavailable right now.</div>'; }
     }
 
+    const feeBadge = t => Number(t.entryFee) > 0 ? `<span class="pg-pill warn">PAID · PKR ${esc(Number(t.entryFee).toLocaleString())} entry</span>` : '<span class="pg-pill ok">FREE</span>';
     function tournamentCard(t, now) {
         const st = tStatus(t, now), players = (t.players || []).length;
         const closed = t.format ? (t.status !== 'registration' || t.registration === 'closed') : st.key === 'done';
         const full = players >= t.limit;
         return `<div class="pg-tcard" data-tid="${esc(t.id)}" tabindex="0" role="button">
-            <div class="pg-row"><span class="pg-pill ${st.key}">${esc(st.label)}</span>${t.format ? '<span class="pg-pill">Single elimination</span>' : ''}</div>
-            <h4>${esc(t.name)}</h4>
+            <div class="pg-row"><span class="pg-pill ${st.key}">${esc(st.label)}</span>${t.format ? '<span class="pg-pill">Single elimination</span>' : ''}${feeBadge(t)}</div>
+            <h4>${esc(t.name)}</h4>${t.prize ? `<p class="pg-muted" style="margin:4px 0 0;"><i class="fas fa-trophy" aria-hidden="true"></i> ${esc(t.prize)}</p>` : ''}
             <dl><dt>Game</dt><dd>${esc(t.gameTitle || 'Unknown')}</dd><dt>Players</dt><dd>${players} / ${esc(t.limit)}</dd>${t.startAt ? '<dt>Starts</dt><dd>' + esc(fmtWhen(t.startAt)) + '</dd>' : ''}</dl>
             <div class="pg-row"><button type="button" class="pg-btn sm primary" data-join="${esc(t.id)}" ${closed || full ? 'disabled' : ''}>${full ? 'Full' : closed ? 'Closed' : 'Join'}</button><span class="pg-muted" style="font-size:0.82rem;">${t.format ? 'View bracket' : 'View leaderboard'} →</span></div>
         </div>`;
@@ -1011,6 +1029,9 @@
                     <div class="pg-field"><label for="pgt-limit">Maximum players</label><select id="pgt-limit"><option>4</option><option selected>8</option><option>16</option><option>32</option></select></div>
                     <div class="pg-field"><label for="pgt-start">Start date</label><input id="pgt-start" type="datetime-local"></div>
                     <div class="pg-field"><label for="pgt-reg">Registration</label><select id="pgt-reg"><option value="open" selected>Open</option><option value="closed">Closed</option></select></div>
+                    <div class="pg-field" id="pgt-entry-wrap" hidden><label for="pgt-entry">Entry</label><select id="pgt-entry"><option value="0" selected>Free tournament</option><option value="paid">Paid (entry fee)</option></select></div>
+                    <div class="pg-field" id="pgt-fee-wrap" hidden><label for="pgt-fee">Entry fee (PKR)</label><input id="pgt-fee" type="number" min="50" step="10" value="200"></div>
+                    <div class="pg-field" style="grid-column:1/-1;"><label for="pgt-prize">Prize (optional)</label><input id="pgt-prize" maxlength="120" placeholder="e.g. Winner gets PKR 2,000 + a PixelGaunt T-shirt"></div>
                     <div class="pg-field" style="grid-column:1/-1;"><label for="pgt-desc">Description</label><textarea id="pgt-desc" maxlength="300" placeholder="Rules, format, prizes..."></textarea></div>
                 </div>
                 <div id="pgt-create-msg" class="pg-note"></div>
@@ -1019,6 +1040,9 @@
         const sel = $('#pgt-game', body), msg = $('#pgt-create-msg', body);
         const games = await allGamesForPicker();
         sel.innerHTML = '<option value="">Select game</option>' + games.map(g => `<option value="${esc(g.id)}">${esc(g.title)}</option>`).join('');
+        // Paid tournaments (entry fee) are for PixelGaunt admins only - the fees go to PixelGaunt's official accounts.
+        (async () => { try { const u = getUser(); if (!u || !window.PG_REVIEW_ENDPOINT) return; const r = await fetch(window.PG_REVIEW_ENDPOINT + '/admin/me', { headers: { Authorization: 'Bearer ' + await u.getIdToken() } }); if (r.ok) { $('#pgt-entry-wrap', body).hidden = false; } } catch (e) {} })();
+        $('#pgt-entry', body).addEventListener('change', e => { $('#pgt-fee-wrap', body).hidden = e.target.value !== 'paid'; });
         $('#pgt-create-btn', body).addEventListener('click', async () => {
             if (needLogin('Sign in to create a tournament.')) return;
             const name = $('#pgt-name', body).value.trim();
@@ -1034,7 +1058,9 @@
                     limit: parseInt($('#pgt-limit', body).value, 10) || 8,
                     registration: $('#pgt-reg', body).value, status: 'registration',
                     startAt: start ? fs.Timestamp.fromDate(new Date(start)) : null, endAt: null,
-                    ownerUid: user.uid, ownerName: cleanName(user), players: [], bracket: [], createdAt: fs.serverTimestamp()
+                    ownerUid: user.uid, ownerName: cleanName(user), players: [], bracket: [], createdAt: fs.serverTimestamp(),
+                    entryFee: $('#pgt-entry', body).value === 'paid' ? Math.max(50, Math.round(Number($('#pgt-fee', body).value) || 0)) : 0,
+                    prize: $('#pgt-prize', body).value.trim().slice(0, 120)
                 });
                 toast('Tournament created.');
                 tourneyTab = 'browse'; renderTourneyTabs(root); openTournament(root, ref.id);
@@ -1042,10 +1068,46 @@
         });
     }
 
+    /* ---- paid tournament: pay the entry fee to an official account, send the proof, PixelGaunt confirms -> you are in ---- */
+    function paidEntry(id, t) {
+        const cfg = window.PG_CONFIG || {}, list = (cfg.accounts || []).filter(a => String(a.number || a.iban || '').trim());
+        let m = document.getElementById('pg-donate-modal'); if (m) m.remove();
+        m = document.createElement('div'); m.id = 'pg-donate-modal'; m.className = 'pg-donate-overlay'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true');
+        m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-close]')) m.remove(); });
+        m.innerHTML = `<div class="pg-donate-box"><button type="button" class="pg-donate-x" data-close aria-label="Close">&times;</button>
+            <h3><i class="fas fa-trophy" aria-hidden="true"></i> Join "${esc(t.name)}"</h3>
+            <p class="pg-don-sub">This is a <b>paid tournament</b>. Entry fee: <b>PKR ${esc(Number(t.entryFee).toLocaleString())}</b>${t.prize ? '. Prize: ' + esc(t.prize) : ''}. Send the fee to one of our official accounts, then send us the screenshot. You are added to the tournament as soon as we confirm it.</p>
+            ${list.map(a => `<div class="pg-don-acc">${a.icon ? `<img src="${esc(a.icon)}" alt="">` : '<span></span>'}<b>${esc(a.name)}</b>${a.number ? `<div class="pg-don-row"><span>Number: <b>${esc(a.number)}</b></span></div>` : ''}${a.iban ? `<div class="pg-don-row"><span>IBAN: <b>${esc(a.iban)}</b></span></div>` : ''}</div>`).join('')}
+            <form class="pg-don-form" id="pg-fee-form" novalidate>
+                <label>Sent to<select id="pg-fee-method">${list.map(a => `<option>${esc(a.name)}</option>`).join('')}</select></label>
+                <label>Transaction ID (if you have one)<input id="pg-fee-txn" maxlength="60"></label>
+                <label>Screenshot of the payment<input type="file" id="pg-fee-shot" accept="image/*"></label>
+                <p class="pg-don-msg" id="pg-fee-msg" role="status"></p>
+                <button type="submit" class="cy-btn cy-btn-primary">Send entry fee proof</button>
+                <p class="pg-don-note">Entry fees are not refundable once the tournament has started. Skill-based competition - see the tournament rules.</p>
+            </form></div>`;
+        document.body.appendChild(m);
+        m.querySelector('#pg-fee-form').onsubmit = async e => {
+            e.preventDefault(); const msg = m.querySelector('#pg-fee-msg'), btn = m.querySelector('button[type=submit]'), f = m.querySelector('#pg-fee-shot').files[0];
+            if (!f) { msg.textContent = 'Add the screenshot of your payment.'; msg.classList.add('bad'); return; }
+            btn.disabled = true; msg.classList.remove('bad'); msg.textContent = 'Sending...';
+            try {
+                const img = await new Promise((res, rej) => { const im = new Image(), u = URL.createObjectURL(f); im.onload = () => { const k = Math.min(1, 1100 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); c.toBlob(b => res(b), 'image/jpeg', .75); }; im.onerror = () => rej(new Error('That file is not an image.')); im.src = u; });
+                const d8 = new Date(Date.now() + 5 * 3600e3).toISOString().slice(0, 10).replace(/-/g, ''); let r6 = ''; const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; crypto.getRandomValues(new Uint8Array(6)).forEach(x => r6 += A[x % A.length]);
+                const fd = new FormData(); fd.append('ref', 'TF-' + d8 + '-' + r6); fd.append('tournamentId', id); fd.append('method', m.querySelector('#pg-fee-method').value); fd.append('txnId', m.querySelector('#pg-fee-txn').value.trim()); fd.append('receipt', img, 'fee.jpg');
+                const r = await fetch(window.PG_REVIEW_ENDPOINT + '/tournament-fee', { method: 'POST', headers: { Authorization: 'Bearer ' + await getUser().getIdToken() }, body: fd }); const d = await r.json().catch(() => ({}));
+                if (!r.ok || !d.ok) throw new Error(d.error || 'Could not send.');
+                msg.textContent = 'Thank you! We will confirm your payment and add you to the tournament.';
+            } catch (err) { msg.textContent = err.message || 'Could not send.'; msg.classList.add('bad'); btn.disabled = false; }
+        };
+    }
+
     /* ---- join (used by the list and the detail page) ---- */
     async function joinTournament(id) {
         if (needLogin('Sign in to join a tournament.')) return false;
         const user = getUser();
+        try { const { db, fs } = await fb(); const snap = await fs.getDoc(fs.doc(db, 'tournaments', id)); const t = snap.exists() ? snap.data() : null;
+            if (t && Number(t.entryFee) > 0) { paidEntry(id, t); return false; } } catch (e) { /* fall through to normal join */ }
         try {
             const merged = await mutateTournament(id, data => {
                 const players = data.players || [];
@@ -1107,6 +1169,7 @@
             <div class="pg-panel pg-cut br-head">
                 <div class="pg-row"><span class="pg-pill ${st.key}">${esc(st.label)}</span><span class="pg-pill">Single elimination</span></div>
                 <h3 class="br-title">${esc(t.name)}</h3>
+                <p style="margin:0 0 10px;">${feeBadge(t)}${t.prize ? ` <span class="pg-muted"><i class="fas fa-trophy" aria-hidden="true"></i> Prize: ${esc(t.prize)}</span>` : ''}</p>
                 <dl class="br-facts">
                     <div><dt>Game</dt><dd>${esc(t.gameTitle || 'Unknown')}</dd></div>
                     <div><dt>Status</dt><dd>${esc(st.label)}</dd></div>

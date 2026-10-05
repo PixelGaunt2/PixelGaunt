@@ -89,7 +89,7 @@
                 <div class="pg-shelf-head" style="margin-top: 44px;">
                     <div>
                         <h2 class="pixel-font">Community games</h2>
-                        <p>Published by players and developers. Every one runs in an isolated sandbox.</p>
+                        <p>Games made by our community - reviewed and approved by PixelGaunt before they appear here.</p>
                     </div>
                     <a class="pg-link" href="publish.html">Publish your game</a>
                 </div>
@@ -134,6 +134,20 @@
         <span class="pg-muted">Community game by <b id="community-author" style="color: #fff;"></b></span>
         <button type="button" class="pg-btn sm" id="report-community-btn">Report this game</button>
     </div>
+    <section id="pg-social" class="pg-social pg-hidden" aria-label="Likes, sharing and comments">
+        <div class="pg-social-bar">
+            <button type="button" class="pg-btn" id="pg-like-btn" aria-pressed="false"><i class="fas fa-heart" aria-hidden="true"></i> <span id="pg-like-label">Like</span> <b id="pg-like-count">0</b></button>
+            <button type="button" class="pg-btn" id="pg-share-btn"><i class="fas fa-share-nodes" aria-hidden="true"></i> Share</button>
+        </div>
+        <h3 class="pg-social-h">Comments</h3>
+        <form id="pg-comment-form" class="pg-comment-form" novalidate>
+            <label for="pg-comment-text" class="pg-sr">Write a comment</label>
+            <input id="pg-comment-text" maxlength="300" placeholder="Say something nice about this game...">
+            <button type="submit" class="pg-btn primary">Post</button>
+        </form>
+        <p class="pg-muted" id="pg-comment-msg" role="status"></p>
+        <ul id="pg-comments" class="pg-comments"></ul>
+    </section>
 
     <div class="modal-overlay" id="login-modal">
         <div class="modal-content">
@@ -202,7 +216,7 @@
         <p><br>Games are provided "as is." While we test everything before release, browser games can behave differently across devices and browsers, and occasional bugs or downtime may occur. We're not liable for any loss or issue arising from use of this website.</p>
         <p><br>Links to our Discord, WhatsApp, YouTube, and other social channels lead to third-party platforms we don't control, and we're not responsible for their content or availability.</p>
         <p><br>Games on this site may be updated, changed, or removed over time as development continues.</p>
-        <p><br>Community games are published by their creators, not by Pixel Gaunt Studios. They run in an isolated sandbox, but we cannot guarantee their content. To report a game or a copyright concern, email pixelgaunt@gmail.com.</p>
+        <p><br>Community games are published by their creators, not by Pixel Gaunt Studios. Every game is reviewed by PixelGaunt before it is published, but we cannot guarantee its content. To report a game or a copyright concern, email pixelgaunt@gmail.com.</p>
     </div>
 
     <footer>

@@ -18,7 +18,7 @@
     function note(msg, bad) { const n = document.getElementById('ad-note'); if (!n) return; n.textContent = msg; n.className = 'ad-note ' + (bad ? 'bad' : 'ok'); clearTimeout(note.t); note.t = setTimeout(() => { n.textContent = ''; }, 6000); }
     const act = async (fn, okMsg, reload) => { try { await fn(); note(okMsg); if (reload) reload(); } catch (e) { note(e.message, true); } };
 
-    const TABS = [['overview', 'Overview'], ['games', 'Game reviews'], ['payments', 'Payments'], ['donations', 'Donations'], ['merch', 'Merch orders'], ['tournaments', 'Tournaments'], ['bugs', 'Bug reports'], ['users', 'Users'], ['community', 'Community games'], ['earnings', 'Earnings'], ['diag', 'Login problems']];
+    const TABS = [['overview', 'Overview'], ['games', 'Game reviews'], ['payments', 'Payments'], ['donations', 'Donations'], ['fees', 'Entry fees'], ['merch', 'Merch orders'], ['tournaments', 'Tournaments'], ['bugs', 'Bug reports'], ['users', 'Users'], ['community', 'Community games'], ['earnings', 'Earnings'], ['diag', 'Login problems']];
     let current = 'overview';
 
     function shell() {
@@ -81,6 +81,18 @@
             b.querySelectorAll('[data-ok]').forEach(x => x.onclick = () => { if (confirm('Money received? Confirm - the subscription starts now.')) act(() => api('payment', { ref: x.dataset.ok, decision: 'confirm' }), 'Confirmed - subscription is active.', render); });
             b.querySelectorAll('[data-no]').forEach(x => x.onclick = () => { const r = prompt('Reason (optional):') ; if (r !== null) act(() => api('payment', { ref: x.dataset.no, decision: 'reject', reason: r }), 'Payment rejected.', render); });
         },
+        async fees(b) {
+            const st = filters.fees || 'pending';
+            const d = await api('fees?status=' + st);
+            b.innerHTML = `<p class="pg-muted">Paid tournament entry fees. Check the money arrived, then Confirm: the player is added to the tournament automatically.</p>` +
+                statusFilter([['pending', 'Waiting for confirmation'], ['confirmed', 'Confirmed'], ['rejected', 'Rejected']], st) + table(['Tournament', 'Player', 'Fee', 'Sent to / transaction', 'Date', ''],
+                d.items.map(x => `<tr><td>${esc(x.tournamentName)}</td><td>${esc(x.name)}<br><small>${esc(x.email)}</small></td><td><b>PKR ${esc(Number(x.fee).toLocaleString())}</b></td><td>${esc(x.method)}<br><small>${esc(x.txnId || '-')}</small></td><td>${day(x.createdAt)}</td>
+                    <td class="ad-actions"><button class="pg-btn" data-fimg="${esc(x.ref)}">Screenshot</button>${st === 'pending' ? `<button class="pg-btn primary" data-fok="${esc(x.ref)}">Confirm</button><button class="pg-btn danger" data-fno="${esc(x.ref)}">Reject</button>` : ''}</td></tr>`));
+            wireFilter('fees');
+            b.querySelectorAll('[data-fimg]').forEach(x => x.onclick = async () => { try { const r = await api('fee-image?ref=' + encodeURIComponent(x.dataset.fimg)); openModal(r.image ? `<img src="${esc(r.image)}" alt="Entry fee screenshot" style="max-width:100%;">` : '<p>No screenshot.</p>'); } catch (e) { note(e.message, true); } });
+            b.querySelectorAll('[data-fok]').forEach(x => x.onclick = () => { if (confirm('Fee received? Confirm - the player joins the tournament.')) act(() => api('fee', { ref: x.dataset.fok, decision: 'confirm' }), 'Confirmed - the player is in the tournament.', render); });
+            b.querySelectorAll('[data-fno]').forEach(x => x.onclick = () => { const r = prompt('Reason (optional):'); if (r !== null) act(() => api('fee', { ref: x.dataset.fno, decision: 'reject', reason: r }), 'Rejected.', render); });
+        },
         async donations(b) {
             const st = filters.donations || 'pending';
             const d = await api('donations?status=' + st);
@@ -135,7 +147,17 @@
         async community(b) {
             const d = await api('games');
             b.innerHTML = table(['Game', 'Developer', 'Status', 'Plays', 'Published', ''], d.items.map(g => `<tr><td>${esc(g.title)}</td><td>${esc(g.ownerName)}</td><td>${esc(g.status)}</td><td>${esc(g.plays)}</td><td>${day(g.reviewedAt || g.createdAt)}</td>
-                <td class="ad-actions">${g.status === 'published' ? `<a class="pg-btn" href="games.html?play=c-${encodeURIComponent(g.id)}" target="_blank">Open</a><button class="pg-btn danger" data-hide="${esc(g.id)}">Hide</button>` : g.status === 'hidden' ? `<button class="pg-btn" data-show="${esc(g.id)}">Put back</button>` : ''}</td></tr>`));
+                <td class="ad-actions">${g.status === 'published' ? `<a class="pg-btn" href="games.html?play=c-${encodeURIComponent(g.id)}" target="_blank">Open</a><button class="pg-btn danger" data-hide="${esc(g.id)}">Hide</button>` : g.status === 'hidden' ? `<button class="pg-btn" data-show="${esc(g.id)}">Put back</button>` : ''}<label class="pg-btn" style="cursor:pointer;">Set cover<input type="file" accept="image/png,image/jpeg,image/webp" data-cover="${esc(g.id)}" hidden></label><button class="pg-btn" data-comments="${esc(g.id)}">Comments</button></td></tr>`));
+            b.querySelectorAll('[data-cover]').forEach(inp => inp.onchange = async () => {
+                const f = inp.files[0]; if (!f) return;
+                const url = await new Promise(res => { const im = new Image(), u = URL.createObjectURL(f); im.onload = () => { const k = Math.min(1, 640 / im.width, 360 / im.height), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); let q = .85, d = c.toDataURL('image/jpeg', q); while (d.length > 380000 && q > .4) { q -= .1; d = c.toDataURL('image/jpeg', q); } res(d); }; im.src = u; });
+                act(() => api('game', { id: inp.dataset.cover, action: 'cover', thumb: url }), 'Cover image saved - it shows on the Games page.', render);
+            });
+            b.querySelectorAll('[data-comments]').forEach(x => x.onclick = async () => {
+                try { const r = await api('comments?game=' + encodeURIComponent(x.dataset.comments));
+                    openModal('<h3>Comments</h3>' + (r.items.length ? r.items.map(c => `<div class="ad-item"><b>${esc(c.name)}</b> <small>${day(c.at)}</small><p>${esc(c.text)}</p><button class="pg-btn danger" data-cdel="${esc(c.id)}">Delete</button></div>`).join('') : '<p class="pg-muted">No comments.</p>'));
+                    document.querySelectorAll('[data-cdel]').forEach(btn => btn.onclick = () => act(() => api('comment-delete', { id: btn.dataset.cdel }), 'Comment deleted.', () => { btn.closest('.ad-item').remove(); }));
+                } catch (e) { note(e.message, true); } });
             b.querySelectorAll('[data-hide]').forEach(x => x.onclick = () => { const r = prompt('Hide this game from the Games page? Reason:'); if (r !== null) act(() => api('game', { id: x.dataset.hide, action: 'hide', reason: r }), 'Game hidden.', render); });
             b.querySelectorAll('[data-show]').forEach(x => x.onclick = () => act(() => api('game', { id: x.dataset.show, action: 'publish' }), 'Game is back on the Games page.', render));
         },
@@ -146,14 +168,17 @@
             b.innerHTML = `<div class="ad-row"><label class="ad-filter">Month <input type="month" id="ad-month" value="${esc(month)}"></label>
                 <label class="ad-filter">AdSense revenue Google paid for this month (USD) <input type="number" id="ad-total" min="0" step="0.01" placeholder="e.g. 120.50"></label></div>
                 <p class="pg-muted">Counted plays on the site this month: <b>${d.sitePlays}</b>. Each developer's games get their share of the revenue by plays; they receive 90%, PixelGaunt keeps 10%.</p>` +
-                table(['Developer', 'Games', 'Plays', 'Share', 'Revenue of their games (USD)', 'Developer 90%', 'Saved', ''], d.developers.map(r => {
+                `<p><button class="pg-btn primary" id="ad-save-all">Save all (as pending)</button></p>` +
+                table(['Developer', 'Payout details', 'Games', 'Plays', 'Share', 'Revenue of their games (USD)', 'Developer 90%', 'Saved', ''], d.developers.map(r => {
                     const e = entered[r.uid]; const share = d.sitePlays ? r.plays / d.sitePlays : 0;
-                    return `<tr data-uid="${esc(r.uid)}" data-share="${share}"><td>${esc(r.name)}<br><small>${esc(r.uid)}</small></td><td>${esc(r.games.join(', '))}</td><td>${r.plays}</td><td>${(share * 100).toFixed(1)}%</td>
+                    const po = r.payout; const poTxt = po ? `${esc(po.method)}${po.bankName ? ' · ' + esc(po.bankName) : ''}<br><small>${esc(po.accountTitle)} · ${esc(po.accountNumber || '')}${po.iban ? '<br>' + esc(po.iban) : ''}</small>` : '<small class="pg-muted">not added yet</small>';
+                    return `<tr data-uid="${esc(r.uid)}" data-share="${share}"><td>${esc(r.name)}<br><small>${esc(r.uid)}</small></td><td>${poTxt}</td><td>${esc(r.games.join(', '))}</td><td>${r.plays}</td><td>${(share * 100).toFixed(1)}%</td>
                         <td><input type="number" min="0" step="0.01" class="ad-rev" value="${e ? esc(e.revenue_usd) : ''}"></td><td class="ad-dev">${e ? '$' + (Number(e.revenue_usd) * 0.9).toFixed(2) : '-'}</td><td>${e ? esc(e.status) : '-'}</td>
                         <td class="ad-actions"><button class="pg-btn" data-save="pending">Save</button><button class="pg-btn primary" data-save="paid">Mark paid</button></td></tr>`;
                 }));
             document.getElementById('ad-month').onchange = e => { filters.month = e.target.value; render(); };
             document.getElementById('ad-total').oninput = e => { const tot = Number(e.target.value) || 0; b.querySelectorAll('tr[data-uid]').forEach(tr => { const v = Math.round(tot * Number(tr.dataset.share) * 100) / 100; tr.querySelector('.ad-rev').value = v.toFixed(2); tr.querySelector('.ad-dev').textContent = '$' + (v * 0.9).toFixed(2); }); };
+            const all = document.getElementById('ad-save-all'); if (all) all.onclick = () => act(async () => { for (const tr of b.querySelectorAll('tr[data-uid]')) await api('earnings', { uid: tr.dataset.uid, month, revenue_usd: Number(tr.querySelector('.ad-rev').value) || 0, status: 'pending' }); }, 'All developers saved - they see it in Earnings & Plays.', render);
             b.querySelectorAll('[data-save]').forEach(x => x.onclick = () => { const tr = x.closest('tr'); act(() => api('earnings', { uid: tr.dataset.uid, month, revenue_usd: Number(tr.querySelector('.ad-rev').value) || 0, status: x.dataset.save }), 'Saved - the developer sees it in Earnings & Plays.', render); });
         },
         async diag(b) {

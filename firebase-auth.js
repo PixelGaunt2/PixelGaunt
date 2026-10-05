@@ -1,5 +1,5 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, increment, collection, addDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp, Timestamp, Bytes, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -285,6 +285,15 @@
         // Creator Studio needs the account's plan (free / subscriber) to show the right
         // limits and to gate the nav link. Fetched once per login, alongside - never instead
         // of - saveUserProfile, so a Firestore hiccup here still leaves the user validly logged in.
+        // Profile changes from Creator Studio > Account (name / picture). The review service stores the picture and
+        // returns its address; the account itself is updated here so the header, comments and feed use it.
+        window.pgUpdateProfile = async (fields) => {
+            const u = auth.currentUser; if (!u) throw new Error('Please log in.');
+            const upd = {}; if (fields.name) upd.displayName = fields.name; if (fields.photoURL) upd.photoURL = fields.photoURL;
+            await updateProfile(u, upd); await u.getIdToken(true);
+            applyAuthState(u);
+            return u;
+        };
         window.pgUserPlan = null;
         // users/<uid>.plan: 'free' | 'subscriber_monthly' (10 games/month) | 'subscriber_yearly' (12/month); old 'subscriber' = monthly.
         function normalizePlan(p) { return p === 'subscriber_yearly' ? 'subscriber_yearly' : (p === 'subscriber_monthly' || p === 'subscriber') ? 'subscriber_monthly' : 'free'; }

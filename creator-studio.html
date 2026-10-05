@@ -76,6 +76,14 @@
         .cs-fair { border: 1px solid rgba(248,113,113,0.35); background: rgba(248,113,113,0.07); border-radius: 16px; padding: 16px 20px; margin-top: 22px; color: #cbd5e1; }
         .cs-fair ul { padding-left: 20px; margin: 0; } .cs-fair li { margin: 6px 0; font-size: 0.92rem; }
         .cs-table-wrap { overflow-x: auto; }
+        .cs-profile { border: 1px solid var(--cy-line, #2e2350); background: rgba(255,255,255,.02); padding: 16px 18px; margin-bottom: 16px; }
+        .cs-profile-row { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+        .cs-prof-img { width: 96px; height: 96px; object-fit: cover; background: #120c20; border: 2px solid var(--pg-a, #ff2e88); }
+        .cs-prof-fields { flex: 1 1 260px; display: grid; gap: 10px; }
+        .cs-profile label { display: grid; gap: 4px; font-size: .88rem; color: #cfc4f2; }
+        .cs-profile input, .cs-profile select { min-height: 42px; padding: 0 10px; background: #07060b; border: 1px solid var(--cy-line, #2e2350); color: #fff; font: inherit; }
+        .cs-payout-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 10px; }
+        .cs-prof-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; } .cs-prof-actions span { color: #34d399; font-size: .9rem; }
         .cs-privacy { margin-top: 18px; padding: 12px 14px; border: 1px solid rgba(148,163,184,0.25); border-radius: 12px; color: #cbd5e1; }
         .cs-privacy label { display: flex; gap: 8px; align-items: center; cursor: pointer; } .cs-privacy small { color: #64748b; display: block; margin-top: 4px; }
     </style>
@@ -193,6 +201,31 @@
             </section>
 
             <section class="cs-panel" id="cs-panel-account">
+                <div class="pg-verdict warn" id="cs-expiry-banner" hidden style="margin-bottom:16px;"></div>
+                <div class="cs-profile">
+                    <h3 class="cs-h3" style="margin-top:0;">Your profile</h3>
+                    <div class="cs-profile-row">
+                        <img id="cs-prof-img" alt="Your profile picture" class="cs-prof-img">
+                        <div class="cs-prof-fields">
+                            <label>Name shown on PixelGaunt<input id="cs-prof-name" maxlength="40" autocomplete="nickname"></label>
+                            <label>Profile picture (JPG/PNG)<input id="cs-prof-file" type="file" accept="image/png,image/jpeg,image/webp"></label>
+                            <div class="cs-prof-actions"><button type="button" class="pg-btn primary" id="cs-prof-save">Save profile</button><span id="cs-prof-msg" role="status"></span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cs-profile">
+                    <h3 class="cs-h3" style="margin-top:0;">Payout details <small class="pg-muted" style="font-weight:400; text-transform:none;">- where we send your 90% of the ad revenue</small></h3>
+                    <div class="cs-payout-grid">
+                        <label>Receive by<select id="cs-po-method"><option>Bank account</option><option>Easypaisa</option><option>JazzCash</option><option>NayaPay</option><option>SadaPay</option></select></label>
+                        <label>Bank name (if bank)<input id="cs-po-bank" maxlength="60"></label>
+                        <label>Account holder name<input id="cs-po-title" maxlength="80" autocomplete="name"></label>
+                        <label>Account / mobile number<input id="cs-po-number" maxlength="40" inputmode="numeric"></label>
+                        <label>IBAN (optional)<input id="cs-po-iban" maxlength="34" placeholder="PK.."></label>
+                        <label>Phone (optional)<input id="cs-po-phone" maxlength="20" inputmode="tel"></label>
+                    </div>
+                    <div class="cs-prof-actions"><button type="button" class="pg-btn primary" id="cs-po-save">Save payout details</button><span id="cs-po-msg" role="status"></span></div>
+                    <p class="pg-muted" style="font-size:.85rem;">Only you and PixelGaunt can see these details. Earnings are calculated from your games' counted plays each month (see Earnings &amp; Plays).</p>
+                </div>
                 <div class="cs-account-grid">
                     <div class="cs-account-field"><span>Email</span><b id="cs-acc-email">-</b></div>
                     <div class="cs-account-field"><span>Account type</span><b id="cs-acc-plan">Free</b></div>
@@ -234,7 +267,7 @@
                     btn.classList.add('active');
                     document.getElementById('cs-panel-' + btn.dataset.tab).classList.add('active');
                     if (btn.dataset.tab === 'earnings') loadEarnings();
-                    if (btn.dataset.tab === 'account') { loadPayments(); loadPrivacy(); }
+                    if (btn.dataset.tab === 'account') { loadPayments(); loadPrivacy(); loadProfile(); }
                 });
             });
 
@@ -403,6 +436,57 @@
                     finally { box.disabled = false; }
                 };
             }
+
+            // ---- profile (name + picture) and payout details ----
+            async function loadProfile() {
+                const u = window.pgFB && window.pgFB.auth.currentUser; if (!u) return;
+                const EP = window.PG_REVIEW_ENDPOINT || '', $p = id => document.getElementById(id);
+                $p('cs-prof-name').value = u.displayName || '';
+                $p('cs-prof-img').src = u.photoURL || 'logo-hand.png';
+                let picked = null;
+                $p('cs-prof-file').onchange = async e => {
+                    const f = e.target.files[0]; if (!f) return;
+                    picked = await new Promise((res, rej) => { const im = new Image(), url = URL.createObjectURL(f); im.onload = () => { const S = 256, c = document.createElement('canvas'); c.width = c.height = S; const k = Math.max(S / im.width, S / im.height), w = im.width * k, h = im.height * k;
+                        c.getContext('2d').drawImage(im, (S - w) / 2, (S - h) / 2, w, h); URL.revokeObjectURL(url); c.toBlob(b => res(b), 'image/jpeg', .85); }; im.onerror = () => rej(new Error('Not an image')); im.src = url; });
+                    $p('cs-prof-img').src = URL.createObjectURL(picked);
+                };
+                $p('cs-prof-save').onclick = async () => {
+                    const msg = $p('cs-prof-msg'), name = $p('cs-prof-name').value.trim();
+                    if (name.length < 2) { msg.textContent = 'Your name must be at least 2 characters.'; return; }
+                    msg.textContent = 'Saving...';
+                    try {
+                        const fd = new FormData(); fd.append('name', name); if (picked) fd.append('avatar', picked, 'avatar.jpg');
+                        const r = await fetch(EP + '/profile', { method: 'POST', headers: { Authorization: 'Bearer ' + await u.getIdToken() }, body: fd }); const d = await r.json();
+                        if (!r.ok || !d.ok) throw new Error(d.error || 'Could not save.');
+                        await window.pgUpdateProfile({ name: d.name, photoURL: d.photoURL });
+                        picked = null; msg.textContent = 'Saved.'; document.getElementById('cs-name').textContent = d.name;
+                    } catch (e) { msg.textContent = e.message || 'Could not save.'; }
+                };
+                try {
+                    const d = await (await fetch(EP + '/payout', { headers: { Authorization: 'Bearer ' + await u.getIdToken() } })).json();
+                    const p = d.payout || {};
+                    if (p.method) $p('cs-po-method').value = p.method;
+                    $p('cs-po-bank').value = p.bankName || ''; $p('cs-po-title').value = p.accountTitle || ''; $p('cs-po-number').value = p.accountNumber || ''; $p('cs-po-iban').value = p.iban || ''; $p('cs-po-phone').value = p.phone || '';
+                } catch (e) { /* offline */ }
+                $p('cs-po-save').onclick = async () => {
+                    const msg = $p('cs-po-msg'); msg.textContent = 'Saving...';
+                    try {
+                        const body = { method: $p('cs-po-method').value, bankName: $p('cs-po-bank').value, accountTitle: $p('cs-po-title').value, accountNumber: $p('cs-po-number').value, iban: $p('cs-po-iban').value.replace(/\s/g, ''), phone: $p('cs-po-phone').value };
+                        const r = await fetch(EP + '/payout', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await u.getIdToken() }, body: JSON.stringify(body) }); const d = await r.json();
+                        if (!r.ok || !d.ok) throw new Error(d.error || 'Could not save.'); msg.textContent = 'Saved.';
+                    } catch (e) { msg.textContent = e.message || 'Could not save.'; }
+                };
+            }
+            // Subscription ending soon (last 3 days): banner in the dashboard
+            function expiryBanner() {
+                const b = document.getElementById('cs-expiry-banner'), end = window.pgPlanExpires ? Date.parse(window.pgPlanExpires) : 0; if (!b) return;
+                const days = end ? Math.ceil((end - Date.now()) / 864e5) : -1;
+                if (days >= 0 && days <= 3 && window.pgUserPlan && window.pgUserPlan !== 'free') {
+                    b.innerHTML = (days === 0 ? 'Your subscription ends today.' : 'Your subscription ends in ' + days + ' day' + (days === 1 ? '' : 's') + '.') + '<small>Renew to keep publishing your games. <a class="pg-link" href="subscription.html">Renew now</a></small>';
+                    b.hidden = false;
+                } else b.hidden = true;
+            }
+            window.addEventListener('pg-plan', expiryBanner); setTimeout(expiryBanner, 3000);
 
             function openTab(name) { const b = document.querySelector('.cs-tab[data-tab="' + name + '"]'); if (b) b.click(); }
             function showDashboard() { guard.style.display = 'none'; dash.style.display = 'block'; refresh(); if (startTab) { openTab(startTab); startTab = null; } }
