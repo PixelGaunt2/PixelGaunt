@@ -34,27 +34,77 @@ window.pgWelcome = function (text) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else setTimeout(apply, 0);
 })();
 
-// ---- DONATE window (header button on every page). Accounts come from pg-config.js ----
+// ---- DONATE window (header button on every page). Accounts come from pg-config.js and are shown ONLY to
+//      logged-in users. A donor can send proof (amount + screenshot); PixelGaunt confirms it in the admin
+//      dashboard, and confirmed donations appear in "Live on PixelGaunt" on the home page.
 window.pgOpenDonate = function () {
     const cfg = window.PG_CONFIG || {}, list = (cfg.accounts || []).filter(a => String(a.number || a.iban || '').trim());
     const esc2 = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const user = window.pgFB && window.pgFB.auth.currentUser;
     let m = document.getElementById('pg-donate-modal');
     if (!m) {
         m = document.createElement('div'); m.id = 'pg-donate-modal'; m.className = 'pg-donate-overlay'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-labelledby', 'pg-donate-title');
         m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-close]')) m.remove(); });
-        document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape' && document.getElementById('pg-donate-modal')) { m.remove(); } });
+        document.addEventListener('keydown', e => { const x = document.getElementById('pg-donate-modal'); if (e.key === 'Escape' && x) x.remove(); });
         document.body.appendChild(m);
     }
-    const row = (label, v) => v ? `<div class="pg-don-row"><span>${label}: <b>${esc2(v)}</b></span><button type="button" class="pg-don-copy" data-copy="${esc2(v)}">Copy</button></div>` : '';
-    m.innerHTML = `<div class="pg-donate-box"><button type="button" class="pg-donate-x" data-close aria-label="Close">&times;</button>
+    const head = `<button type="button" class="pg-donate-x" data-close aria-label="Close">&times;</button>
         <h3 id="pg-donate-title"><i class="fas fa-heart" aria-hidden="true"></i> Support PixelGaunt</h3>
-        <p class="pg-don-sub">PixelGaunt is built by one developer. If you enjoy the games, you can send a donation of any amount to one of our official accounts. Thank you!</p>
-        ${list.length ? list.map(a => `<div class="pg-don-acc"><b>${esc2(a.name)}</b>${row('Account title', a.title)}${row(a.iban ? 'Account no.' : 'Number', a.number)}${row('IBAN', a.iban)}</div>`).join('')
-            : `<div class="pg-don-acc">Our official accounts are being set up. To donate now, email <a href="mailto:${esc2(cfg.contactEmail || 'pixelgaunt@gmail.com')}?subject=Donation">${esc2(cfg.contactEmail || 'pixelgaunt@gmail.com')}</a>.</div>`}
-        <p class="pg-don-note">Only send money to the accounts shown here.</p></div>`;
+        <p class="pg-don-sub">PixelGaunt is built by one developer. If you enjoy the games, you can send a donation of any amount to one of our official accounts. Thank you!</p>`;
+    if (!user) {
+        m.innerHTML = `<div class="pg-donate-box">${head}<div class="pg-don-gate"><p>Please log in to see our account details.</p>
+            <button type="button" class="cy-btn cy-btn-primary" id="pg-don-login">Log in</button></div></div>`;
+        m.querySelector('#pg-don-login').onclick = () => { m.remove(); if (window.openModal) window.openModal('login-modal'); };
+        return;
+    }
+    const row = (label, v) => v ? `<div class="pg-don-row"><span>${label}: <b>${esc2(v)}</b></span><button type="button" class="pg-don-copy" data-copy="${esc2(v)}">Copy</button></div>` : '';
+    m.innerHTML = `<div class="pg-donate-box">${head}
+        ${list.length ? list.map(a => `<div class="pg-don-acc">${a.icon ? `<img src="${esc2(a.icon)}" alt="">` : '<span></span>'}<b>${esc2(a.name)}</b>${row('Account title', a.title)}${row(/bank/i.test(a.name) ? 'Account no.' : 'Number', a.number)}${row('IBAN', a.iban)}</div>`).join('')
+            : `<div class="pg-don-acc"><span></span><span>Our official accounts are being set up. To donate now, email <a href="mailto:${esc2(cfg.contactEmail || 'pixelgaunt@gmail.com')}?subject=Donation">${esc2(cfg.contactEmail || 'pixelgaunt@gmail.com')}</a>.</span></div>`}
+        <p class="pg-don-note">Only send money to the accounts shown here.</p>
+        ${list.length ? `<form class="pg-don-form" id="pg-don-form" novalidate>
+            <h4>Sent a donation? Let us know</h4>
+            <label>Amount (PKR)<input type="number" id="pg-don-amount" min="1" step="1" inputmode="numeric" required></label>
+            <label>Sent to<select id="pg-don-method">${list.map(a => `<option>${esc2(a.name)}</option>`).join('')}</select></label>
+            <label>Transaction ID (if you have one)<input id="pg-don-txn" maxlength="60"></label>
+            <label>Message (optional)<input id="pg-don-text" maxlength="300"></label>
+            <label>Screenshot of the payment<input type="file" id="pg-don-shot" accept="image/*" required></label>
+            <p class="pg-don-msg" id="pg-don-msg" role="status"></p>
+            <button type="submit" class="cy-btn cy-btn-primary">Send donation details</button>
+            <div class="pg-don-mine" id="pg-don-mine"></div>
+        </form>` : ''}</div>`;
     m.querySelectorAll('.pg-don-copy').forEach(b => b.onclick = () => {
         (navigator.clipboard ? navigator.clipboard.writeText(b.dataset.copy) : Promise.reject()).then(() => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); }).catch(() => prompt('Copy this:', b.dataset.copy));
     });
+    const ep = window.PG_REVIEW_ENDPOINT;
+    const mine = async () => {
+        const box = m.querySelector('#pg-don-mine'); if (!box || !ep) return;
+        try { const d = await (await fetch(ep + '/donations', { headers: { Authorization: 'Bearer ' + await user.getIdToken() } })).json();
+            if (d.donations && d.donations.length) box.innerHTML = 'Your donations: ' + d.donations.slice(0, 5).map(x => `PKR ${esc2(x.amount)} - ${x.status === 'confirmed' ? 'received, thank you!' : x.status === 'rejected' ? 'not found - contact us' : 'waiting for confirmation'}`).join(' · ');
+        } catch (e) { /* offline */ }
+    };
+    mine();
+    const form = m.querySelector('#pg-don-form');
+    if (form) form.onsubmit = async e => {
+        e.preventDefault();
+        const msg = m.querySelector('#pg-don-msg'), btn = form.querySelector('button[type=submit]'); msg.classList.remove('bad');
+        const amount = Number(m.querySelector('#pg-don-amount').value), file = m.querySelector('#pg-don-shot').files[0];
+        if (!(amount >= 1)) { msg.textContent = 'Enter the amount you sent.'; msg.classList.add('bad'); return; }
+        if (!file) { msg.textContent = 'Add the screenshot of your payment.'; msg.classList.add('bad'); return; }
+        btn.disabled = true; msg.textContent = 'Sending...';
+        try {
+            const img = await new Promise((res, rej) => { const im = new Image(), u = URL.createObjectURL(file); im.onload = () => { const k = Math.min(1, 1100 / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); c.toBlob(b => res(b), 'image/jpeg', 0.75); }; im.onerror = () => rej(new Error('That file is not an image.')); im.src = u; });
+            const d8 = new Date(Date.now() + 5 * 3600e3).toISOString().slice(0, 10).replace(/-/g, ''); let r6 = ''; const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; crypto.getRandomValues(new Uint8Array(6)).forEach(x => r6 += A[x % A.length]);
+            form.dataset.ref = form.dataset.ref || ('DN-' + d8 + '-' + r6);
+            const fd = new FormData(); fd.append('ref', form.dataset.ref); fd.append('amount', String(Math.round(amount))); fd.append('method', m.querySelector('#pg-don-method').value);
+            fd.append('txnId', m.querySelector('#pg-don-txn').value.trim()); fd.append('message', m.querySelector('#pg-don-text').value.trim()); fd.append('receipt', img, 'receipt.jpg');
+            const res = await fetch(ep + '/donation', { method: 'POST', headers: { Authorization: 'Bearer ' + await user.getIdToken() }, body: fd });
+            const d = await res.json().catch(() => ({}));
+            if (!res.ok || !d.ok) throw new Error(d.error || ('Could not send (HTTP ' + res.status + ').'));
+            msg.textContent = 'Thank you! We received your donation details and will confirm them soon.'; form.reset(); delete form.dataset.ref; mine();
+        } catch (err) { msg.textContent = err.message || 'Could not send. Please try again.'; msg.classList.add('bad'); }
+        finally { btn.disabled = false; }
+    };
     const x = m.querySelector('.pg-donate-x'); if (x) x.focus();
 };
 
@@ -63,14 +113,8 @@ window.pgOpenDonate = function () {
     const add = () => {
         const f = document.querySelector('footer'); if (!f || document.getElementById('pg-paystrip')) return;
         const d = document.createElement('div'); d.id = 'pg-paystrip'; d.className = 'pg-paystrip'; d.setAttribute('aria-label', 'Ways to pay');
-        d.innerHTML = `<span class="pg-pay-label">Ways to pay</span>
-            <span class="pg-pay" title="Bank transfer"><i class="fas fa-building-columns" aria-hidden="true"></i> Bank</span>
-            <span class="pg-pay pg-pay-visa" title="Visa">VISA</span>
-            <span class="pg-pay pg-pay-mc" title="Mastercard"><svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true"><circle cx="9" cy="8" r="7" fill="#eb001b"></circle><circle cx="17" cy="8" r="7" fill="#f79e1b" fill-opacity=".9"></circle></svg> Mastercard</span>
-            <span class="pg-pay"><i class="fas fa-mobile-screen-button" aria-hidden="true"></i> Easypaisa</span>
-            <span class="pg-pay"><i class="fas fa-mobile-screen-button" aria-hidden="true"></i> JazzCash</span>
-            <span class="pg-pay"><i class="fas fa-wallet" aria-hidden="true"></i> SadaPay</span>
-            <span class="pg-pay"><i class="fas fa-wallet" aria-hidden="true"></i> NayaPay</span>`;
+        const items = [['bank', 'Bank transfer'], ['visa', 'Visa'], ['mastercard', 'Mastercard'], ['easypaisa', 'Easypaisa'], ['jazzcash', 'JazzCash'], ['sadapay', 'SadaPay'], ['nayapay', 'NayaPay']];
+        d.innerHTML = '<span class="pg-pay-label">Ways to pay</span>' + items.map(([k, n]) => `<span class="pg-pay-ico" title="${n}"><img src="pay-${k}.png" alt="${n}" loading="lazy" width="40" height="26"></span>`).join('');
         f.appendChild(d);
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add); else add();
@@ -100,7 +144,7 @@ window.pgBlockAdsForOwner = function () {
             { id: 10, studio: 'Pixel Gaunt', title: 'ReBounce', genre: 'Arcade', controls: 'Mouse / Touch. Drag to aim.', howToPlay: 'Drag and release to bounce your way through.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'ReBounce.png', url: 'rebounce.html', bgm: 'ReBounce.mp3', orientation: 'landscape' },
             { id: 11, studio: 'Pixel Gaunt', title: 'Ring Sort', genre: 'Puzzle', controls: 'Mouse / Touch. Drag rings to sort.', howToPlay: 'Drag rings between pegs to sort them by color.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Ring Sort.png', url: 'ring-sort.html', bgm: 'Ring Sort.mp3', orientation: 'landscape' },
             { id: 12, studio: 'Pixel Gaunt', title: 'Serpent Relic', genre: 'Arcade', controls: 'Keyboard / Touch.', howToPlay: 'Guide the serpent to collect relics and survive.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Serpent Relic.png', url: 'serpent-relic.html', bgm: 'Serpent Relic.mp3', orientation: 'landscape' },
-            { id: 13, studio: 'Pixel Gaunt', title: 'SnakeScape', genre: 'Arcade', controls: 'Keyboard / Touch.', howToPlay: 'Classic snake action — grow long, avoid the walls.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'SnakeScape.png', url: 'snakescape.html', bgm: 'SnakeScape.mp3', orientation: 'landscape' },
+            { id: 13, studio: 'Pixel Gaunt', title: 'SnakeScape', genre: 'Arcade', controls: 'Keyboard / Touch.', howToPlay: 'Classic snake action — grow long, avoid the walls.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'SnakeScape.png', url: 'snakescape.html', bgm: 'SnakeScape.mp3', orientation: 'portrait' },
             { id: 14, studio: 'Pixel Gaunt', title: 'Stick Man Velocity', genre: 'Action', controls: 'Mouse / Touch. Tap to play.', howToPlay: 'Tap to keep Stick Man moving at full velocity.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Stick Man Velocity.png', url: 'stick-man-velocity.html', bgm: 'Stick Man Velocity.mp3', orientation: 'landscape' },
             { id: 15, studio: 'Pixel Gaunt', title: 'Tetris Reimagine', genre: 'Puzzle', controls: 'Keyboard / Touch.', howToPlay: 'Clear lines across 100 levels of reimagined Tetris.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Tetris Reimagine.png', url: 'tetris-reimagine.html', bgm: 'Tetris Reimagine.mp3', orientation: 'portrait' },
             { id: 16, studio: 'Pixel Gaunt', title: 'Girl The Driller', genre: 'Adventure', controls: 'Mouse / Touch.', howToPlay: 'Click to Go & Eat Mouse.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'August 20, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Girl The Driller.png', preview: 'Girl The Driller.gif', url: 'girl-the-driller.html', bgm: 'Girl The Driller.mp3', orientation: 'landscape' },
@@ -774,7 +818,7 @@ window.pgBlockAdsForOwner = function () {
             const line = e => { const w = esc(e.who), g = esc(e.game);
                 return { new_user: `👋 <b>${w}</b> just joined PixelGaunt - welcome!`, online: `🟢 <b>${w}</b> is online`, playing: `🎮 <b>${w}</b> is playing <b>${g}</b>`,
                     left: `🚪 <b>${w}</b> left - see you soon`, subscribed: `⭐ <b>${w}</b> just subscribed`, uploaded: `🚀 <b>${w}</b> uploaded a new game for review`,
-                    merch: `👕 <b>${w}</b> ordered a custom ${g || 'merch item'}` }[e.type] || ''; };
+                    merch: `👕 <b>${w}</b> ordered a custom ${g || 'merch item'}`, donated: `💖 <b>${w}</b> donated to PixelGaunt - thank you!` }[e.type] || ''; };
             async function load() {
                 try {
                     const d = await (await fetch(window.PG_REVIEW_ENDPOINT + '/activity')).json();

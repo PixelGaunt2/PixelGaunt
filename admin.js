@@ -18,7 +18,7 @@
     function note(msg, bad) { const n = document.getElementById('ad-note'); if (!n) return; n.textContent = msg; n.className = 'ad-note ' + (bad ? 'bad' : 'ok'); clearTimeout(note.t); note.t = setTimeout(() => { n.textContent = ''; }, 6000); }
     const act = async (fn, okMsg, reload) => { try { await fn(); note(okMsg); if (reload) reload(); } catch (e) { note(e.message, true); } };
 
-    const TABS = [['overview', 'Overview'], ['games', 'Game reviews'], ['payments', 'Payments'], ['merch', 'Merch orders'], ['tournaments', 'Tournaments'], ['bugs', 'Bug reports'], ['users', 'Users'], ['community', 'Community games'], ['earnings', 'Earnings'], ['diag', 'Login problems']];
+    const TABS = [['overview', 'Overview'], ['games', 'Game reviews'], ['payments', 'Payments'], ['donations', 'Donations'], ['merch', 'Merch orders'], ['tournaments', 'Tournaments'], ['bugs', 'Bug reports'], ['users', 'Users'], ['community', 'Community games'], ['earnings', 'Earnings'], ['diag', 'Login problems']];
     let current = 'overview';
 
     function shell() {
@@ -43,7 +43,7 @@
         try {
             const o = await api('overview');
             const set = (k, n) => { const el = document.getElementById('ad-b-' + k); if (el) el.textContent = n ? n : ''; };
-            set('games', o.games); set('payments', o.payments); set('merch', o.merch); set('bugs', o.bugs); set('diag', o.loginProblems);
+            set('games', o.games); set('payments', o.payments); set('donations', o.donations); set('merch', o.merch); set('bugs', o.bugs); set('diag', o.loginProblems);
             return o;
         } catch (e) { return null; }
     }
@@ -52,7 +52,7 @@
         async overview(b) {
             const o = await badges() || {};
             const card = (k, n, label, hint) => `<button class="ad-card" data-go="${k}"><b>${n || 0}</b><span>${label}</span><small>${hint}</small></button>`;
-            b.innerHTML = `<div class="ad-cards">${card('games', o.games, 'Games waiting for review', (o.updates || 0) + ' of them are updates')}${card('payments', o.payments, 'Payments to check', 'Confirm = subscription starts')}${card('merch', o.merch, 'New merch orders', 'T-shirts and 3D prints')}${card('bugs', o.bugs, 'Open bug reports', 'From players')}${card('diag', o.loginProblems, 'Login problems (7 days)', 'Unexpected sign-outs')}</div>
+            b.innerHTML = `<div class="ad-cards">${card('games', o.games, 'Games waiting for review', (o.updates || 0) + ' of them are updates')}${card('payments', o.payments, 'Payments to check', 'Confirm = subscription starts')}${card('donations', o.donations, 'Donations to check', 'Confirm = shown in Live feed')}${card('merch', o.merch, 'New merch orders', 'T-shirts and 3D prints')}${card('bugs', o.bugs, 'Open bug reports', 'From players')}${card('diag', o.loginProblems, 'Login problems (7 days)', 'Unexpected sign-outs')}</div>
                 <p class="pg-muted" style="margin-top:14px;">Everything you do here takes effect immediately. Users only ever see their own data.</p>`;
             b.querySelectorAll('[data-go]').forEach(x => x.onclick = () => root.querySelector(`.ad-tab[data-tab="${x.dataset.go}"]`).click());
         },
@@ -80,6 +80,18 @@
             b.querySelectorAll('[data-img]').forEach(x => x.onclick = async () => { try { const r = await api('payment-image?ref=' + encodeURIComponent(x.dataset.img)); openModal(r.image ? `<img src="${esc(r.image)}" alt="Payment screenshot" style="max-width:100%;">` : '<p>No screenshot.</p>'); } catch (e) { note(e.message, true); } });
             b.querySelectorAll('[data-ok]').forEach(x => x.onclick = () => { if (confirm('Money received? Confirm - the subscription starts now.')) act(() => api('payment', { ref: x.dataset.ok, decision: 'confirm' }), 'Confirmed - subscription is active.', render); });
             b.querySelectorAll('[data-no]').forEach(x => x.onclick = () => { const r = prompt('Reason (optional):') ; if (r !== null) act(() => api('payment', { ref: x.dataset.no, decision: 'reject', reason: r }), 'Payment rejected.', render); });
+        },
+        async donations(b) {
+            const st = filters.donations || 'pending';
+            const d = await api('donations?status=' + st);
+            b.innerHTML = `<p class="pg-muted">Confirmed so far: <b>PKR ${Number(d.totalConfirmedPKR || 0).toLocaleString()}</b> from ${d.confirmedCount || 0} donation(s). Check the money arrived before confirming; confirmed donations show in "Live on PixelGaunt" (name only, never the amount).</p>` +
+                statusFilter([['pending', 'Waiting for confirmation'], ['confirmed', 'Confirmed'], ['rejected', 'Rejected']], st) + table(['Reference', 'From', 'Amount', 'Sent to', 'Transaction / message', 'Date', ''],
+                d.items.map(x => `<tr><td>${esc(x.ref)}</td><td>${esc(x.name)}<br><small>${esc(x.email)}</small></td><td><b>PKR ${esc(Number(x.amount).toLocaleString())}</b></td><td>${esc(x.method)}</td><td>${esc(x.txnId || '-')}<br><small>${esc(x.message || '')}</small></td><td>${day(x.createdAt)}</td>
+                    <td class="ad-actions"><button class="pg-btn" data-dimg="${esc(x.ref)}">Screenshot</button>${st === 'pending' ? `<button class="pg-btn primary" data-dok="${esc(x.ref)}">Confirm</button><button class="pg-btn danger" data-dno="${esc(x.ref)}">Reject</button>` : ''}</td></tr>`));
+            wireFilter('donations');
+            b.querySelectorAll('[data-dimg]').forEach(x => x.onclick = async () => { try { const r = await api('donation-image?ref=' + encodeURIComponent(x.dataset.dimg)); openModal(r.image ? `<img src="${esc(r.image)}" alt="Donation screenshot" style="max-width:100%;">` : '<p>No screenshot.</p>'); } catch (e) { note(e.message, true); } });
+            b.querySelectorAll('[data-dok]').forEach(x => x.onclick = () => { if (confirm('Money received? Confirm this donation.')) act(() => api('donation', { ref: x.dataset.dok, decision: 'confirm' }), 'Confirmed - thank-you shown in the Live feed.', render); });
+            b.querySelectorAll('[data-dno]').forEach(x => x.onclick = () => { const r = prompt('Reason (optional):'); if (r !== null) act(() => api('donation', { ref: x.dataset.dno, decision: 'reject', reason: r }), 'Donation rejected.', render); });
         },
         async merch(b) {
             const st = filters.merch || 'new';

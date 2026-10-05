@@ -984,3 +984,28 @@ footer { border-top: 1px solid rgba(var(--pg-a-rgb), .3); }
 }
 .pg-welcome { background: var(--pg-a) !important; color: var(--cy-ink) !important; border-radius: 0 !important; box-shadow: none !important;
     clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px)); }
+
+/* ---------- Hand logo (replaces the animated frames) ---------- */
+.pg-logo-hand { width: 46px; height: auto; flex: 0 0 auto; filter: drop-shadow(0 0 8px rgba(56, 189, 248, .45)); }
+@media (min-width: 1101px) { header#main-header .pg-logo-hand { width: 96px; } }
+
+/* ---------- Trending: taller (portrait) cards ---------- */
+#featured-strip .pg-tile { aspect-ratio: 3 / 4; }
+#featured-strip .pg-tile img { object-position: center center; }
+
+/* ---------- Account / payment icons ---------- */
+.pg-pay-ico { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 34px; background: #ffffff; padding: 3px 6px; box-sizing: border-box;
+    clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%); }
+.pg-pay-ico img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.pg-don-acc { display: grid; grid-template-columns: 44px 1fr; gap: 4px 12px; align-items: start; }
+.pg-don-acc > img { width: 44px; height: 44px; object-fit: contain; background: #fff; padding: 3px; box-sizing: border-box; grid-row: span 4; }
+.pg-don-gate { text-align: center; padding: 10px 0 4px; }
+.pg-don-gate .cy-btn { margin-top: 12px; }
+.pg-don-form { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--cy-line); display: grid; gap: 10px; }
+.pg-don-form h4 { margin: 0; color: #fff; font-size: 1.05rem; }
+.pg-don-form label { display: grid; gap: 4px; font-size: .88rem; color: #cfc4f2; }
+.pg-don-form input, .pg-don-form select, .pg-don-form textarea { padding: 10px 12px; background: #07060b; border: 1px solid var(--cy-line); color: #fff; font: inherit; }
+.pg-don-msg { min-height: 1em; font-size: .9rem; color: #34d399; margin: 0; } .pg-don-msg.bad { color: #f87171; }
+.pg-don-mine { font-size: .85rem; color: #b9aedb; }
+.pay-method img { width: 28px; height: 22px; object-fit: contain; background: #fff; padding: 2px; box-sizing: border-box; }
+.pay-acc-ico { width: 34px; height: 34px; object-fit: contain; background: #fff; padding: 2px; box-sizing: border-box; vertical-align: middle; margin-right: 8px; }

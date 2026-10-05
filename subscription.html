@@ -45,7 +45,7 @@
 
     <audio id="portal-bgm" loop style="display:none;"></audio>
     <header id="main-header">
-        <a class="logo pg-logo" href="index.html" onclick="if (window.goHome && document.getElementById('hero-presentation-section')) { event.preventDefault(); goHome(); }" aria-label="PixelGaunt home"><span class="pg-logo-anim" aria-hidden="true"></span><span class="pg-logo-text">PIXEL<b>GAUNT</b></span></a>
+        <a class="logo pg-logo" href="index.html" onclick="if (window.goHome && document.getElementById('hero-presentation-section')) { event.preventDefault(); goHome(); }" aria-label="PixelGaunt home"><img class="pg-logo-hand" src="logo-hand.png" alt="" width="52" height="60"><span class="pg-logo-text">PIXEL<b>GAUNT</b></span></a>
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false">
             <i class="fas fa-bars"></i>
         </button>
@@ -229,13 +229,13 @@
     (function () {
         const CFG = window.PG_PAYMENT;
         const METHODS = [
-            { key: 'bank', name: 'Bank account', icon: 'fa-building-columns', pref: ['meezan', 'alfalah'], hint: 'Transfer from your bank app (IBFT / Raast) to one of our bank accounts or wallets below.' },
-            { key: 'debit', name: 'Debit card', icon: 'fa-credit-card', pref: ['meezan', 'alfalah'], hint: 'Card payments are made as a transfer: open your card\'s banking app or ATM and transfer to one of the accounts below.' },
-            { key: 'credit', name: 'Credit card', icon: 'fa-credit-card', pref: ['meezan', 'alfalah'], hint: 'Use your credit card bank\'s app to transfer (IBFT) to one of the accounts below.' },
-            { key: 'easypaisa', name: 'Easypaisa', icon: 'fa-mobile-screen-button', pref: ['easypaisa'], hint: 'Send money from Easypaisa to our Easypaisa account, or to a bank account below.' },
-            { key: 'jazzcash', name: 'JazzCash', icon: 'fa-mobile-screen-button', pref: ['easypaisa', 'meezan', 'alfalah'], hint: 'JazzCash can send to our Easypaisa wallet or to a bank account below (Send Money / IBFT).' },
-            { key: 'nayapay', name: 'NayaPay', icon: 'fa-wallet', pref: ['nayapay'], hint: 'Send from NayaPay to our NayaPay account, or to a bank account below.' },
-            { key: 'sadapay', name: 'SadaPay', icon: 'fa-wallet', pref: ['sadapay'], hint: 'Send from SadaPay to our SadaPay account, or to a bank account below.' }
+            { key: 'bank', name: 'Bank account', img: 'pay-bank.png', icon: 'fa-building-columns', pref: ['meezan', 'alfalah'], hint: 'Transfer from your bank app (IBFT / Raast) to one of our bank accounts or wallets below.' },
+            { key: 'debit', name: 'Debit card', img: 'pay-visa.png', icon: 'fa-credit-card', pref: ['meezan', 'alfalah'], hint: 'Card payments are made as a transfer: open your card\'s banking app or ATM and transfer to one of the accounts below.' },
+            { key: 'credit', name: 'Credit card', img: 'pay-mastercard.png', icon: 'fa-credit-card', pref: ['meezan', 'alfalah'], hint: 'Use your credit card bank\'s app to transfer (IBFT) to one of the accounts below.' },
+            { key: 'easypaisa', name: 'Easypaisa', img: 'pay-easypaisa.png', icon: 'fa-mobile-screen-button', pref: ['easypaisa'], hint: 'Send money from Easypaisa to our Easypaisa account, or to a bank account below.' },
+            { key: 'jazzcash', name: 'JazzCash', img: 'pay-jazzcash.png', icon: 'fa-mobile-screen-button', pref: ['easypaisa', 'meezan', 'alfalah'], hint: 'JazzCash can send to our Easypaisa wallet or to a bank account below (Send Money / IBFT).' },
+            { key: 'nayapay', name: 'NayaPay', img: 'pay-nayapay.png', icon: 'fa-wallet', pref: ['nayapay'], hint: 'Send from NayaPay to our NayaPay account, or to a bank account below.' },
+            { key: 'sadapay', name: 'SadaPay', img: 'pay-sadapay.png', icon: 'fa-wallet', pref: ['sadapay'], hint: 'Send from SadaPay to one of our accounts below (use the IBAN for a bank transfer).' }
         ];
         const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         const $ = id => document.getElementById(id);
@@ -253,7 +253,7 @@
             $('pay-modal').querySelector('.modal-content').scrollTop = 0;
         }
         function renderMethods() {
-            $('pay-methods').innerHTML = METHODS.map(m => `<button type="button" class="pay-method" data-key="${m.key}" aria-pressed="${st.method === m.key}"><i class="fas ${m.icon}"></i>${esc(m.name)}</button>`).join('');
+            $('pay-methods').innerHTML = METHODS.map(m => `<button type="button" class="pay-method" data-key="${m.key}" aria-pressed="${st.method === m.key}"><img src="${m.img}" alt="">${esc(m.name)}</button>`).join('');
             $('pay-methods').querySelectorAll('.pay-method').forEach(b => b.onclick = () => { st.method = b.dataset.key; $('pay-err-1').textContent = ''; renderMethods(); });
         }
         function renderAccounts() {
@@ -274,7 +274,7 @@
             $('pay-next-2').disabled = false; $('pay-next-2').textContent = "I've paid - Next";
             $('pay-step2-title').textContent = 'Send your payment to an official PixelGaunt account'; $('pay-method-hint').style.display = ''; $('pay-step2-foot').style.display = '';
             const row = (label, val) => val ? `<div class="row"><span>${label}: <b>${esc(val)}</b></span><button type="button" class="pay-copy" data-copy="${esc(val)}">Copy</button></div>` : '';
-            $('pay-accounts').innerHTML = list.map(a => `<div class="pay-acc${m.pref.includes(a.key) ? ' match' : ''}"><b>${esc(a.name)}</b>${m.pref.includes(a.key) ? ' <span class="pg-pill ok" style="font-size:0.7rem;">Best for ' + esc(m.name) + '</span>' : ''}` +
+            $('pay-accounts').innerHTML = list.map(a => `<div class="pay-acc${m.pref.includes(a.key) ? ' match' : ''}">${a.icon ? `<img class="pay-acc-ico" src="${esc(a.icon)}" alt="">` : ''}<b>${esc(a.name)}</b>${m.pref.includes(a.key) ? ' <span class="pg-pill ok" style="font-size:0.7rem;">Best for ' + esc(m.name) + '</span>' : ''}` +
                 row('Account title', a.title) + row(a.key === 'meezan' || a.key === 'alfalah' ? 'Account no.' : 'Number', a.number) + row('IBAN', a.iban) + '</div>').join('');
             $('pay-accounts').querySelectorAll('.pay-copy').forEach(b => b.onclick = () => {
                 (navigator.clipboard ? navigator.clipboard.writeText(b.dataset.copy) : Promise.reject()).then(() => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); }).catch(() => prompt('Copy this:', b.dataset.copy));
