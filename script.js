@@ -27,6 +27,55 @@ window.pgWelcome = function (text) {
     const show = () => { try { if (!localStorage.getItem('pgVisited')) { localStorage.setItem('pgVisited', '1'); setTimeout(() => window.pgWelcome('Welcome to PixelGaunt! 🎮 Play free browser games or publish your own.'), 1200); } } catch (e) {} };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', show); else show();
 })();
+// ---- Saved colour theme: applied as early as possible on every page (default: neon) ----
+(function () {
+    const apply = () => { let t = 'neon'; try { t = localStorage.getItem('pgTheme') || 'neon'; } catch (e) {} if (window.setGlobalTheme) window.setGlobalTheme(t); else document.body.classList.add('theme-' + t); };
+    if (document.body) { try { document.body.classList.add('theme-' + (localStorage.getItem('pgTheme') || 'neon')); } catch (e) { document.body.classList.add('theme-neon'); } }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else setTimeout(apply, 0);
+})();
+
+// ---- DONATE window (header button on every page). Accounts come from pg-config.js ----
+window.pgOpenDonate = function () {
+    const cfg = window.PG_CONFIG || {}, list = (cfg.accounts || []).filter(a => String(a.number || a.iban || '').trim());
+    const esc2 = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let m = document.getElementById('pg-donate-modal');
+    if (!m) {
+        m = document.createElement('div'); m.id = 'pg-donate-modal'; m.className = 'pg-donate-overlay'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-labelledby', 'pg-donate-title');
+        m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-close]')) m.remove(); });
+        document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape' && document.getElementById('pg-donate-modal')) { m.remove(); } });
+        document.body.appendChild(m);
+    }
+    const row = (label, v) => v ? `<div class="pg-don-row"><span>${label}: <b>${esc2(v)}</b></span><button type="button" class="pg-don-copy" data-copy="${esc2(v)}">Copy</button></div>` : '';
+    m.innerHTML = `<div class="pg-donate-box"><button type="button" class="pg-donate-x" data-close aria-label="Close">&times;</button>
+        <h3 id="pg-donate-title"><i class="fas fa-heart" aria-hidden="true"></i> Support PixelGaunt</h3>
+        <p class="pg-don-sub">PixelGaunt is built by one developer. If you enjoy the games, you can send a donation of any amount to one of our official accounts. Thank you!</p>
+        ${list.length ? list.map(a => `<div class="pg-don-acc"><b>${esc2(a.name)}</b>${row('Account title', a.title)}${row(a.iban ? 'Account no.' : 'Number', a.number)}${row('IBAN', a.iban)}</div>`).join('')
+            : `<div class="pg-don-acc">Our official accounts are being set up. To donate now, email <a href="mailto:${esc2(cfg.contactEmail || 'pixelgaunt@gmail.com')}?subject=Donation">${esc2(cfg.contactEmail || 'pixelgaunt@gmail.com')}</a>.</div>`}
+        <p class="pg-don-note">Only send money to the accounts shown here.</p></div>`;
+    m.querySelectorAll('.pg-don-copy').forEach(b => b.onclick = () => {
+        (navigator.clipboard ? navigator.clipboard.writeText(b.dataset.copy) : Promise.reject()).then(() => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); }).catch(() => prompt('Copy this:', b.dataset.copy));
+    });
+    const x = m.querySelector('.pg-donate-x'); if (x) x.focus();
+};
+
+// ---- "Ways to pay" icons, bottom centre of every page ----
+(function () {
+    const add = () => {
+        const f = document.querySelector('footer'); if (!f || document.getElementById('pg-paystrip')) return;
+        const d = document.createElement('div'); d.id = 'pg-paystrip'; d.className = 'pg-paystrip'; d.setAttribute('aria-label', 'Ways to pay');
+        d.innerHTML = `<span class="pg-pay-label">Ways to pay</span>
+            <span class="pg-pay" title="Bank transfer"><i class="fas fa-building-columns" aria-hidden="true"></i> Bank</span>
+            <span class="pg-pay pg-pay-visa" title="Visa">VISA</span>
+            <span class="pg-pay pg-pay-mc" title="Mastercard"><svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true"><circle cx="9" cy="8" r="7" fill="#eb001b"></circle><circle cx="17" cy="8" r="7" fill="#f79e1b" fill-opacity=".9"></circle></svg> Mastercard</span>
+            <span class="pg-pay"><i class="fas fa-mobile-screen-button" aria-hidden="true"></i> Easypaisa</span>
+            <span class="pg-pay"><i class="fas fa-mobile-screen-button" aria-hidden="true"></i> JazzCash</span>
+            <span class="pg-pay"><i class="fas fa-wallet" aria-hidden="true"></i> SadaPay</span>
+            <span class="pg-pay"><i class="fas fa-wallet" aria-hidden="true"></i> NayaPay</span>`;
+        f.appendChild(d);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add); else add();
+})();
+
 window.pgAdsDecided = false;
 window.pgReleaseAds = function () {
     if (window.pgAdsDecided) return; window.pgAdsDecided = true;
@@ -183,11 +232,15 @@ window.pgBlockAdsForOwner = function () {
         // popularity - that is unrelated to the hero and is kept working as before.
         window.updateFeaturedPanels = function() { /* intentionally disabled - hero is static */ }
 
+        // 5 colour themes (dots in the header of every page). Remembered on this device; other body classes are kept.
         window.setGlobalTheme = function(themeName, element) {
-            document.body.className = '';
+            const THEMES = ['neon', 'cyan', 'toxic', 'inferno', 'gold'];
+            if (!THEMES.includes(themeName)) themeName = 'neon';
+            THEMES.forEach(t => document.body.classList.remove('theme-' + t));
+            ['blue', 'purple', 'emerald', 'cyber'].forEach(t => document.body.classList.remove('theme-' + t));   // old themes
             document.body.classList.add('theme-' + themeName);
-            document.querySelectorAll('.theme-dot').forEach(dot => dot.classList.remove('active'));
-            if(element) element.classList.add('active');
+            document.querySelectorAll('.theme-dot').forEach(dot => { const on = dot.dataset.theme === themeName; dot.classList.toggle('active', on); dot.setAttribute('aria-pressed', String(on)); });
+            try { localStorage.setItem('pgTheme', themeName); } catch (e) { /* storage blocked */ }
         }
 
         window.hideAllPages = function() {
@@ -733,17 +786,17 @@ window.pgBlockAdsForOwner = function () {
             load(); setInterval(() => { if (!document.hidden) load(); }, 30000);
         })();
 
-        // ---- "left the site" signal for logged-in visitors (not sent when moving between our own pages) ----
-        (function byeBeacon() {
-            let tok = null;
-            const refresh = () => { const u = window.pgFB && window.pgFB.auth.currentUser; if (u) u.getIdToken().then(t => { tok = t; }).catch(() => {}); else tok = null; };
-            window.addEventListener('pg-auth', refresh); setInterval(refresh, 40 * 60e3);
-            document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (a && a.origin === location.origin) { try { sessionStorage.setItem('pgInternalNav', String(Date.now())); } catch (x) {} } }, true);
-            window.addEventListener('pagehide', () => {
-                if (!tok || !window.PG_REVIEW_ENDPOINT || !navigator.sendBeacon) return;
-                try { const t = Number(sessionStorage.getItem('pgInternalNav') || 0); if (Date.now() - t < 3000) return; } catch (x) {}
-                navigator.sendBeacon(window.PG_REVIEW_ENDPOINT + '/bye', new Blob([JSON.stringify({ token: tok })], { type: 'text/plain' }));
-            });
+        // ---- Presence heartbeat for the live feed: "still here" every 3 minutes while a page is open and visible.
+        // "Left" is decided by the review service when the heartbeats stop (refresh / page changes don't count).
+        (function heartbeat() {
+            const ping = () => {
+                const u = window.pgFB && window.pgFB.auth.currentUser;
+                if (!u || document.hidden || !window.PG_REVIEW_ENDPOINT) return;
+                u.getIdToken().then(t => fetch(window.PG_REVIEW_ENDPOINT + '/ping', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ token: t }) })).catch(() => {});
+            };
+            setInterval(ping, 3 * 60e3);
+            window.addEventListener('pg-auth', () => setTimeout(ping, 2000));
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) ping(); });
         })();
 
         function renderCommunity() {

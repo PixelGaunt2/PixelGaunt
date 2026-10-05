@@ -19,7 +19,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="pg-config.js"></script>
 	<!-- Open Graph / Social Media Meta Tags -->
 <meta property="og:title" content="Tournaments - Pixel Gaunt Studios">
 <meta property="og:description" content="Join or run single-elimination tournaments on Pixel Gaunt Studios. Register, follow the live bracket and crown a champion.">
@@ -43,7 +45,7 @@
 
     <audio id="portal-bgm" loop style="display:none;"></audio>
     <header id="main-header">
-        <div class="logo pixel-font" onclick="window.location.href='index.html'">Pixel <span>Gaunt</span></div>
+        <a class="logo pg-logo" href="index.html" onclick="if (window.goHome && document.getElementById('hero-presentation-section')) { event.preventDefault(); goHome(); }" aria-label="PixelGaunt home"><span class="pg-logo-anim" aria-hidden="true"></span><span class="pg-logo-text">PIXEL<b>GAUNT</b></span></a>
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false">
             <i class="fas fa-bars"></i>
         </button>
@@ -57,12 +59,14 @@
                 <a href="subscription.html">Subscription</a>
                 <a href="creator-studio.html" id="nav-creator-studio-link" style="display:none;">Creator Studio</a>
             </div>
-            <div class="theme-select-container" title="Select Theme Color Core">
-                <div class="theme-dot t-blue active" onclick="setGlobalTheme('blue', this)"></div>
-                <div class="theme-dot t-purple" onclick="setGlobalTheme('purple', this)"></div>
-                <div class="theme-dot t-emerald" onclick="setGlobalTheme('emerald', this)"></div>
-                <div class="theme-dot t-cyber" onclick="setGlobalTheme('cyber', this)"></div>
+            <div class="theme-select-container" role="group" aria-label="Colour theme">
+                <button type="button" class="theme-dot t-neon" data-theme="neon" onclick="setGlobalTheme('neon', this)" aria-label="Neon pink theme" title="Neon"></button>
+                <button type="button" class="theme-dot t-cyan" data-theme="cyan" onclick="setGlobalTheme('cyan', this)" aria-label="Electric cyan theme" title="Cyan"></button>
+                <button type="button" class="theme-dot t-toxic" data-theme="toxic" onclick="setGlobalTheme('toxic', this)" aria-label="Toxic green theme" title="Toxic"></button>
+                <button type="button" class="theme-dot t-inferno" data-theme="inferno" onclick="setGlobalTheme('inferno', this)" aria-label="Inferno orange theme" title="Inferno"></button>
+                <button type="button" class="theme-dot t-gold" data-theme="gold" onclick="setGlobalTheme('gold', this)" aria-label="Gold theme" title="Gold"></button>
             </div>
+            <button type="button" class="nav-btn pg-donate-btn" onclick="pgOpenDonate()"><i class="fas fa-heart" aria-hidden="true"></i> Donate</button>
             <button class="nav-btn primary" id="main-login-btn" onclick="openModal('login-modal')">Login</button>
         </nav>
     </header>

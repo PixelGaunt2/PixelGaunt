@@ -19,7 +19,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="pg-config.js"></script>
 	<!-- Open Graph / Social Media Meta Tags -->
 <meta property="og:title" content="Merch - Pixel Gaunt Studios">
 <meta property="og:description" content="Pixel Gaunt Studios merch: 2D and 3D game art turned into digital downloads, prints, apparel and collectibles.">
@@ -43,7 +45,7 @@
 
     <audio id="portal-bgm" loop style="display:none;"></audio>
     <header id="main-header">
-        <div class="logo pixel-font" onclick="window.location.href='index.html'">Pixel <span>Gaunt</span></div>
+        <a class="logo pg-logo" href="index.html" onclick="if (window.goHome && document.getElementById('hero-presentation-section')) { event.preventDefault(); goHome(); }" aria-label="PixelGaunt home"><span class="pg-logo-anim" aria-hidden="true"></span><span class="pg-logo-text">PIXEL<b>GAUNT</b></span></a>
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false">
             <i class="fas fa-bars"></i>
         </button>
@@ -57,45 +59,27 @@
                 <a href="subscription.html">Subscription</a>
                 <a href="creator-studio.html" id="nav-creator-studio-link" style="display:none;">Creator Studio</a>
             </div>
-            <div class="theme-select-container" title="Select Theme Color Core">
-                <div class="theme-dot t-blue active" onclick="setGlobalTheme('blue', this)"></div>
-                <div class="theme-dot t-purple" onclick="setGlobalTheme('purple', this)"></div>
-                <div class="theme-dot t-emerald" onclick="setGlobalTheme('emerald', this)"></div>
-                <div class="theme-dot t-cyber" onclick="setGlobalTheme('cyber', this)"></div>
+            <div class="theme-select-container" role="group" aria-label="Colour theme">
+                <button type="button" class="theme-dot t-neon" data-theme="neon" onclick="setGlobalTheme('neon', this)" aria-label="Neon pink theme" title="Neon"></button>
+                <button type="button" class="theme-dot t-cyan" data-theme="cyan" onclick="setGlobalTheme('cyan', this)" aria-label="Electric cyan theme" title="Cyan"></button>
+                <button type="button" class="theme-dot t-toxic" data-theme="toxic" onclick="setGlobalTheme('toxic', this)" aria-label="Toxic green theme" title="Toxic"></button>
+                <button type="button" class="theme-dot t-inferno" data-theme="inferno" onclick="setGlobalTheme('inferno', this)" aria-label="Inferno orange theme" title="Inferno"></button>
+                <button type="button" class="theme-dot t-gold" data-theme="gold" onclick="setGlobalTheme('gold', this)" aria-label="Gold theme" title="Gold"></button>
             </div>
+            <button type="button" class="nav-btn pg-donate-btn" onclick="pgOpenDonate()"><i class="fas fa-heart" aria-hidden="true"></i> Donate</button>
             <button class="nav-btn primary" id="main-login-btn" onclick="openModal('login-modal')">Login</button>
         </nav>
     </header>
 
     <main class="container" id="homepage-page" style="padding-top: 40px;">
-        <div class="page-header" style="text-align:center; margin-bottom: 10px;">
-            <h1 class="pixel-font portfolio-section-title">Merch</h1>
-            <p class="portfolio-section-subtitle">Game art and models turned into things you can download, print or wear.</p>
-        </div>
-<section class="portfolio-section" id="merch-studio-section">
-            <div class="pg-shelf-head">
-                <div>
-                    <h2 class="pixel-font">Custom Merch Studio</h2>
-                    <p>Print on demand: put your own picture - or one made with AI - on a <b>T-shirt</b> or turn it into a <b>3D print</b>. Preview it, download it, or order it.</p>
-                </div>
+        <section class="cy-soon" aria-labelledby="merch-soon-title">
+            <span class="cy-tag">// MERCH</span>
+            <h1 class="cy-title cy-title-sm" id="merch-soon-title"><span>COMING</span><span class="cy-accent">SOON</span></h1>
+            <p class="cy-desc">Custom T-shirts and 3D prints of your own art - or art made with AI - are on the way. Follow us to know the moment the Merch Studio opens.</p>
+            <div class="cy-ctas">
+                <a class="cy-btn cy-btn-primary" href="games.html"><i class="fas fa-gamepad" aria-hidden="true"></i> Play games meanwhile</a>
+                <a class="cy-btn cy-btn-ghost" href="https://discord.gg/DfHFVNMBQF" target="_blank" rel="noopener"><i class="fa-brands fa-discord" aria-hidden="true"></i> Get notified on Discord</a>
             </div>
-            <div id="merch-studio"></div>
-        </section>
-<section class="portfolio-section" id="creator-section" data-pg-module="creator">
-            <div class="pg-shelf-head">
-                <div>
-                    <h2 class="pixel-font">Creator Lab</h2>
-                    <p>Turn game art and 3D models into files you can download, print or manufacture. Check them here first, then save a request for the format you want.</p>
-                </div>
-            </div>
-            <div class="pg-formats">
-                <div class="pg-format"><i class="fas fa-image" aria-hidden="true"></i><h3>2D Assets</h3><p>Sprites, characters, backgrounds and UI art.</p><div class="pg-chips"><span>Digital download</span><span>2D print</span></div></div>
-                <div class="pg-format"><i class="fas fa-cube" aria-hidden="true"></i><h3>3D Assets</h3><p>Models for a game engine or a 3D printer.</p><div class="pg-chips"><span>Digital download</span><span>3D print</span></div></div>
-                <div class="pg-format"><i class="fas fa-print" aria-hidden="true"></i><h3>Prints</h3><p>Posters, art prints and stickers from your game artwork.</p><div class="pg-chips"><span>2D print</span></div></div>
-                <div class="pg-format"><i class="fas fa-shirt" aria-hidden="true"></i><h3>Merchandise</h3><p>Apparel and gifts that carry your character art.</p><div class="pg-chips"><span>Merch</span></div></div>
-                <div class="pg-format"><i class="fas fa-user-astronaut" aria-hidden="true"></i><h3>Creator Products</h3><p>Figurines, collectibles and game-themed sets.</p><div class="pg-chips"><span>3D print</span><span>Merch</span></div></div>
-            </div>
-            <div id="creator-root"><p class="pg-muted">Loading the asset studio...</p></div>
         </section>
     </main>
 
@@ -196,7 +180,6 @@
     <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
 
     <script src="script.js" defer></script>
-    <script src="merch.js" defer></script>
 
     <script type="module" src="firebase-auth.js"></script>
 </body>

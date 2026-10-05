@@ -19,7 +19,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="pg-config.js"></script>
 	<!-- Open Graph / Social Media Meta Tags -->
 <meta property="og:title" content="Pixel Gaunt Studios - Indie Game Developer Portfolio">
 <meta property="og:description" content="Pixel Gaunt Studios is an indie game development studio. Explore our debut release Girl The Driller, browse our past prototypes, and see what's coming next.">
@@ -47,7 +49,7 @@
     </div>
 
     <header id="main-header">
-        <div class="logo pixel-font" onclick="goHome()">Pixel <span>Gaunt</span></div>
+        <a class="logo pg-logo" href="index.html" onclick="if (window.goHome && document.getElementById('hero-presentation-section')) { event.preventDefault(); goHome(); }" aria-label="PixelGaunt home"><span class="pg-logo-anim" aria-hidden="true"></span><span class="pg-logo-text">PIXEL<b>GAUNT</b></span></a>
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false">
             <i class="fas fa-bars"></i>
         </button>
@@ -61,38 +63,33 @@
                 <a href="subscription.html">Subscription</a>
                 <a href="creator-studio.html" id="nav-creator-studio-link" style="display:none;">Creator Studio</a>
             </div>
-            <div class="theme-select-container" title="Select Theme Color Core">
-                <div class="theme-dot t-blue active" onclick="setGlobalTheme('blue', this)"></div>
-                <div class="theme-dot t-purple" onclick="setGlobalTheme('purple', this)"></div>
-                <div class="theme-dot t-emerald" onclick="setGlobalTheme('emerald', this)"></div>
-                <div class="theme-dot t-cyber" onclick="setGlobalTheme('cyber', this)"></div>
+            <div class="theme-select-container" role="group" aria-label="Colour theme">
+                <button type="button" class="theme-dot t-neon" data-theme="neon" onclick="setGlobalTheme('neon', this)" aria-label="Neon pink theme" title="Neon"></button>
+                <button type="button" class="theme-dot t-cyan" data-theme="cyan" onclick="setGlobalTheme('cyan', this)" aria-label="Electric cyan theme" title="Cyan"></button>
+                <button type="button" class="theme-dot t-toxic" data-theme="toxic" onclick="setGlobalTheme('toxic', this)" aria-label="Toxic green theme" title="Toxic"></button>
+                <button type="button" class="theme-dot t-inferno" data-theme="inferno" onclick="setGlobalTheme('inferno', this)" aria-label="Inferno orange theme" title="Inferno"></button>
+                <button type="button" class="theme-dot t-gold" data-theme="gold" onclick="setGlobalTheme('gold', this)" aria-label="Gold theme" title="Gold"></button>
             </div>
+            <button type="button" class="nav-btn pg-donate-btn" onclick="pgOpenDonate()"><i class="fas fa-heart" aria-hidden="true"></i> Donate</button>
             <button class="nav-btn primary" id="main-login-btn" onclick="openModal('login-modal')">Login</button>
         </nav>
     </header>
 
-    <section class="premium-hero" id="hero-presentation-section">
-        <div class="hero-info-panel" id="hero-panel-bg" style="background: linear-gradient(135deg, rgba(8, 8, 15, 0.95), rgba(99, 102, 241, 0.315)), url('Girl%20The%20Driller.png') bottom center/cover no-repeat;">
-            <span class="hero-tag" id="hero-tag-label" style="color: var(--neon-cyan); text-shadow: 0 0 10px rgba(56, 189, 248, 0.325);" onclick="document.getElementById('hero-play-btn').click()" title="View in the Game Library">OUR DEBUT RELEASE</span>
-            <h1 class="hero-title pixel-font" id="hero-title-text" style="text-shadow: 0 4px 15px rgba(0,0,0,0.9);">GIRL: THE DRILLER</h1>
-            <p class="hero-desc" id="hero-desc-text" style="color: #e2e8f0; font-weight: 500; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Collect all Energy Orbs to unlock the Portal and reach it. Experience highly polished commercial-quality physics action gameplay.</p>
-            <p class="hero-release-status" style="color: var(--neon-cyan); font-weight: 600; font-size: 0.95rem; margin-top: 4px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Demo Release &amp; Full Release Soon on Steam and Android</p>
-
-            <div class="hero-stats-row">
-                <button class="nav-btn primary pixel-font" id="hero-play-btn" onclick="window.location.href='games.html#game-16'" style="font-size: 0.8rem; padding: 14px 28px; box-shadow: 0 5px 20px rgba(99, 102, 241, 0.35);">
-                    ▶ VIEW IN GAME LIBRARY
-                </button>
-                <div class="stat-item" style="margin-left: 20px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">
-                    <span class="stat-num" id="hero-rating-text" style="color: #fbbf24; font-size: 1.1rem;">★★★★★</span>
-                    <span class="stat-label" style="color: #fff;">4.8/5 Rating</span>
-                </div>
+    <section class="premium-hero cy-hero" id="hero-presentation-section">
+        <div class="cy-hero-text">
+            <span class="cy-tag">// OUR DEBUT RELEASE</span>
+            <h1 class="cy-title"><span>GIRL</span><span class="cy-outline">THE</span><span class="cy-accent">DRILLER</span></h1>
+            <p class="cy-desc">Collect all Energy Orbs to unlock the Portal and reach it. Experience highly polished commercial-quality physics action gameplay.</p>
+            <div class="cy-ctas">
+                <a class="cy-btn cy-btn-primary" id="hero-play-btn" href="games.html?play=girl-the-driller"><i class="fas fa-play" aria-hidden="true"></i> Play Demo 2D</a>
+                <a class="cy-btn cy-btn-ghost" href="games.html?play=girl-the-driller-2.5d"><i class="fas fa-play" aria-hidden="true"></i> Play Demo 2.5D</a>
             </div>
-
-            <div class="driller-gallery-grid" style="margin-top: 24px;">
-                <div class="driller-gallery-item"><img src="Girl The Driller Gallery 1.png" alt="Girl The Driller gallery artwork 1" loading="lazy"></div>
-                <div class="driller-gallery-item"><img src="Girl The Driller Gallery 2.png" alt="Girl The Driller gallery artwork 2" loading="lazy"></div>
-                <div class="driller-gallery-item"><img src="Girl The Driller Gallery 3.png" alt="Girl The Driller gallery artwork 3" loading="lazy"></div>
-            </div>
+            <p class="cy-status">STATUS › Demo Release &amp; Full Release Soon on Steam and Android</p>
+        </div>
+        <div class="cy-hero-art">
+            <img class="cy-hero-img" src="Girl%20The%20Driller.png" alt="Girl The Driller key art" fetchpriority="high">
+            <span class="cy-line cy-line-a" aria-hidden="true"></span><span class="cy-line cy-line-b" aria-hidden="true"></span>
+            <img class="cy-emblem" src="girlthedriller-frame-0.png" alt="Girl The Driller emblem">
         </div>
     </section>
 
@@ -115,33 +112,6 @@
                 <p class="pg-live-note">Shows first names only. You can hide your name in Creator Studio &gt; Account.</p>
             </div>
         </section>
-
-        <section class="portfolio-section" id="our-story-section">
-            <div class="portfolio-section-header">
-                <h2 class="pixel-font portfolio-section-title">Our Story</h2>
-                <p class="portfolio-section-subtitle">From late-night prototypes to our first commercial release.</p>
-            </div>
-            <p class="story-intro">Pixel Gaunt Studios started as a one-person passion project — building small browser games to learn the craft, one genre at a time. Over the past year we shipped more than a dozen free prototypes covering everything from platformers to 3D shooters, using each one to sharpen our game feel, physics, and polish. <strong>Girl The Driller</strong> is where all of that practice comes together: our first game built and released as a real, standalone commercial title.</p>
-            <div class="story-panel">
-                <div class="story-milestone">
-                    <span class="milestone-year">The Beginning</span>
-                    <p>Started building small HTML5 browser games as a way to learn game development from the ground up — no team, no budget, just code and curiosity.</p>
-                </div>
-                <div class="story-milestone">
-                    <span class="milestone-year">100+ Prototypes</span>
-                    <p>Shipped a wide range of free experiments — fighting, puzzle, racing, 3D shooting, and rogue-like games — to explore what genres and mechanics felt right.</p>
-                </div>
-                <div class="story-milestone">
-                    <span class="milestone-year">2026</span>
-                    <p>Launched <strong>Girl The Driller</strong>, our debut commercial release and the most polished project to date.</p>
-                </div>
-                <div class="story-milestone">
-                    <span class="milestone-year">What's Next</span>
-                    <p>More games are already in development. Follow along on socials below to be the first to know when they launch.</p>
-                </div>
-            </div>
-        </section>
-
 
         <section class="portfolio-section" id="coming-soon-section" style="margin-bottom: 40px;">
             <div class="portfolio-section-header">
