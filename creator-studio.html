@@ -20,8 +20,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <script src="pg-config.js"></script>
+    <link rel="stylesheet" href="style.css?v=20261010">
+    <script src="pg-config.js?v=20261010"></script>
 	<!-- Open Graph / Social Media Meta Tags -->
 <meta property="og:title" content="Creator Studio - Pixel Gaunt Studios">
 <meta property="og:description" content="Manage your published games, upload limits and account on Pixel Gaunt Studios Creator Studio.">
@@ -142,6 +142,7 @@
 
             <div class="cs-tabs" role="tablist">
                 <button class="cs-tab active" data-tab="overview">Overview</button>
+                <button class="cs-tab" data-tab="profile">Profile &amp; Payout</button>
                 <button class="cs-tab" data-tab="games">My Games</button>
                 <button class="cs-tab" data-tab="earnings">Earnings &amp; Plays</button>
                 <button class="cs-tab" data-tab="upload">Upload Game</button>
@@ -174,6 +175,7 @@
                     <div class="cs-stat"><b id="cs-earn-players">-</b><span>Different players</span></div>
                     <div class="cs-stat"><b id="cs-earn-share">-</b><span>Your share of all plays this month</span></div>
                 </div>
+                <p style="margin:0 0 6px;"><button type="button" class="pg-btn" onclick="document.querySelector('.cs-tab[data-tab=profile]').click()"><i class="fas fa-building-columns" aria-hidden="true"></i> Add / change my payout details</button></p>
                 <h3 class="cs-h3">Plays per game</h3>
                 <div id="cs-earn-games"><p class="pg-muted">Loading...</p></div>
                 <h3 class="cs-h3">Monthly earnings</h3>
@@ -200,8 +202,7 @@
                 </div>
             </section>
 
-            <section class="cs-panel" id="cs-panel-account">
-                <div class="pg-verdict warn" id="cs-expiry-banner" hidden style="margin-bottom:16px;"></div>
+            <section class="cs-panel" id="cs-panel-profile">
                 <div class="cs-profile">
                     <h3 class="cs-h3" style="margin-top:0;">Your profile</h3>
                     <div class="cs-profile-row">
@@ -223,9 +224,13 @@
                         <label>IBAN (optional)<input id="cs-po-iban" maxlength="34" placeholder="PK.."></label>
                         <label>Phone (optional)<input id="cs-po-phone" maxlength="20" inputmode="tel"></label>
                     </div>
-                    <div class="cs-prof-actions"><button type="button" class="pg-btn primary" id="cs-po-save">Save payout details</button><span id="cs-po-msg" role="status"></span></div>
+                    <div class="cs-prof-actions"><button type="button" class="pg-btn primary" id="cs-po-save">Save payout details</button><button type="button" class="pg-btn danger" id="cs-po-remove">Remove payout details</button><span id="cs-po-msg" role="status"></span></div>
                     <p class="pg-muted" style="font-size:.85rem;">Only you and PixelGaunt can see these details. Earnings are calculated from your games' counted plays each month (see Earnings &amp; Plays).</p>
                 </div>
+            </section>
+
+            <section class="cs-panel" id="cs-panel-account">
+                <div class="pg-verdict warn" id="cs-expiry-banner" hidden style="margin-bottom:16px;"></div>
                 <div class="cs-account-grid">
                     <div class="cs-account-field"><span>Email</span><b id="cs-acc-email">-</b></div>
                     <div class="cs-account-field"><span>Account type</span><b id="cs-acc-plan">Free</b></div>
@@ -251,7 +256,7 @@
     <script>
         (function () {
             // Read before script.js (deferred) tidies the URL: creator-studio.html#games opens My Games (used after a submission).
-            let startTab = ['#games', '#earnings', '#account'].includes(location.hash) ? location.hash.slice(1) : null;
+            let startTab = ['#games', '#earnings', '#account', '#profile'].includes(location.hash) ? location.hash.slice(1) : null;
             const guard = document.getElementById('cs-guard');
             const dash = document.getElementById('cs-dashboard');
             const PLAN_LIMITS = { free: { maxGames: 1, maxBytes: 5 * 1024 * 1024, period: null, label: 'Free' },
@@ -267,7 +272,8 @@
                     btn.classList.add('active');
                     document.getElementById('cs-panel-' + btn.dataset.tab).classList.add('active');
                     if (btn.dataset.tab === 'earnings') loadEarnings();
-                    if (btn.dataset.tab === 'account') { loadPayments(); loadPrivacy(); loadProfile(); }
+                    if (btn.dataset.tab === 'account') { loadPayments(); loadPrivacy(); }
+                    if (btn.dataset.tab === 'profile') loadProfile();
                 });
             });
 
@@ -418,7 +424,7 @@
             }
 
             // Links like creator-studio.html#account on this same page. 'popstate' fires before script.js tidies the address.
-            const tabFromHash = () => { const h = location.hash.slice(1); if (['games', 'earnings', 'account'].includes(h) && dash.style.display === 'block') openTab(h); };
+            const tabFromHash = () => { const h = location.hash.slice(1); if (['games', 'earnings', 'account', 'profile'].includes(h) && dash.style.display === 'block') openTab(h); };
             window.addEventListener('popstate', tabFromHash); window.addEventListener('hashchange', tabFromHash);
 
             async function loadPrivacy() {
@@ -438,6 +444,13 @@
             }
 
             // ---- profile (name + picture) and payout details ----
+            // A 404 "Unknown" answer means Cloudflare still runs an older pg-review-worker.js than this page needs.
+            async function svcJson(r) {
+                let d = {}; try { d = await r.json(); } catch (e) {}
+                if (r.status === 404 && /unknown|not found/i.test(d.error || '')) throw new Error('PixelGaunt\'s review service needs updating: redeploy pg-review-worker.js in Cloudflare (version 2026-10-10 or newer).');
+                if (!r.ok || d.ok === false) throw new Error(d.error || ('Request failed (HTTP ' + r.status + ').'));
+                return d;
+            }
             async function loadProfile() {
                 const u = window.pgFB && window.pgFB.auth.currentUser; if (!u) return;
                 const EP = window.PG_REVIEW_ENDPOINT || '', $p = id => document.getElementById(id);
@@ -456,24 +469,30 @@
                     msg.textContent = 'Saving...';
                     try {
                         const fd = new FormData(); fd.append('name', name); if (picked) fd.append('avatar', picked, 'avatar.jpg');
-                        const r = await fetch(EP + '/profile', { method: 'POST', headers: { Authorization: 'Bearer ' + await u.getIdToken() }, body: fd }); const d = await r.json();
-                        if (!r.ok || !d.ok) throw new Error(d.error || 'Could not save.');
+                        const d = await svcJson(await fetch(EP + '/profile', { method: 'POST', headers: { Authorization: 'Bearer ' + await u.getIdToken() }, body: fd }));
                         await window.pgUpdateProfile({ name: d.name, photoURL: d.photoURL });
                         picked = null; msg.textContent = 'Saved.'; document.getElementById('cs-name').textContent = d.name;
                     } catch (e) { msg.textContent = e.message || 'Could not save.'; }
                 };
                 try {
-                    const d = await (await fetch(EP + '/payout', { headers: { Authorization: 'Bearer ' + await u.getIdToken() } })).json();
+                    const d = await svcJson(await fetch(EP + '/payout', { headers: { Authorization: 'Bearer ' + await u.getIdToken() } }));
                     const p = d.payout || {};
+                    $p('cs-po-msg').textContent = d.payout ? 'Saved details loaded.' : 'No payout details yet - add them below.';
                     if (p.method) $p('cs-po-method').value = p.method;
                     $p('cs-po-bank').value = p.bankName || ''; $p('cs-po-title').value = p.accountTitle || ''; $p('cs-po-number').value = p.accountNumber || ''; $p('cs-po-iban').value = p.iban || ''; $p('cs-po-phone').value = p.phone || '';
-                } catch (e) { /* offline */ }
+                } catch (e) { $p('cs-po-msg').textContent = e.message; }
+                $p('cs-po-remove').onclick = async () => {
+                    if (!confirm('Remove your payout details?')) return;
+                    const msg = $p('cs-po-msg'); msg.textContent = 'Removing...';
+                    try { await svcJson(await fetch(EP + '/payout', { method: 'DELETE', headers: { Authorization: 'Bearer ' + await u.getIdToken() } }));
+                        ['cs-po-bank', 'cs-po-title', 'cs-po-number', 'cs-po-iban', 'cs-po-phone'].forEach(id => $p(id).value = ''); msg.textContent = 'Removed.'; }
+                    catch (e) { msg.textContent = e.message; }
+                };
                 $p('cs-po-save').onclick = async () => {
                     const msg = $p('cs-po-msg'); msg.textContent = 'Saving...';
                     try {
                         const body = { method: $p('cs-po-method').value, bankName: $p('cs-po-bank').value, accountTitle: $p('cs-po-title').value, accountNumber: $p('cs-po-number').value, iban: $p('cs-po-iban').value.replace(/\s/g, ''), phone: $p('cs-po-phone').value };
-                        const r = await fetch(EP + '/payout', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await u.getIdToken() }, body: JSON.stringify(body) }); const d = await r.json();
-                        if (!r.ok || !d.ok) throw new Error(d.error || 'Could not save.'); msg.textContent = 'Saved.';
+                        await svcJson(await fetch(EP + '/payout', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await u.getIdToken() }, body: JSON.stringify(body) })); msg.textContent = 'Saved.';
                     } catch (e) { msg.textContent = e.message || 'Could not save.'; }
                 };
             }
@@ -598,8 +617,8 @@
 
     <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
 
-    <script src="script.js" defer></script>
+    <script src="script.js?v=20261010" defer></script>
 
-    <script type="module" src="firebase-auth.js"></script>
+    <script type="module" src="firebase-auth.js?v=20261010"></script>
 </body>
 </html>

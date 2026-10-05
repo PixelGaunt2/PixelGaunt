@@ -121,10 +121,10 @@ window.pgOpenDonate = function () {
 })();
 
 // ---- FLOATING LIVE NOTIFICATIONS (every page) ----
-// One small card about every 12 s: live activity, our social channels, subscription offers / renewal reminders,
+// One small card every 6 s (each shown 5 s): live activity, our social channels, subscription offers / renewal reminders,
 // open tournaments (free or paid) and merch news. Pauses while a game is playing or the tab is hidden; can be turned off.
 (function pgFloatNotes() {
-    const OFF = 'pgNotesOff', EVERY = 12000, SHOW = 7000;
+    const OFF = 'pgNotesOff', EVERY = 6000, SHOW = 5000;   // each note is shown for 5 s, the next one follows 1 s later
     const SOCIALS = [
         ['fa-youtube', 'YouTube', 'Subscribe to our YouTube channel', 'https://www.youtube.com/channel/UCmCPkHm7yRadCKcv_ugE4uQ', '#ff0000'],
         ['fa-facebook-f', 'Facebook', 'Follow our Facebook page', 'https://www.facebook.com/profile.php?id=61583034586770', '#1877f2'],
@@ -169,13 +169,17 @@ window.pgOpenDonate = function () {
         requestAnimationFrame(() => el.classList.add('show'));
         clearTimeout(hideT); const hide = () => { if (hovering) { hideT = setTimeout(hide, 1500); return; } el.classList.remove('show'); }; hideT = setTimeout(hide, SHOW);
     }
+    // One note at a time: show it for SHOW ms, then the next one EVERY ms after the previous started.
     function tick() {
-        if (off() || document.hidden || playing() || document.querySelector('.modal-overlay.active, #pg-donate-modal')) return;
+        timer = null;
+        if (off()) return;
+        if (document.hidden || playing() || document.querySelector('.modal-overlay.active, #pg-donate-modal')) { timer = setTimeout(tick, 2000); return; }   // paused: check again soon
         if (!queue.length || i >= queue.length) { queue = build(); i = 0; }
         if (queue.length) render(queue[i++]);
+        timer = setTimeout(tick, EVERY);
     }
-    function stop() { clearInterval(timer); timer = null; }
-    function start() { if (timer || off()) return; setTimeout(tick, 6000); timer = setInterval(tick, EVERY); }
+    function stop() { clearTimeout(timer); timer = null; }
+    function start() { if (timer || off()) return; timer = setTimeout(tick, 3000); }
     function bell() {   // small button to switch the notifications back on
         if (document.getElementById('pg-float-bell')) return;
         const b = document.createElement('button'); b.id = 'pg-float-bell'; b.type = 'button'; b.className = 'pg-float-bell'; b.title = 'Turn live notifications on'; b.setAttribute('aria-label', 'Turn live notifications on');
@@ -1211,7 +1215,7 @@ window.pgBlockAdsForOwner = function () {
             if (!window._pgPlatformPromise) {
                 window._pgPlatformPromise = new Promise((resolve, reject) => {
                     const tag = document.createElement('script');
-                    tag.src = 'platform.js';
+                    tag.src = 'platform.js?v=20261010';   // version tag: browsers always load the newest file after an update
                     tag.async = true;
                     tag.onload = () => resolve(window.PG);
                     tag.onerror = () => { window._pgPlatformPromise = null; reject(new Error('platform.js failed to load')); };

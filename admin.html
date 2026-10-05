@@ -20,8 +20,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <script src="pg-config.js"></script>
+    <link rel="stylesheet" href="style.css?v=20261010">
+    <script src="pg-config.js?v=20261010"></script>
 	<!-- Open Graph / Social Media Meta Tags -->
 <meta property="og:title" content="Publish Your Game - Pixel Gaunt Studios">
 <meta property="og:description" content="Upload your browser game to Pixel Gaunt Studios. See supported formats, upload limits, and the publishing workflow.">
@@ -95,6 +95,9 @@
             .ad-table td { padding: 8px; border-bottom: 1px solid rgba(148,163,184,0.12); vertical-align: top; } .ad-table small { color: #94a3b8; }
             .ad-table select, .ad-filter input, .ad-filter select, .ad-rev { padding: 7px 9px; border-radius: 8px; border: 1px solid rgba(148,163,184,0.3); background: #0b1020; color: #fff; font: inherit; }
             .ad-rev { width: 110px; }
+            .ad-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 10px 0; }
+            .ad-form label { display: grid; gap: 4px; font-size: .88rem; color: #cfc4f2; } .ad-form .ad-wide { grid-column: 1 / -1; }
+            .ad-form input, .ad-form select { min-height: 40px; padding: 0 10px; background: #0b1020; border: 1px solid rgba(148,163,184,0.3); color: #fff; font: inherit; }
             .ad-filter { display: inline-flex; gap: 8px; align-items: center; margin: 0 14px 12px 0; color: #cbd5e1; flex-wrap: wrap; }
             .ad-row { display: flex; flex-wrap: wrap; }
             .ad-thumb { width: 64px; height: 64px; object-fit: contain; background: #fff; border-radius: 8px; cursor: zoom-in; }
@@ -204,9 +207,9 @@
 
     <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
 
-    <script src="script.js" defer></script>
-    <script src="admin.js" defer></script>
+    <script src="script.js?v=20261010" defer></script>
+    <script src="admin.js?v=20261010" defer></script>
 
-    <script type="module" src="firebase-auth.js"></script>
+    <script type="module" src="firebase-auth.js?v=20261010"></script>
 </body>
 </html>

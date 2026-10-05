@@ -18,7 +18,7 @@
     function note(msg, bad) { const n = document.getElementById('ad-note'); if (!n) return; n.textContent = msg; n.className = 'ad-note ' + (bad ? 'bad' : 'ok'); clearTimeout(note.t); note.t = setTimeout(() => { n.textContent = ''; }, 6000); }
     const act = async (fn, okMsg, reload) => { try { await fn(); note(okMsg); if (reload) reload(); } catch (e) { note(e.message, true); } };
 
-    const TABS = [['overview', 'Overview'], ['games', 'Game reviews'], ['payments', 'Payments'], ['donations', 'Donations'], ['fees', 'Entry fees'], ['merch', 'Merch orders'], ['tournaments', 'Tournaments'], ['bugs', 'Bug reports'], ['users', 'Users'], ['community', 'Community games'], ['earnings', 'Earnings'], ['diag', 'Login problems']];
+    const TABS = [['overview', 'Overview'], ['games', 'Game reviews'], ['payments', 'Payments'], ['donations', 'Donations'], ['fees', 'Entry fees'], ['merch', 'Merch orders'], ['tournaments', 'Tournaments & paid matches'], ['bugs', 'Bug reports'], ['users', 'Users'], ['community', 'Community games'], ['earnings', 'Earnings'], ['diag', 'Login problems']];
     let current = 'overview';
 
     function shell() {
@@ -121,7 +121,29 @@
         },
         async tournaments(b) {
             const d = await api('tournaments');
-            b.innerHTML = table(['Tournament', 'Organizer', 'Players', 'Status', 'Created', ''], d.items.map(t => `<tr><td>${esc(t.name)}</td><td>${esc(t.ownerName || t.ownerUid)}</td><td>${esc(t.players)} / ${esc(t.limit)}</td><td>${esc(t.status || '-')}</td><td>${day(t.createdAt)}</td><td><a class="pg-btn" href="tournaments.html" target="_blank">View</a><button class="pg-btn danger" data-del="${esc(t.id)}">Delete</button></td></tr>`));
+            let gameOpts = ((window.PGCore && window.PGCore.games) || []).map(g => ({ id: String(g.id), title: g.title }));
+            try { const cg = await api('games'); cg.items.filter(g => g.status === 'published').forEach(g => gameOpts.push({ id: 'c_' + g.id, title: g.title + ' (community)' })); } catch (e) { }
+            b.innerHTML = `<div class="ad-item"><div class="ad-item-head"><b>Create a tournament</b><small>Paid matches: players pay the entry fee to your accounts and send proof; you confirm it in "Entry fees" and they are added.</small></div>
+                <div class="ad-form">
+                    <label>Name<input id="at-name" maxlength="60" placeholder="e.g. Driller Cup #1"></label>
+                    <label>Game<select id="at-game">${gameOpts.map(g => `<option value="${esc(g.id)}">${esc(g.title)}</option>`).join('')}</select></label>
+                    <label>Entry<select id="at-entry"><option value="free">Free tournament</option><option value="paid" selected>Paid match (entry fee)</option></select></label>
+                    <label id="at-fee-wrap">Entry fee (PKR)<input id="at-fee" type="number" min="50" step="10" value="200"></label>
+                    <label>Prize<input id="at-prize" maxlength="120" placeholder="e.g. Winner gets PKR 2,000"></label>
+                    <label>Players<select id="at-limit"><option>4</option><option selected>8</option><option>16</option><option>32</option></select></label>
+                    <label>Starts (optional)<input id="at-start" type="datetime-local"></label>
+                    <label class="ad-wide">Rules / description<input id="at-desc" maxlength="300" placeholder="Format, rules, how the winner is decided"></label>
+                </div>
+                <p class="pg-muted" style="font-size:.85rem;">Real-money entry fees with cash prizes can count as gambling - keep it a game of skill, publish clear rules and prizes, and refund fees if a match does not happen.</p>
+                <div class="ad-actions"><button class="pg-btn primary" id="at-create">Create tournament</button></div></div>` +
+                table(['Tournament', 'Entry', 'Prize', 'Game', 'Players', 'Status', 'Created', ''], d.items.map(t => `<tr><td>${esc(t.name)}<br><small>by ${esc(t.ownerName || t.ownerUid)}</small></td><td>${t.entryFee > 0 ? `<span class="pg-pill warn">PAID · PKR ${esc(t.entryFee.toLocaleString())}</span>` : '<span class="pg-pill ok">FREE</span>'}</td><td>${esc(t.prize || '-')}</td><td>${esc(t.gameTitle || '-')}</td><td>${esc(t.players)} / ${esc(t.limit)}</td><td>${esc(t.status || '-')}</td><td>${day(t.createdAt)}</td><td class="ad-actions"><a class="pg-btn" href="tournaments.html" target="_blank">View</a><button class="pg-btn danger" data-del="${esc(t.id)}">Delete</button></td></tr>`));
+            const entry = document.getElementById('at-entry'); entry.onchange = () => { document.getElementById('at-fee-wrap').hidden = entry.value !== 'paid'; };
+            document.getElementById('at-create').onclick = () => {
+                const sel = document.getElementById('at-game'), start = document.getElementById('at-start').value;
+                act(() => api('tournament-create', { name: document.getElementById('at-name').value.trim(), gameId: sel.value, gameTitle: sel.selectedOptions[0] ? sel.selectedOptions[0].textContent.replace(/ \(community\)$/, '') : '',
+                    entryFee: entry.value === 'paid' ? Number(document.getElementById('at-fee').value) : 0, prize: document.getElementById('at-prize').value.trim(), limit: Number(document.getElementById('at-limit').value),
+                    startAt: start ? new Date(start).toISOString() : '', description: document.getElementById('at-desc').value.trim() }), 'Tournament created - it is live on the Tournaments page.', render);
+            };
             b.querySelectorAll('[data-del]').forEach(x => x.onclick = () => { if (confirm('Delete this tournament for everyone?')) act(() => api('tournament-delete', { id: x.dataset.del }), 'Tournament deleted.', render); });
         },
         async bugs(b) {
