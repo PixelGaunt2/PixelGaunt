@@ -1136,3 +1136,10 @@ footer { border-top: 1px solid rgba(var(--pg-a-rgb), .3); }
 :fullscreen .pg-chat-btn, body:has(#game-container-element:fullscreen) .pg-chat-btn { display: none; }
 .game-container-wrapper { flex-wrap: wrap; }
 .game-container-wrapper > .game-fullscreen-controls { flex-basis: 100%; width: 100%; }
+/* blurred pictures behind the "?" of in-development projects */
+.cy-qmark { overflow: hidden; }
+.cy-qbg { position: absolute; inset: -30px; background: center / cover no-repeat; filter: blur(14px) brightness(.55) saturate(1.2); transform: scale(1.08); z-index: 0; }
+.cy-qmark > span, .cy-qmark > small { position: relative; z-index: 1; }
+.cy-card-img { position: relative; }
+.cy-card-img img.cy-blur { position: absolute; inset: -12px; width: calc(100% + 24px); height: calc(100% + 24px); filter: blur(8px) brightness(.55); }
+.cy-card-img b { position: relative; z-index: 1; }

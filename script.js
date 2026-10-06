@@ -126,10 +126,10 @@ window.pgOpenDonate = function () {
     const hero = document.getElementById('hero-presentation-section'); if (!hero) return;
     const text = hero.querySelector('.cy-hero-text'), art = hero.querySelector('.cy-hero-art'); if (!text || !art) return;
     const SOON = [
-        { words: ['NEON', 'ROGUE', 'PROTOCOL'], genre: 'Top-down cyber shooter', desc: 'Hack your way through a neon megacity as a rogue android - every district rewrites its rules after midnight.' },
-        { words: ['THE', 'HOLLOW', 'TIDE'], genre: 'Underwater adventure', desc: 'Dive into a drowned kingdom, light the ancient lanterns and outrun the creatures that live in the dark currents.' },
-        { words: ['SHADOW', 'OF', 'EMBERFALL'], genre: 'Dark fantasy action RPG', desc: 'A cursed knight, a dying fire and a kingdom of ash. Forge relics from embers and break the endless night.' },
-        { words: ['SKY', 'FORGE', 'RUSH'], genre: 'Airship racing & building', desc: 'Build your own airship from scrap, then race it through floating islands, storms and sky pirates.' }
+        { words: ['NEON', 'ROGUE', 'PROTOCOL'], genre: 'Top-down cyber shooter', img: 'project-neon-rogue-protocol.png', desc: 'Hack your way through a neon megacity as a rogue android - every district rewrites its rules after midnight.' },
+        { words: ['THE', 'HOLLOW', 'TIDE'], genre: 'Underwater adventure', img: 'project-the-hollow-tide.png', desc: 'Dive into a drowned kingdom, light the ancient lanterns and outrun the creatures that live in the dark currents.' },
+        { words: ['SHADOW', 'OF', 'EMBERFALL'], genre: 'Dark fantasy action RPG', img: 'project-shadow-of-emberfall.png', desc: 'A cursed knight, a dying fire and a kingdom of ash. Forge relics from embers and break the endless night.' },
+        { words: ['SKY', 'FORGE', 'RUSH'], genre: 'Airship racing & building', img: 'project-sky-forge-rush.png', desc: 'Build your own airship from scrap, then race it through floating islands, storms and sky pirates.' }
     ];
     const first = { words: ['GIRL', 'THE', 'DRILLER'], genre: 'Physics action platformer', desc: text.querySelector('.cy-desc') ? text.querySelector('.cy-desc').textContent : '', img: 'Girl%20The%20Driller.png', real: true };
     const slides = [first].concat(SOON);
@@ -138,13 +138,17 @@ window.pgOpenDonate = function () {
     const esc4 = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const title = s => `<h1 class="cy-title${s.real ? '' : ' cy-title-sm'}"><span>${s.words[0]}</span><span class="cy-outline">${s.words[1]}</span><span class="cy-accent">${s.words[2]}</span></h1>`;
     // the "?" picture used for every project still in development
-    art.insertAdjacentHTML('beforeend', '<div class="cy-qmark" aria-hidden="true"><span>?</span><small>IMAGE CLASSIFIED</small></div>');
+    // Optional pictures for the in-development projects (shown blurred behind the "?"). Upload them next to index.html
+    // with exactly the file names above; if a picture is missing, the plain "?" background is used instead.
+    SOON.forEach(p => { const im = new Image(); im.onload = () => { p.ok = true; if (slides[cur] === p) show(cur, false); }; im.src = p.img; });
+    art.insertAdjacentHTML('beforeend', '<div class="cy-qmark" aria-hidden="true"><i class="cy-qbg"></i><span>?</span><small>IMAGE CLASSIFIED</small></div>');
+    const qbg = art.querySelector('.cy-qbg');
     const dots = document.createElement('div'); dots.className = 'cy-dots'; dots.setAttribute('role', 'tablist'); dots.setAttribute('aria-label', 'Our games');
     dots.innerHTML = slides.map((s, k) => `<button type="button" role="tab" aria-label="${esc4(s.words.join(' '))}" data-k="${k}"></button>`).join('');
     hero.appendChild(dots);
     const deck = document.createElement('div'); deck.className = 'cy-deck'; deck.setAttribute('aria-label', 'All our games');
     deck.innerHTML = `<div class="cy-deck-head"><span>// ALL PIXELGAUNT PROJECTS</span><button type="button" class="cy-deck-x" aria-label="Close">&times;</button></div><div class="cy-deck-grid">` + slides.map((s, k) => `<button type="button" class="cy-card${s.real ? ' is-real' : ''}" data-k="${k}" style="--d:${k * 70}ms">
-            <span class="cy-card-img">${s.real ? `<img src="${s.img}" alt="" loading="lazy">` : '<b>?</b>'}</span>
+            <span class="cy-card-img">${s.real ? `<img src="${s.img}" alt="" loading="lazy">` : `<img class="cy-blur" src="${s.img}" alt="" loading="lazy" onerror="this.remove()"><b>?</b>`}</span>
             <span class="cy-card-st ${s.real ? 'live' : ''}">${s.real ? 'Demo out now' : 'In development'}</span>
             <strong>${esc4(s.words.join(' '))}</strong><small>${esc4(s.genre)}</small></button>`).join('') + '</div>';
     hero.appendChild(deck);
@@ -156,6 +160,7 @@ window.pgOpenDonate = function () {
             <div class="cy-ctas"><button type="button" class="cy-btn cy-btn-primary cy-btn-soon" aria-disabled="true"><i class="fas fa-play" aria-hidden="true"></i> Play demo · soon</button><a class="cy-btn cy-btn-ghost" href="https://discord.gg/DfHFVNMBQF" target="_blank" rel="noopener"><i class="fa-brands fa-discord" aria-hidden="true"></i> Follow development</a></div>
             <p class="cy-status">STATUS › In development · ${esc4(s.genre)}</p>`;
         art.classList.toggle('is-unknown', !s.real);
+        if (qbg) qbg.style.backgroundImage = (!s.real && s.ok) ? `url('${s.img}')` : 'none';
         if (anim !== false) { text.classList.remove('cy-swap'); art.classList.remove('cy-swap'); void text.offsetWidth; text.classList.add('cy-swap'); art.classList.add('cy-swap'); }
         dots.querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-selected', String(i === cur)));
         deck.querySelectorAll('.cy-card').forEach((c, i) => c.classList.toggle('on', i === cur));
@@ -1409,7 +1414,7 @@ window.pgBlockAdsForOwner = function () {
             if (!window._pgPlatformPromise) {
                 window._pgPlatformPromise = new Promise((resolve, reject) => {
                     const tag = document.createElement('script');
-                    tag.src = 'platform.js?v=20261011';   // version tag: browsers always load the newest file after an update
+                    tag.src = 'platform.js?v=20261012';   // version tag: browsers always load the newest file after an update
                     tag.async = true;
                     tag.onload = () => resolve(window.PG);
                     tag.onerror = () => { window._pgPlatformPromise = null; reject(new Error('platform.js failed to load')); };
