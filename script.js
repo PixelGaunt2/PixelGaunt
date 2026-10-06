@@ -1427,7 +1427,7 @@ window.pgBlockAdsForOwner = function () {
             if (!window._pgPlatformPromise) {
                 window._pgPlatformPromise = new Promise((resolve, reject) => {
                     const tag = document.createElement('script');
-                    tag.src = 'platform.js?v=20261014';   // version tag: browsers always load the newest file after an update
+                    tag.src = 'platform.js?v=20261015';   // version tag: browsers always load the newest file after an update
                     tag.async = true;
                     tag.onload = () => resolve(window.PG);
                     tag.onerror = () => { window._pgPlatformPromise = null; reject(new Error('platform.js failed to load')); };

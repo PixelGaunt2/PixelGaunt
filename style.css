@@ -1152,3 +1152,25 @@ footer { border-top: 1px solid rgba(var(--pg-a-rgb), .3); }
 .pg-more button.pg-link { background: none; border: 0; cursor: pointer; font: inherit; font-weight: 700; color: var(--pg-a); }
 .pg-more .game-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; margin: 0 auto; }
 @media (max-width: 560px) { .pg-more .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+
+/* 2026-10-14: Games page cards in the Trending style (picture with the name on it), about half the old size */
+.game-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.game-grid .game-card { border: 2px solid var(--cy-line); }
+.game-grid .game-card:hover { border-color: var(--pg-a); box-shadow: none; }
+.game-grid .card-thumb { aspect-ratio: 3 / 4; }
+.game-grid .card-thumb::before { background: linear-gradient(to top, rgba(6, 4, 12, .95) 6%, rgba(6, 4, 12, 0) 55%); }
+.game-grid .card-thumb-img { transition: transform .35s ease; }
+.game-grid .game-card:hover .card-thumb-img { transform: scale(1.05); }
+.game-grid .card-info { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 3; padding: 0; background: none; display: flex; flex-direction: column-reverse; gap: 2px; pointer-events: none; }
+.game-grid .card-title { font-size: .92rem; line-height: 1.2; color: #fff; margin: 0; }
+.game-grid .card-genre { font-size: .7rem; letter-spacing: .5px; color: var(--neon-cyan, #22d3ee); margin: 0; }
+.game-grid .card-premium-meta { display: none; }
+.game-grid .play-overlay { z-index: 3; }
+.pg-more .game-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .game-grid, .pg-more .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+
+/* Trending on the home page: about 25% bigger (wider than the text column on large screens) */
+@media (min-width: 1001px) {
+    #featured-strip.pg-rail { width: 125%; max-width: calc(100vw - var(--cy-side, 0px) - 40px); position: relative; left: 50%; transform: translateX(-50%); gap: 18px; }
+    #featured-strip .pg-tile-info b { font-size: clamp(0.95rem, 1.25vw, 1.15rem); }
+}
