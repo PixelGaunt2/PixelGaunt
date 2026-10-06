@@ -1143,3 +1143,12 @@ footer { border-top: 1px solid rgba(var(--pg-a-rgb), .3); }
 .cy-card-img { position: relative; }
 .cy-card-img img.cy-blur { position: absolute; inset: -12px; width: calc(100% + 24px); height: calc(100% + 24px); filter: blur(8px) brightness(.55); }
 .cy-card-img b { position: relative; z-index: 1; }
+
+/* 2026-10-13: game covers the same shape as Trending (3:4), and "More games" under the player */
+.game-grid .card-thumb { aspect-ratio: 3 / 4; }
+.game-grid .card-thumb-img, .game-grid .gif-overlay { object-position: center; background-position: center; }
+.pg-more { max-width: 1300px; margin: 34px auto 60px; padding: 0 5%; box-sizing: border-box; }
+.pg-more .pg-shelf-head { margin-bottom: 16px; }
+.pg-more button.pg-link { background: none; border: 0; cursor: pointer; font: inherit; font-weight: 700; color: var(--pg-a); }
+.pg-more .game-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; margin: 0 auto; }
+@media (max-width: 560px) { .pg-more .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
