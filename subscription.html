@@ -20,8 +20,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20261012">
-    <script src="pg-config.js?v=20261012"></script>
+    <link rel="stylesheet" href="style.css?v=20261013">
+    <script src="pg-config.js?v=20261013"></script>
 	<!-- Open Graph / Social Media Meta Tags -->
 <meta property="og:title" content="Subscription - Pixel Gaunt Studios">
 <meta property="og:description" content="Pixel Gaunt Studios subscription plans: Free and Subscriber (monthly or yearly), with game upload and size limits for each.">
@@ -45,7 +45,7 @@
 
     <audio id="portal-bgm" loop style="display:none;"></audio>
     <header id="main-header">
-        <a class="logo pg-logo" href="index.html" onclick="if (window.goHome && document.getElementById('hero-presentation-section')) { event.preventDefault(); goHome(); }" aria-label="PixelGaunt home"><img class="pg-logo-hand" src="logo-hand.png" alt="" width="52" height="60"><span class="pg-logo-text">PIXEL<b>GAUNT</b></span></a>
+        <a class="logo pg-logo" href="index.html" onclick="if (window.goHome && document.getElementById('hero-presentation-section')) { event.preventDefault(); goHome(); }" aria-label="PixelGaunt home"><img class="pg-logo-hand" src="logo-hand.webp" alt="" width="52" height="60"><span class="pg-logo-text">PIXEL<b>GAUNT</b></span></a>
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false">
             <i class="fas fa-bars"></i>
         </button>
@@ -229,13 +229,13 @@
     (function () {
         const CFG = window.PG_PAYMENT;
         const METHODS = [
-            { key: 'bank', name: 'Bank account', img: 'pay-bank.png', icon: 'fa-building-columns', pref: ['meezan', 'alfalah'], hint: 'Transfer from your bank app (IBFT / Raast) to one of our bank accounts or wallets below.' },
-            { key: 'debit', name: 'Debit card', img: 'pay-visa.png', icon: 'fa-credit-card', pref: ['meezan', 'alfalah'], hint: 'Card payments are made as a transfer: open your card\'s banking app or ATM and transfer to one of the accounts below.' },
-            { key: 'credit', name: 'Credit card', img: 'pay-mastercard.png', icon: 'fa-credit-card', pref: ['meezan', 'alfalah'], hint: 'Use your credit card bank\'s app to transfer (IBFT) to one of the accounts below.' },
-            { key: 'easypaisa', name: 'Easypaisa', img: 'pay-easypaisa.png', icon: 'fa-mobile-screen-button', pref: ['easypaisa'], hint: 'Send money from Easypaisa to our Easypaisa account, or to a bank account below.' },
-            { key: 'jazzcash', name: 'JazzCash', img: 'pay-jazzcash.png', icon: 'fa-mobile-screen-button', pref: ['easypaisa', 'meezan', 'alfalah'], hint: 'JazzCash can send to our Easypaisa wallet or to a bank account below (Send Money / IBFT).' },
-            { key: 'nayapay', name: 'NayaPay', img: 'pay-nayapay.png', icon: 'fa-wallet', pref: ['nayapay'], hint: 'Send from NayaPay to our NayaPay account, or to a bank account below.' },
-            { key: 'sadapay', name: 'SadaPay', img: 'pay-sadapay.png', icon: 'fa-wallet', pref: ['sadapay'], hint: 'Send from SadaPay to one of our accounts below (use the IBAN for a bank transfer).' }
+            { key: 'bank', name: 'Bank account', img: 'pay-bank.webp', icon: 'fa-building-columns', pref: ['meezan', 'alfalah'], hint: 'Transfer from your bank app (IBFT / Raast) to one of our bank accounts or wallets below.' },
+            { key: 'debit', name: 'Debit card', img: 'pay-visa.webp', icon: 'fa-credit-card', pref: ['meezan', 'alfalah'], hint: 'Card payments are made as a transfer: open your card\'s banking app or ATM and transfer to one of the accounts below.' },
+            { key: 'credit', name: 'Credit card', img: 'pay-mastercard.webp', icon: 'fa-credit-card', pref: ['meezan', 'alfalah'], hint: 'Use your credit card bank\'s app to transfer (IBFT) to one of the accounts below.' },
+            { key: 'easypaisa', name: 'Easypaisa', img: 'pay-easypaisa.webp', icon: 'fa-mobile-screen-button', pref: ['easypaisa'], hint: 'Send money from Easypaisa to our Easypaisa account, or to a bank account below.' },
+            { key: 'jazzcash', name: 'JazzCash', img: 'pay-jazzcash.webp', icon: 'fa-mobile-screen-button', pref: ['easypaisa', 'meezan', 'alfalah'], hint: 'JazzCash can send to our Easypaisa wallet or to a bank account below (Send Money / IBFT).' },
+            { key: 'nayapay', name: 'NayaPay', img: 'pay-nayapay.webp', icon: 'fa-wallet', pref: ['nayapay'], hint: 'Send from NayaPay to our NayaPay account, or to a bank account below.' },
+            { key: 'sadapay', name: 'SadaPay', img: 'pay-sadapay.webp', icon: 'fa-wallet', pref: ['sadapay'], hint: 'Send from SadaPay to one of our accounts below (use the IBAN for a bank transfer).' }
         ];
         const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         const $ = id => document.getElementById(id);
@@ -523,8 +523,8 @@
 
     <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
 
-    <script src="script.js?v=20261012" defer></script>
+    <script src="script.js?v=20261013" defer></script>
 
-    <script type="module" src="firebase-auth.js?v=20261012"></script>
+    <script type="module" src="firebase-auth.js?v=20261013"></script>
 </body>
 </html>

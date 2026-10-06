@@ -114,7 +114,7 @@ window.pgOpenDonate = function () {
         const f = document.querySelector('footer'); if (!f || document.getElementById('pg-paystrip')) return;
         const d = document.createElement('div'); d.id = 'pg-paystrip'; d.className = 'pg-paystrip'; d.setAttribute('aria-label', 'Ways to pay');
         const items = [['bank', 'Bank transfer'], ['visa', 'Visa'], ['mastercard', 'Mastercard'], ['easypaisa', 'Easypaisa'], ['jazzcash', 'JazzCash'], ['sadapay', 'SadaPay'], ['nayapay', 'NayaPay']];
-        d.innerHTML = '<span class="pg-pay-label">Ways to pay</span>' + items.map(([k, n]) => `<span class="pg-pay-ico" title="${n}"><img src="pay-${k}.png" alt="${n}" loading="lazy" width="40" height="26"></span>`).join('');
+        d.innerHTML = '<span class="pg-pay-label">Ways to pay</span>' + items.map(([k, n]) => `<span class="pg-pay-ico" title="${n}"><img src="pay-${k}.webp" alt="${n}" loading="lazy" width="40" height="26"></span>`).join('');
         f.appendChild(d);
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add); else add();
@@ -126,10 +126,10 @@ window.pgOpenDonate = function () {
     const hero = document.getElementById('hero-presentation-section'); if (!hero) return;
     const text = hero.querySelector('.cy-hero-text'), art = hero.querySelector('.cy-hero-art'); if (!text || !art) return;
     const SOON = [
-        { words: ['NEON', 'ROGUE', 'PROTOCOL'], genre: 'Top-down cyber shooter', img: 'project-neon-rogue-protocol.png', desc: 'Hack your way through a neon megacity as a rogue android - every district rewrites its rules after midnight.' },
-        { words: ['THE', 'HOLLOW', 'TIDE'], genre: 'Underwater adventure', img: 'project-the-hollow-tide.png', desc: 'Dive into a drowned kingdom, light the ancient lanterns and outrun the creatures that live in the dark currents.' },
-        { words: ['SHADOW', 'OF', 'EMBERFALL'], genre: 'Dark fantasy action RPG', img: 'project-shadow-of-emberfall.png', desc: 'A cursed knight, a dying fire and a kingdom of ash. Forge relics from embers and break the endless night.' },
-        { words: ['SKY', 'FORGE', 'RUSH'], genre: 'Airship racing & building', img: 'project-sky-forge-rush.png', desc: 'Build your own airship from scrap, then race it through floating islands, storms and sky pirates.' }
+        { words: ['NEON', 'ROGUE', 'PROTOCOL'], genre: 'Top-down cyber shooter', img: 'project-neon-rogue-protocol.webp', desc: 'Hack your way through a neon megacity as a rogue android - every district rewrites its rules after midnight.' },
+        { words: ['THE', 'HOLLOW', 'TIDE'], genre: 'Underwater adventure', img: 'project-the-hollow-tide.webp', desc: 'Dive into a drowned kingdom, light the ancient lanterns and outrun the creatures that live in the dark currents.' },
+        { words: ['SHADOW', 'OF', 'EMBERFALL'], genre: 'Dark fantasy action RPG', img: 'project-shadow-of-emberfall.webp', desc: 'A cursed knight, a dying fire and a kingdom of ash. Forge relics from embers and break the endless night.' },
+        { words: ['SKY', 'FORGE', 'RUSH'], genre: 'Airship racing & building', img: 'project-sky-forge-rush.webp', desc: 'Build your own airship from scrap, then race it through floating islands, storms and sky pirates.' }
     ];
     const first = { words: ['GIRL', 'THE', 'DRILLER'], genre: 'Physics action platformer', desc: text.querySelector('.cy-desc') ? text.querySelector('.cy-desc').textContent : '', img: 'Girl%20The%20Driller.png', real: true };
     const slides = [first].concat(SOON);
@@ -410,8 +410,8 @@ window.pgBlockAdsForOwner = function () {
             { id: 13, studio: 'Pixel Gaunt', title: 'SnakeScape', genre: 'Arcade', controls: 'Keyboard / Touch.', howToPlay: 'Classic snake action — grow long, avoid the walls.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'SnakeScape.png', url: 'snakescape.html', bgm: 'SnakeScape.mp3', orientation: 'portrait' },
             { id: 14, studio: 'Pixel Gaunt', title: 'Stick Man Velocity', genre: 'Action', controls: 'Mouse / Touch. Tap to play.', howToPlay: 'Tap to keep Stick Man moving at full velocity.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Stick Man Velocity.png', url: 'stick-man-velocity.html', bgm: 'Stick Man Velocity.mp3', orientation: 'landscape' },
             { id: 15, studio: 'Pixel Gaunt', title: 'Tetris Reimagine', genre: 'Puzzle', controls: 'Keyboard / Touch.', howToPlay: 'Clear lines across 100 levels of reimagined Tetris.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Tetris Reimagine.png', url: 'tetris-reimagine.html', bgm: 'Tetris Reimagine.mp3', orientation: 'portrait' },
-            { id: 16, studio: 'Pixel Gaunt', title: 'Girl The Driller', genre: 'Adventure', controls: 'Mouse / Touch.', howToPlay: 'Click to Go & Eat Mouse.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'August 20, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Girl The Driller.png', preview: 'Girl The Driller.gif', url: 'girl-the-driller.html', bgm: 'Girl The Driller.mp3', orientation: 'landscape' },
-            { id: 17, studio: 'Pixel Gaunt', title: 'Girl The Driller 2.5D', genre: 'Adventure', controls: 'Mouse / Touch.', howToPlay: 'Click to Go & Eat Mouse.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Girl The Driller.png', preview: 'Girl The Driller.gif', url: 'girl-the-driller25d.html', bgm: 'Girl The Driller.mp3', orientation: 'landscape' }
+            { id: 16, studio: 'Pixel Gaunt', title: 'Girl The Driller', genre: 'Adventure', controls: 'Mouse / Touch.', howToPlay: 'Click to Go & Eat Mouse.', rating: '⭐⭐⭐⭐⭐ (4.9/5)', releaseDate: 'August 20, 2026', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: `Create a highly polished commercial-quality physics action game.`, image: 'Girl The Driller 2D.webp', preview: 'Girl The Driller.gif', url: 'girl-the-driller.html', bgm: 'Girl The Driller.mp3', orientation: 'landscape' },
+            { id: 17, studio: 'Pixel Gaunt', title: 'Girl The Driller 2.5D', genre: 'Adventure', controls: 'Mouse / Touch.', howToPlay: 'Click to Go & Eat Mouse.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Girl The Driller 2.5D.webp', preview: 'Girl The Driller.gif', url: 'girl-the-driller25d.html', bgm: 'Girl The Driller.mp3', orientation: 'landscape' }
         ];
 
         /* ================= POPULARITY / PLAY-COUNT RANKING SYSTEM ================= */
@@ -650,7 +650,7 @@ window.pgBlockAdsForOwner = function () {
             }
 
             const safeImg = encodeURI(game.image);
-            const safePreview = encodeURI(game.preview || game.image.replace('.png', '.gif'));
+            const safePreview = encodeURI(game.preview || game.image.replace(/\.(png|webp|jpe?g)$/i, '.gif'));
             card.innerHTML = `
                 <div class="card-thumb">
                     <img class="card-thumb-img" src="${esc(safeImg)}" alt="${esc(game.title)}" loading="lazy" decoding="async" width="400" height="300">
@@ -1414,7 +1414,7 @@ window.pgBlockAdsForOwner = function () {
             if (!window._pgPlatformPromise) {
                 window._pgPlatformPromise = new Promise((resolve, reject) => {
                     const tag = document.createElement('script');
-                    tag.src = 'platform.js?v=20261012';   // version tag: browsers always load the newest file after an update
+                    tag.src = 'platform.js?v=20261013';   // version tag: browsers always load the newest file after an update
                     tag.async = true;
                     tag.onload = () => resolve(window.PG);
                     tag.onerror = () => { window._pgPlatformPromise = null; reject(new Error('platform.js failed to load')); };
