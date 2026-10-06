@@ -120,11 +120,166 @@ window.pgOpenDonate = function () {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add); else add();
 })();
 
+// ---- HOME HERO: our debut release + 4 projects in development, rotating every 5 s ----
+// Hovering a game name or picture opens all 5 as animated cards (tap the picture on phones).
+(function pgHeroRotator() { const run = () => {
+    const hero = document.getElementById('hero-presentation-section'); if (!hero) return;
+    const text = hero.querySelector('.cy-hero-text'), art = hero.querySelector('.cy-hero-art'); if (!text || !art) return;
+    const SOON = [
+        { words: ['NEON', 'ROGUE', 'PROTOCOL'], genre: 'Top-down cyber shooter', desc: 'Hack your way through a neon megacity as a rogue android - every district rewrites its rules after midnight.' },
+        { words: ['THE', 'HOLLOW', 'TIDE'], genre: 'Underwater adventure', desc: 'Dive into a drowned kingdom, light the ancient lanterns and outrun the creatures that live in the dark currents.' },
+        { words: ['SHADOW', 'OF', 'EMBERFALL'], genre: 'Dark fantasy action RPG', desc: 'A cursed knight, a dying fire and a kingdom of ash. Forge relics from embers and break the endless night.' },
+        { words: ['SKY', 'FORGE', 'RUSH'], genre: 'Airship racing & building', desc: 'Build your own airship from scrap, then race it through floating islands, storms and sky pirates.' }
+    ];
+    const first = { words: ['GIRL', 'THE', 'DRILLER'], genre: 'Physics action platformer', desc: text.querySelector('.cy-desc') ? text.querySelector('.cy-desc').textContent : '', img: 'Girl%20The%20Driller.png', real: true };
+    const slides = [first].concat(SOON);
+    const originalText = text.innerHTML;
+    let cur = 0, timer = null, paused = false, deckOpen = false, hideT = null;
+    const esc4 = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const title = s => `<h1 class="cy-title${s.real ? '' : ' cy-title-sm'}"><span>${s.words[0]}</span><span class="cy-outline">${s.words[1]}</span><span class="cy-accent">${s.words[2]}</span></h1>`;
+    // the "?" picture used for every project still in development
+    art.insertAdjacentHTML('beforeend', '<div class="cy-qmark" aria-hidden="true"><span>?</span><small>IMAGE CLASSIFIED</small></div>');
+    const dots = document.createElement('div'); dots.className = 'cy-dots'; dots.setAttribute('role', 'tablist'); dots.setAttribute('aria-label', 'Our games');
+    dots.innerHTML = slides.map((s, k) => `<button type="button" role="tab" aria-label="${esc4(s.words.join(' '))}" data-k="${k}"></button>`).join('');
+    hero.appendChild(dots);
+    const deck = document.createElement('div'); deck.className = 'cy-deck'; deck.setAttribute('aria-label', 'All our games');
+    deck.innerHTML = `<div class="cy-deck-head"><span>// ALL PIXELGAUNT PROJECTS</span><button type="button" class="cy-deck-x" aria-label="Close">&times;</button></div><div class="cy-deck-grid">` + slides.map((s, k) => `<button type="button" class="cy-card${s.real ? ' is-real' : ''}" data-k="${k}" style="--d:${k * 70}ms">
+            <span class="cy-card-img">${s.real ? `<img src="${s.img}" alt="" loading="lazy">` : '<b>?</b>'}</span>
+            <span class="cy-card-st ${s.real ? 'live' : ''}">${s.real ? 'Demo out now' : 'In development'}</span>
+            <strong>${esc4(s.words.join(' '))}</strong><small>${esc4(s.genre)}</small></button>`).join('') + '</div>';
+    hero.appendChild(deck);
+
+    function show(k, anim) {
+        cur = (k + slides.length) % slides.length; const s = slides[cur];
+        if (s.real) text.innerHTML = originalText;
+        else text.innerHTML = `<span class="cy-tag">// IN DEVELOPMENT</span>${title(s)}<p class="cy-desc">${esc4(s.desc)}</p>
+            <div class="cy-ctas"><button type="button" class="cy-btn cy-btn-primary cy-btn-soon" aria-disabled="true"><i class="fas fa-play" aria-hidden="true"></i> Play demo · soon</button><a class="cy-btn cy-btn-ghost" href="https://discord.gg/DfHFVNMBQF" target="_blank" rel="noopener"><i class="fa-brands fa-discord" aria-hidden="true"></i> Follow development</a></div>
+            <p class="cy-status">STATUS › In development · ${esc4(s.genre)}</p>`;
+        art.classList.toggle('is-unknown', !s.real);
+        if (anim !== false) { text.classList.remove('cy-swap'); art.classList.remove('cy-swap'); void text.offsetWidth; text.classList.add('cy-swap'); art.classList.add('cy-swap'); }
+        dots.querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-selected', String(i === cur)));
+        deck.querySelectorAll('.cy-card').forEach((c, i) => c.classList.toggle('on', i === cur));
+        const soon = text.querySelector('.cy-btn-soon');
+        if (soon) soon.onclick = () => { const st = text.querySelector('.cy-status'); if (st) st.textContent = 'STATUS › The playable demo is coming soon - follow us to play it first!'; };
+        wireHover();
+    }
+    function next() { if (!paused && !deckOpen && !document.hidden) show(cur + 1); }
+    function restart() { clearInterval(timer); timer = setInterval(next, 5000); }
+    let openedAt = 0;
+    function openDeck() { clearTimeout(hideT); if (deckOpen) return; deckOpen = true; openedAt = Date.now(); hero.classList.add('deck-open'); }
+    function closeDeck(now) { clearTimeout(hideT); const go = () => { deckOpen = false; hero.classList.remove('deck-open'); }; if (now) go(); else hideT = setTimeout(go, 450); }
+    function wireHover() {
+        const t = text.querySelector('.cy-title');
+        if (t) { t.onmouseenter = openDeck; }
+    }
+    art.addEventListener('mouseenter', openDeck);
+    art.addEventListener('click', e => { if (e.target.closest('a')) return; if (deckOpen && Date.now() - openedAt > 500) closeDeck(true); else openDeck(); });   // a tap also fires mouseenter first
+    deck.addEventListener('mouseenter', openDeck);
+    hero.addEventListener('mouseleave', () => closeDeck());
+    text.addEventListener('mouseenter', () => { paused = true; }); text.addEventListener('mouseleave', () => { paused = false; });
+    deck.querySelector('.cy-deck-x').onclick = () => closeDeck(true);
+    deck.querySelectorAll('.cy-card').forEach(c => c.onclick = () => { show(Number(c.dataset.k)); closeDeck(true); restart(); });
+    dots.querySelectorAll('button').forEach(b => b.onclick = () => { show(Number(b.dataset.k)); restart(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && deckOpen) closeDeck(true); });
+    show(0, false); restart();
+    }; if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+})();
+
+// ---- LIVE CHAT (every page except the admin dashboard) ----
+// Visitors ask a question; PixelGaunt answers from Admin -> Live chat. Signed-in people chat as themselves,
+// guests get a private random key in this browser. All storage is on the review service (never in the page).
+(function pgLiveChat() {
+    if (/admin\.html$/i.test(location.pathname)) return;
+    const KEY = 'pgChatKey', HAS = 'pgChatHas', GNAME = 'pgChatName', GMAIL = 'pgChatEmail';
+    const e3 = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const ls = { get: k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
+    const ep = () => window.PG_REVIEW_ENDPOINT;
+    const user = () => window.pgFB && window.pgFB.auth && window.pgFB.auth.currentUser;
+    function guestKey() { let k = ls.get(KEY); if (!/^[A-Za-z0-9_-]{24,64}$/.test(k)) { const a = new Uint8Array(24); crypto.getRandomValues(a); k = Array.from(a, b => b.toString(36).padStart(2, '0')).join('').slice(0, 40); ls.set(KEY, k); } return k; }
+    async function call(path, body) {
+        const u = user(), h = { 'Content-Type': 'application/json' };
+        if (u) h.Authorization = 'Bearer ' + await u.getIdToken(); else body.guestKey = guestKey();
+        const res = await fetch(ep() + path, { method: 'POST', headers: h, body: JSON.stringify(body) });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok || d.ok === false) throw new Error(d.error || 'Could not reach the chat right now. Try again.');
+        return d;
+    }
+    let btn, panel, list, open = false, pollT = null, msgs = [], sending = false;
+    const ago = t => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + (Date.now() - d > 864e5 ? ' · ' + d.toLocaleDateString() : ''); };
+    function draw() {
+        if (!list) return;
+        const hello = `<div class="pg-cmsg them"><p>Hi! 👋 Ask us anything about our games, publishing, the developer subscription, tournaments or payments. We answer here as soon as we can.</p><small>PixelGaunt team</small></div>`;
+        list.innerHTML = hello + msgs.map(m => `<div class="pg-cmsg ${m.from === 'admin' ? 'them' : 'me'}"><p>${e3(m.text)}</p><small>${m.from === 'admin' ? 'PixelGaunt' : 'You'} · ${ago(m.at)}</small></div>`).join('')
+            + (msgs.length && msgs[msgs.length - 1].from === 'user' ? '<p class="pg-chat-wait">Message received - we will reply here soon. You can close this window; a red dot shows when we answer.</p>' : '')
+            + (!msgs.length ? `<div class="pg-chat-chips">${['How do I publish my game?', 'How does the developer subscription work?', 'I have a payment question', 'How do tournaments work?'].map(q => `<button type="button" class="pg-chat-chip">${q}</button>`).join('')}</div>` : '');
+        list.querySelectorAll('.pg-chat-chip').forEach(c => c.onclick = () => { const ta = panel.querySelector('#pg-chat-text'); ta.value = c.textContent; ta.focus(); });
+        list.scrollTop = list.scrollHeight;
+        const guest = !user(), g = panel.querySelector('.pg-chat-guest');
+        if (g) g.hidden = !guest || !!(ls.get(GNAME) && msgs.length);
+    }
+    function badge(n) { const b = btn && btn.querySelector('.pg-chat-dot'); if (b) { b.textContent = n > 0 ? n : ''; b.hidden = !(n > 0); } }
+    async function load(peek) {
+        if (!ep()) return;
+        if (!user() && !ls.get(HAS)) { if (!peek) draw(); return; }   // a guest who never wrote has no conversation yet
+        try {
+            const d = await call('/chat/history', peek ? { peek: true } : {});
+            if (peek) { badge(d.unread || 0); return; }
+            msgs = d.messages || []; if (msgs.length) ls.set(HAS, '1'); badge(0); draw();
+        } catch (e) { if (!peek && list && !msgs.length) draw(); }
+    }
+    async function send(ev) {
+        ev.preventDefault(); if (sending) return;
+        const ta = panel.querySelector('#pg-chat-text'), st = panel.querySelector('.pg-chat-status'), text = ta.value.trim();
+        if (!text) return;
+        const body = { text, page: location.pathname.split('/').pop() || 'index.html' };
+        if (!user()) {
+            const n = panel.querySelector('#pg-chat-name').value.trim() || ls.get(GNAME), m = panel.querySelector('#pg-chat-email').value.trim() || ls.get(GMAIL);
+            if (n.length < 2) { st.textContent = 'Please write your name first (or log in).'; panel.querySelector('#pg-chat-name').focus(); return; }
+            body.name = n; body.email = m; ls.set(GNAME, n); if (m) ls.set(GMAIL, m);
+        }
+        sending = true; st.textContent = 'Sending...'; panel.querySelector('.pg-chat-send').disabled = true;
+        try { const d = await call('/chat/send', body); msgs = d.messages || msgs; ls.set(HAS, '1'); ta.value = ''; st.textContent = ''; draw(); }
+        catch (e) { st.textContent = e.message; }
+        finally { sending = false; panel.querySelector('.pg-chat-send').disabled = false; }
+    }
+    function toggle(force) {
+        open = force != null ? force : !open;
+        panel.hidden = !open; btn.setAttribute('aria-expanded', String(open)); btn.classList.toggle('on', open);
+        clearInterval(pollT);
+        if (open) { const g = panel.querySelector('.pg-chat-guest'); if (g) { panel.querySelector('#pg-chat-name').value = ls.get(GNAME); panel.querySelector('#pg-chat-email').value = ls.get(GMAIL); }
+            draw(); load(false); pollT = setInterval(() => { if (!document.hidden) load(false); }, 8000); setTimeout(() => panel.querySelector('#pg-chat-text').focus(), 50); }
+        else pollT = setInterval(() => { if (!document.hidden) load(true); }, 60000);
+    }
+    function boot() {
+        if (document.getElementById('pg-chat-btn')) return;
+        btn = document.createElement('button'); btn.type = 'button'; btn.id = 'pg-chat-btn'; btn.className = 'pg-chat-btn'; btn.setAttribute('aria-label', 'Live chat - ask us a question'); btn.title = 'Live chat - ask us a question'; btn.setAttribute('aria-expanded', 'false');
+        btn.innerHTML = '<i class="fas fa-comments" aria-hidden="true"></i><span class="pg-chat-lbl">Chat</span><span class="pg-chat-dot" hidden></span>';
+        panel = document.createElement('section'); panel.className = 'pg-chat'; panel.id = 'pg-chat'; panel.hidden = true; panel.setAttribute('aria-label', 'Live chat');
+        panel.innerHTML = `<header class="pg-chat-head"><span class="pg-chat-av"><i class="fas fa-headset" aria-hidden="true"></i></span><div><b>Live chat</b><small><span class="pg-live-dot" aria-hidden="true"></span> PixelGaunt team · we reply here</small></div><button type="button" class="pg-chat-x" aria-label="Close chat">&times;</button></header>
+            <div class="pg-chat-list" id="pg-chat-list" aria-live="polite"></div>
+            <form class="pg-chat-form"><div class="pg-chat-guest"><input id="pg-chat-name" maxlength="60" placeholder="Your name" autocomplete="name"><input id="pg-chat-email" type="email" maxlength="120" placeholder="Email (optional, for a reply by email)" autocomplete="email"><small>Or <a href="#" class="pg-chat-login">log in</a> to keep your chat on every device.</small></div>
+            <div class="pg-chat-row"><textarea id="pg-chat-text" rows="2" maxlength="1000" placeholder="Type your question..." aria-label="Your message"></textarea><button type="submit" class="pg-chat-send" aria-label="Send"><i class="fas fa-paper-plane" aria-hidden="true"></i></button></div><p class="pg-chat-status" role="status"></p></form>`;
+        document.body.appendChild(panel); document.body.appendChild(btn);
+        list = panel.querySelector('#pg-chat-list');
+        btn.onclick = () => toggle();
+        panel.querySelector('.pg-chat-x').onclick = () => toggle(false);
+        panel.querySelector('form').onsubmit = send;
+        panel.querySelector('#pg-chat-text').onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); panel.querySelector('form').requestSubmit(); } };
+        panel.querySelector('.pg-chat-login').onclick = e => { e.preventDefault(); toggle(false); if (window.openModal) window.openModal('login-modal'); };
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && open) toggle(false); });
+        window.addEventListener('pg-auth', () => { msgs = []; if (open) { draw(); load(false); } else load(true); });
+        window.pgOpenChat = () => toggle(true);
+        pollT = setInterval(() => { if (!document.hidden) load(true); }, 60000);
+        setTimeout(() => load(true), 4000);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+
 // ---- FLOATING LIVE NOTIFICATIONS (every page) ----
-// One small card every 6 s (each shown 5 s): live activity, our social channels, subscription offers / renewal reminders,
+// One small card every 12 s (each shown 10 s): live activity, our social channels, subscription offers / renewal reminders,
 // open tournaments (free or paid) and merch news. Pauses while a game is playing or the tab is hidden; can be turned off.
 (function pgFloatNotes() {
-    const OFF = 'pgNotesOff', EVERY = 6000, SHOW = 5000;   // each note is shown for 5 s, the next one follows 1 s later
+    const OFF = 'pgNotesOff', EVERY = 12000, SHOW = 10000;   // each note stays 10 s, the next one follows 2 s later
     const SOCIALS = [
         ['fa-youtube', 'YouTube', 'Subscribe to our YouTube channel', 'https://www.youtube.com/channel/UCmCPkHm7yRadCKcv_ugE4uQ', '#ff0000'],
         ['fa-facebook-f', 'Facebook', 'Follow our Facebook page', 'https://www.facebook.com/profile.php?id=61583034586770', '#1877f2'],
@@ -144,14 +299,35 @@ window.pgOpenDonate = function () {
             subscribed: ['⭐', `<b>${w}</b> just subscribed`], uploaded: ['🚀', `<b>${w}</b> uploaded a new game`], merch: ['👕', `<b>${w}</b> ordered a custom ${g || 'merch item'}`],
             donated: ['💖', `<b>${w}</b> donated - thank you!`], joined_paid: ['🏆', `<b>${w}</b> joined the paid tournament <b>${g}</b>`] }[e.type];
     }
+    // Promotions shared with the "Live on PixelGaunt" box on the home page (window.pgPromoNotes).
+    const DEV_PROMOS = [
+        { ico: '🚀', html: 'Game developer? <b>Publish your games on PixelGaunt</b> - 10 games a month for just $1.99', href: 'subscription.html' },
+        { ico: '💰', html: 'Developers keep <b>90% of the ad revenue</b> their games earn - start the developer plan', href: 'subscription.html' },
+        { ico: '⭐', html: 'New here? The <b>developer plan</b> is $1.99 / month or $10.99 / year - publish, update and earn', href: 'subscription.html' }
+    ];
+    let pi = 0;
+    function promos(forList) {
+        const u = window.pgFB && window.pgFB.auth && window.pgFB.auth.currentUser, free = !u || !window.pgUserPlan || window.pgUserPlan === 'free';
+        const out = [];
+        if (free) { out.push(DEV_PROMOS[pi % DEV_PROMOS.length]); out.push(DEV_PROMOS[(pi + 1) % DEV_PROMOS.length]); }
+        tours.slice(0, 2).forEach(t => out.push({ ico: '🏆', html: `Tournament <b>${e2(t.name)}</b> - ${Number(t.entryFee) > 0 ? 'PKR ' + e2(Number(t.entryFee).toLocaleString()) + ' entry' : 'FREE entry'}${t.prize ? ' · prize ' + e2(t.prize) : ''} - join now`, href: 'tournaments.html' }));
+        if (!tours.length) out.push({ ico: '🏆', html: '<b>Tournaments</b> - create a free one with friends or join a paid match', href: 'tournaments.html' });
+        out.push({ ico: '👕', html: '<b>Merch Studio coming soon</b> - custom T-shirts &amp; 3D prints, also made with AI', href: 'merch.html' });
+        out.push({ ico: '💬', html: 'Questions? <b>Live chat</b> with the PixelGaunt team - we answer here', chat: true });
+        if (forList) { const sc = SOCIALS[si++ % SOCIALS.length]; out.push({ social: sc }); }
+        pi++;
+        return out;
+    }
+    window.pgPromoNotes = () => promos(true);
+    window.pgSocialNote = sc => `<a href="${sc[3]}" target="_blank" rel="noopener"><i class="fa-brands ${sc[0]}" style="color:${sc[4]}" aria-hidden="true"></i> <b>${e2(sc[1])}</b> - ${e2(sc[2])}</a>`;
     function build() {
         const q = [], u = window.pgFB && window.pgFB.auth && window.pgFB.auth.currentUser;
         const end = window.pgPlanExpires ? Date.parse(window.pgPlanExpires) : 0, days = end ? Math.ceil((end - Date.now()) / 864e5) : -1;
         if (u && window.pgUserPlan && window.pgUserPlan !== 'free' && days >= 0 && days <= 3) q.push({ ico: '⏳', html: `Your subscription ends ${days === 0 ? 'today' : 'in ' + days + ' day' + (days === 1 ? '' : 's')} - <b>renew now</b>`, href: 'subscription.html', urgent: true });
-        feed.slice(0, 6).forEach(ev => { const l = feedLine(ev); if (l) q.push({ ico: l[0], html: l[1], href: 'index.html#live-activity' }); });
-        tours.slice(0, 3).forEach(t => q.push({ ico: '🏆', html: `Tournament <b>${e2(t.name)}</b> - ${Number(t.entryFee) > 0 ? 'PKR ' + e2(Number(t.entryFee).toLocaleString()) + ' entry' : 'FREE'}${t.prize ? ' · ' + e2(t.prize) : ''} - join or watch`, href: 'tournaments.html' }));
-        if (!u || !window.pgUserPlan || window.pgUserPlan === 'free') q.push({ ico: '⭐', html: 'Publish your games: <b>10 games a month</b> for $1.99 - subscribe', href: 'subscription.html' });
-        q.push({ ico: '👕', html: '<b>Merch Studio coming soon</b> - custom T-shirts &amp; 3D prints, also made with AI', href: 'merch.html' });
+        const pr = promos(false);
+        if (!u || !window.pgUserPlan || window.pgUserPlan === 'free') q.push(pr.shift());   // new / free users see the developer plan first
+        feed.slice(0, 6).forEach((ev, k) => { const l = feedLine(ev); if (l) q.push({ ico: l[0], html: l[1], href: 'index.html#live-activity' }); if (k % 2 === 1 && pr.length) q.push(pr.shift()); });
+        pr.forEach(n => q.push(n));
         // mix: one social channel after every two other notes
         const out = []; q.forEach((n, k) => { out.push(n); if (k % 2 === 1) { const sc = SOCIALS[si++ % SOCIALS.length]; out.push({ social: sc }); } });
         if (out.length < 3) SOCIALS.forEach(sc => out.push({ social: sc }));
@@ -161,10 +337,11 @@ window.pgOpenDonate = function () {
         if (!el) { el = document.createElement('div'); el.className = 'pg-float'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); document.body.appendChild(el);
             el.addEventListener('mouseenter', () => { hovering = true; }); el.addEventListener('mouseleave', () => { hovering = false; }); }
         const body = n.social ? `<a class="pg-float-main" href="${n.social[3]}" target="_blank" rel="noopener"><span class="pg-float-ico pg-float-brand" style="background:${n.social[4]}"><i class="fa-brands ${n.social[0]}" aria-hidden="true"></i></span><span><b>${n.social[1]}</b><br>${n.social[2]}</span></a>`
-            : `<a class="pg-float-main" href="${n.href}"><span class="pg-float-ico">${n.ico}</span><span>${n.html}</span></a>`;
+            : `<a class="pg-float-main" href="${n.chat ? '#' : n.href}"${n.chat ? ' data-chat="1"' : ''}><span class="pg-float-ico">${n.ico}</span><span>${n.html}</span></a>`;
         el.className = 'pg-float' + (n.urgent ? ' urgent' : '');
         el.innerHTML = body + `<button type="button" class="pg-float-x" aria-label="Close">&times;</button><button type="button" class="pg-float-off">Turn off</button>`;
         el.querySelector('.pg-float-x').onclick = () => el.classList.remove('show');
+        const ch = el.querySelector('[data-chat]'); if (ch) ch.onclick = ev => { ev.preventDefault(); el.classList.remove('show'); if (window.pgOpenChat) window.pgOpenChat(); };
         el.querySelector('.pg-float-off').onclick = () => { try { localStorage.setItem(OFF, '1'); } catch (e) {} el.classList.remove('show'); stop(); bell(); };
         requestAnimationFrame(() => el.classList.add('show'));
         clearTimeout(hideT); const hide = () => { if (hovering) { hideT = setTimeout(hide, 1500); return; } el.classList.remove('show'); }; hideT = setTimeout(hide, SHOW);
@@ -565,7 +742,7 @@ window.pgBlockAdsForOwner = function () {
         // transparent exit-fullscreen overlay instead while fullscreen is active).
         function updateFullscreenControlsForDevice(category) {
             const desktopControls = document.getElementById('game-fullscreen-controls');
-            if (desktopControls) desktopControls.style.display = (category === 'mobile') ? 'none' : 'flex';
+            if (desktopControls) { desktopControls.style.display = 'flex'; desktopControls.classList.toggle('is-mobile', category === 'mobile'); }   // phones get Fullscreen + Share too
         }
 
         // Keeps the Fullscreen button label/icon and the mobile exit-fullscreen overlay in sync
@@ -777,6 +954,16 @@ window.pgBlockAdsForOwner = function () {
             }
         }
 
+        // Share the game that is playing right now (window mode): native share sheet on phones, copy the link elsewhere.
+        window.pgShareGame = async function() {
+            const game = activeGameId != null ? findGame(activeGameId) : null;
+            const url = location.origin + location.pathname.replace(/[^/]*$/, '') + 'games.html' + (game ? '?play=' + playParam(game) : '');
+            const name = game ? game.title : 'PixelGaunt', msg = document.getElementById('game-share-msg');
+            const say = t => { if (msg) { msg.textContent = t; clearTimeout(msg._t); msg._t = setTimeout(() => { msg.textContent = ''; }, 5000); } };
+            try { if (navigator.share && window.isSecureContext) { await navigator.share({ title: name + ' on PixelGaunt', text: 'Play ' + name + ' free on PixelGaunt', url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+            try { await navigator.clipboard.writeText(url); say('Link copied - paste it anywhere to share.'); } catch (e) { prompt('Copy this link to share the game:', url); }
+        };
+
         window.inviteFriends = function() {
             const shareData = { title: 'Pixel Gaunt', text: 'Check out this awesome game on Pixel Gaunt!', url: window.location.href };
             if (navigator.share && window.isSecureContext) {
@@ -901,15 +1088,22 @@ window.pgBlockAdsForOwner = function () {
                 return { new_user: `👋 <b>${w}</b> just joined PixelGaunt - welcome!`, online: `🟢 <b>${w}</b> is online`, playing: `🎮 <b>${w}</b> is playing <b>${g}</b>`,
                     left: `🚪 <b>${w}</b> left - see you soon`, subscribed: `⭐ <b>${w}</b> just subscribed`, uploaded: `🚀 <b>${w}</b> uploaded a new game for review`,
                     merch: `👕 <b>${w}</b> ordered a custom ${g || 'merch item'}`, donated: `💖 <b>${w}</b> donated to PixelGaunt - thank you!`, joined_paid: `🏆 <b>${w}</b> joined the paid tournament <b>${g}</b>` }[e.type] || ''; };
+            const promoLi = n => n.social ? `<li class="pg-live-promo"><span>${window.pgSocialNote(n.social)}</span><small>follow</small></li>`
+                : `<li class="pg-live-promo"><span><a href="${n.chat ? '#' : n.href}"${n.chat ? ' data-chat="1"' : ''}>${n.ico} ${n.html}</a></span><small>${n.chat ? 'chat' : 'promo'}</small></li>`;
             async function load() {
                 try {
                     const d = await (await fetch(window.PG_REVIEW_ENDPOINT + '/activity')).json();
-                    const items = (d.items || []).filter(line);
-                    list.innerHTML = items.length ? items.map(e => `<li><span>${line(e)}</span><small>${ago(e.at)}</small></li>`).join('') : '<li class="pg-muted">Quiet right now - be the first to play!</li>';
+                    const items = (d.items || []).filter(line).slice(0, 14);
+                    const pr = window.pgPromoNotes ? window.pgPromoNotes() : [], rows = [];
+                    items.forEach((e, k) => { rows.push(`<li><span>${line(e)}</span><small>${ago(e.at)}</small></li>`); if (k % 2 === 1 && pr.length) rows.push(promoLi(pr.shift())); });
+                    pr.slice(0, items.length ? 2 : 4).forEach(n => rows.push(promoLi(n)));
+                    if (!items.length) rows.unshift('<li class="pg-muted">Quiet right now - be the first to play!</li>');
+                    list.innerHTML = rows.join('');
+                    list.querySelectorAll('[data-chat]').forEach(a => a.onclick = ev => { ev.preventDefault(); if (window.pgOpenChat) window.pgOpenChat(); });
                     document.getElementById('live-playing').textContent = d.playingNow ? '🎮 ' + d.playingNow + ' playing right now' : '';
-                } catch (e) { list.innerHTML = '<li class="pg-muted">Live activity is not available right now.</li>'; }
+                } catch (e) { list.innerHTML = '<li class="pg-muted">Live activity is not available right now.</li>' + (window.pgPromoNotes ? window.pgPromoNotes().slice(0, 4).map(promoLi).join('') : ''); list.querySelectorAll('[data-chat]').forEach(a => a.onclick = ev => { ev.preventDefault(); if (window.pgOpenChat) window.pgOpenChat(); }); }
             }
-            load(); setInterval(() => { if (!document.hidden) load(); }, 30000);
+            load(); setInterval(() => { if (!document.hidden) load(); }, 45000);
         })();
 
         // ---- Presence heartbeat for the live feed: "still here" every 3 minutes while a page is open and visible.
@@ -1215,7 +1409,7 @@ window.pgBlockAdsForOwner = function () {
             if (!window._pgPlatformPromise) {
                 window._pgPlatformPromise = new Promise((resolve, reject) => {
                     const tag = document.createElement('script');
-                    tag.src = 'platform.js?v=20261010';   // version tag: browsers always load the newest file after an update
+                    tag.src = 'platform.js?v=20261011';   // version tag: browsers always load the newest file after an update
                     tag.async = true;
                     tag.onload = () => resolve(window.PG);
                     tag.onerror = () => { window._pgPlatformPromise = null; reject(new Error('platform.js failed to load')); };

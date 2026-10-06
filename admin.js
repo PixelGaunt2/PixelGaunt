@@ -18,7 +18,7 @@
     function note(msg, bad) { const n = document.getElementById('ad-note'); if (!n) return; n.textContent = msg; n.className = 'ad-note ' + (bad ? 'bad' : 'ok'); clearTimeout(note.t); note.t = setTimeout(() => { n.textContent = ''; }, 6000); }
     const act = async (fn, okMsg, reload) => { try { await fn(); note(okMsg); if (reload) reload(); } catch (e) { note(e.message, true); } };
 
-    const TABS = [['overview', 'Overview'], ['games', 'Game reviews'], ['payments', 'Payments'], ['donations', 'Donations'], ['fees', 'Entry fees'], ['merch', 'Merch orders'], ['tournaments', 'Tournaments & paid matches'], ['bugs', 'Bug reports'], ['users', 'Users'], ['community', 'Community games'], ['earnings', 'Earnings'], ['diag', 'Login problems']];
+    const TABS = [['overview', 'Overview'], ['chat', 'Live chat'], ['games', 'Game reviews'], ['payments', 'Payments'], ['donations', 'Donations'], ['fees', 'Entry fees'], ['merch', 'Merch orders'], ['tournaments', 'Tournaments & paid matches'], ['bugs', 'Bug reports'], ['users', 'Users'], ['community', 'Community games'], ['earnings', 'Earnings'], ['diag', 'Login problems']];
     let current = 'overview';
 
     function shell() {
@@ -43,7 +43,7 @@
         try {
             const o = await api('overview');
             const set = (k, n) => { const el = document.getElementById('ad-b-' + k); if (el) el.textContent = n ? n : ''; };
-            set('games', o.games); set('payments', o.payments); set('donations', o.donations); set('merch', o.merch); set('bugs', o.bugs); set('diag', o.loginProblems);
+            set('chat', o.chats); set('games', o.games); set('payments', o.payments); set('donations', o.donations); set('merch', o.merch); set('bugs', o.bugs); set('diag', o.loginProblems);
             return o;
         } catch (e) { return null; }
     }
@@ -52,9 +52,37 @@
         async overview(b) {
             const o = await badges() || {};
             const card = (k, n, label, hint) => `<button class="ad-card" data-go="${k}"><b>${n || 0}</b><span>${label}</span><small>${hint}</small></button>`;
-            b.innerHTML = `<div class="ad-cards">${card('games', o.games, 'Games waiting for review', (o.updates || 0) + ' of them are updates')}${card('payments', o.payments, 'Payments to check', 'Confirm = subscription starts')}${card('donations', o.donations, 'Donations to check', 'Confirm = shown in Live feed')}${card('merch', o.merch, 'New merch orders', 'T-shirts and 3D prints')}${card('bugs', o.bugs, 'Open bug reports', 'From players')}${card('diag', o.loginProblems, 'Login problems (7 days)', 'Unexpected sign-outs')}</div>
+            b.innerHTML = `<div class="ad-cards">${card('chat', o.chats, 'Chats waiting for an answer', 'Questions from visitors')}${card('games', o.games, 'Games waiting for review', (o.updates || 0) + ' of them are updates')}${card('payments', o.payments, 'Payments to check', 'Confirm = subscription starts')}${card('donations', o.donations, 'Donations to check', 'Confirm = shown in Live feed')}${card('merch', o.merch, 'New merch orders', 'T-shirts and 3D prints')}${card('bugs', o.bugs, 'Open bug reports', 'From players')}${card('diag', o.loginProblems, 'Login problems (7 days)', 'Unexpected sign-outs')}</div>
                 <p class="pg-muted" style="margin-top:14px;">Everything you do here takes effect immediately. Users only ever see their own data.</p>`;
             b.querySelectorAll('[data-go]').forEach(x => x.onclick = () => root.querySelector(`.ad-tab[data-tab="${x.dataset.go}"]`).click());
+        },
+        async chat(b) {
+            const d = await api('chats'); let open = filters.chatOpen || '';
+            const ago = t => { const s = Math.max(1, Math.round((Date.now() - Date.parse(t)) / 1000)); return s < 60 ? 'just now' : s < 3600 ? Math.round(s / 60) + ' min ago' : s < 86400 ? Math.round(s / 3600) + ' h ago' : new Date(t).toLocaleDateString(); };
+            b.innerHTML = `<p class="pg-muted">Visitors ask from the chat bubble on every page. Your answer appears in their chat window (and as a red badge on the bubble). New questions are also emailed to you.</p>
+                <div class="ad-chat"><div class="ad-chat-list">${d.items.length ? d.items.map(t => `<button class="ad-chat-t${t.id === open ? ' on' : ''}" data-t="${esc(t.id)}"><b>${esc(t.name || 'Guest')}${t.guest ? ' <small>(guest)</small>' : ''}</b>${Number(t.unreadAdmin) > 0 ? `<span class="ad-chat-n">${Number(t.unreadAdmin)}</span>` : (t.status === 'answered' ? '<span class="ad-chat-ok">answered</span>' : '')}<small>${t.lastFrom === 'admin' ? 'You: ' : ''}${esc(t.lastText || '')}</small><small class="pg-muted">${esc(t.email || '')} · ${ago(t.updatedAt)}</small></button>`).join('') : '<p class="pg-muted">No conversations yet.</p>'}</div>
+                <div class="ad-chat-view" id="ad-chat-view"><p class="pg-muted">Choose a conversation.</p></div></div>`;
+            async function show(id) {
+                filters.chatOpen = open = id;
+                b.querySelectorAll('.ad-chat-t').forEach(x => x.classList.toggle('on', x.dataset.t === id));
+                const v = document.getElementById('ad-chat-view'); if (!v) return;
+                try {
+                    const c = await api('chat?id=' + encodeURIComponent(id)); const t = c.thread;
+                    const n = b.querySelector(`.ad-chat-t[data-t="${CSS.escape(id)}"] .ad-chat-n`); if (n) n.remove();
+                    v.innerHTML = `<div class="ad-chat-head"><b>${esc(t.name || 'Guest')}</b> <small>${t.email ? `<a href="mailto:${esc(t.email)}">${esc(t.email)}</a>` : 'no email'}${t.uid ? ' · user ' + esc(t.uid) : ' · guest'}${t.page ? ' · from ' + esc(t.page) : ''}</small><button class="pg-btn sm danger" id="ad-chat-del">Delete</button></div>
+                        <div class="ad-chat-msgs" id="ad-chat-msgs">${c.messages.map(m => `<div class="ad-msg ${m.from === 'admin' ? 'me' : ''}"><p>${esc(m.text)}</p><small>${m.from === 'admin' ? 'PixelGaunt' : esc(t.name || 'Guest')} · ${day(m.at)}</small></div>`).join('')}</div>
+                        <form class="ad-chat-form" id="ad-chat-form"><textarea id="ad-chat-text" rows="3" maxlength="2000" placeholder="Write your answer..." required></textarea><button class="pg-btn primary" type="submit"><i class="fas fa-paper-plane"></i> Send answer</button></form>`;
+                    const box = document.getElementById('ad-chat-msgs'); box.scrollTop = box.scrollHeight;
+                    document.getElementById('ad-chat-form').onsubmit = async e => { e.preventDefault(); const ta = document.getElementById('ad-chat-text'); const txt = ta.value.trim(); if (!txt) return;
+                        const btn = e.target.querySelector('button'); btn.disabled = true;
+                        try { await api('chat-reply', { id, text: txt }); ta.value = ''; note('Answer sent - the visitor sees it in their chat window.'); render(); } catch (er) { note(er.message, true); btn.disabled = false; } };
+                    document.getElementById('ad-chat-text').onkeydown = e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) document.getElementById('ad-chat-form').requestSubmit(); };
+                    document.getElementById('ad-chat-del').onclick = () => { if (confirm('Delete this whole conversation?')) { filters.chatOpen = ''; act(() => api('chat-delete', { id }), 'Conversation deleted.', render); } };
+                    badges();
+                } catch (e) { v.innerHTML = `<p class="ad-note bad">${esc(e.message)}</p>`; }
+            }
+            b.querySelectorAll('.ad-chat-t').forEach(x => x.onclick = () => show(x.dataset.t));
+            if (open && d.items.some(t => t.id === open)) show(open);
         },
         async games(b) {
             const st = filters.games || 'pending_review';
@@ -231,6 +259,9 @@
             return;
         }
         shell(); render(); badges();
+        setInterval(() => { if (document.hidden) return; badges();
+            const ta = document.getElementById('ad-chat-text');
+            if (current === 'chat' && !(ta && ta.value.trim())) VIEWS.chat(body()).catch(() => {}); }, 20000);
     }
     window.addEventListener('pg-auth', e => start(e.detail && e.detail.user));
     if (user()) start(user());

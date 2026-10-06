@@ -20,8 +20,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20261010">
-    <script src="pg-config.js?v=20261010"></script>
+    <link rel="stylesheet" href="style.css?v=20261011">
+    <script src="pg-config.js?v=20261011"></script>
 	<!-- Open Graph / Social Media Meta Tags -->
 <meta property="og:title" content="Publish Your Game - Pixel Gaunt Studios">
 <meta property="og:description" content="Upload your browser game to Pixel Gaunt Studios. See supported formats, upload limits, and the publishing workflow.">
@@ -108,6 +108,21 @@
             .ad-game { width: 100%; height: 70vh; border: 0; border-radius: 10px; background: #000; }
             .ad-gate { max-width: 640px; margin: 20px auto; text-align: center; color: #cbd5e1; border: 1px solid rgba(148,163,184,0.25); border-radius: 16px; padding: 24px; }
             .ad-gate h3 { color: #fff; } .ad-uid { display: inline-block; margin: 10px 0; padding: 8px 12px; background: #0b1020; border-radius: 8px; color: #fbbf24; user-select: all; word-break: break-all; }
+            .ad-chat { display: grid; grid-template-columns: minmax(220px, 320px) 1fr; gap: 14px; margin-top: 12px; }
+            .ad-chat-list { display: flex; flex-direction: column; gap: 8px; max-height: 620px; overflow-y: auto; }
+            .ad-chat-t { text-align: left; display: flex; flex-direction: column; gap: 3px; position: relative; background: rgba(255,255,255,0.03); border: 1px solid rgba(148,163,184,0.22); color: #e2e8f0; border-radius: 10px; padding: 10px 12px; cursor: pointer; font: inherit; }
+            .ad-chat-t.on { border-color: var(--pg-a, #e879f9); background: rgba(232,121,249,0.08); }
+            .ad-chat-t small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #94a3b8; }
+            .ad-chat-n { position: absolute; right: 10px; top: 10px; background: #ef4444; color: #fff; border-radius: 999px; font-size: 12px; padding: 1px 7px; font-weight: 700; }
+            .ad-chat-ok { position: absolute; right: 10px; top: 10px; color: #4ade80; font-size: 11px; }
+            .ad-chat-view { border: 1px solid rgba(148,163,184,0.22); border-radius: 14px; padding: 14px; min-height: 320px; display: flex; flex-direction: column; gap: 10px; }
+            .ad-chat-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; color: #e2e8f0; } .ad-chat-head small { color: #94a3b8; flex: 1; }
+            .ad-chat-msgs { flex: 1; overflow-y: auto; max-height: 440px; display: flex; flex-direction: column; gap: 8px; }
+            .ad-msg { max-width: 78%; background: rgba(255,255,255,0.06); border-radius: 12px 12px 12px 2px; padding: 8px 12px; color: #e2e8f0; align-self: flex-start; }
+            .ad-msg.me { align-self: flex-end; background: rgba(192,38,211,0.25); border-radius: 12px 12px 2px 12px; }
+            .ad-msg p { margin: 0 0 4px; white-space: pre-wrap; word-break: break-word; } .ad-msg small { color: #94a3b8; font-size: 11px; }
+            .ad-chat-form { display: flex; gap: 8px; align-items: flex-end; } .ad-chat-form textarea { flex: 1; background: #0b0a12; color: #fff; border: 1px solid rgba(148,163,184,0.3); border-radius: 10px; padding: 10px; font: inherit; resize: vertical; }
+            @media (max-width: 760px) { .ad-chat { grid-template-columns: 1fr; } }
         </style>
     </main>
 
@@ -207,9 +222,9 @@
 
     <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
 
-    <script src="script.js?v=20261010" defer></script>
-    <script src="admin.js?v=20261010" defer></script>
+    <script src="script.js?v=20261011" defer></script>
+    <script src="admin.js?v=20261011" defer></script>
 
-    <script type="module" src="firebase-auth.js?v=20261010"></script>
+    <script type="module" src="firebase-auth.js?v=20261011"></script>
 </body>
 </html>
