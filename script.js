@@ -131,7 +131,7 @@ window.pgOpenDonate = function () {
         { words: ['SHADOW', 'OF', 'EMBERFALL'], genre: 'Dark fantasy action RPG', img: 'project-shadow-of-emberfall.webp', desc: 'A cursed knight, a dying fire and a kingdom of ash. Forge relics from embers and break the endless night.' },
         { words: ['SKY', 'FORGE', 'RUSH'], genre: 'Airship racing & building', img: 'project-sky-forge-rush.webp', desc: 'Build your own airship from scrap, then race it through floating islands, storms and sky pirates.' }
     ];
-    const first = { words: ['GIRL', 'THE', 'DRILLER'], genre: 'Physics action platformer', desc: text.querySelector('.cy-desc') ? text.querySelector('.cy-desc').textContent : '', img: 'Girl%20The%20Driller.png', real: true };
+    const first = { words: ['GIRL', 'THE', 'DRILLER'], genre: 'Physics action platformer', desc: text.querySelector('.cy-desc') ? text.querySelector('.cy-desc').textContent : '', img: 'Girl%20The%20Driller.webp', real: true };
     const slides = [first].concat(SOON);
     const originalText = text.innerHTML;
     let cur = 0, timer = null, paused = false, deckOpen = false, hideT = null;
@@ -1427,7 +1427,7 @@ window.pgBlockAdsForOwner = function () {
             if (!window._pgPlatformPromise) {
                 window._pgPlatformPromise = new Promise((resolve, reject) => {
                     const tag = document.createElement('script');
-                    tag.src = 'platform.js?v=20261015';   // version tag: browsers always load the newest file after an update
+                    tag.src = 'platform.js?v=20261016';   // version tag: browsers always load the newest file after an update
                     tag.async = true;
                     tag.onload = () => resolve(window.PG);
                     tag.onerror = () => { window._pgPlatformPromise = null; reject(new Error('platform.js failed to load')); };
