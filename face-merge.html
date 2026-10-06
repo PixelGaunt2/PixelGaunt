@@ -2,12 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Face Merge</title>
 <style>
-  body { margin:0; font-family:sans-serif; background:#1a0033; color:#fff; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; }
-  .screen { position:absolute; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg, #2c003e, #005c97); transition:opacity 0.3s; z-index:10; }
-  .hidden { opacity:0; pointer-events:none; z-index:-1; }
+  :root { --gw: min(98vw, 420px, calc(100vh - 160px)); }
+  @supports (height:100dvh) { :root { --gw: min(98vw, 420px, calc(100dvh - 160px)); } }
+  @media (max-width:600px) {
+    :root { --gw: min(98vw, calc(100vh - 160px)); }
+    @supports (height:100dvh) { :root { --gw: min(98vw, calc(100dvh - 160px)); } }
+  }
+  html { height:100%; background:#1a0033; overflow:hidden; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:sans-serif; background:#1a0033; color:#fff; display:flex; justify-content:center; align-items:center; height:100vh; height:100dvh; width:100%; position:fixed; top:0; left:0; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; }
+  .screen { position:fixed; top:0; left:0; width:100%; height:100vh; height:100dvh; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg, #2c003e, #005c97); transition:opacity 0.3s, visibility 0s; z-index:10; }
+  /* PERF FIX: hidden screens no longer render / animate in background */
+  .hidden { opacity:0; pointer-events:none; z-index:-1; visibility:hidden; transition:opacity 0.3s, visibility 0s 0.3s; }
+  .screen.hidden, .screen.hidden * { animation-play-state:paused !important; }
+  /* Game screen: spread content over the full height (no empty top/bottom) */
+  #game-screen { justify-content:space-evenly; padding:env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
   
   .animated-title { font-size: 60px; font-weight: bold; text-align: center; margin-bottom: 40px; text-transform: uppercase; background: linear-gradient(90deg, #ff4757, #ffa502, #2ed573, #1e90ff, #9b59b6, #ff4757); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 3s linear infinite, bounceTitle 2s ease-in-out infinite; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8)); line-height: 1.1;}
   @keyframes shine { to { background-position: 200% center; } }
@@ -23,17 +34,17 @@
   .lvl-locked { background:#7f8c8d; color:#bdc3c7; cursor:not-allowed; }
 
   /* GAME UI */
-  .top-bar { display:flex; width:95vw; max-width:420px; justify-content:space-between; align-items:center; margin-bottom:5px; box-sizing:border-box;}
+  .top-bar { display:flex; width:var(--gw); justify-content:space-between; align-items:center; margin-bottom:5px; box-sizing:border-box;}
   .back-btn { background:rgba(0,0,0,0.5); border:none; color:#fff; padding:8px 15px; border-radius:10px; cursor:pointer; font-weight:bold; box-shadow:0 3px 0 rgba(0,0,0,0.8); }
   .back-btn:active { transform:translateY(3px); box-shadow:0 0 0 rgba(0,0,0,0.8); }
   .coin-counter { background:#f39c12; padding:5px 15px; border-radius:15px; font-weight:bold; font-size:18px; box-shadow:0 3px 0 #d35400; text-shadow:0 1px 2px rgba(0,0,0,0.5); border:2px solid #fff;}
 
-  .header { display:flex; justify-content:space-between; width:95vw; max-width:420px; margin-bottom:10px; background:rgba(255,255,255,0.1); padding:10px; border-radius:10px; box-sizing:border-box;}
+  .header { display:flex; justify-content:space-between; width:var(--gw); margin-bottom:10px; background:rgba(255,255,255,0.1); padding:10px; border-radius:10px; box-sizing:border-box;}
   .stat { text-align:center; flex:1; font-size:12px; text-transform:uppercase; color:#ccc; } 
   .stat span { display:block; font-size:20px; font-weight:bold; color:#fff; margin-top:2px; text-shadow: 0 0 5px #fff; }
   
   /* POWER-UPS WITH INVENTORY SYSTEM */
-  .powers { display:flex; gap:6px; margin-bottom:10px; width:95vw; max-width:420px; justify-content:space-between; box-sizing:border-box;}
+  .powers { display:flex; gap:6px; margin-bottom:10px; width:var(--gw); justify-content:space-between; box-sizing:border-box;}
   .power-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
   .power-btn { width: 100%; background: #9b59b6; color: #fff; border: 2px solid #8e44ad; padding: 6px 0; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 0 #732d91; font-size: 16px; position:relative;}
   .power-btn span { font-size: 12px; background: #2ed573; padding: 1px 6px; border-radius: 10px; position:absolute; top:-8px; right:-5px; box-shadow: 0 2px 0 #27ae60; border: 1px solid #fff; }
@@ -46,7 +57,7 @@
   #ui-target { text-align:center; margin-bottom:10px; background:#2ed573; padding:5px 15px; border-radius:20px; font-weight:bold; font-size:16px; box-shadow:0 3px 0 #27ae60; display:inline-block; border: 2px solid #fff;}
 
   /* GAME LAYOUT */
-  .game-layout { display:flex; gap:10px; width:95vw; max-width:420px; justify-content:center; align-items:stretch; }
+  .game-layout { display:flex; gap:10px; width:var(--gw); justify-content:center; align-items:stretch; }
   
   /* DOG ROOM WITH WATER EFFECTS */
   .dog-container { position: relative; width:75px; flex-shrink:0; display:flex; flex-direction:column; }
@@ -77,7 +88,7 @@
   .cell:active { cursor:grabbing; }
   
   /* BUG FIX: Dragging delay aur lag ko yahan khtm kiya gaya hai */
-  .active-drag { filter:brightness(1.3); z-index:100 !important; transition: none !important; }
+  .active-drag { filter:brightness(1.3); z-index:100 !important; transition: none !important; will-change:transform; }
   .cell * { pointer-events: none !important; } /* Stops dragging bugs */
 
   /* COLORS & CSS FACES */
@@ -473,7 +484,7 @@
       if(isAnim || moves<=0 || isPaused) return;
       if(this.color === 'bird' && !activePower) return; // Cannot drag cages normally!
       
-      if(e.type !== 'touchstart') e.preventDefault(); // Stop native browser drag
+      if(e.cancelable) e.preventDefault(); // Stop native browser drag + emulated mouse events
 
       dragId = parseInt(this.dataset.id);
 
@@ -492,27 +503,37 @@
   document.addEventListener('touchmove', handleInputMove, {passive: false});
   document.addEventListener('mousemove', handleInputMove);
   document.addEventListener('touchend', handleInputEnd);
+  document.addEventListener('touchcancel', handleInputEnd);
   document.addEventListener('mouseup', handleInputEnd);
+
+  let moveRaf = 0, pendX = 0, pendY = 0;
 
   function handleInputMove(e) {
       if(!isDragging || dragId === null) return;
       e.preventDefault(); // Stops mobile page scrolling completely
 
-      let currentX, currentY;
       if(e.type === 'touchmove') {
-          currentX = e.touches[0].clientX; currentY = e.touches[0].clientY;
+          if(!e.touches.length) return;
+          pendX = e.touches[0].clientX; pendY = e.touches[0].clientY;
       } else {
-          currentX = e.clientX; currentY = e.clientY;
+          pendX = e.clientX; pendY = e.clientY;
       }
+      // PERF FIX: apply at most once per animation frame (not on every raw event)
+      if(!moveRaf) moveRaf = requestAnimationFrame(applyDragMove);
+  }
 
-      let dx = currentX - startX;
-      let dy = currentY - startY;
+  function applyDragMove() {
+      moveRaf = 0;
+      if(!isDragging || dragId === null) return;
+
+      let dx = pendX - startX;
+      let dy = pendY - startY;
       let cell = grid[dragId];
 
-      // LIVE VISUAL DRAG - Face ab aapke mouse/touch k sath move karega
-      cell.style.transform = `translate(${dx}px, ${dy}px) scale(0.95)`;
+      // LIVE VISUAL DRAG
+      cell.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(0.95)`;
 
-      // CANDY CRUSH STYLE INSTANT SWAP (Agar 25px tak kheench liya to automatically swap ho jayega)
+      // CANDY CRUSH STYLE INSTANT SWAP
       if(Math.abs(dx) > 25 || Math.abs(dy) > 25) {
           let tId = dragId;
 
@@ -539,6 +560,7 @@
   }
 
   function handleInputEnd(e) {
+      if(moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
       if(!isDragging || dragId === null) return;
       let cell = grid[dragId];
       if(cell) {

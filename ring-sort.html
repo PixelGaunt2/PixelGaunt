@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Ring Sort - PixelGaunt (2D & 3D)</title>
     <style>
         /* --- DYNAMIC ANIMATED BACKGROUND --- */
+        html, body { width: 100%; height: 100%; }
         body {
             margin: 0; overflow: hidden;
             background: linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #1a1a2e);
@@ -22,18 +23,18 @@
         }
 
         /* --- 3D CANVAS --- */
-        #game-canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: none; z-index: 1; cursor: grab; }
+        #game-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 1; cursor: grab; }
         #game-canvas:active { cursor: grabbing; }
 
         /* --- 2D GAME BOARD --- */
         #game-board {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             display: none; justify-content: center; align-items: center; gap: 20px;
             flex-wrap: wrap; padding: 80px 20px 20px 20px; box-sizing: border-box;
             z-index: 1; pointer-events: auto; align-content: center;
         }
         .peg-container {
-            position: relative; width: 60px; height: 160px;
+            position: relative; width: 60px; height: 160px; zoom: var(--peg-zoom, 1);
             display: flex; justify-content: center; align-items: flex-end;
             cursor: pointer; background: rgba(255, 255, 255, 0.05); border-radius: 10px;
         }
@@ -57,7 +58,16 @@
         }
         
         /* --- UI LAYERS --- */
-        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; }
+        .ui-layer {
+            position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 10;
+            display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 15px;
+            box-sizing: border-box; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+        }
+        /* safe vertical centering: centers when it fits, scrolls (never crops) when it doesn't */
+        .ui-layer.screen > :first-child { margin-top: auto; }
+        .ui-layer.screen > :last-child { margin-bottom: auto; }
+        #screen-game { overflow: hidden; padding: 0; }
         .hidden { display: none !important; }
         
         .btn {
@@ -73,7 +83,6 @@
         .hud-top .btn:active { transform: translateY(4px); box-shadow: 0 0px 0px #333; }
 
         .screen {
-            position: absolute; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px);
         }
         .title { font-size: 50px; color: #fff; text-shadow: 3px 3px 0 #333, -1px -1px 0 #333, 1px -1px 0 #333, -1px 1px 0 #333, 1px 1px 0 #333; margin-bottom: 10px; text-align: center; line-height: 1.1; }
@@ -81,14 +90,20 @@
         .modal {
             background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 20px; border: 4px solid #333;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 80%; max-width: 400px; text-align: center;
+            box-sizing: border-box; max-height: 100%; overflow-y: auto; flex-shrink: 1;
         }
+        #screen-readme .modal { display: flex; flex-direction: column; overflow: hidden; }
+        .modal-body { overflow-y: auto; min-height: 0; flex: 1 1 auto; -webkit-overflow-scrolling: touch; }
+        .modal-actions { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px; }
+        .modal-actions .btn { margin: 0 !important; }
+        .btn-wa { background: #25D366; color: #fff; text-decoration: none; box-sizing: border-box; width: auto; max-width: 100%; font-size: 15px; padding: 10px 18px; }
         .modal h2 { color: #333; margin-top: 0; font-size: 28px; }
         .modal p { color: #444; font-size: 16px; line-height: 1.6; }
 
         .levels-container {
             display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
             background: rgba(255, 255, 255, 0.85); padding: 20px; border-radius: 15px;
-            border: 4px solid #333; max-height: 50vh; overflow-y: auto; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            border: 4px solid #333; max-height: 50vh; max-height: 50dvh; overflow-y: auto; box-sizing: border-box; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
             width: 90%; max-width: 400px;
         }
         .level-btn {
@@ -105,7 +120,7 @@
         .levels-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
         .levels-container::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
 
-        .hud-top { position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 20px; box-sizing: border-box; pointer-events: auto; z-index: 10; }
+        .hud-top { position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); box-sizing: border-box; pointer-events: auto; z-index: 10; }
         .hud-center { position: absolute; top: 50%; width: 100%; text-align: center; pointer-events: none; z-index: 10; }
         .win-text { font-size: 45px; color: #fff; text-shadow: 0 0 15px rgba(0,0,0,0.5), 3px 3px 0 #333; display: none; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         
@@ -113,13 +128,35 @@
 
         #orientation-warning {
             display: none;
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #111; color: #fff; z-index: 99999;
             flex-direction: column; justify-content: center; align-items: center; text-align: center;
             padding: 20px; box-sizing: border-box;
         }
         @media screen and (orientation: portrait) {
             #orientation-warning { display: flex !important; }
+        }
+
+        /* --- PHONES IN LANDSCAPE (short screens): compact layout so nothing is cropped --- */
+        @media (max-height: 500px) {
+            .ui-layer { gap: 8px; }
+            .title { font-size: 34px; margin-bottom: 2px; }
+            #screen-levels .title { font-size: 26px !important; }
+            .btn { padding: 7px 18px; font-size: 15px; width: 170px; border-width: 2px; box-shadow: 0 4px 0 #333; }
+            .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #333; }
+            .btn-icon { padding: 5px 11px; font-size: 17px; width: auto; }
+            .hud-top { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: 6px; }
+            .hud-top .btn { box-shadow: 0 3px 0 #333; }
+            .modal { padding: 12px 18px; border-radius: 14px; border-width: 3px; width: 86%; max-width: 460px; }
+            .modal h2 { font-size: 20px; margin-bottom: 6px; }
+            .modal p { font-size: 13px; line-height: 1.35; margin: 6px 0; }
+            #screen-mode-select .modal .btn { margin: 4px !important; }
+            .modal-actions { flex-direction: row; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+            .btn-wa { font-size: 13px; padding: 7px 14px; }
+            .levels-container { max-height: calc(100vh - 110px); max-height: calc(100dvh - 110px); padding: 10px; gap: 8px; border-width: 3px; }
+            .level-btn { width: 40px; height: 40px; font-size: 16px; border-width: 2px; box-shadow: 0 3px 0 #333; }
+            #game-board { gap: 14px; padding: 58px 12px 8px 12px; }
+            .win-text { font-size: 30px; }
         }
     </style>
 </head>
@@ -168,11 +205,16 @@
     <div id="screen-readme" class="ui-layer screen hidden">
         <div class="modal">
             <h2>About Game</h2>
-            <p><strong>Ring Sort (2D & 3D)</strong><br>A relaxing sorting puzzle featuring auto-generated levels and progress saving.</p>
-            <p>Enjoy both Classic 2D view and Dynamic 3D Biomes!</p>
-            <p>Developed for web browsers.<br><em>Hosted on PixelGaunt.</em></p>
-            <p>Contact: <strong>pixelgaunt@gmail.com</strong></p>
-            <div class="btn" onclick="hideReadme()" style="margin-top: 10px; width: auto;">Close</div>
+            <div class="modal-body">
+                <p><strong>Ring Sort (2D & 3D)</strong><br>A relaxing sorting puzzle featuring auto-generated levels and progress saving.</p>
+                <p>Enjoy both Classic 2D view and Dynamic 3D Biomes!</p>
+                <p>Developed for web browsers.<br><em>Hosted on PixelGaunt.</em></p>
+                <p>Contact: <strong>pixelgaunt@gmail.com</strong></p>
+            </div>
+            <div class="modal-actions">
+                <a class="btn btn-wa" href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" rel="noopener noreferrer">💬 Join WhatsApp Group</a>
+                <div class="btn" onclick="hideReadme()" style="width: auto;">Close</div>
+            </div>
         </div>
     </div>
 
@@ -441,8 +483,28 @@
                     pegContainer.appendChild(ring); ringElements[i].push(ring);
                 }
             }
+            fit2DBoard();
             updateDogStatus();
             gameState = 'playing';
+        }
+
+        // Scales the 2D pegs so every peg fits on screen (no cropping) on any phone size
+        function fit2DBoard() {
+            const board = document.getElementById('game-board');
+            const n = board.children.length;
+            if (!n) return;
+            const cs = getComputedStyle(board);
+            const gap = parseFloat(cs.columnGap) || 20;
+            const availW = window.innerWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+            const availH = window.innerHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+            let best = 0.3;
+            for (let r = 1; r <= n; r++) {
+                const perRow = Math.ceil(n / r);
+                const sW = (availW - (perRow - 1) * gap) / (perRow * 70);
+                const sH = (availH - (r - 1) * gap) / (r * 160 + 36);
+                best = Math.max(best, Math.min(1, sW, sH));
+            }
+            board.style.setProperty('--peg-zoom', best.toFixed(3));
         }
 
         function handleClick2D(pegId) {
@@ -750,7 +812,7 @@
         }
         
         window.toggleMusic = function() { isMusicOn = !isMusicOn; GameAudio.setMuted(!isMusicOn); document.getElementById('btn-music').innerText = isMusicOn ? '🔊' : '🔇'; }
-        window.addEventListener('resize', () => { adjustCameraForMobile(); renderer.setSize(window.innerWidth, window.innerHeight); });
+        window.addEventListener('resize', () => { adjustCameraForMobile(); renderer.setSize(window.innerWidth, window.innerHeight); if (gameMode === '2D') fit2DBoard(); });
 
         // --- 9. RENDER LOOP (3D) ---
         function animate() {

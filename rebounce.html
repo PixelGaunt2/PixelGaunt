@@ -20,8 +20,9 @@
             margin: 0; padding: 0; width: 100%; height: 100%;
             background-color: var(--bg-dark); overflow: hidden;
             font-family: 'Orbitron', sans-serif; touch-action: none; user-select: none;
+            -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
         }
-        canvas { display: block; }
+        canvas { display: block; touch-action: none; }
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
@@ -66,18 +67,25 @@
             background: rgba(5, 8, 16, 0.85); backdrop-filter: blur(5px);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             pointer-events: auto; transition: opacity 0.3s ease; z-index: 10;
+            height: 100vh; height: 100dvh; box-sizing: border-box; padding: 12px;
+            overflow: hidden;
         }
+        /* Box always fits the screen; if content is taller it scrolls inside the box */
         .menu-box {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(0, 255, 204, 0.2); box-shadow: 0 0 20px rgba(0, 255, 204, 0.1);
-            border-radius: 20px; padding: 40px; text-align: center; max-width: 450px;
+            border-radius: 20px; padding: 30px; text-align: center;
+            box-sizing: border-box; width: min(100%, 450px);
+            max-height: 100%; overflow-y: auto; overflow-x: hidden;
+            -webkit-overflow-scrolling: touch; touch-action: pan-y; position: relative;
         }
         .overlay h1 {
-            font-size: 55px; color: var(--primary); margin: 0 0 25px 0;
-            text-transform: uppercase; letter-spacing: 6px; text-shadow: 0 0 20px var(--primary);
+            font-size: clamp(30px, 11vw, 55px); color: var(--primary); margin: 0 0 25px 0;
+            text-transform: uppercase; letter-spacing: clamp(2px, 1.2vw, 6px); text-shadow: 0 0 20px var(--primary);
+            word-break: break-word;
         }
         .game-logo {
-            max-width: 100%; max-height: 180px; margin-bottom: 20px; 
+            max-width: 100%; max-height: min(180px, 22vh); margin-bottom: 20px; 
             border-radius: 15px; box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
         }
         .stars {
@@ -90,6 +98,7 @@
             padding: 12px 40px; font-size: 18px; font-family: 'Orbitron', sans-serif;
             font-weight: 700; border-radius: 30px; cursor: pointer; text-transform: uppercase;
             letter-spacing: 2px; transition: all 0.2s ease; display: inline-block;
+            box-sizing: border-box; max-width: 100%; white-space: normal; touch-action: manipulation;
         }
         .btn:hover { background: var(--primary); color: var(--bg-dark); transform: scale(1.05); }
         .hidden { display: none !important; opacity: 0; pointer-events: none; }
@@ -111,6 +120,38 @@
         }
         .readme-links a {
             text-decoration: none; font-weight: bold;
+        }
+        /* Readme: close buttons are always reachable */
+        #readmeScreen .menu-box { max-width: 550px; width: min(100%, 550px); padding-top: 24px; }
+        .readme-x {
+            position: sticky; top: 0; float: right; margin: -10px -10px 0 0; z-index: 5;
+            width: 40px; height: 40px; border-radius: 50%; padding: 0; font-size: 20px; line-height: 1;
+            background: rgba(5,8,16,0.9); border: 2px solid var(--warning); color: var(--warning);
+            font-family: 'Orbitron', sans-serif; font-weight: 700; cursor: pointer;
+        }
+        .readme-footer {
+            position: sticky; bottom: -30px; margin: 0 -30px -30px; padding: 14px 30px 20px;
+            background: linear-gradient(to top, rgba(5,8,16,0.98) 70%, rgba(5,8,16,0));
+        }
+
+        /* Small screens / phones */
+        @media (max-width: 700px) {
+            .hud { padding: 10px 14px; font-size: 14px; }
+            .timer-display { font-size: 16px !important; }
+            #coinsDisplay { font-size: 13px !important; margin-top: 4px !important; }
+            #gameControls { top: 58px; gap: 6px; opacity: 0.7; }
+            .hud-btn { padding: 6px 9px; font-size: 11px; letter-spacing: 0; }
+            .btn { padding: 12px 20px; font-size: 16px; }
+            .perf-badge { display: none; }
+            #warningMessage { font-size: 18px; width: 90%; }
+        }
+        @media (max-height: 520px) {
+            .menu-box { padding: 16px 20px; }
+            .overlay h1 { margin-bottom: 12px; font-size: clamp(26px, 8vh, 40px); }
+            .game-logo { max-height: 20vh; margin-bottom: 10px; }
+            .btn { padding: 8px 20px; font-size: 15px; }
+            .readme-text { font-size: 14px; line-height: 1.4; margin-bottom: 10px; }
+            .readme-footer { bottom: -16px; margin: 0 -20px -16px; padding: 10px 20px 14px; }
         }
     </style>
 </head>
@@ -148,19 +189,22 @@
     </div>
 
     <div id="readmeScreen" class="overlay hidden">
-        <div class="menu-box" style="border-color: rgba(245, 158, 11, 0.4); max-width: 550px;">
-            <h1 style="font-size: 35px; color: var(--warning); margin-bottom: 15px;">DISCLAIMER</h1>
+        <div class="menu-box" style="border-color: rgba(245, 158, 11, 0.4);">
+            <button class="readme-x" id="closeReadmeX" aria-label="Close">✕</button>
+            <h1 style="font-size: clamp(24px, 8vw, 35px); color: var(--warning); margin-bottom: 15px;">DISCLAIMER</h1>
             <p class="readme-text">
                 This game was developed with the assistance of Artificial Intelligence. While every effort has been made to ensure a smooth and enjoyable gameplay experience, you may encounter occasional bugs or unexpected behaviors.
                 <br><br>
                 If you experience any issues, or just want to leave feedback, we highly encourage you to reach out so we can continue improving the game!
             </p>
-            <div class="readme-text readme-links" style="margin-bottom: 30px;">
+            <div class="readme-text readme-links" style="margin-bottom: 20px;">
                 <strong>Contact Us:</strong><br><br>
                 📧 Email: <a href="mailto:pixelgaunt@gmail.com" style="color: #60a5fa;">pixelgaunt@gmail.com</a><br>
                 💬 WhatsApp Group: <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" style="color: #34d399;">Join Here</a>
             </div>
-            <button class="btn" id="closeReadmeBtn" style="border-color: var(--warning); color: var(--warning);">Close & Return</button>
+            <div class="readme-footer">
+                <button class="btn" id="closeReadmeBtn" style="border-color: var(--warning); color: var(--warning);">Close & Return</button>
+            </div>
         </div>
     </div>
 
@@ -245,71 +289,102 @@ let idleFrames = 0;
 let hasLaunched = false;
 let soundEnabled = true; // NEW: Global flag for Sound
 
+let lastLayoutW = 0;
 function resize() { 
     const targetHeight = 900; 
-    const aspect = window.innerWidth / window.innerHeight;
-    canvas.width = targetHeight * aspect; 
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const aspect = vw / vh;
+    canvas.width = Math.round(targetHeight * aspect); 
     canvas.height = targetHeight; 
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
+    canvas.style.width = vw + 'px';
+    canvas.style.height = vh + 'px';
+    // Rotating the phone / big resize changes the playfield width: rebuild the level so walls match the screen
+    if ((GAME_STATE === 'PLAYING' || GAME_STATE === 'PAUSED')
+        && lastLayoutW && Math.abs(canvas.width - lastLayoutW) / lastLayoutW > 0.12) {
+        cancelDrag(); loadLevel(); lastLayoutW = canvas.width;
+    }
+    if (!lastLayoutW || GAME_STATE === 'MENU') lastLayoutW = canvas.width;
 }
-window.addEventListener('resize', resize); resize();
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+resize();
 
-const input = { isDragging: false, startX: 0, startY: 0, currentX: 0, currentY: 0 };
+const input = { isDragging: false, pointerId: null, startX: 0, startY: 0, currentX: 0, currentY: 0 };
+
+const MAX_PULL = 150;      // max drag length (canvas units)
+const MIN_PULL = 18;       // shorter drags are treated as a cancelled tap
+const POWER = 0.25;        // drag -> launch speed
+const REST_SPEED = 1.5;    // ball must be (almost) still to be launched
+
+function ballSpeed() { return player ? Math.hypot(player.vx, player.vy) : 0; }
+function ballSettled() { return ballSpeed() < REST_SPEED; }
 
 function getPointerPos(e) {
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     return {
-        x: (clientX - rect.left) * (canvas.width / rect.width),
-        y: (clientY - rect.top) * (canvas.height / rect.height)
+        x: (e.clientX - rect.left) * (canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (canvas.height / rect.height)
     };
 }
 
+function getPull() {
+    let dx = input.startX - input.currentX, dy = input.startY - input.currentY;
+    const distance = Math.hypot(dx, dy);
+    if (distance > MAX_PULL) { dx = dx / distance * MAX_PULL; dy = dy / distance * MAX_PULL; }
+    return { dx, dy, distance };
+}
+
+function cancelDrag() { input.isDragging = false; input.pointerId = null; }
+
 function handleDragStart(e) {
-    if (GAME_STATE !== 'PLAYING') return;
+    if (GAME_STATE !== 'PLAYING' || input.isDragging) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
     const pos = getPointerPos(e);
-    if (Math.abs(player.vx) < 0.5 && Math.abs(player.vy) < 0.5) {
-        input.isDragging = true;
-        input.startX = pos.x; input.startY = pos.y;
-        input.currentX = pos.x; input.currentY = pos.y;
-    }
+    // Aiming can begin any time (even while the ball is still rolling) - launch is checked on release
+    input.isDragging = true; input.pointerId = e.pointerId;
+    input.startX = input.currentX = pos.x; input.startY = input.currentY = pos.y;
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
 }
 function handleDragMove(e) {
-    if (!input.isDragging) return;
+    if (!input.isDragging || e.pointerId !== input.pointerId) return;
+    e.preventDefault();
     const pos = getPointerPos(e);
-    input.currentX = pos.x;
-    input.currentY = pos.y;
+    input.currentX = pos.x; input.currentY = pos.y;
 }
-function handleDragEnd() {
-    if (!input.isDragging) return;
-    input.isDragging = false;
-    let dx = input.startX - input.currentX; let dy = input.startY - input.currentY;
-    const maxPull = 150; const distance = Math.sqrt(dx*dx + dy*dy);
-    if (distance > maxPull) { dx = (dx / distance) * maxPull; dy = (dy / distance) * maxPull; }
-    
-    const powerMultiplier = 0.25;
-    if (distance > 10) {
-        player.vx = dx * powerMultiplier; player.vy = dy * powerMultiplier;
+function handleDragEnd(e) {
+    if (!input.isDragging || (e && e.pointerId !== input.pointerId)) return;
+    const wasCancel = e && e.type === 'pointercancel';
+    const { dx, dy, distance } = getPull();
+    cancelDrag();
+    if (wasCancel || GAME_STATE !== 'PLAYING') return;
+    if (distance >= MIN_PULL && ballSettled()) {
+        player.vx = dx * POWER; player.vy = dy * POWER;
         hasLaunched = true; playSfx('dash', 0.4);
-        spawnParticles(player.x, player.y, '#00ffcc', 10, 4); triggerShake(5); 
+        spawnParticles(player.x, player.y, '#00ffcc', 10, 4); triggerShake(5);
     }
 }
 
-canvas.addEventListener('mousedown', handleDragStart); canvas.addEventListener('mousemove', handleDragMove); window.addEventListener('mouseup', handleDragEnd);
-canvas.addEventListener('touchstart', handleDragStart, {passive: false}); canvas.addEventListener('touchmove', handleDragMove, {passive: false}); window.addEventListener('touchend', handleDragEnd);
+canvas.addEventListener('pointerdown', handleDragStart, { passive: false });
+window.addEventListener('pointermove', handleDragMove, { passive: false });
+window.addEventListener('pointerup', handleDragEnd);
+window.addEventListener('pointercancel', handleDragEnd);
+window.addEventListener('blur', cancelDrag);
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+// stop iOS pinch / double-tap zoom & pull-to-refresh while playing
+document.addEventListener('touchmove', e => { if (GAME_STATE === 'PLAYING') e.preventDefault(); }, { passive: false });
 
 // --- NEW UI EVENT LISTENERS ---
 document.getElementById('readmeBtn').addEventListener('click', () => {
     readmeScreen.classList.remove('hidden');
 });
-document.getElementById('closeReadmeBtn').addEventListener('click', () => {
-    readmeScreen.classList.add('hidden');
-});
+function closeReadme() { readmeScreen.classList.add('hidden'); }
+document.getElementById('closeReadmeBtn').addEventListener('click', closeReadme);
+document.getElementById('closeReadmeX').addEventListener('click', closeReadme);
+window.addEventListener('keydown', e => { if (e.key === 'Escape') closeReadme(); });
 pauseBtn.addEventListener('click', () => {
     if (GAME_STATE === 'PLAYING') {
-        GAME_STATE = 'PAUSED';
+        GAME_STATE = 'PAUSED'; cancelDrag();
         pauseBtn.innerText = '▶️ RESUME';
         bgMusic.pause(); // Pause music when game pauses
     } else if (GAME_STATE === 'PAUSED') {
@@ -331,7 +406,7 @@ soundBtn.addEventListener('click', () => {
     }
 });
 backBtn.addEventListener('click', () => {
-    GAME_STATE = 'MENU';
+    GAME_STATE = 'MENU'; cancelDrag();
     gameControls.classList.add('hidden');
     menuScreen.classList.remove('hidden');
     bgMusic.pause(); // Pause music on back to menu
@@ -693,14 +768,26 @@ function drawBackgroundGrid() {
 }
 
 function drawAimLine() {
-    if (input.isDragging && Math.abs(player.vx) < 0.5) {
-        let dx = input.startX - input.currentX; let dy = input.startY - input.currentY;
-        const maxPull = 150; const distance = Math.sqrt(dx*dx + dy*dy);
-        if (distance > maxPull) { dx = (dx / distance) * maxPull; dy = (dy / distance) * maxPull; }
-        ctx.strokeStyle = 'rgba(0, 255, 204, 0.8)'; ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(player.x + dx, player.y + dy);
-        ctx.setLineDash([8, 8]); ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke();
-        ctx.setLineDash([]); ctx.fillStyle = 'rgba(255, 51, 102, 0.8)'; ctx.beginPath(); ctx.arc(player.x + dx, player.y + dy, 6, 0, Math.PI*2); ctx.fill();
+    if (!input.isDragging) return;
+    const { dx, dy, distance } = getPull();
+    if (distance < 2) return;
+    const ready = ballSettled() && distance >= MIN_PULL;
+    const col = ready ? '0, 255, 204' : '148, 163, 184';
+
+    // trajectory preview (gravity + friction only)
+    let px = player.x, py = player.y, vx = dx * POWER, vy = dy * POWER;
+    ctx.fillStyle = `rgba(${col}, 0.6)`;
+    for (let i = 1; i <= 36; i++) {
+        vy += player.gravity; vx *= player.friction; vy *= player.friction;
+        px += vx; py += vy;
+        if (i % 3 === 0) { ctx.beginPath(); ctx.arc(px, py, Math.max(1.5, 4 - i * 0.07), 0, Math.PI * 2); ctx.fill(); }
     }
+
+    // pull indicator
+    ctx.strokeStyle = `rgba(${col}, 0.8)`; ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(player.x + dx, player.y + dy);
+    ctx.setLineDash([8, 8]); ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = ready ? 'rgba(255, 51, 102, 0.8)' : 'rgba(148, 163, 184, 0.8)';
+    ctx.beginPath(); ctx.arc(player.x + dx, player.y + dy, 6, 0, Math.PI*2); ctx.fill();
 }
 
 function loop() {
@@ -733,7 +820,7 @@ function loop() {
             player.draw(ctx);
 
             if (GAME_STATE === 'PLAYING') {
-                if (hasLaunched && Math.abs(player.vx) < 0.5 && Math.abs(player.vy) < 0.5 && !input.isDragging) {
+                if (hasLaunched && ballSpeed() < 0.5 && !input.isDragging) {
                     idleFrames++;
                     if (idleFrames > 600) { idleFrames = 0; startGame(false); } 
                     else if (idleFrames > 300) { 

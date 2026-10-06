@@ -25,12 +25,22 @@
     -webkit-user-drag: none;
 }
 
+html, body {
+    height: 100%;
+    width: 100%;
+}
+
 body {
     background-color: #111;
+    background-image: url('image_0.png');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+    height: 100dvh;
     width: 100vw;
     overflow: hidden;
     font-family: var(--font-family);
@@ -39,14 +49,11 @@ body {
 
 #game-wrapper {
     position: relative;
-    width: 100%;
-    max-width: 720px;
-    height: 100%;
-    max-height: 1280px;
-    aspect-ratio: 9 / 16;
-    background-image: url('image_0.png'); 
-    background-size: cover;
-    background-position: center;
+    width: min(100vw, calc(100vh * 9 / 16));
+    height: min(100vh, calc(100vw * 16 / 9));
+    width: min(100vw, calc(100dvh * 9 / 16));
+    height: min(100dvh, calc(100vw * 16 / 9));
+    background: transparent;
     box-shadow: 0 0 30px rgba(0,255,255,0.2);
     overflow: hidden;
 }
@@ -59,7 +66,6 @@ body {
     top: 0;
     left: 0;
     z-index: 1;
-    object-fit: contain;
 }
 
 /* UI Layering */
@@ -297,6 +303,20 @@ button:active {
     100% { transform: scale(1); box-shadow: 0 4px 0 #cc0052, 0 0 15px rgba(255, 102, 163, 0.5); }
 }
 
+.top-bar-spacer { width: 45px; height: 45px; display: inline-block; }
+
+.whatsapp-btn {
+    display: inline-block;
+    margin: 12px 0;
+    padding: 12px 22px;
+    background: #25D366;
+    color: #fff;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: 30px;
+    box-shadow: 0 4px 0 #1a9c4b;
+}
+
 .mt-auto { margin-top: auto; margin-bottom: 20px; }
     </style>
 </head>
@@ -325,7 +345,7 @@ button:active {
 
             <div id="gameplay-ui" class="screen hidden pointer-events-none">
                 <div class="top-bar">
-                    <button id="btn-ingame-back" class="icon-btn pointer-events-auto">◀</button>
+                    <span class="top-bar-spacer"></span>
                     <div class="score-container">
                         <span id="score-display">0</span>
                     </div>
@@ -344,7 +364,9 @@ button:active {
                     <p>This game was created using AI technology.<br>
                     If you find any bugs or issues, please report them at:<br>
                     <strong>pixelgaunt@gmail.com</strong><br>
-                    Thank you for playing.</p>
+                    Or join our WhatsApp group for bug reports:</p>
+                    <a class="whatsapp-btn" href="https://chat.whatsapp.com/YOUR_GROUP_INVITE_LINK" target="_blank" rel="noopener">💬 Join WhatsApp Group</a>
+                    <p>Thank you for playing.</p>
                     <button id="btn-readme-back" class="secondary-btn">Back</button>
                 </div>
             </div>
@@ -1117,7 +1139,6 @@ document.getElementById('btn-resume').onclick = () => {
 };
 document.getElementById('btn-restart').onclick = () => { playSound('button'); document.getElementById('pause-menu').classList.add('hidden'); initLevel(currentLevel); };
 document.getElementById('btn-pause-menu').onclick = () => { playSound('button'); switchScreen('menu'); };
-document.getElementById('btn-ingame-back').onclick = () => { playSound('button'); switchScreen('menu'); gameState='menu'; };
 
 document.getElementById('btn-retry').onclick = () => { playSound('button'); initLevel(currentLevel); };
 document.getElementById('btn-go-menu').onclick = () => { playSound('button'); switchScreen('menu'); };

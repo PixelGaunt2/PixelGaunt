@@ -166,6 +166,19 @@
         color: #fff;
         text-shadow: 0 0 10px var(--neon-primary);
     }
+
+    /* Mobile-only fix: make Readme screen scrollable so the Close button is always reachable */
+    @media (max-width: 800px), (pointer: coarse) and (max-height: 600px) {
+        #screenReadme {
+            justify-content: flex-start;
+            overflow-y: auto; overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px 0 30px; box-sizing: border-box;
+        }
+        #screenReadme h2 { font-size: 1.6rem; margin-top: auto; flex-shrink: 0; letter-spacing: 2px; }
+        #screenReadme p { max-width: 90% !important; font-size: 1rem !important; margin-bottom: 1.2rem !important; flex-shrink: 0; }
+        #screenReadme .btn { margin-bottom: auto; flex-shrink: 0; }
+    }
 </style>
 </head>
 <body>

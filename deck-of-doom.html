@@ -224,6 +224,78 @@
         /* Modal specific styling for links */
         .readme-links a { font-family: 'Righteous', cursive; transition: 0.2s; }
         .readme-links a:hover { filter: brightness(1.2); }
+
+        /* --- MOBILE CROP FIX: let menu screens scroll when taller than the phone screen --- */
+        #title-screen, #readme-screen, #setup-screen {
+            overflow-y: auto; overflow-x: hidden;
+            justify-content: flex-start !important;
+            touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+        }
+        /* keeps content vertically centered when it fits, scrollable from the very top when it doesn't */
+        #title-screen > :first-child, #readme-screen > :first-child, #setup-screen > :first-child { margin-top: auto; }
+        #title-screen > :last-child, #readme-screen > :last-child, #setup-screen > :last-child { margin-bottom: auto; }
+        #title-screen > *, #readme-screen > *, #setup-screen > * { flex-shrink: 0; }
+
+        /* --- IN-GAME POPUPS (replace browser confirm(), which kicked the game out of fullscreen) --- */
+        .game-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; z-index: 5000; background: rgba(5, 7, 12, 0.82); align-items: center; justify-content: center; padding: 16px; touch-action: none; }
+        .game-modal.open { display: flex; }
+        .game-modal-box { background: #1e2532; border: 2px solid #3a4b66; border-radius: 20px; padding: 24px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 14px; }
+        .game-modal-box h2 { color: #f39c12; font-size: 30px; text-shadow: 0 0 10px rgba(243, 156, 18, 0.5); }
+        .game-modal-box p { margin: 0; color: #bdc3c7; font-size: 15px; line-height: 1.4; }
+        .game-modal-row { display: flex; gap: 10px; }
+        .game-modal-row .btn-play { width: 100%; padding: 12px 10px; font-size: 16px; }
+
+        /* --- GAMEPLAY SCREEN FIT FIX --- */
+        #game-screen { overflow: hidden; padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+        #game-screen > * { flex-shrink: 0; }
+        #game-screen #battle-area { flex: 1 1 0; min-height: 0; }
+        #game-screen #battlefield { min-height: 0; }
+
+        /* Phones in portrait with a short screen */
+        @media (max-width: 768px) and (min-height: 561px) and (max-height: 720px) {
+            #top-bar { gap: 6px; padding: 6px 10px; }
+            .entity-sprite-box { width: 62px; height: 62px; font-size: 44px; }
+            .entity-info { padding: 4px; }
+            .intent-badge { font-size: 11px; padding: 2px 7px; top: -12px; right: -12px; }
+            .energy-orb { width: 50px; height: 50px; font-size: 17px; }
+            .end-turn-btn { padding: 8px 24px; font-size: 13px; }
+            #hand-container { height: 128px; }
+            .card { width: 78px; height: 118px; }
+            .card-art { font-size: 26px; } .card-desc { height: 34px; }
+        }
+
+        /* Phones in landscape (and any very short window): lay the battle out sideways so nothing is cut off */
+        @media (max-height: 560px) {
+            #top-bar { flex-direction: row; gap: 8px; padding: 4px 12px; font-size: 12px; }
+            #top-bar .top-btn-group { width: auto; gap: 6px; }
+            #top-bar .btn-top { padding: 4px 9px; font-size: 12px; border-radius: 9px; }
+            #battle-area { padding: 4px 3%; gap: 2px; }
+            #battlefield { flex-direction: row; justify-content: space-between; align-items: center; gap: 8px; }
+            #player-team { order: 1; width: auto; justify-content: flex-start; }
+            #enemy-team { order: 2; width: auto; justify-content: flex-end; }
+            .turn-indicator { position: absolute; top: 0; left: 50%; margin: 0; font-size: 13px; }
+            .team-container { gap: 8px; }
+            .battle-entity { width: auto; max-width: 120px; min-width: 70px; gap: 3px; }
+            .entity-sprite-box { width: 58px; height: 58px; font-size: 40px; border-radius: 14px; }
+            .entity-info { margin-top: 2px; padding: 3px 5px; border-radius: 8px; }
+            .entity-name { font-size: 11px; margin-bottom: 2px; }
+            .hp-bar-bg { height: 12px; } .hp-text { font-size: 8px; }
+            .intent-badge { font-size: 10px; padding: 1px 6px; top: -10px; right: -12px; }
+            .block-badge { width: 22px; height: 22px; font-size: 10px; bottom: -6px; right: -6px; }
+            .hud-layer { padding: 2px 0; }
+            .energy-orb-container { bottom: 0; left: 6px; }
+            .energy-orb { width: 42px; height: 42px; font-size: 14px; border-width: 2px; }
+            .end-turn-btn { padding: 6px 22px; font-size: 12px; border-radius: 9px; }
+            #hand-container { --hand-h: clamp(104px, 36dvh, 150px); height: var(--hand-h); padding-bottom: 4px; }
+            .card { height: calc(var(--hand-h) - 8px); width: calc((var(--hand-h) - 8px) * 0.66); margin-left: -12px; border-width: 1px; border-radius: 10px; }
+            .card-header { padding: 2px; } .card-cost { width: 16px; height: 16px; font-size: 10px; margin-right: 2px; }
+            .card-title { font-size: 7px; } .card-art { font-size: 24px; } .card-desc { height: 32px; font-size: 6.5px; padding: 2px; }
+            #hand-container .card:hover { transform: translateY(-10px) scale(1.08); margin-left: 0; margin-right: 4px; }
+            .card-ready { transform: translateY(-30px) scale(1.1) !important; margin-left: 0 !important; margin-right: 8px !important; }
+            .game-modal-box { padding: 14px; gap: 8px; } .game-modal-box h2 { font-size: 22px; }
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -323,7 +395,8 @@
     <div id="game-screen" class="screen">
         <div id="top-bar">
             <div class="top-btn-group">
-                <button class="btn-top" onclick="surrender()">⏸️ Pause / Back</button>
+                <button class="btn-top" onclick="pauseGame()">⏸️ Pause</button>
+                <button class="btn-top" onclick="openBackConfirm()">🔙 Back</button>
                 <button class="btn-top" id="btn-sound" onclick="toggleSound()">🔊 Sound: ON</button>
             </div>
             
@@ -383,6 +456,25 @@
         </div>
         
         <div id="hand-container"></div>
+    </div>
+
+    <!-- IN-GAME PAUSE / BACK POPUPS -->
+    <div id="pause-modal" class="game-modal">
+        <div class="game-modal-box">
+            <h2>PAUSED</h2>
+            <p>The battle is on hold.</p>
+            <button class="btn-play highlight" style="width:100%;" onclick="resumeGame()">▶️ Resume</button>
+        </div>
+    </div>
+    <div id="back-modal" class="game-modal">
+        <div class="game-modal-box">
+            <h2>LEAVE BATTLE?</h2>
+            <p>Return to the map? Your current battle progress will be lost.</p>
+            <div class="game-modal-row">
+                <button class="btn-play" onclick="closeBackConfirm()">Stay</button>
+                <button class="btn-play highlight" onclick="confirmBack()">Back to Map</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1079,6 +1171,36 @@
             const el = document.querySelector(elementSelector.startsWith('#') || elementSelector.startsWith('.') ? elementSelector : `#${elementSelector}`); 
             if(el) { el.classList.remove(animClass); void el.offsetWidth; el.classList.add(animClass); } 
         }
+    </script>
+    <script>
+        /* --- Pause / Back (in-game popups, no browser dialogs, fullscreen stays on) --- */
+        var gamePaused = false, pausedCallbacks = [];
+        (function () {
+            var origSetTimeout = window.setTimeout.bind(window);
+            window.setTimeout = function (fn, ms) {
+                var args = Array.prototype.slice.call(arguments, 2);
+                if (typeof fn !== 'function') return origSetTimeout.apply(window, arguments);
+                return origSetTimeout(function () {
+                    if (gamePaused) { pausedCallbacks.push(function () { fn.apply(null, args); }); }
+                    else { fn.apply(null, args); }
+                }, ms);
+            };
+        })();
+        function pauseGame() {
+            gamePaused = true;
+            try { GameAudio.setMuted(true); } catch (e) {}
+            document.getElementById('pause-modal').classList.add('open');
+        }
+        function resumeGame() {
+            document.getElementById('pause-modal').classList.remove('open');
+            gamePaused = false;
+            try { GameAudio.setMuted(!soundEnabled); } catch (e) {}
+            var queued = pausedCallbacks; pausedCallbacks = [];
+            queued.forEach(function (cb) { cb(); });
+        }
+        function openBackConfirm() { document.getElementById('back-modal').classList.add('open'); }
+        function closeBackConfirm() { document.getElementById('back-modal').classList.remove('open'); }
+        function confirmBack() { closeBackConfirm(); showScreen('map-screen'); }
     </script>
 </body>
 </html>

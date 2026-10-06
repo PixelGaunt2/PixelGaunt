@@ -50,10 +50,17 @@
         display: flex; flex-direction: column; align-items: center;
         justify-content: center; pointer-events: auto; opacity: 0;
         transition: opacity 0.3s; transform: scale(0.9); z-index: 10;
+        box-sizing: border-box; padding: 16px; height: 100vh; height: 100dvh;
+        overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
+        justify-content: flex-start; touch-action: pan-y;
     }
+    /* centre when it fits, scroll (never crop) when it doesn't */
+    .menu > :first-child { margin-top: auto; }
+    .menu > :last-child { margin-bottom: auto; }
+    .menu > * { flex-shrink: 0; }
     .menu.active { opacity: 1; transform: scale(1); }
 
-    .menu h1 { color: #fff; font-size: 60px; margin-bottom: 10px; text-shadow: 0 5px 15px rgba(0,0,0,0.5); text-align: center;}
+    .menu h1 { color: #fff; font-size: clamp(30px, 7vw, 60px); margin-bottom: 10px; text-shadow: 0 5px 15px rgba(0,0,0,0.5); text-align: center;}
     .menu p { color: #ccc; font-size: 22px; margin-bottom: 30px; text-align: center; max-width: 600px;}
     
     .btn {
@@ -95,7 +102,7 @@
     .btn.readme { background: linear-gradient(180deg, #9b59b6 0%, #8e44ad 100%); }
     .readme-content {
         background: rgba(0, 0, 0, 0.85); border: 2px solid #fff; border-radius: 15px;
-        padding: 30px; max-width: 650px; color: white; text-align: left;
+        padding: 30px; max-width: 650px; width: 100%; box-sizing: border-box; color: white; text-align: left;
         font-family: sans-serif; font-size: 18px; margin-bottom: 20px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.6);
         line-height: 1.6;
@@ -123,6 +130,27 @@
     
     #menu-pause { z-index: 20; }
 
+    /* Small / short screens (phones, landscape): compact layout */
+    @media (max-width: 700px), (max-height: 560px) {
+        .menu { padding: 10px; }
+        .menu h1 { margin: 0 0 6px 0; }
+        .btn { font-size: 20px; padding: 10px 28px; margin: 6px; border-width: 3px; }
+        .readme-content { padding: 14px; font-size: 14px; margin-bottom: 8px; }
+        .readme-content h2 { font-size: 22px; }
+        .readme-content p { font-size: 14px; margin: 6px 0; }
+        .shop-grid { gap: 8px; margin-bottom: 8px; }
+        .shop-item { width: 130px; padding: 10px; }
+        .shop-item h3 { font-size: 18px; margin-bottom: 4px; }
+        .shop-item p { font-size: 14px; margin: 0 0 8px 0; }
+        .menu .coin-display { font-size: 26px !important; margin-bottom: 8px !important; }
+        .hud-top { padding: 10px; font-size: 18px; }
+        .health-bar-container { width: 130px; height: 20px; }
+        .hud-btn { font-size: 15px; padding: 6px 12px; }
+        .hud-btn.sound-btn { width: 38px; height: 38px; padding: 6px; }
+        .hud-controls { top: 10px; gap: 8px; }
+        .coin-display { font-size: 22px; }
+    }
+
 </style>
 </head>
 <body>
@@ -133,7 +161,7 @@
     <div class="hud-top" id="hud" style="display: none;">
         <div class="hud-controls">
             <button class="hud-btn" id="btn-pause" onclick="togglePause()">|| Pause</button>
-            <button class="hud-btn sound-btn" id="btn-sound" onclick="toggleSound()">🔊</button>
+            <button class="hud-btn sound-btn" id="btn-sound" onclick="toggleSound(); this.blur();">🔊</button>
         </div>
 
         <div>
@@ -230,48 +258,112 @@ let bobber = { x: 0, y: 0, active: false, targetY: 0 };
 let fishProgress = 10, hookedFish = null, fishPos = 50, fishTarget = 50, barPos = 10, moveTimer = 0;
 let battleTimer = 0, battleTarget = null;
 
-// --- GAME AUDIO (HTML5 Audio: provided .wav sound effects + .mp3 background music) ---
+// --- GAME AUDIO (tries the .wav/.mp3 files; falls back to built-in synthesized sound if they are missing) ---
 const GameAudio = (function () {
     const MUSIC_FILE = 'The_Silver_Path.mp3';
-    const POOL_SIZE = 3;            // max simultaneous copies per sound (reused, never grows)
-    const pools = {};
-    let muted = false, music = null, musicWanted = false;
-    function pool(name) {
-        if (!pools[name]) { pools[name] = { list: [], i: 0 }; }
-        return pools[name];
+    const POOL_SIZE = 3;
+    const pools = {}, failed = {};
+    let muted = false, music = null, musicWanted = false, musicFailed = false;
+    let actx = null, synthTimer = null, synthStep = 0;
+
+    function getCtx() {
+        try {
+            if (!actx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) actx = new AC(); }
+            if (actx && actx.state === 'suspended') actx.resume();
+        } catch (e) {}
+        return actx;
     }
+    function tone(freq, dur, type, vol, slideTo, delay) {
+        const c = getCtx(); if (!c) return;
+        const t = c.currentTime + (delay || 0);
+        const o = c.createOscillator(), g = c.createGain();
+        o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+        if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+        g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.02);
+    }
+    function noise(dur, vol) {
+        const c = getCtx(); if (!c) return;
+        const n = Math.floor(c.sampleRate * dur), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+        const src = c.createBufferSource(), g = c.createGain(); src.buffer = buf; g.gain.value = vol;
+        src.connect(g); g.connect(c.destination); src.start();
+    }
+    const SYNTH = {
+        axe_swing: function (v) { tone(500, 0.18, 'triangle', v * 0.5, 150); },
+        acid_splash: function (v) { noise(0.25, v * 0.5); tone(300, 0.2, 'sine', v * 0.3, 90); },
+        object_hit: function (v) { tone(220, 0.12, 'square', v * 0.4, 110); },
+        laser: function (v) { tone(900, 0.15, 'sawtooth', v * 0.3, 200); },
+        axe_hit: function (v) { noise(0.15, v * 0.5); tone(140, 0.15, 'square', v * 0.4, 60); },
+        coin: function (v) { tone(988, 0.08, 'square', v * 0.3); tone(1319, 0.18, 'square', v * 0.3, null, 0.08); },
+        player_hurt: function (v) { tone(260, 0.25, 'sawtooth', v * 0.4, 90); },
+        upgrade_buy: function (v) { tone(523, 0.1, 'triangle', v * 0.5); tone(659, 0.1, 'triangle', v * 0.5, null, 0.1); tone(784, 0.2, 'triangle', v * 0.5, null, 0.2); },
+        player_death: function (v) { tone(400, 0.7, 'sawtooth', v * 0.4, 50); }
+    };
+    function synthSfx(name, vol) { const f = SYNTH[name]; if (f) { try { f(vol === undefined ? 0.5 : vol); } catch (e) {} } }
+
+    function pool(name) { if (!pools[name]) pools[name] = { list: [], i: 0 }; return pools[name]; }
     function sfx(name, vol) {
         if (muted) return;
+        if (failed[name]) { synthSfx(name, vol); return; }
         try {
             const p = pool(name);
             let a = p.list[p.i];
-            if (!a) { a = new Audio(name + '.wav'); a.preload = 'auto'; p.list[p.i] = a; }
+            if (!a) {
+                a = new Audio(name + '.wav'); a.preload = 'auto';
+                a.addEventListener('error', function () { failed[name] = true; });
+                p.list[p.i] = a;
+            }
             p.i = (p.i + 1) % POOL_SIZE;
             a.volume = (vol === undefined ? 0.5 : vol);
             a.currentTime = 0;
-            const r = a.play(); if (r && r.catch) r.catch(function () {});
-        } catch (e) {}
+            const r = a.play();
+            if (r && r.catch) r.catch(function () { if (a.error) { failed[name] = true; synthSfx(name, vol); } });
+        } catch (e) { synthSfx(name, vol); }
     }
+
+    // simple built-in background loop (used only if the mp3 can't be loaded)
+    const NOTES = [262, 330, 392, 330, 294, 349, 440, 349, 262, 330, 392, 523, 392, 330, 294, 247];
+    function startSynthMusic() {
+        if (synthTimer || muted || !musicWanted) return;
+        synthTimer = setInterval(function () {
+            if (muted || !musicWanted) return;
+            tone(NOTES[synthStep % NOTES.length], 0.5, 'sine', 0.06);
+            if (synthStep % 4 === 0) tone(NOTES[synthStep % NOTES.length] / 2, 0.9, 'triangle', 0.05);
+            synthStep++;
+        }, 400);
+    }
+    function stopSynthMusic() { if (synthTimer) { clearInterval(synthTimer); synthTimer = null; } }
+
     function ensureMusic() {
-        if (!music) { music = new Audio(MUSIC_FILE); music.loop = true; music.volume = 0.3; music.preload = 'auto'; }
+        if (!music) {
+            music = new Audio(MUSIC_FILE); music.loop = true; music.volume = 0.3; music.preload = 'auto';
+            music.addEventListener('error', function () { musicFailed = true; startSynthMusic(); });
+        }
         return music;
     }
     function tryPlayMusic() {
         if (!musicWanted || muted) return;
-        try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+        if (musicFailed) { getCtx(); startSynthMusic(); return; }
+        try {
+            const r = ensureMusic().play();
+            if (r && r.catch) r.catch(function () { if (music && music.error) { musicFailed = true; startSynthMusic(); } });
+        } catch (e) { musicFailed = true; startSynthMusic(); }
     }
-    function unlock() {
-        if (musicWanted) tryPlayMusic();
-    }
+    function unlock() { getCtx(); if (musicWanted) tryPlayMusic(); }
     ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
         window.addEventListener(ev, unlock, { passive: true });
     });
     return {
         sfx: sfx,
         startMusic: function () { musicWanted = true; tryPlayMusic(); },
-        stopMusic: function () { musicWanted = false; if (music) { music.pause(); music.currentTime = 0; } },
-        pauseMusic: function () { musicWanted = false; if (music) music.pause(); },
-        setMuted: function (m) { muted = !!m; if (muted) { if (music) music.pause(); } else { tryPlayMusic(); } },
+        stopMusic: function () { musicWanted = false; stopSynthMusic(); if (music) { music.pause(); music.currentTime = 0; } },
+        pauseMusic: function () { musicWanted = false; stopSynthMusic(); if (music) music.pause(); },
+        setMuted: function (m) {
+            muted = !!m;
+            if (muted) { stopSynthMusic(); if (music) music.pause(); }
+            else { tryPlayMusic(); }
+        },
         isMuted: function () { return muted; }
     };
 })();
@@ -289,7 +381,7 @@ function toggleSound() {
 
 function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
 window.addEventListener('resize', resize); resize();
-window.addEventListener('keydown', e => { keys[e.key] = true; if (e.key === 'Escape' && gameState !== STATE.MENU) { if (gameState === STATE.PAUSED) resumeGame(); else pauseGame(); } });
+window.addEventListener('keydown', e => { keys[e.key] = true; if (e.key === 'Escape' && gameState !== STATE.MENU && gameState !== STATE.GAMEOVER) togglePause(); });
 window.addEventListener('keyup', e => keys[e.key] = false);
 canvas.addEventListener('mousedown', e => { mouse.down = true; mouse.click = true; mouse.x = e.clientX; mouse.y = e.clientY; });
 canvas.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
@@ -309,8 +401,10 @@ function startGame() { GameAudio.startMusic(); hideAllMenus(); document.getEleme
 function openShop() { showMenu('menu-shop'); document.getElementById('shop-coins').innerText = player.coins; document.getElementById('btn-upg-rod').innerText = player.upgrades.rod ? "Maxed" : "50 Coins"; document.getElementById('btn-upg-armor').innerText = player.upgrades.armor ? "Maxed" : "100 Coins"; document.getElementById('btn-upg-lure').innerText = player.upgrades.lure ? "Maxed" : "200 Coins"; }
 function closeShop() { showMenu('menu-main'); }
 function buyUpgrade(type, cost) { if (player.upgrades[type] === 0 && player.coins >= cost) { player.coins -= cost; player.upgrades[type] = 1; saveData(); playSound('buy'); openShop(); } }
-function pauseGame() { gameState = STATE.PAUSED; GameAudio.pauseMusic(); document.getElementById('pause-title').innerText = "Paused"; document.getElementById('btn-resume').style.display = "block"; showMenu('menu-pause'); document.body.classList.remove('battle-mode'); }
-function resumeGame() { GameAudio.startMusic(); hideAllMenus(); gameState = STATE.IDLE; if (bobber.active) gameState = STATE.WAITING; if(gameState===STATE.BATTLE) document.body.classList.add('battle-mode'); }
+let prevState = STATE.IDLE;
+function togglePause() { if (gameState === STATE.PAUSED) resumeGame(); else pauseGame(); }
+function pauseGame() { if (gameState === STATE.MENU || gameState === STATE.GAMEOVER || gameState === STATE.PAUSED) return; prevState = gameState; gameState = STATE.PAUSED; GameAudio.pauseMusic(); document.getElementById('pause-title').innerText = "Paused"; document.getElementById('btn-resume').style.display = "block"; showMenu('menu-pause'); document.body.classList.remove('battle-mode'); }
+function resumeGame() { if (gameState !== STATE.PAUSED) return; GameAudio.startMusic(); hideAllMenus(); gameState = prevState; if (gameState === STATE.BATTLE) document.body.classList.add('battle-mode'); mouse.down = false; mouse.click = false; }
 function toMainMenu() { GameAudio.stopMusic(); document.getElementById('hud').style.display = 'none'; showMenu('menu-main'); gameState = STATE.MENU; document.body.classList.remove('battle-mode'); }
 function triggerGameOver() { GameAudio.stopMusic(); playSound('death'); gameState = STATE.GAMEOVER; document.getElementById('pause-title').innerText = "Knocked Out!"; document.getElementById('btn-resume').style.display = "none"; showMenu('menu-pause'); document.body.classList.remove('battle-mode'); }
 

@@ -64,13 +64,29 @@
         }
 
         .screen-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh;
             background: rgba(10, 3, 18, 0.85); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 100;
+            justify-content: flex-start; align-items: center; z-index: 100;
+            overflow-y: auto; overflow-x: hidden; padding: 16px 12px;
+            -webkit-overflow-scrolling: touch;
         }
+        /* Safe centering: centers when content fits, scrolls (never crops) when it doesn't */
+        .screen-overlay > :first-child { margin-top: auto; }
+        .screen-overlay > :last-child { margin-bottom: auto; }
+        .screen-overlay, .screen-overlay * { touch-action: pan-y; }
+
+        .readme-box {
+            background: rgba(0,0,0,0.8); border: 2px solid #ffcc00; padding: 20px;
+            max-width: 600px; width: 90%; color: white; font-family: 'Courier New', monospace;
+            font-size: 16px; text-align: center; border-radius: 10px; line-height: 1.6;
+            margin-bottom: 20px; box-shadow: 0 0 20px rgba(255, 204, 0, 0.2); flex-shrink: 0;
+        }
+        .neon-title.readme-title { font-size: 40px; color: #ffcc00; text-shadow: 0 0 10px #ffcc00; margin-bottom: 20px; }
+        .readme-close { flex-shrink: 0; max-width: 90%; }
+
         
         .neon-title {
-            font-size: 70px; font-weight: bold; text-transform: uppercase;
+            font-size: clamp(28px, 9vmin, 70px); font-weight: bold; text-transform: uppercase;
             color: #fff; letter-spacing: 5px;
             text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 40px #00aaff, 0 0 80px #00aaff;
             margin-bottom: 30px; text-align: center;
@@ -79,11 +95,12 @@
         .arcade-btn {
             padding: 15px 40px; font-size: 24px; font-family: 'Courier New', monospace; font-weight: bold; 
             color: #fff; background: #ff0055; border: 4px solid #fff; cursor: pointer; 
-            box-shadow: 0 0 15px #ff0055; margin-top: 20px; transition: 0.2s; pointer-events: auto; width: 350px;
+            box-shadow: 0 0 15px #ff0055; margin-top: 20px; transition: 0.2s; pointer-events: auto; width: min(350px, 85vw); max-width: 100%;
         }
         .arcade-btn:hover { background: #00ff88; color: #000; box-shadow: 0 0 25px #00ff88; border-color: #000; }
         
-        .continue-btn { background: #00ff88; color: #000; box-shadow: 0 0 15px #00ff88; border-color: #000; display: none; }
+        .continue-btn { background: #00ff88; color: #000; box-shadow: 0 0 15px #00ff88; border-color: #000; }
+        .continue-btn.no-save { opacity: 0.55; box-shadow: none; }
         .continue-btn:hover { background: #fff; color: #000; box-shadow: 0 0 25px #fff; }
 
         #pauseBtnHint { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; font-size: 12px; pointer-events: auto; cursor: pointer; z-index: 10; border: 1px solid #fff; }
@@ -141,6 +158,28 @@
                 padding: 4px 8px; font-size: 10px;
             }
         }
+            /* Short screens (phones in landscape) */
+        @media (max-height: 600px) {
+            .neon-title { font-size: 34px; letter-spacing: 2px; margin-bottom: 12px; }
+            .arcade-btn { font-size: 18px; padding: 10px 24px; margin-top: 10px; width: min(300px, 80vw); }
+            #btnReadme { margin-top: 10px !important; }
+            .neon-title.readme-title { font-size: 26px; margin-bottom: 10px; }
+            .readme-box { font-size: 13px; padding: 12px; line-height: 1.4; margin-bottom: 12px; }
+            .readme-box br { display: none; }
+            .readme-box p { margin-top: 6px; }
+            #finalStats { font-size: 14px !important; }
+        }
+        @media (max-width: 600px) {
+            .neon-title { font-size: 36px; letter-spacing: 2px; }
+        }
+        .readme-back {
+            position: fixed; top: 10px; left: 10px; z-index: 10001;
+            padding: 8px 16px; font-size: 16px; font-weight: bold; font-family: 'Courier New', monospace;
+            background: #ffcc00; color: #000; border: 3px solid #fff; border-radius: 6px;
+            box-shadow: 0 0 12px #ffcc00; cursor: pointer; pointer-events: auto;
+        }
+        #readmeModal { padding-top: 60px; padding-bottom: 24px; }
+        #readmeModal > .neon-title { margin-top: auto; }
     </style>
 </head>
 <body>
@@ -182,7 +221,8 @@
 
     <div id="mainMenu" class="screen-overlay">
         <div class="neon-title">STICKMAN VELOCITY</div>
-        <button class="arcade-btn continue-btn" id="btnContinue" onclick="continueGame()">CONTINUE GAME</button>
+        <button class="arcade-btn continue-btn" id="btnContinue" onclick="continueGame()">RESUME GAME</button>
+        <div id="noSaveMsg" style="display:none; color:#ffcc00; font-weight:bold; margin-top:8px; text-align:center;">No saved game yet — press NEW GAME</div>
         <button class="arcade-btn" onclick="startNewGame()">NEW GAME</button>
         <button class="arcade-btn" id="btnReadme" style="background: #ffcc00; color: #000; box-shadow: 0 0 15px #ffcc00; margin-top: 20px;" onclick="showReadme()">README</button>
     </div>
@@ -233,6 +273,9 @@
         function closeReadme() {
             document.getElementById('readmeModal').style.display = 'none';
         }
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.getElementById('readmeModal').style.display !== 'none') closeReadme();
+        });
 
         // DISPLAY FIX
         function resizeCanvas() {
@@ -266,7 +309,7 @@
         const LEVEL_TIMER_FRAMES = 90 * 60; 
 
         let savedData = localStorage.getItem('stickmanVelocitySave');
-        if (savedData) { document.getElementById('btnContinue').style.display = 'block'; }
+        if (!savedData) { document.getElementById('btnContinue').classList.add('no-save'); }
 
         function triggerShake(intensity = 10) { shakeTime = intensity; }
         function applyShake() {
@@ -1360,6 +1403,11 @@
         }
 
         function continueGame() {
+            if(!savedData) {
+                const m = document.getElementById('noSaveMsg'); m.style.display = 'block';
+                setTimeout(() => { m.style.display = 'none'; }, 2500);
+                return;
+            }
             if(savedData) {
                 const data = JSON.parse(savedData);
                 currentStage = data.stage;
@@ -1396,8 +1444,9 @@
 
     <!-- README MODAL START -->
     <div id="readmeModal" class="screen-overlay" style="display: none; z-index: 9999; background: rgba(0,0,0,0.95);">
-        <div class="neon-title" style="font-size: 40px; color: #ffcc00; text-shadow: 0 0 10px #ffcc00; margin-bottom: 20px;">DISCLAIMER</div>
-        <div style="background: rgba(0,0,0,0.8); border: 2px solid #ffcc00; padding: 20px; max-width: 600px; width: 90%; color: white; font-family: 'Courier New', monospace; font-size: 16px; text-align: center; border-radius: 10px; line-height: 1.6; margin-bottom: 30px; box-shadow: 0 0 20px rgba(255, 204, 0, 0.2);">
+        <button class="readme-back" onclick="closeReadme()">&#9664; BACK</button>
+        <div class="neon-title readme-title">DISCLAIMER</div>
+        <div class="readme-box">
             <p>This game is an AI-created project. We apologize if you encounter any bugs or glitches during gameplay.</p><br>
             <p><strong>Known Bug:</strong> If a level fails to continue automatically after completion, simply close and reopen the game or refresh the page to resolve the issue.</p><br>
             <p>If you encounter any other bugs, please report them to us via:</p>
@@ -1406,7 +1455,7 @@
         </div>
         
         <!-- CLOSE BUTTON -->
-        <button class="arcade-btn" style="background: #ffcc00; color: #000; box-shadow: 0 0 15px #ffcc00; border-color: #000; padding: 15px 40px; font-size: 24px;" onclick="closeReadme()">CLOSE & RETURN TO MENU</button>
+        <button class="arcade-btn readme-close" style="background: #ffcc00; color: #000; box-shadow: 0 0 15px #ffcc00; border-color: #000; width: auto; margin-top: 0;" onclick="closeReadme()">&#9664; BACK TO MAIN MENU</button>
     </div>
     <!-- README MODAL END -->
 

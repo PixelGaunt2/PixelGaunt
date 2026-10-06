@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Beggar Catcher - Carry Bug Fix Update</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
@@ -27,14 +27,20 @@
         #suspicion-fill { width: 0%; height: 100%; background-color: #ff5555; transition: width 0.1s; }
         
         /* MENUS */
-        .menu-screen { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .menu-screen { position: absolute; top:0; left:0; width:100%; height:100%; height:100dvh; background: rgba(0,0,0,0.85); z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; padding: 16px 12px; -webkit-overflow-scrolling: touch; }
+        .menu-screen > :first-child { margin-top: auto; }
+        .menu-screen > :last-child { margin-bottom: auto; }
+        .menu-screen .btn, .menu-screen .menu-title, .menu-screen .grid-container { flex-shrink: 0; }
+        .readme-box { max-width: 600px; width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.85); padding: 25px; border: 2px solid #ff9900; border-radius: 8px; margin-bottom: 20px; text-align: left; line-height: 1.6; font-size: 16px; overflow-y: auto; min-height: 0; flex: 0 1 auto; max-height: calc(100dvh - 260px); }
+        #readme-menu { justify-content: center; }
+        #readme-menu > :first-child, #readme-menu > :last-child { margin-top: 0; margin-bottom: 0; }
         .menu-title { font-size: 50px; color: #FFD700; margin-bottom: 30px; text-shadow: 2px 2px 10px rgba(255,215,0,0.5); }
         .btn { background: #222; border: 2px solid #FFD700; color: #fff; padding: 15px 40px; font-size: 20px; font-weight: bold; cursor: pointer; margin: 10px; border-radius: 8px; transition: 0.2s; min-width: 250px; text-transform: uppercase; }
         .btn:hover { background: #FFD700; color: #000; }
         .btn:disabled { border-color: #555; color: #555; cursor: not-allowed; }
         .btn:disabled:hover { background: #222; color: #555; }
         
-        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-width: 800px; margin: 20px auto; }
+        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-width: 800px; width: 100%; box-sizing: border-box; margin: 20px auto; }
         .shop-item { background: #111; border: 2px solid #00ffcc; padding: 15px; border-radius: 8px; }
         .level-btn { background: #111; border: 2px solid #555; color: #fff; padding: 20px; font-size: 18px; cursor: pointer; border-radius: 8px; transition: 0.2s;}
         .level-btn.unlocked { border-color: #00ffcc; }
@@ -106,6 +112,26 @@
             }
         }
 
+        @media (max-width: 1024px), (max-height: 700px) {
+            .menu-title { font-size: 34px; margin-bottom: 16px; }
+            .btn { padding: 12px 24px; font-size: 17px; margin: 6px; min-width: 200px; max-width: 90%; }
+            .grid-container { grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 10px auto; }
+            .level-btn { padding: 12px 8px; font-size: 14px; }
+            .shop-item { padding: 10px; }
+            .shop-item h3 { font-size: 16px; margin: 4px 0; }
+            .shop-item p { font-size: 13px; margin: 4px 0; }
+            .shop-item .btn { min-width: 0; width: 100%; padding: 8px; font-size: 14px; margin: 6px 0 0; }
+            .readme-box { padding: 14px; font-size: 14px; max-height: calc(100dvh - 210px); }
+        }
+        @media (max-width: 600px) {
+            .menu-title { font-size: 28px; }
+            .grid-container { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-height: 500px) {
+            .menu-title { font-size: 22px; margin-bottom: 8px; }
+            .btn { padding: 8px 16px; font-size: 14px; margin: 4px; }
+            .readme-box { max-height: calc(100dvh - 150px); }
+        }
     </style>
 </head>
 <body>
@@ -129,7 +155,7 @@
 
     <div id="readme-menu" class="menu-screen" style="display:none;">
         <div class="menu-title" style="font-size: 40px;">Readme & Disclaimer</div>
-        <div style="max-width: 600px; background: rgba(0,0,0,0.85); padding: 25px; border: 2px solid #ff9900; border-radius: 8px; margin-bottom: 20px; text-align: left; line-height: 1.6; font-size: 16px;">
+        <div class="readme-box">
             <p style="color: #FFD700; font-size: 20px; margin-top: 0;"><strong>Welcome to Beggar Catcher!</strong></p>
             <p>Please note that this game was developed with the assistance of Artificial Intelligence. While every effort has been made to ensure a smooth, stable, and enjoyable experience, you may occasionally encounter bugs, graphical glitches, or unexpected behavior.</p>
             <p>We sincerely apologize for any inconvenience this may cause and appreciate your patience.</p>
