@@ -180,6 +180,11 @@
         }
         #readmeModal { padding-top: 60px; padding-bottom: 24px; }
         #readmeModal > .neon-title { margin-top: auto; }
+        /* neon synthwave skin */
+        #mainMenu { background: rgba(8,2,20,0.35); }
+        .health-bar-container { border-radius: 8px; border-color: #35d0ff; overflow: hidden; box-shadow: 0 0 14px rgba(53,208,255,0.6); }
+        #playerHealth { background: linear-gradient(90deg,#39ff14,#00ffd0); box-shadow: 0 0 12px #39ff14; }
+        .neon-title { text-shadow: 0 0 6px #ff2e9a, 0 0 18px #ff2e9a, 0 0 40px #b020ff, 0 0 80px #3b6bff; }
     </style>
 </head>
 <body>
@@ -197,6 +202,7 @@
                 <div class="timer-row" id="carTimerRow" style="display:none;"><span style="color:#00aaff;">CAR MODE</span><div class="bar-bg"><div id="carBar" class="bar-fill" style="background:#00aaff;"></div></div></div>
                 <div class="timer-row" id="shockTimerRow" style="display:none;"><span style="color:#ffffff;">GUN SHOCK (AUTO)</span><div class="bar-bg"><div id="shockBar" class="bar-fill" style="background:#ffffff;"></div></div></div>
                 
+                <div class="timer-row" id="shieldTimerRow" style="display:none;"><span style="color:#35d0ff;">BUBBLE SHIELD</span><div class="bar-bg"><div id="shieldBar" class="bar-fill" style="background:#35d0ff;"></div></div></div>
                 <div class="timer-row"><span style="color:#fff;">DASH CD</span><div class="bar-bg"><div id="dashBar" class="bar-fill" style="background:#fff;"></div></div></div>
                 <div class="timer-row"><span style="color:#ff8800;">SWEEP CD</span><div class="bar-bg"><div id="diveBar" class="bar-fill" style="background:#ff8800;"></div></div></div>
             </div>
@@ -277,17 +283,19 @@
             if (e.key === 'Escape' && document.getElementById('readmeModal').style.display !== 'none') closeReadme();
         });
 
+        var bgDirty = true, bgCache = null, bgTick = 0, reflecting = false;
         // DISPLAY FIX
         function resizeCanvas() {
             const GAME_HEIGHT = 720;
             const scale = GAME_HEIGHT / window.innerHeight;
             canvas.width = window.innerWidth * scale;
-            canvas.height = GAME_HEIGHT;
+            canvas.height = GAME_HEIGHT; bgDirty = true;
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
         const gravity = 0.8;
+        function groundY() { return canvas.height - 190; }
         let score = 0; let coins = 0;
         let currentStage = 1;
         let shakeTime = 0; let cameraX = 0;
@@ -304,6 +312,7 @@
         let hasCarMode = false; let carModeTimer = 0; const MAX_CAR_TIME = 300; 
         let hasGunShock = false; let gunShockTimer = 0; const MAX_SHOCK_TIME = 300; 
         let blackOrbs = 0; const maxBlackOrbs = 10;
+        let hasShield = false; let shieldTimer = 0; let shieldHits = 0; const MAX_SHIELD_TIME = 600;
         
         let framesElapsed = 0; let levelCompleted = false; 
         const LEVEL_TIMER_FRAMES = 90 * 60; 
@@ -413,11 +422,19 @@
                 this.team = team; this.radius = sizeBoost ? 24 : 12; this.active = true;
             }
             draw() {
-                c.save(); c.translate(-cameraX, 0); c.shadowBlur = 20; c.shadowColor = this.color;
-                c.beginPath(); c.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                c.fillStyle = this.color; c.fill(); c.restore();
+                c.save(); c.translate(-cameraX, 0);
+                const dir = this.velocity > 0 ? 1 : -1, len = this.radius * 5;
+                const g = c.createLinearGradient(this.x - dir * len, 0, this.x, 0);
+                g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, this.color);
+                c.strokeStyle = g; c.lineWidth = this.radius * 0.5; c.lineCap = 'round';
+                c.beginPath(); c.moveTo(this.x - dir * len, this.y); c.lineTo(this.x, this.y); c.stroke();
+                c.shadowBlur = reflecting ? 0 : 25; c.shadowColor = this.color;
+                c.fillStyle = this.color; c.beginPath(); c.arc(this.x, this.y, this.radius, 0, Math.PI * 2); c.fill();
+                c.shadowBlur = 0; c.fillStyle = 'rgba(255,255,255,0.85)';
+                c.beginPath(); c.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2); c.fill();
+                c.restore();
             }
-            update() { this.draw(); this.x += this.velocity; }
+            update() { this.draw(); drawReflected(() => this.draw()); this.x += this.velocity; }
         }
         const projectiles = [];
 
@@ -507,11 +524,11 @@
                 c.save();
                 c.translate(-cameraX, 0);
 
-                if(this.flashTimer > 0 && this.flashTimer % 4 < 2) {
+                if(!reflecting && this.flashTimer > 0 && this.flashTimer % 4 < 2) {
                     c.filter = 'brightness(300%)';
                 }
 
-                this.animTimer += 1;
+                if (!reflecting) this.animTimer += 1;
                 let bottomY = this.position.y + this.height;
                 let isMoving = Math.abs(this.velocity.x) > 0.5;
                 let isJumping = this.velocity.y < -1 || this.velocity.y > 1;
@@ -533,8 +550,8 @@
                     this.width = 50; 
                 }
 
-                if (this.team === 'ally') c.globalAlpha = 0.6;
-                c.shadowBlur = (this.team === 'player' || this.team === 'ally') ? 15 : 0;
+                if (this.team === 'ally') c.globalAlpha *= 0.6;
+                c.shadowBlur = reflecting ? 0 : 18;
                 c.shadowColor = this.color;
                 
                 let headRadius = this.type === 'spider' ? 15 : (this.type === 'goliath' ? 25 : 20);
@@ -693,20 +710,22 @@
             }
 
             update() {
-                this.draw();
+                this.draw(); drawReflected(() => this.draw()); drawShield(this);
                 if (this.flashTimer > 0) this.flashTimer--;
                 
-                if (this.team !== 'player' && this.team !== 'ally') {
-                    let hpPercent = this.health / this.maxHealth;
+                if (this.team !== 'ally') {
+                    let hp = Math.max(0, this.health / this.maxHealth), bw = Math.max(this.width, 60);
+                    let bx = this.position.x + this.width / 2 - bw / 2, by = this.position.y - 18;
+                    let col = hp > 0.5 ? '#39ff14' : (hp > 0.25 ? '#ffcc00' : '#ff2a55');
                     c.save(); c.translate(-cameraX, 0);
-                    c.fillStyle = '#f00'; c.fillRect(this.position.x, this.position.y - 15, this.width, 5);
-                    c.fillStyle = '#0f0'; c.fillRect(this.position.x, this.position.y - 15, this.width * hpPercent, 5);
+                    c.fillStyle = 'rgba(0,0,0,0.55)'; c.fillRect(bx, by, bw, 6);
+                    c.shadowBlur = 10; c.shadowColor = col; c.fillStyle = col; c.fillRect(bx, by, bw * hp, 6);
                     c.restore();
                 }
 
                 this.position.y += this.velocity.y;
-                if (this.position.y + this.height + this.velocity.y >= canvas.height - 50) {
-                    this.velocity.y = 0; this.position.y = canvas.height - 50 - this.height; this.jumps = 0;
+                if (this.position.y + this.height + this.velocity.y >= groundY()) {
+                    this.velocity.y = 0; this.position.y = groundY() - this.height; this.jumps = 0;
                 } else { this.velocity.y += gravity; }
 
                 this.position.x += this.velocity.x;
@@ -824,6 +843,11 @@
 
             takeHit(damage, sourceX) {
                 if (this.isDashing) return;
+                if (this.team === 'player' && hasShield) {
+                    shieldHits--; sfxHit();
+                    createParticles(this.position.x + this.width/2, this.position.y + this.height/2, '#35d0ff');
+                    return;
+                }
                 this.health -= damage;
                 this.flashTimer = 8;
                 createParticles(this.position.x + this.width/2, this.position.y + this.height/2, this.color);
@@ -847,7 +871,8 @@
                         for(let k=0; k<dropAmount; k++) coinsArray.push(new Coin(this.position.x + this.width/2, this.position.y + this.height/2));
                         
                         let dropType = null;
-                        if (currentStage >= 2 && Math.random() < 0.20) dropType = 'car'; 
+                        if (Math.random() < 0.12) dropType = 'shield';
+                        else if (currentStage >= 2 && Math.random() < 0.20) dropType = 'car'; 
                         else if (this.type === 'gunner') dropType = 'gun';
                         else if (Math.random() < 0.60) {
                             const types = ['heal', 'damage', 'speed'];
@@ -891,7 +916,7 @@
         class Coin {
             constructor(x, y) { this.x = x; this.y = y; this.velocity = { x: (Math.random()-0.5)*10, y: -Math.random()*10 }; this.radius = 8; }
             draw() { c.save(); c.translate(-cameraX, 0); c.shadowBlur = 10; c.shadowColor = '#ffd700'; c.beginPath(); c.arc(this.x, this.y, this.radius, 0, Math.PI * 2); c.fillStyle = '#ffd700'; c.fill(); c.restore(); }
-            update() { this.draw(); this.y += this.velocity.y; this.x += this.velocity.x; if (this.y + this.radius >= canvas.height - 50) { this.velocity.y *= -0.5; this.velocity.x *= 0.8; this.y = canvas.height - 50 - this.radius; } else { this.velocity.y += gravity; } }
+            update() { this.draw(); this.y += this.velocity.y; this.x += this.velocity.x; if (this.y + this.radius >= groundY()) { this.velocity.y *= -0.5; this.velocity.x *= 0.8; this.y = groundY() - this.radius; } else { this.velocity.y += gravity; } }
         }
         const coinsArray = [];
 
@@ -899,7 +924,7 @@
             constructor(x, y, type) { this.x = x; this.y = y; this.type = type; this.radius = 12; this.floatOffset = Math.random() * 100; }
             draw() { 
                 c.save(); c.translate(-cameraX, 0); 
-                let colors = { 'heal': '#0f0', 'damage': '#0ff', 'speed': '#ffcc00', 'gun': '#fff', 'car': '#00aaff', 'blackorb': '#000000' }; 
+                let colors = { 'heal': '#0f0', 'damage': '#0ff', 'speed': '#ffcc00', 'gun': '#fff', 'car': '#00aaff', 'blackorb': '#000000', 'shield': '#35d0ff' }; 
                 let color = colors[this.type]; 
                 
                 c.shadowBlur = 15; c.shadowColor = (this.type === 'blackorb') ? '#fff' : color; 
@@ -910,7 +935,7 @@
                 if (this.type === 'blackorb') { c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke(); }
                 
                 c.fillStyle = (this.type === 'blackorb') ? '#fff' : '#000'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = 'bold 12px Courier'; 
-                let txt = {'heal':'+','damage':'F','speed':'S','gun':'G','car':'C','blackorb':'⚫'}[this.type]; 
+                let txt = {'heal':'+','damage':'F','speed':'S','gun':'G','car':'C','blackorb':'⚫','shield':'B'}[this.type]; 
                 c.fillText(txt, this.x, this.y + Math.sin(framesElapsed*0.05 + this.floatOffset)*10); c.restore(); 
             }
             update() { this.draw(); }
@@ -1015,34 +1040,130 @@
         document.getElementById('btnDash').addEventListener('touchstart', (e) => { e.preventDefault(); player.dash(); });
         document.getElementById('btnDive').addEventListener('touchstart', (e) => { e.preventDefault(); player.doSweepOrDive(); });
 
-        function drawBackground() {
-            c.fillStyle = '#050510'; c.fillRect(0, 0, canvas.width, canvas.height);
-            
+        function drawReflected(fn) {
+            const gy = groundY();
             c.save();
-            let sunY = canvas.height - 150;
-            let grad = c.createLinearGradient(0, sunY - 200, 0, sunY + 150);
-            grad.addColorStop(0, '#ff0055');
-            grad.addColorStop(1, '#ffcc00');
-            c.fillStyle = grad;
-            c.shadowBlur = 50; c.shadowColor = '#ff0055';
-            c.beginPath(); c.arc(canvas.width / 2, sunY, 200, 0, Math.PI * 2); c.fill();
-            c.fillStyle = '#050510';
-            for (let i = 0; i < 6; i++) {
-                c.fillRect(0, sunY + (i*20), canvas.width, 4 + (i*2));
+            c.beginPath(); c.rect(0, gy, canvas.width, canvas.height - gy); c.clip();
+            c.translate(0, gy * 2); c.scale(1, -1); c.globalAlpha = 0.3;
+            reflecting = true; fn(); reflecting = false;
+            c.restore();
+        }
+
+        function drawShield(p) {
+            if (!hasShield || p.team !== 'player') return;
+            if (shieldTimer < 90 && Math.floor(shieldTimer / 6) % 2 === 0) return;
+            const x = p.position.x + p.width / 2 - cameraX, y = p.position.y + p.height / 2, r = 100 + Math.sin(bgTick * 0.1) * 3;
+            c.save();
+            const g = c.createRadialGradient(x, y, r * 0.3, x, y, r);
+            g.addColorStop(0, 'rgba(0,200,255,0.05)'); g.addColorStop(1, 'rgba(0,200,255,0.3)');
+            c.fillStyle = g; c.strokeStyle = '#35d0ff'; c.lineWidth = 4; c.shadowBlur = 28; c.shadowColor = '#35d0ff';
+            c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); c.stroke();
+            c.shadowBlur = 0; c.fillStyle = 'rgba(0,225,255,0.7)';
+            c.beginPath(); c.arc(x - r * 0.1, y - r * 0.35, r * 0.32, 0, Math.PI * 2); c.fill();
+            c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 3;
+            c.beginPath(); c.arc(x, y, r - 8, Math.PI * 1.1, Math.PI * 1.35); c.stroke();
+            c.restore();
+        }
+
+        function buildBackground() {
+            bgDirty = false;
+            const W = canvas.width, H = canvas.height, gy = groundY(), hz = gy - 150;
+            const mk = (w, h) => { const k = document.createElement('canvas'); k.width = w; k.height = h; return k; };
+            const sky = mk(W, H), s = sky.getContext('2d');
+            let g = s.createLinearGradient(0, 0, 0, hz);
+            g.addColorStop(0, '#04010f'); g.addColorStop(0.6, '#12052e'); g.addColorStop(1, '#3a0a52');
+            s.fillStyle = g; s.fillRect(0, 0, W, H);
+            const sc = ['#3b7bff', '#ff3fa4', '#6a5cff', '#00cfff'];
+            for (let i = 0; i < 14; i++) {
+                const left = i % 2 === 0, x0 = left ? Math.random() * W * 0.22 : W - Math.random() * W * 0.22;
+                const y0 = Math.random() * hz * 0.5, len = 80 + Math.random() * 160;
+                const dx = (left ? 1 : -1) * len * 0.8, dy = len * 0.6;
+                const lg = s.createLinearGradient(x0, y0, x0 + dx, y0 + dy);
+                lg.addColorStop(0, 'rgba(255,255,255,0)'); lg.addColorStop(1, sc[i % 4]);
+                s.strokeStyle = lg; s.lineWidth = 2 + Math.random() * 2;
+                s.beginPath(); s.moveTo(x0, y0); s.lineTo(x0 + dx, y0 + dy); s.stroke();
             }
-            c.restore();
+            const sx = W / 2, sy = hz - 70, sr = 170;
+            s.save();
+            g = s.createLinearGradient(0, sy - sr, 0, sy + sr);
+            g.addColorStop(0, '#ff2e63'); g.addColorStop(1, '#ff9a1f');
+            s.fillStyle = g; s.shadowBlur = 70; s.shadowColor = '#ff2e63';
+            s.beginPath(); s.arc(sx, sy, sr, 0, Math.PI * 2); s.fill();
+            s.shadowBlur = 0; s.clip();
+            s.fillStyle = 'rgba(170,10,70,0.9)';
+            for (let i = 0; i < 6; i++) s.fillRect(sx - sr, sy + 10 + i * 26, sr * 2, 3 + i * 2.5);
+            s.restore();
+            g = s.createLinearGradient(0, hz, 0, gy);
+            g.addColorStop(0, '#1a0638'); g.addColorStop(1, '#0a0220');
+            s.fillStyle = g; s.fillRect(0, hz, W, gy - hz);
+            g = s.createLinearGradient(0, gy, 0, H);
+            g.addColorStop(0, '#12052e'); g.addColorStop(1, '#030012');
+            s.fillStyle = g; s.fillRect(0, gy, W, H - gy);
+            g = s.createLinearGradient(0, gy, 0, H);
+            g.addColorStop(0, 'rgba(255,90,60,0.6)'); g.addColorStop(1, 'rgba(255,40,120,0)');
+            s.fillStyle = g; s.fillRect(sx - 180, gy, 360, H - gy);
 
-            c.save(); c.translate(-cameraX * 0.5, 0);
-            c.strokeStyle = 'rgba(0, 255, 255, 0.3)'; c.lineWidth = 2;
-            for(let i=-2000; i<10000; i+=80) { c.beginPath(); c.moveTo(i, canvas.height-50); c.lineTo(i - 300, canvas.height); c.stroke(); }
-            for(let i=0; i<50; i+=10) { c.beginPath(); c.moveTo(-2000, canvas.height - 50 + i); c.lineTo(10000, canvas.height - 50 + i); c.stroke(); }
-            c.restore();
+            const mt = (amp, fill, rim, f1, f2) => {
+                const w = 1536, k = mk(w, amp + 4), x = k.getContext('2d'), n = 48;
+                x.beginPath(); x.moveTo(0, amp + 4);
+                for (let i = 0; i <= n; i++) {
+                    const a = 2 * Math.PI * i / n, v = Math.abs(Math.sin(a * f1 + 1)) * 0.6 + Math.abs(Math.sin(a * f2 + 2)) * 0.4;
+                    x.lineTo(i * w / n, amp + 4 - amp * (0.15 + 0.85 * v));
+                }
+                x.lineTo(w, amp + 4); x.closePath();
+                x.fillStyle = fill; x.fill(); x.strokeStyle = rim; x.lineWidth = 2; x.stroke();
+                return k;
+            };
+            const cl = mk(1800, 220), x = cl.getContext('2d');
+            for (let k = 0; k < 3; k++) {
+                const bx = 300 + k * 600;
+                for (let j = 0; j < 9; j++) {
+                    const r = 30 + ((j * 29 + k * 13) % 32), cx = bx + (j - 4) * 34, cy = 190 - Math.abs(Math.sin(j * 1.9 + k)) * 90;
+                    x.fillStyle = '#2a0a55'; x.strokeStyle = 'rgba(255,90,100,0.6)'; x.lineWidth = 3;
+                    x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill(); x.stroke();
+                }
+            }
+            bgCache = { sky, cloud: cl, far: mt(110, '#1a0b3d', 'rgba(255,70,150,0.35)', 3, 7), near: mt(80, '#0b0420', 'rgba(80,160,255,0.35)', 4, 9) };
+        }
 
-            c.save(); c.translate(-cameraX * 0.5, 0);
-            c.fillStyle = 'rgba(20,0,30,0.8)'; c.fillRect(cameraX * 0.5, canvas.height - 50, canvas.width + 100, 50);
-            c.strokeStyle = '#00ffff'; c.lineWidth = 4;
-            c.beginPath(); c.moveTo(cameraX * 0.5 - 50, canvas.height - 50); c.lineTo(cameraX * 0.5 + canvas.width + 100, canvas.height - 50); c.stroke();
+        function drawBackground() {
+            if (bgDirty || !bgCache) buildBackground();
+            bgTick++;
+            const W = canvas.width, gy = groundY(), hz = gy - 150;
+            c.drawImage(bgCache.sky, 0, 0);
+            const tile = (img, f, y) => {
+                const w = img.width; let off = -(((cameraX * f) % w) + w) % w;
+                for (let x = off; x < W; x += w) c.drawImage(img, x, y);
+            };
+            tile(bgCache.cloud, 0.08, hz - 220);
+            tile(bgCache.far, 0.18, hz - 110);
+            tile(bgCache.near, 0.3, hz - 80);
+            c.save();
+            const cols = ['#ff2e9a', '#3b6bff', '#b020ff', '#00d4ff'];
+            for (let i = 0; i < 9; i++) {
+                const p = ((i + bgTick * 0.012) % 9) / 9;
+                c.globalAlpha = 0.25 + 0.5 * p; c.fillStyle = cols[i % 4];
+                c.fillRect(0, hz + 150 * p * p, W, 1.5 + 6 * p);
+            }
+            c.globalAlpha = 0.6; c.lineWidth = 2;
+            for (let i = 0; i < 10; i++) {
+                const y = hz + 20 + (i * 53) % 125, len = 60 + (i * 37) % 120, M = W + 300;
+                const x = (((i * 211 - cameraX * (0.4 + (i % 3) * 0.3)) % M) + M) % M - 150;
+                c.strokeStyle = cols[i % 4]; c.beginPath(); c.moveTo(x, y); c.lineTo(x + len, y); c.stroke();
+            }
+            c.globalAlpha = 1; c.shadowBlur = 20; c.shadowColor = '#00e5ff'; c.fillStyle = '#00e5ff';
+            c.fillRect(0, gy, W, 3);
             c.restore();
+        }
+
+        function drawWaterOverlay() {
+            const W = canvas.width, H = canvas.height;
+            for (let y = groundY() + 6, i = 0; y < H; i++) {
+                const h = 2 + i * 0.9, wob = Math.sin(bgTick * 0.04 + i * 1.3);
+                c.fillStyle = i % 3 === 0 ? 'rgba(255,40,150,0.35)' : 'rgba(6,2,28,0.7)';
+                c.fillRect(wob * 10 - 10, y, W + 20, h);
+                y += h + 4 + i * 1.2;
+            }
         }
 
         function rectangularCollision({ r1, r2 }) {
@@ -1107,6 +1228,7 @@
             hasSpeedBoost = false; speedBoostTimer = 0;
             hasCarMode = false; carModeTimer = 0;
             hasGunShock = false; gunShockTimer = 0;
+            hasShield = false; shieldTimer = 0; document.getElementById('shieldTimerRow').style.display = 'none';
             document.getElementById('carTimerRow').style.display = 'none';
             document.getElementById('shockTimerRow').style.display = 'none';
             
@@ -1199,6 +1321,7 @@
             if (hasSpeedBoost && --speedBoostTimer <= 0) hasSpeedBoost = false;
             if (hasCarMode && --carModeTimer <= 0) { hasCarMode = false; document.getElementById('carTimerRow').style.display = 'none'; }
             if (hasGunShock && --gunShockTimer <= 0) { hasGunShock = false; document.getElementById('shockTimerRow').style.display = 'none'; }
+            if (hasShield && (--shieldTimer <= 0 || shieldHits <= 0)) { hasShield = false; shieldTimer = 0; document.getElementById('shieldTimerRow').style.display = 'none'; }
             
             document.getElementById('dashBar').style.width = ((player.maxDashCooldown - player.dashCooldown) / player.maxDashCooldown * 100) + '%';
             document.getElementById('diveBar').style.width = ((player.maxDiveCooldown - player.diveCooldown) / player.maxDiveCooldown * 100) + '%';
@@ -1207,6 +1330,7 @@
             document.getElementById('speedBar').style.width = (speedBoostTimer/MAX_SPEED_TIME*100)+'%';
             document.getElementById('carBar').style.width = (carModeTimer/MAX_CAR_TIME*100)+'%';
             document.getElementById('shockBar').style.width = (gunShockTimer/MAX_SHOCK_TIME*100)+'%';
+            document.getElementById('shieldBar').style.width = (shieldTimer/MAX_SHIELD_TIME*100)+'%';
 
             for (let i = particles.length - 1; i >= 0; i--) { const p = particles[i]; if (p.alpha <= 0) particles.splice(i, 1); else p.update(); }
             for (let i = shockLasers.length - 1; i >= 0; i--) { const sl = shockLasers[i]; if (sl.life <= 0) shockLasers.splice(i, 1); else sl.update(); }
@@ -1226,6 +1350,7 @@
                     if (pUp.type === 'heal') player.health = Math.min(player.maxHealth, player.health + 50);
                     else if (pUp.type === 'damage') { hasFireballBoost = true; fireballBoostTimer = MAX_FB_TIME; }
                     else if (pUp.type === 'speed') { hasSpeedBoost = true; speedBoostTimer = MAX_SPEED_TIME; }
+                    else if (pUp.type === 'shield') { hasShield = true; shieldTimer = MAX_SHIELD_TIME; shieldHits = 3; document.getElementById('shieldTimerRow').style.display = 'flex'; }
                     else if (pUp.type === 'gun') player.shootFireball();
                     else if (pUp.type === 'car') { 
                         hasCarMode = true; carModeTimer = MAX_CAR_TIME; 
@@ -1369,6 +1494,7 @@
             }
 
             player.update();
+            drawWaterOverlay();
 
             document.getElementById('playerHealth').style.width = (player.health / player.maxHealth * 100) + '%';
             document.getElementById('scoreBoard').innerText = `SCORE: ${score}`;
@@ -1440,6 +1566,12 @@
         }
 
         drawBackground();
+        (function menuLoop() {
+            if (gameState !== 'MENU') return;
+            const sv = cameraX; cameraX = (menuLoop.m = (menuLoop.m || 0) + 0.8);
+            c.save(); drawBackground(); drawWaterOverlay(); c.restore(); cameraX = sv;
+            requestAnimationFrame(menuLoop);
+        })();
     </script>
 
     <!-- README MODAL START -->

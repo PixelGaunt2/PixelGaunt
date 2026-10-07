@@ -256,7 +256,7 @@ const keys = {}; const mouse = { x: 0, y: 0, down: false, click: false };
 let particles = [], fishes = [], floatingTexts = [], weatherParticles = [], bulletTrails = [], bubbles = [];
 let bobber = { x: 0, y: 0, active: false, targetY: 0 };
 let fishProgress = 10, hookedFish = null, fishPos = 50, fishTarget = 50, barPos = 10, moveTimer = 0;
-let battleTimer = 0, battleTarget = null;
+let battleTimer = 0, battleTarget = null, streak = 0;
 
 // --- GAME AUDIO (tries the .wav/.mp3 files; falls back to built-in synthesized sound if they are missing) ---
 const GameAudio = (function () {
@@ -397,7 +397,7 @@ loadData();
 function hideAllMenus() { document.querySelectorAll('.menu').forEach(m => { m.classList.remove('active'); m.style.display = 'none'; }); }
 function showMenu(id) { hideAllMenus(); let m = document.getElementById(id); if(m) { m.style.display = 'flex'; setTimeout(() => m.classList.add('active'), 10); } }
 
-function startGame() { GameAudio.startMusic(); hideAllMenus(); document.getElementById('hud').style.display = 'flex'; player.hp = player.maxHp; updateHUD(); gameState = STATE.IDLE; fishes = []; spawnFish(8); document.body.classList.remove('battle-mode'); hookedFish = null; battleTarget = null; }
+function startGame() { streak = 0; GameAudio.startMusic(); hideAllMenus(); document.getElementById('hud').style.display = 'flex'; player.hp = player.maxHp; updateHUD(); gameState = STATE.IDLE; fishes = []; spawnFish(8); document.body.classList.remove('battle-mode'); hookedFish = null; battleTarget = null; }
 function openShop() { showMenu('menu-shop'); document.getElementById('shop-coins').innerText = player.coins; document.getElementById('btn-upg-rod').innerText = player.upgrades.rod ? "Maxed" : "50 Coins"; document.getElementById('btn-upg-armor').innerText = player.upgrades.armor ? "Maxed" : "100 Coins"; document.getElementById('btn-upg-lure').innerText = player.upgrades.lure ? "Maxed" : "200 Coins"; }
 function closeShop() { showMenu('menu-main'); }
 function buyUpgrade(type, cost) { if (player.upgrades[type] === 0 && player.coins >= cost) { player.coins -= cost; player.upgrades[type] = 1; saveData(); playSound('buy'); openShop(); } }
@@ -441,7 +441,7 @@ class Fish {
             this.size = 50; this.color = '#1e5f32'; this.hp = 2; this.maxHp = 2; this.value = 150; this.difficulty = 3.5; this.name = "Alligator"; this.z = 80;
         } else { 
             this.size = type === 1 ? 40 : (type === 3 ? 20 : 25);
-            this.color = type === 0 ? '#4facfe' : type === 1 ? '#808080' : '#ffd700';
+            this.color = type === 0 ? (Math.random() < 0.4 ? '#a668e0' : '#4facfe') : type === 1 ? '#808080' : '#ffd700';
             this.difficulty = type === 1 ? 2.5 : type === 3 ? 2 : 1.2;
             this.value = type === 1 ? 20 : type === 3 ? 100 : 10;
             this.name = type === 1 ? "Heavy Fish" : type === 3 ? "Golden Fish" : "Normal Fish";
@@ -651,23 +651,21 @@ class Fish {
             if (this.state === 'jump') ctx.rotate(jumpAngle);
 
             ctx.fillStyle = this.color;
-            ctx.beginPath(); ctx.ellipse(0, 0, this.size, this.size*0.6, 0, 0, Math.PI*2); ctx.fill();
-            
-            ctx.save();
-            ctx.translate(-this.size + 5, 0);
-            ctx.rotate(Math.sin(time * 20) * 0.3); 
-            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-20, -15); ctx.lineTo(-20, 15); ctx.fill();
-            ctx.restore();
-
-            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(this.size*0.5, -this.size*0.2, this.size*0.2, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(this.size*0.6, -this.size*0.2, this.size*0.1, 0, Math.PI*2); ctx.fill();
-
+            let s = this.size; ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = '#1b1b2f';
+            if (this.type === 3) { ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 20; }
+            ctx.save(); ctx.translate(-s + 5, 0); ctx.rotate(Math.sin(time * 20) * 0.3);
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-20, -15); ctx.lineTo(-20, 15); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+            ctx.beginPath(); ctx.moveTo(-s*0.3, -s*0.5); ctx.lineTo(0, -s*0.95); ctx.lineTo(s*0.35, -s*0.5); ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(0, 0, s, s*0.6, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.ellipse(s*0.1, s*0.25, s*0.7, s*0.25, 0, 0, Math.PI); ctx.fill();
+            ctx.fillStyle = this.color; ctx.beginPath(); ctx.ellipse(-s*0.1, s*0.1, s*0.3, s*0.14, 0.5, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(s*0.5, -s*0.18, s*0.2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(s*0.57, -s*0.18, s*0.11, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s*0.6, -s*0.22, s*0.04, 0, Math.PI*2); ctx.fill();
             if (this.type === 2) {
                 ctx.fillStyle = '#fff'; ctx.beginPath();
-                ctx.moveTo(this.size*0.8, this.size*0.1); ctx.lineTo(this.size*0.9, this.size*0.3); ctx.lineTo(this.size*0.7, this.size*0.2); ctx.fill();
-            }
-            if (this.type === 3) {
-                ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 20; ctx.strokeStyle = '#fff'; ctx.stroke();
+                ctx.moveTo(s*0.8, s*0.1); ctx.lineTo(s*0.9, s*0.3); ctx.lineTo(s*0.7, s*0.2); ctx.fill();
             }
         }
         ctx.restore();
@@ -701,44 +699,74 @@ function spawnFish(count) {
 }
 
 function drawBackground() {
-    let skyTop = dayTime > 0.5 ? '#001133' : '#87CEEB';
-    let skyBot = dayTime > 0.5 ? '#112244' : '#E0F6FF';
-    let grd = ctx.createLinearGradient(0, 0, 0, H/2);
-    grd.addColorStop(0, skyTop); grd.addColorStop(1, skyBot);
+    const night = dayTime > 0.5, wy = H/2 + 20;
+    let grd = ctx.createLinearGradient(0, 0, 0, wy);
+    grd.addColorStop(0, night ? '#001133' : '#5fb9f2'); grd.addColorStop(1, night ? '#112244' : '#d4f0ff');
     ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
 
-    ctx.fillStyle = dayTime > 0.5 ? '#FFF' : '#FFDF00';
+    ctx.fillStyle = night ? '#FFF' : '#FFE14D';
     let sunX = (dayTime * 2 % 1) * W;
     ctx.beginPath(); ctx.arc(sunX, 100, 40, 0, Math.PI*2); ctx.fill();
-    if (dayTime > 0.5) { ctx.shadowColor = '#FFF'; ctx.shadowBlur = 20; ctx.fill(); ctx.shadowBlur = 0; }
+    if (night) { ctx.shadowColor = '#FFF'; ctx.shadowBlur = 20; ctx.fill(); ctx.shadowBlur = 0; }
 
-    ctx.fillStyle = dayTime > 0.5 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)';
-    for(let i=0; i<5; i++) {
-        let cx = ((time*10 + i*200) % (W+200)) - 100;
-        ctx.beginPath(); ctx.arc(cx, 150 + Math.sin(i)*50, 30, 0, Math.PI*2);
-        ctx.arc(cx+30, 140 + Math.sin(i)*50, 40, 0, Math.PI*2);
-        ctx.arc(cx+60, 150 + Math.sin(i)*50, 30, 0, Math.PI*2); ctx.fill();
+    // puffy outlined cartoon clouds
+    for (let pass = 0; pass < 2; pass++) {
+        ctx.fillStyle = pass === 0 ? (night ? 'rgba(255,255,255,0.1)' : 'rgba(110,170,225,0.7)') : (night ? 'rgba(255,255,255,0.12)' : '#fff');
+        for (let i = 0; i < 5; i++) {
+            let cx = ((time*10 + i*200) % (W+200)) - 100, cy = 150 + Math.sin(i)*50, g = pass === 0 ? 3 : 0;
+            [[0,0,28],[32,-12,36],[66,0,28],[33,10,30]].forEach(([ox,oy,r]) => { ctx.beginPath(); ctx.arc(cx+ox, cy+oy, r+g, 0, Math.PI*2); ctx.fill(); });
+        }
     }
 
-    let waterGrd = ctx.createLinearGradient(0, H/2, 0, H);
-    waterGrd.addColorStop(0, dayTime > 0.5 ? '#003366' : '#00b4db'); 
-    waterGrd.addColorStop(1, dayTime > 0.5 ? '#001133' : '#0083b0'); 
-    ctx.fillStyle = waterGrd;
-    
-    ctx.beginPath();
-    ctx.moveTo(0, H);
-    for(let i=0; i<=W; i+=50) { ctx.lineTo(i, H/2 + 20 + Math.sin(time*2 + i*0.02) * 10); }
+    // turquoise ocean
+    const surf = (x, ph) => wy + Math.sin(time*2 + x*0.02 + ph) * 10;
+    let wg = ctx.createLinearGradient(0, wy, 0, H);
+    wg.addColorStop(0, night ? '#003366' : '#2fd6ec'); wg.addColorStop(0.5, night ? '#002255' : '#13a6d6'); wg.addColorStop(1, night ? '#001133' : '#0a6aa8');
+    ctx.fillStyle = wg; ctx.beginPath(); ctx.moveTo(0, H);
+    for (let x = 0; x <= W; x += 20) ctx.lineTo(x, surf(x, 0));
     ctx.lineTo(W, H); ctx.fill();
 
-    ctx.fillStyle = dayTime > 0.5 ? '#6a8d73' : '#c2e59c'; 
-    ctx.beginPath(); ctx.moveTo(0, H/2 - 20); ctx.lineTo(W * 0.25, H/2 - 10); 
-    ctx.quadraticCurveTo(W * 0.35, H/2 + 50, W * 0.3, H); ctx.lineTo(0, H); ctx.fill();
+    // sunlight rays
+    ctx.save();
+    for (let i = 0; i < 7; i++) {
+        let rx = W*0.4 + i*W*0.1 + Math.sin(time*0.5 + i)*20;
+        ctx.globalAlpha = (night ? 0.03 : 0.07) + 0.06*Math.abs(Math.sin(time*0.6 + i*1.3));
+        ctx.fillStyle = '#fff'; ctx.beginPath();
+        ctx.moveTo(rx, wy + 5); ctx.lineTo(rx + 45, wy + 5); ctx.lineTo(rx - 90, H); ctx.lineTo(rx - 190, H); ctx.fill();
+    }
+    ctx.restore();
 
-    ctx.fillStyle = '#e9c46a';
-    ctx.beginPath(); ctx.moveTo(W * 0.25, H/2 - 10); ctx.quadraticCurveTo(W * 0.38, H/2 + 50, W * 0.32, H);
-    ctx.lineTo(W * 0.28, H); ctx.quadraticCurveTo(W * 0.34, H/2 + 50, W * 0.23, H/2 - 10); ctx.fill();
-    
-    ctx.fillStyle = '#d4a373';
+    // white foam wave lines
+    ctx.lineCap = 'round';
+    [[0,4,1],[1.5,3,0.6]].forEach(([ph,lw,al],k) => {
+        ctx.strokeStyle = 'rgba(255,255,255,' + al + ')'; ctx.lineWidth = lw; ctx.beginPath();
+        for (let x = 0; x <= W; x += 20) { let y = surf(x, ph) + k*9; if (x) ctx.lineTo(x, y); else ctx.moveTo(x, y); }
+        ctx.stroke();
+    });
+
+    // grassy island
+    ctx.beginPath(); ctx.moveTo(0, H/2 - 20); ctx.lineTo(W*0.25, H/2 - 10);
+    ctx.quadraticCurveTo(W*0.35, H/2 + 50, W*0.3, H); ctx.lineTo(0, H);
+    ctx.save(); ctx.fillStyle = night ? '#4f7a58' : '#8cc63f'; ctx.fill(); ctx.clip();
+    ctx.fillStyle = night ? '#3f6a48' : '#76b02c';
+    [[0.03,0.62,70,40],[0.1,0.88,90,36],[0.2,0.72,60,26],[0.02,0.97,50,50]].forEach(([fx,fy,rx,ry]) => { ctx.beginPath(); ctx.ellipse(W*fx, H*fy, rx, ry, 0, 0, Math.PI*2); ctx.fill(); });
+    ctx.fillStyle = night ? '#5f8f68' : '#a8dc55'; ctx.beginPath(); ctx.ellipse(W*0.18, H*0.9, 120, 30, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(60,110,20,0.55)'; ctx.beginPath(); ctx.ellipse(W*0.15 - 5, H/2 + 161, 95, 20, 0, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    // sandy rim with outline
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(W*0.25, H/2 - 10); ctx.quadraticCurveTo(W*0.35, H/2 + 50, W*0.3, H);
+    ctx.strokeStyle = '#7a4b22'; ctx.lineWidth = 22; ctx.stroke();
+    ctx.strokeStyle = night ? '#a88a55' : '#f0bd62'; ctx.lineWidth = 14; ctx.stroke();
+
+    // pebbles
+    [[0.285,H/2+78,8,5],[0.292,H/2+72,5,3],[0.29,H/2+130,7,4],[0.299,H/2+134,4,3]].forEach(([fx,y,rx,ry]) => {
+        ctx.fillStyle = '#a8968a'; ctx.strokeStyle = '#6b5a50'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(W*fx, y, rx, ry, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    });
+
+    ctx.fillStyle = night ? '#6b5a3a' : '#e8c88a';
     ctx.fillRect(W*0.28, H - 20, W, 20);
 }
 
@@ -771,14 +799,13 @@ function drawPandaAndChair(x, y, state) {
 
     let breath = (state === 'idle' || state === 'fishing') ? Math.sin(time * 3) * 0.02 : 0;
     
-    ctx.strokeStyle = '#d4a373'; ctx.lineWidth = 5; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(-20, 30); ctx.lineTo(-40, 90); ctx.stroke(); 
-    ctx.beginPath(); ctx.moveTo(20, 30); ctx.lineTo(35, 90); ctx.stroke(); 
-    ctx.beginPath(); ctx.moveTo(-35, 20); ctx.lineTo(25, 20); ctx.stroke(); 
-    
-    ctx.fillStyle = '#e63946'; 
-    ctx.beginPath(); ctx.moveTo(-35, -30); ctx.lineTo(-20, 35); ctx.lineTo(30, 35); 
-    ctx.lineTo(25, 45); ctx.lineTo(-25, 45); ctx.lineTo(-45, -30); ctx.fill();
+    ctx.lineCap = 'round';
+    [[-20,46,-40,90],[20,46,38,90],[0,50,0,92],[-30,66,28,66]].forEach(([x1,y1,x2,y2]) => {
+        ctx.strokeStyle = '#7a4b22'; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+        ctx.strokeStyle = '#e8a45a'; ctx.lineWidth = 5; ctx.stroke();
+    });
+    ctx.fillStyle = '#d62839'; ctx.strokeStyle = '#7a1020'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(0, 46, 44, 11, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
 
     ctx.save();
     ctx.scale(1, 1 + breath); 
@@ -802,6 +829,11 @@ function drawPandaAndChair(x, y, state) {
     ctx.fillStyle = '#000';
     ctx.beginPath(); ctx.arc(-45, -65, 15, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(15, -65, 15, 0, Math.PI*2); ctx.fill();
+
+    // red scarf
+    ctx.fillStyle = '#d62839'; ctx.strokeStyle = '#7a1020'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-40, 4); ctx.lineTo(-62, 10); ctx.lineTo(-52, 26); ctx.lineTo(-38, 14); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(-12, 8, 32, 9, 0.08, 0, Math.PI*2); ctx.fill(); ctx.stroke();
 
     ctx.save();
     if (state === 'shooting' || state === 'shocked') {
@@ -865,8 +897,8 @@ function drawPandaAndChair(x, y, state) {
     } else {
         ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(5, 10, 20, 10, -0.5, 0, Math.PI*2); ctx.fill();
         
-        ctx.strokeStyle = player.upgrades.rod ? '#333' : '#8B4513';
-        ctx.lineWidth = player.upgrades.rod ? 5 : 4;
+        ctx.strokeStyle = player.upgrades.rod ? '#2b2b4a' : '#111';
+        ctx.lineWidth = player.upgrades.rod ? 7 : 6;
         ctx.beginPath(); ctx.moveTo(-10, 25); 
         
         let rodTipX = 90; let rodTipY = -80;
@@ -880,7 +912,7 @@ function drawPandaAndChair(x, y, state) {
             if (state === 'pulling') {
                 ctx.lineTo((bobber.x - x)/1.6, (bobber.y - y)/1.6); 
             } else {
-                ctx.quadraticCurveTo((rodTipX + 50), (rodTipY + 50), (bobber.x - x)/1.6, (bobber.y - y)/1.6); 
+                ctx.lineTo((bobber.x - x)/1.6, (bobber.y - y)/1.6); 
             }
             ctx.stroke();
         }
@@ -890,6 +922,10 @@ function drawPandaAndChair(x, y, state) {
 }
 
 function drawUI() {
+    if (streak >= 2 && gameState !== STATE.MENU && gameState !== STATE.PAUSED && gameState !== STATE.GAMEOVER) {
+        ctx.textAlign = 'center'; ctx.font = '30px Fredoka One'; ctx.lineWidth = 5; ctx.strokeStyle = '#000'; ctx.fillStyle = '#ff9500';
+        ctx.strokeText(`🔥 Combo x${streak}`, W/2, 105); ctx.fillText(`🔥 Combo x${streak}`, W/2, 105); ctx.textAlign = 'left';
+    }
     if (gameState === STATE.HOOKED) {
         let barW = 35; let barH = 320;
         let bX = W - 120; let bY = H/2 - 160;
@@ -1009,14 +1045,14 @@ function update(dt) {
             f.tossStartY = f.y;
             f.tossProgress = 0;
             
-            player.coins += f.value; saveData(); updateHUD();
-            showNotification(`${f.name}! +${f.value}`, '#ffd700'); playSound('coin');
-            spawnParticles(bobber.x, bobber.y, '#ffd700', 30); spawnText(bobber.x, bobber.y - 50, `+${f.value}`, '#ffd700');
+            streak++; let bonus = streak >= 2 ? Math.min(streak, 6) * 5 : 0; player.coins += f.value + bonus; saveData(); updateHUD();
+            showNotification(`${f.name}! +${f.value + bonus}` + (streak >= 2 ? `  🔥 x${streak}` : ''), '#ffd700'); playSound('coin');
+            spawnParticles(bobber.x, bobber.y, '#ffd700', 30); spawnText(bobber.x, bobber.y - 50, `+${f.value + bonus}`, '#ffd700');
             
             gameState = STATE.IDLE; bobber.active = false; hookedFish = null;
         }
         if (fishProgress <= 0) {
-            showNotification("Escaped...", "#808080"); playSound('splash');
+            streak = 0; showNotification("Escaped...", "#808080"); playSound('splash');
             f.state = 'wander'; gameState = STATE.IDLE; bobber.active = false; hookedFish = null;
         }
     }
@@ -1053,7 +1089,7 @@ function update(dt) {
             screenshake(25, 0.5); playSound('hurt'); spawnParticles(pandaX, pandaY, '#ff3b30', 50);
             let dmg = battleTarget.type === 4 ? 45 : (battleTarget.type === 10 ? 40 : 30);
             if (player.upgrades.armor) dmg = Math.floor(dmg / 2);
-            player.hp -= dmg; updateHUD();
+            player.hp -= dmg; streak = 0; updateHUD();
             
             if (player.hp <= 0) triggerGameOver();
             else {
@@ -1078,7 +1114,7 @@ function draw() {
     drawBackground();
 
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    bubbles.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI*2); ctx.fill(); });
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 1.5; bubbles.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, b.radius + 1, 0, Math.PI*2); ctx.fill(); ctx.stroke(); });
 
     ctx.fillStyle = 'rgba(200,220,255,0.5)';
     weatherParticles.forEach(p => ctx.fillRect(p.x, p.y, 2, 10));
@@ -1086,8 +1122,15 @@ function draw() {
     drawBasket(W * 0.15 - 80, H/2 + 50);
 
     if (bobber.active && gameState !== STATE.HOOKED) {
+        if (gameState === STATE.WAITING) {
+            for (let k = 0; k < 3; k++) { let r = (time*18 + k*12) % 36; ctx.strokeStyle = 'rgba(255,255,255,' + (0.8*(1 - r/36)) + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(bobber.x, bobber.y + 5, r + 6, (r + 6)*0.28, 0, 0, Math.PI*2); ctx.stroke(); }
+        }
         ctx.fillStyle = '#ff3b30'; ctx.beginPath(); ctx.arc(bobber.x, bobber.y, 6, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(bobber.x, bobber.y-4, 3, 0, Math.PI*2); ctx.fill();
+        if (fishes.some(f => f.state === 'approach')) {
+            ctx.font = '34px Fredoka One'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.fillStyle = '#ffd700';
+            let ey = bobber.y - 22 + Math.sin(time*12)*3; ctx.strokeText('!', bobber.x, ey); ctx.fillText('!', bobber.x, ey); ctx.textAlign = 'left';
+        }
     }
 
     fishes.sort((a,b) => (a.state === 'tossed' ? 1000 : a.z) - (b.state === 'tossed' ? 1000 : b.z)).forEach(f => f.draw());
