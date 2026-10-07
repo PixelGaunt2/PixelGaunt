@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Serpent Relic 3.2: Max Performance</title>
+<title>Serpent Relic 4.0: Crystal Cavern</title>
 <style>
     :root {
         --bg: #030305;
@@ -41,7 +41,6 @@
         display: block; 
         width: 100%; 
         height: 100%; 
-        image-rendering: pixelated;
         transform: translateZ(0);
         backface-visibility: hidden;
     }
@@ -178,6 +177,52 @@
         #screenReadme h2 { font-size: 1.6rem; margin-top: auto; flex-shrink: 0; letter-spacing: 2px; }
         #screenReadme p { max-width: 90% !important; font-size: 1rem !important; margin-bottom: 1.2rem !important; flex-shrink: 0; }
         #screenReadme .btn { margin-bottom: auto; flex-shrink: 0; }
+    }
+
+    /* ================= CRYSTAL CAVERN VISUAL UPGRADE ================= */
+    body { background: radial-gradient(circle at 50% 40%, #0b1a6e 0%, #050a3a 55%, #02041c 100%); }
+    #gameContainer {
+        background: #040829; border: 1px solid rgba(60,170,255,0.38); border-radius: 18px;
+        box-shadow: 0 0 60px rgba(30,120,255,0.38), 0 0 130px rgba(120,60,255,0.2), inset 0 0 40px rgba(40,120,255,0.12);
+    }
+    .screen { background: radial-gradient(circle at 50% 45%, rgba(6,14,64,0.48), rgba(2,4,26,0.78)); }
+    #screenStart, #screenReadme, #screenLevels { background: radial-gradient(circle at 50% 58%, rgba(6,14,64,0.10), rgba(2,4,26,0.42)); }
+    #hud { z-index: 12; }
+    h1 {
+        font-size: clamp(2.2rem, 9vw, 4rem); letter-spacing: clamp(3px, 1.6vw, 8px);
+        text-shadow: 0 0 10px #3ad8ff, 0 0 30px rgba(40,140,255,0.9), 0 0 60px rgba(150,70,255,0.55);
+    }
+    h2 { text-shadow: 0 0 12px #b66bff, 0 0 30px rgba(120,70,255,0.7); }
+    .btn {
+        border-radius: 14px; border: 1.5px solid rgba(80,210,255,0.85); color: #c4f6ff;
+        background: linear-gradient(180deg, rgba(50,140,255,0.24), rgba(10,40,140,0.34));
+        box-shadow: 0 0 18px rgba(0,180,255,0.28), inset 0 0 14px rgba(90,200,255,0.14);
+    }
+    .btn:hover { background: linear-gradient(180deg, #62e8ff, #1e9cff); color: #031030; box-shadow: 0 0 34px rgba(60,210,255,0.95); }
+    .btn-continue { border-color: rgba(60,255,150,0.85); color: #b8ffd8; background: linear-gradient(180deg, rgba(40,220,130,0.22), rgba(5,90,60,0.34)); box-shadow: 0 0 18px rgba(0,255,120,0.25), inset 0 0 14px rgba(90,255,170,0.12); }
+    .btn-continue:hover { background: linear-gradient(180deg, #6dffb4, #1fd47a); color: #03210f; box-shadow: 0 0 34px rgba(60,255,150,0.9); }
+    #hud { flex-wrap: wrap; gap: 8px; }
+    .hud-text { white-space: nowrap; letter-spacing: 1px; font-size: 0.95rem; }
+    #controls-hud .hud-text { margin-right: 12px !important; }
+    #controls-hud .hud-text:last-child { margin-right: 0 !important; }
+    .hud-block { background: rgba(4,10,52,0.58); border: 1px solid rgba(80,180,255,0.38); border-radius: 12px; box-shadow: 0 0 14px rgba(40,130,255,0.18), inset 0 0 10px rgba(80,180,255,0.08); }
+    .level-grid { background: rgba(4,10,52,0.5); border: 1px solid rgba(80,180,255,0.25); border-radius: 16px; }
+    .lvl-btn { border-radius: 12px; background: rgba(4,10,50,0.7); border-color: rgba(70,90,160,0.5); }
+    .lvl-btn.unlocked { border-color: rgba(80,210,255,0.85); background: linear-gradient(180deg, rgba(50,140,255,0.2), rgba(10,40,140,0.3)); box-shadow: 0 0 14px rgba(0,200,255,0.2), inset 0 0 10px rgba(90,200,255,0.12); }
+    .d-btn {
+        border-radius: 16px; background: linear-gradient(180deg, rgba(60,170,255,0.22), rgba(10,50,150,0.3));
+        border: 1.5px solid rgba(90,220,255,0.7); color: #7ff0ff; text-shadow: 0 0 8px #3de8ff;
+    }
+    #popup { background: rgba(6,10,50,0.88); border-color: rgba(190,110,255,0.8); }
+    #minimapContainer {
+        border: 1.5px solid rgba(70,210,255,0.65); border-radius: 14px; background: rgba(2,8,36,0.72);
+        box-shadow: 0 0 20px rgba(0,190,255,0.28), inset 0 0 12px rgba(0,120,255,0.18);
+    }
+    @media (max-width: 700px) {
+        #hud { padding: 8px 10px; flex-wrap: wrap; gap: 6px; }
+        .hud-block { padding: 6px 10px; }
+        .hud-text { font-size: 0.78rem; letter-spacing: 1px; }
+        #minimapContainer { left: 12px; bottom: 16px; width: 96px; height: 96px; }
     }
 </style>
 </head>
@@ -503,11 +548,279 @@ window.onload = () => {
     // Generate initial 100 levels
     generateMoreLevels(1, 100);
 
+    // =====================================================================
+    //  CRYSTAL-CAVERN VISUAL ENGINE  (sprites are pre-rendered once for speed)
+    // =====================================================================
+    const TS = TILE_SIZE;
+    let dpr = 1, zoom = 1, hudH = 72, padTop = 215, portalScale = 1, portalBoost = 0;
+    let bgCanvas = null;
+
+    function rrPath(g, x, y, w, h, r) {
+        g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.arcTo(x + w, y, x + w, y + r, r);
+        g.lineTo(x + w, y + h - r); g.arcTo(x + w, y + h, x + w - r, y + h, r); g.lineTo(x + r, y + h);
+        g.arcTo(x, y + h, x, y + h - r, r); g.lineTo(x, y + r); g.arcTo(x, y, x + r, y, r); g.closePath();
+    }
+    function polyPath(g, pts) {
+        g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+        g.closePath();
+    }
+    function mkSprite(w, h, S) {
+        const c = document.createElement('canvas'); c.width = Math.round(w * S); c.height = Math.round(h * S);
+        const g = c.getContext('2d'); g.scale(S, S); return [c, g];
+    }
+
+    // ---- soft glow sprites (additive) ----
+    const glowCache = {};
+    function glowSprite(rgb) {
+        const k = rgb.join(',');
+        if (glowCache[k]) return glowCache[k];
+        const c = document.createElement('canvas'); c.width = c.height = 64;
+        const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+        gr.addColorStop(0, `rgba(${k},1)`); gr.addColorStop(0.35, `rgba(${k},0.42)`); gr.addColorStop(1, `rgba(${k},0)`);
+        g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+        return (glowCache[k] = c);
+    }
+    function drawGlow(x, y, r, rgb, a) {
+        ctx.globalAlpha = a; ctx.globalCompositeOperation = 'lighter';
+        ctx.drawImage(glowSprite(rgb), x - r, y - r, r * 2, r * 2);
+        ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    }
+
+    // ---- tile sprites ----
+    const wallSprite = (() => {
+        const [c, g] = mkSprite(TS, TS, 2);
+        const gr = g.createLinearGradient(0, 0, TS, TS); gr.addColorStop(0, '#0b1438'); gr.addColorStop(1, '#040820');
+        g.fillStyle = gr; g.fillRect(0, 0, TS, TS);
+        g.lineWidth = 1;
+        [[9, 0.13], [16, 0.09], [23, 0.05]].forEach(([o, a]) => {
+            g.strokeStyle = `rgba(150,200,255,${a})`; g.beginPath(); g.moveTo(3, 3 + o); g.lineTo(3 + o, 3); g.stroke();
+        });
+        g.strokeStyle = 'rgba(40,100,230,0.20)'; g.strokeRect(3.5, 3.5, TS - 7, TS - 7);
+        return c;
+    })();
+    const pathSprite = (() => {
+        const [c, g] = mkSprite(TS, TS, 2);
+        g.fillStyle = '#0a2658'; g.fillRect(0, 0, TS, TS);
+        const rg = g.createRadialGradient(TS / 2, TS / 2, 1, TS / 2, TS / 2, TS * 0.75);
+        rg.addColorStop(0, 'rgba(60,160,240,0.42)'); rg.addColorStop(1, 'rgba(20,70,160,0.05)');
+        g.fillStyle = rg; g.fillRect(0, 0, TS, TS);
+        const sh = g.createLinearGradient(0, 0, TS, TS); sh.addColorStop(0, 'rgba(255,255,255,0.10)'); sh.addColorStop(0.5, 'rgba(255,255,255,0)');
+        g.fillStyle = sh; g.fillRect(0, 0, TS, TS);
+        g.fillStyle = 'rgba(170,225,255,0.95)'; g.beginPath(); g.arc(TS / 2, TS / 2, 1.6, 0, Math.PI * 2); g.fill();
+        return c;
+    })();
+
+    // ---- crystals ----
+    function buildCrystal(light, base, dark, glowRGB) {
+        const [c, g] = mkSprite(60, 114, 2);
+        const P = { tip: [30, 5], ul: [8, 32], ur: [52, 32], mid: [30, 40], ll: [12, 94], lr: [48, 94], bot: [30, 110] };
+        g.shadowColor = `rgba(${glowRGB.join(',')},0.9)`; g.shadowBlur = 9;
+        const bl = g.createLinearGradient(0, 32, 0, 110); bl.addColorStop(0, light); bl.addColorStop(1, base);
+        const br = g.createLinearGradient(0, 32, 0, 110); br.addColorStop(0, base); br.addColorStop(1, dark);
+        g.fillStyle = bl; polyPath(g, [P.ul, P.mid, P.bot, P.ll]); g.fill();
+        g.fillStyle = br; polyPath(g, [P.ur, P.mid, P.bot, P.lr]); g.fill();
+        g.shadowBlur = 0;
+        g.fillStyle = light; polyPath(g, [P.tip, P.ul, P.mid]); g.fill();
+        g.fillStyle = base; polyPath(g, [P.tip, P.ur, P.mid]); g.fill();
+        g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 1;
+        [[P.tip, P.ul, P.mid], [P.tip, P.ur, P.mid], [P.ul, P.mid, P.bot, P.ll], [P.ur, P.mid, P.bot, P.lr]].forEach(p => { polyPath(g, p); g.stroke(); });
+        g.strokeStyle = 'rgba(255,255,255,0.38)'; g.lineWidth = 2; g.beginPath(); g.moveTo(15, 42); g.lineTo(18, 78); g.stroke();
+        return c;
+    }
+    const CRYSTAL_SPR = [
+        { c: buildCrystal('#d4fcff', '#37d6ff', '#0a7fc0', [40, 220, 255]), rgb: [40, 220, 255] },
+        { c: buildCrystal('#ecd2ff', '#a24bff', '#5a1fa8', [170, 90, 255]), rgb: [170, 90, 255] },
+        { c: buildCrystal('#c6d8ff', '#3b6bff', '#1a2f9a', [70, 120, 255]), rgb: [70, 120, 255] }
+    ];
+    const CRYSTALS = [
+        { fx: .05, fy: .12, s: 1.05, k: 1, r: -.25, par: .09, ph: 0 }, { fx: .11, fy: .33, s: .6, k: 2, r: .35, par: .05, ph: 1 },
+        { fx: .95, fy: .30, s: 1.15, k: 1, r: .28, par: .09, ph: 2 }, { fx: .03, fy: .60, s: .85, k: 0, r: .12, par: .07, ph: 3 },
+        { fx: .06, fy: .90, s: 1.35, k: 1, r: -.38, par: .12, ph: 4 }, { fx: .42, fy: .97, s: 1.0, k: 0, r: .05, par: .12, ph: 5 },
+        { fx: .93, fy: .91, s: 1.25, k: 1, r: .42, par: .12, ph: 6 }, { fx: .97, fy: .66, s: .8, k: 0, r: -.2, par: .07, ph: 7 },
+        { fx: .20, fy: .04, s: .5, k: 0, r: .5, par: .04, ph: 8 }, { fx: .84, fy: .05, s: .6, k: 2, r: -.4, par: .04, ph: 9 },
+        { fx: .60, fy: .98, s: .7, k: 2, r: .2, par: .1, ph: 10 }, { fx: .27, fy: .86, s: .5, k: 2, r: -.3, par: .08, ph: 11 }
+    ];
+
+    // ---- floating stone slabs ----
+    const slabSprite = (() => {
+        const [c, g] = mkSprite(160, 116, 2);
+        const top = [[80, 8], [150, 30], [80, 52], [10, 30]], left = [[10, 30], [80, 52], [80, 80], [10, 58]], right = [[150, 30], [80, 52], [80, 80], [150, 58]];
+        g.fillStyle = '#0e1850'; polyPath(g, [[26, 62], [80, 80], [134, 62], [80, 112]]); g.fill();
+        g.strokeStyle = 'rgba(60,150,255,0.5)'; g.lineWidth = 1.2; g.stroke();
+        const tg = g.createLinearGradient(10, 8, 150, 52); tg.addColorStop(0, '#5b7dff'); tg.addColorStop(1, '#2f49b8');
+        g.fillStyle = tg; polyPath(g, top); g.fill();
+        g.fillStyle = '#1b2d8a'; polyPath(g, left); g.fill();
+        g.fillStyle = '#101c66'; polyPath(g, right); g.fill();
+        g.strokeStyle = 'rgba(10,20,80,0.7)'; g.lineWidth = 1.4;
+        g.beginPath(); g.moveTo(45, 19); g.lineTo(115, 41); g.moveTo(112, 19); g.lineTo(46, 41); g.moveTo(60, 60); g.lineTo(60, 72); g.moveTo(100, 60); g.lineTo(100, 72); g.stroke();
+        g.strokeStyle = 'rgba(190,225,255,0.65)'; g.lineWidth = 1.5; polyPath(g, top); g.stroke();
+        g.shadowColor = 'rgba(0,220,255,0.95)'; g.shadowBlur = 7; g.strokeStyle = '#2fe3ff'; g.lineWidth = 3;
+        g.beginPath(); g.moveTo(10, 58); g.lineTo(80, 80); g.lineTo(150, 58); g.stroke();
+        return c;
+    })();
+    const SLABS = [
+        { fx: .03, fy: .28, s: .62, par: .06, ph: 0, flip: false }, { fx: .98, fy: .52, s: .58, par: .06, ph: 2, flip: true },
+        { fx: .13, fy: .95, s: 1.3, par: .10, ph: 1, flip: false }, { fx: .85, fy: .94, s: 1.05, par: .10, ph: 3, flip: true },
+        { fx: .97, fy: .10, s: .5, par: .04, ph: 4, flip: true }
+    ];
+    const SPARKS = [];
+    for (let i = 0; i < (LOW_END_DEVICE ? 14 : 32); i++) {
+        const a = Math.sin(i * 91.7) * 43758.5453, b = Math.sin(i * 12.9 + 4.1) * 24634.6345;
+        SPARKS.push({ fx: a - Math.floor(a), fy: b - Math.floor(b), r: 1.4 + ((i * 7) % 5) * 0.5, ph: i * 1.7, sp: 0.6 + (i % 4) * 0.35, c: i % 3 === 0 ? '#c9a8ff' : '#7fe0ff' });
+    }
+
+    // ---- stone portal (static art cached; swirl + flames animated) ----
+    const PORTAL_OUT = [[-84, -16], [-84, -100], [-54, -152], [54, -152], [84, -100], [84, -16]];
+    const PORTAL_IN = [[-60, -16], [-60, -98], [-38, -132], [38, -132], [60, -98], [60, -16]];
+    const portalSprite = (() => {
+        const OX = 220, OY = 176;
+        const [c, g] = mkSprite(440, 190, 2);
+        g.translate(OX, OY);
+        const stone = (x0, y0, x1, y1) => { const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, '#2a52bd'); gr.addColorStop(1, '#0f2070'); return gr; };
+        // base slab
+        polyPath(g, [[-176, 0], [176, 0], [166, -18], [-166, -18]]); g.fillStyle = stone(0, -18, 0, 0); g.fill();
+        g.strokeStyle = 'rgba(80,220,255,0.85)'; g.lineWidth = 2; g.stroke();
+        g.strokeStyle = 'rgba(10,20,90,0.7)'; g.lineWidth = 1.5; g.beginPath();
+        for (let x = -140; x <= 140; x += 70) { g.moveTo(x, -18); g.lineTo(x, 0); } g.stroke();
+        // stairs
+        [[-1, 0], [1, 0]].forEach(([s]) => {
+            g.fillStyle = '#17327f'; g.strokeStyle = 'rgba(80,200,255,0.55)'; g.lineWidth = 1.2;
+            [[s * 86, -32, 34, 14], [s * 98, -46, 22, 14]].forEach(([x, y, w, h]) => { const xx = s < 0 ? x - w : x; g.fillRect(xx, y, w, h); g.strokeRect(xx, y, w, h); });
+        });
+        // pillars
+        [-138, 138].forEach(px => {
+            g.fillStyle = stone(px - 24, 0, px + 24, 0); g.fillRect(px - 29, -32, 58, 14);
+            g.fillStyle = stone(px - 20, -120, px + 20, -20); g.fillRect(px - 21, -124, 42, 98);
+            g.strokeStyle = 'rgba(80,210,255,0.75)'; g.lineWidth = 1.6; g.strokeRect(px - 21, -124, 42, 98); g.strokeRect(px - 29, -32, 58, 14);
+            g.fillStyle = '#2d56bd'; g.fillRect(px - 27, -142, 54, 20); g.strokeRect(px - 27, -142, 54, 20);
+            g.fillStyle = '#0a1650'; g.fillRect(px - 14, -112, 28, 56); g.strokeStyle = 'rgba(40,120,255,0.6)'; g.strokeRect(px - 14, -112, 28, 56);
+            g.shadowColor = '#37e6ff'; g.shadowBlur = 7; g.strokeStyle = '#46efff'; g.lineWidth = 2;
+            polyPath(g, [[px, -106], [px + 10, -84], [px, -62], [px - 10, -84]]); g.fillStyle = 'rgba(0,230,255,0.15)'; g.fill(); g.stroke();
+            polyPath(g, [[px, -96], [px + 5, -84], [px, -72], [px - 5, -84]]); g.stroke();
+            g.shadowBlur = 0;
+        });
+        // arch
+        g.shadowColor = 'rgba(0,200,255,0.9)'; g.shadowBlur = 12;
+        polyPath(g, PORTAL_OUT); g.fillStyle = stone(0, -152, 0, -16); g.fill(); g.strokeStyle = '#34dcff'; g.lineWidth = 3; g.stroke();
+        g.shadowBlur = 0;
+        g.strokeStyle = 'rgba(8,16,80,0.8)'; g.lineWidth = 2; g.beginPath();
+        for (let i = 1; i <= 4; i++) { g.moveTo(PORTAL_OUT[i][0], PORTAL_OUT[i][1]); g.lineTo(PORTAL_IN[i][0], PORTAL_IN[i][1]); }
+        g.moveTo(0, -152); g.lineTo(0, -132); g.moveTo(-84, -58); g.lineTo(-60, -58); g.moveTo(84, -58); g.lineTo(60, -58); g.stroke();
+        // opening
+        const og = g.createRadialGradient(0, -72, 4, 0, -72, 70); og.addColorStop(0, '#0d2fb0'); og.addColorStop(1, '#030a3c');
+        polyPath(g, PORTAL_IN); g.fillStyle = og; g.fill();
+        g.shadowColor = '#3de8ff'; g.shadowBlur = 9; g.strokeStyle = '#4defff'; g.lineWidth = 2.5; g.stroke();
+        return c;
+    })();
+
+    function drawFlame(x, y, t, ph) {
+        const fl = Math.sin(t * 0.012 + ph) * 0.12 + Math.sin(t * 0.021 + ph * 2) * 0.08;
+        const h = 46 * (1 + fl), w = 15, sway = Math.sin(t * 0.007 + ph) * 4;
+        drawGlow(x, y - h * 0.45, 40, [40, 170, 255], 0.75);
+        const tear = (h2, w2, col) => {
+            ctx.beginPath(); ctx.moveTo(x, y);
+            ctx.bezierCurveTo(x - w2, y - h2 * 0.25, x - w2 * 0.7, y - h2 * 0.65, x + sway * (h2 / h), y - h2);
+            ctx.bezierCurveTo(x + w2 * 0.7, y - h2 * 0.65, x + w2, y - h2 * 0.25, x, y);
+            ctx.fillStyle = col; ctx.fill();
+        };
+        tear(h, w, 'rgba(0,150,255,0.88)'); tear(h * 0.78, w * 0.7, 'rgba(90,225,255,0.95)'); tear(h * 0.5, w * 0.4, 'rgba(235,255,255,0.98)');
+    }
+    function drawPortal(x, y, sc, t, boost) {
+        ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+        drawGlow(0, -80, 210, [0, 140, 255], 0.38 + boost * 0.5);
+        ctx.drawImage(portalSprite, -220, -176, 440, 190);
+        ctx.save(); polyPath(ctx, PORTAL_IN); ctx.clip();
+        drawGlow(0, -72, 75, [120, 220, 255], 0.35 + 0.15 * Math.sin(t * 0.004) + boost * 0.6);
+        ctx.translate(0, -72); ctx.rotate(t * 0.0016 * (1 + boost * 3)); ctx.lineCap = 'round';
+        for (let arm = 0; arm < 3; arm++) {
+            ctx.beginPath();
+            for (let r = 3; r <= 62; r += 3) { const a = r * 0.11 + arm * 2.094; const X = Math.cos(a) * r, Y = Math.sin(a) * r; if (r === 3) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); }
+            ctx.strokeStyle = 'rgba(70,170,255,0.55)'; ctx.lineWidth = 6; ctx.stroke();
+            ctx.strokeStyle = 'rgba(200,245,255,0.92)'; ctx.lineWidth = 2; ctx.stroke();
+        }
+        ctx.restore();
+        drawFlame(-138, -142, t, 0); drawFlame(138, -142, t, 2.3);
+        ctx.restore();
+    }
+
+    // ---- full-screen cavern backdrop ----
+    function buildBg() {
+        bgCanvas = document.createElement('canvas'); bgCanvas.width = Math.max(2, canvasW); bgCanvas.height = Math.max(2, canvasH);
+        const g = bgCanvas.getContext('2d'), w = canvasW, h = canvasH, m = Math.max(w, h);
+        const base = g.createRadialGradient(w / 2, h * 0.5, 0, w / 2, h * 0.5, m * 0.8);
+        base.addColorStop(0, '#0d33b8'); base.addColorStop(0.45, '#0a1e8c'); base.addColorStop(0.8, '#060e56'); base.addColorStop(1, '#040836');
+        g.fillStyle = base; g.fillRect(0, 0, w, h);
+        [[0.08, 0.92, 0.55, '150,70,255', 0.38], [0.95, 0.12, 0.5, '130,60,240', 0.28], [0.5, 0.06, 0.45, '0,170,255', 0.26], [0.9, 0.85, 0.4, '110,60,255', 0.25]].forEach(([fx, fy, fr, rgb, a]) => {
+            const rg = g.createRadialGradient(w * fx, h * fy, 0, w * fx, h * fy, m * fr);
+            rg.addColorStop(0, `rgba(${rgb},${a})`); rg.addColorStop(1, `rgba(${rgb},0)`); g.fillStyle = rg; g.fillRect(0, 0, w, h);
+        });
+        const vg = g.createRadialGradient(w / 2, h / 2, m * 0.35, w / 2, h / 2, m * 0.85);
+        vg.addColorStop(0, 'rgba(0,0,20,0)'); vg.addColorStop(1, 'rgba(0,0,20,0.55)'); g.fillStyle = vg; g.fillRect(0, 0, w, h);
+    }
+    function drawBackground() {
+        const t = globalTime;
+        ctx.drawImage(bgCanvas, 0, 0, canvasW, canvasH);
+        const playing = currentState !== STATE.MENU && currentState !== STATE.LEVEL_SELECT && currentState !== STATE.README && mapCols > 0;
+        const cx = playing ? camera.x : 0, cy = playing ? camera.y : 0;
+        const sc = Math.max(0.55, Math.min(1, Math.min(canvasW, canvasH) / 760));
+        for (const s of SLABS) {
+            const x = s.fx * canvasW - cx * s.par, y = s.fy * canvasH + Math.sin(t * 0.0012 + s.ph) * 6 - cy * s.par;
+            const w = 160 * s.s * sc, h = 116 * s.s * sc;
+            ctx.save(); ctx.translate(x, y); if (s.flip) ctx.scale(-1, 1); ctx.drawImage(slabSprite, -w / 2, -h / 2, w, h); ctx.restore();
+        }
+        for (const c of CRYSTALS) {
+            const spr = CRYSTAL_SPR[c.k], w = 60 * c.s * sc, h = 114 * c.s * sc;
+            const x = c.fx * canvasW - cx * c.par, y = c.fy * canvasH + Math.sin(t * 0.001 + c.ph) * 7 - cy * c.par;
+            drawGlow(x, y, w * 1.2, spr.rgb, 0.22);
+            ctx.save(); ctx.translate(x, y); ctx.rotate(c.r + Math.sin(t * 0.0008 + c.ph) * 0.05); ctx.drawImage(spr.c, -w / 2, -h / 2, w, h); ctx.restore();
+        }
+        for (const s of SPARKS) {
+            const a = 0.2 + 0.8 * Math.abs(Math.sin(t * 0.0018 * s.sp + s.ph));
+            const x = s.fx * canvasW - cx * 0.03, y = s.fy * canvasH - cy * 0.03, r = s.r;
+            ctx.globalAlpha = a * 0.9; ctx.fillStyle = s.c;
+            ctx.beginPath(); ctx.moveTo(x, y - r * 1.6); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r * 1.6); ctx.lineTo(x - r, y); ctx.closePath(); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    // ---- view / camera helpers (auto-fit the whole grid when it fits, follow snake when it doesn't) ----
+    function computeView() {
+        const hudEl = document.getElementById('hud');
+        hudH = (hudEl ? hudEl.offsetHeight : 64) + 6;
+        if (!mapCols) { zoom = 1; return; }
+        const cw = mapCols * TS + 90, ch = mapRows * TS + padTop + 50;
+        zoom = Math.max(0.7, Math.min(1, canvasW / cw, (canvasH - hudH) / ch));
+    }
+    function camTarget(hx, hy) {
+        const vw = canvasW / zoom, vh = canvasH / zoom, hi = hudH / zoom;
+        const L = -45, R = mapCols * TS + 45, Tp = -padTop, B = mapRows * TS + 45;
+        let tx, ty;
+        if (R - L <= vw) tx = L - (vw - (R - L)) / 2; else tx = Math.max(L, Math.min(R - vw, hx - vw / 2));
+        const availH = vh - hi;
+        if (B - Tp <= availH) ty = Tp - hi - (availH - (B - Tp)) / 2; else ty = Math.max(Tp - hi, Math.min(B - vh, hy - (vh + hi) / 2));
+        return { x: tx, y: ty };
+    }
+    function visHead(sArr) {
+        const h = sArr[0], t = isMoving ? moveProgress / moveDuration : 1;
+        const x = h.oldX !== undefined ? h.oldX + (h.x - h.oldX) * t : h.x;
+        const y = h.oldY !== undefined ? h.oldY + (h.y - h.oldY) * t : h.y;
+        return { x: x * TS + TS / 2, y: y * TS + TS / 2 };
+    }
+    function headCenters() {
+        let sx = 0, sy = 0, n = 0;
+        if (snake.length && !snake.escaped) { const p = visHead(snake); sx += p.x; sy += p.y; n++; }
+        if (puzzleState.hasTwin && twinSnake.length && !twinSnake.escaped) { const p = visHead(twinSnake); sx += p.x; sy += p.y; n++; }
+        return n ? { x: sx / n, y: sy / n } : null;
+    }
+
     function resize() {
+        dpr = LOW_END_DEVICE ? 1 : Math.min(window.devicePixelRatio || 1, 2);
         canvasW = canvas.clientWidth; canvasH = canvas.clientHeight;
-        canvas.width = canvasW; canvas.height = canvasH;
+        canvas.width = Math.round(canvasW * dpr); canvas.height = Math.round(canvasH * dpr);
         minimapCanvas.width = 120; minimapCanvas.height = 120;
         ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        buildBg(); computeView();
     }
     window.addEventListener('resize', resize); resize();
 
@@ -652,7 +965,9 @@ window.onload = () => {
         updateHUD(); showPopup(levelData.name + " | " + levelData.tip, 4500);
         currentState = STATE.PLAYING; hideScreens(); GameAudio.startMusic();
         
-        camera.x = snake[0].x * TILE_SIZE - canvasW/2; camera.y = snake[0].y * TILE_SIZE - canvasH/2;
+        portalScale = Math.max(1, Math.min(1.25, mapCols * TILE_SIZE / 440)); padTop = Math.round(205 * portalScale) + 12; portalBoost = 0;
+        computeView();
+        { const hc0 = headCenters(); const ct0 = camTarget(hc0.x, hc0.y); camera.x = ct0.x; camera.y = ct0.y; }
         drawMinimap();
     }
 
@@ -833,6 +1148,7 @@ window.onload = () => {
 
     function levelComplete() {
         currentState = STATE.TRANSITION; AudioEngine.win();
+        portalBoost = 1; createParticles(mapCols * TILE_SIZE / 2, -90, '#7fe8ff', 40);
         if(currentLevelIdx + 1 > unlockedLevels) {
             unlockedLevels = currentLevelIdx + 2; localStorage.setItem('serpentUnlockedV3', unlockedLevels);
         }
@@ -866,38 +1182,30 @@ window.onload = () => {
 
     function drawMinimap() {
         if(currentState !== STATE.PLAYING) return;
-        minimapCtx.clearRect(0,0,120,120); let scX = 120 / mapCols, scY = 120 / mapRows;
+        minimapCtx.clearRect(0,0,120,120);
+        const sc = Math.min(116 / mapCols, 116 / mapRows), ox = (120 - mapCols*sc)/2, oy = (120 - mapRows*sc)/2;
+        const mc = { 1:'#8a93a3', 'L':'#ff9a1f', 3:'#ff2bd6', 'K':'#ffe14d', 5:'#33f0ff', 4:'#d6a83a', 'G':'#ffd700', 'O':'#4cb4ff', 'H':'#8ea2e8', 6:'#ff3a5c', 7:'#5a6070', 8:'#3fcf8a', 'D':'#33f0ff', 'E':'#33f0ff', 'C':'#9fb4d8' };
         for(let y=0; y<mapRows; y++){
             for(let x=0; x<mapCols; x++){
-                let t = map[y][x].type;
-                if(t !== 0 && t !== 'M') {
-                    minimapCtx.fillStyle = (t === 'T') ? '#222' : (colorMap[t] || '#222');
-                    if(t===1) minimapCtx.fillStyle = '#444';
-                    minimapCtx.fillRect(x*scX, y*scY, scX, scY);
+                const t = map[y][x].type;
+                if(t !== 0 && t !== 'M' && t !== 'V' && t !== 'T') {
+                    minimapCtx.fillStyle = mc[t] || '#6d7686';
+                    minimapCtx.fillRect(ox + x*sc, oy + y*sc, Math.ceil(sc), Math.ceil(sc));
                 }
             }
         }
-        if(!snake.escaped) { minimapCtx.fillStyle = '#00f3ff'; minimapCtx.fillRect(snake[0].x*scX, snake[0].y*scY, scX, scY); }
-        if(puzzleState.hasTwin && !twinSnake.escaped) { minimapCtx.fillStyle = '#ff8800'; minimapCtx.fillRect(twinSnake[0].x*scX, twinSnake[0].y*scY, scX, scY); }
+        if(!snake.escaped) { minimapCtx.fillStyle = '#00f3ff'; minimapCtx.fillRect(ox + snake[0].x*sc, oy + snake[0].y*sc, Math.ceil(sc), Math.ceil(sc)); }
+        if(puzzleState.hasTwin && !twinSnake.escaped) { minimapCtx.fillStyle = '#ff9a1a'; minimapCtx.fillRect(ox + twinSnake[0].x*sc, oy + twinSnake[0].y*sc, Math.ceil(sc), Math.ceil(sc)); }
     }
 
     function update(dt) {
         globalTime += dt;
-        let camTargetX = 0, camTargetY = 0, numTargets = 0;
-        if(!snake.escaped && snake.length > 0) {
-            let hx = (snake[0].oldX !== undefined ? snake[0].oldX + (snake[0].x - snake[0].oldX) * (moveProgress/moveDuration) : snake[0].x) * TILE_SIZE;
-            let hy = (snake[0].oldY !== undefined ? snake[0].oldY + (snake[0].y - snake[0].oldY) * (moveProgress/moveDuration) : snake[0].y) * TILE_SIZE;
-            camTargetX += hx; camTargetY += hy; numTargets++;
-        }
-        if(puzzleState.hasTwin && !twinSnake.escaped && twinSnake.length > 0) {
-            let tx = (twinSnake[0].oldX !== undefined ? twinSnake[0].oldX + (twinSnake[0].x - twinSnake[0].oldX) * (moveProgress/moveDuration) : twinSnake[0].x) * TILE_SIZE;
-            let ty = (twinSnake[0].oldY !== undefined ? twinSnake[0].oldY + (twinSnake[0].y - twinSnake[0].oldY) * (moveProgress/moveDuration) : twinSnake[0].y) * TILE_SIZE;
-            camTargetX += tx; camTargetY += ty; numTargets++;
-        }
-        if(numTargets > 0) {
-            camTargetX /= numTargets; camTargetY /= numTargets;
-            camera.targetX = camTargetX - canvasW/2 + TILE_SIZE/2; camera.targetY = camTargetY - canvasH/2 + TILE_SIZE/2;
-            camera.x += (camera.targetX - camera.x) * 0.1; camera.y += (camera.targetY - camera.y) * 0.1;
+        portalBoost = Math.max(0, portalBoost - dt * 0.0006);
+        const hc = (mapCols > 0) ? headCenters() : null;
+        if (hc) {
+            const ct = camTarget(hc.x, hc.y), k = 1 - Math.pow(0.9, dt / 16.667);
+            camera.targetX = ct.x; camera.targetY = ct.y;
+            camera.x += (ct.x - camera.x) * k; camera.y += (ct.y - camera.y) * k;
         }
 
         if(camera.shake > 0) { camera.x += (Math.random()-0.5)*camera.shake; camera.y += (Math.random()-0.5)*camera.shake; camera.shake *= 0.9; if(camera.shake<0.5) camera.shake = 0; }
@@ -936,170 +1244,229 @@ window.onload = () => {
         }
     }
 
-    function drawTile(x, y, type) {
-        let px = x * TILE_SIZE, py = y * TILE_SIZE;
-        let pCenter = {x: px + TILE_SIZE/2, y: py + TILE_SIZE/2};
-        
-        if (type === 0 || type === 'M') {
-            ctx.fillStyle = '#05070a'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-            ctx.strokeStyle = 'rgba(0, 100, 255, 0.4)'; ctx.lineWidth = 2; ctx.strokeRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
-            ctx.strokeStyle = 'rgba(0, 100, 255, 0.15)'; ctx.lineWidth = 1; ctx.beginPath(); 
-            ctx.moveTo(px + 4, py + TILE_SIZE - 4); ctx.lineTo(px + TILE_SIZE - 4, py + 4); ctx.stroke(); return; 
+    function drawBaseTile(x, y, type) {
+        const px = x * TS, py = y * TS;
+        if (type === 0 || type === 'M') { ctx.drawImage(wallSprite, px, py, TS, TS); return; }
+        if (type === 'V') {
+            ctx.drawImage(wallSprite, px, py, TS, TS); ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(px, py, TS, TS);
+            ctx.strokeStyle = 'rgba(0,200,255,0.25)'; ctx.lineWidth = 1; ctx.strokeRect(px + 6, py + 6, TS - 12, TS - 12); return;
         }
-        
-        if (type !== 'V' && type !== 'G') {
-            ctx.fillStyle = 'rgba(25, 35, 50, 0.9)'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-            ctx.strokeStyle = 'rgba(0, 243, 255, 0.2)'; ctx.lineWidth = 1; ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
-            ctx.fillStyle = 'rgba(0, 243, 255, 0.4)'; ctx.fillRect(pCenter.x - 1, pCenter.y - 1, 2, 2);
-        }
-        
-        let pulse = Math.sin(globalTime * 0.005) * 0.2 + 0.8;
+        ctx.drawImage(pathSprite, px, py, TS, TS);
+    }
 
-        switch(type) {
-            case 3: 
-                ctx.shadowBlur = 0; ctx.shadowColor = colorMap[type];
-                ctx.save(); ctx.translate(pCenter.x, pCenter.y); ctx.rotate(globalTime * 0.002);
-                ctx.strokeStyle = colorMap[type]; ctx.lineWidth = 3; ctx.strokeRect(-TILE_SIZE/2+5, -TILE_SIZE/2+5, TILE_SIZE-10, TILE_SIZE-10); 
-                ctx.fillStyle = colorMap[type]; ctx.globalAlpha = 0.5 * pulse; ctx.fillRect(-TILE_SIZE/2+10, -TILE_SIZE/2+10, TILE_SIZE-20, TILE_SIZE-20); 
-                ctx.restore(); ctx.shadowBlur = 0; break;
-            case 4: 
-                ctx.fillStyle = colorMap[type]; ctx.beginPath(); ctx.moveTo(pCenter.x, py+5); ctx.lineTo(px+TILE_SIZE-5, pCenter.y); ctx.lineTo(pCenter.x, py+TILE_SIZE-5); ctx.lineTo(px+5, pCenter.y); ctx.fill(); 
-                ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.moveTo(pCenter.x, py+5); ctx.lineTo(pCenter.x, py+TILE_SIZE-5); ctx.lineTo(px+5, pCenter.y); ctx.fill(); break;
-            case 5: 
-                ctx.shadowBlur = 0; ctx.shadowColor = colorMap[type];
-                ctx.fillStyle = colorMap[type]; ctx.globalAlpha = pulse; ctx.beginPath(); ctx.arc(pCenter.x, pCenter.y, 8 * pulse, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; ctx.shadowBlur = 0; break;
-            case 'O': 
-                ctx.shadowBlur = 0; ctx.shadowColor = colorMap[type];
-                ctx.fillStyle = colorMap[type]; ctx.globalAlpha = pulse; ctx.beginPath(); ctx.arc(pCenter.x, pCenter.y, 8 * pulse, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; ctx.shadowBlur = 0; break;
-            case 'G': 
-                ctx.fillStyle = '#b8860b'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-                ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2; ctx.strokeRect(px+2, py+2, TILE_SIZE-4, TILE_SIZE-4);
-                ctx.beginPath(); ctx.moveTo(px+4, py+4); ctx.lineTo(px+TILE_SIZE-4, py+TILE_SIZE-4); ctx.moveTo(px+TILE_SIZE-4, py+4); ctx.lineTo(px+4, py+TILE_SIZE-4); ctx.stroke(); break;
-            case 'K': 
-                ctx.shadowBlur = 0; ctx.shadowColor = colorMap[type];
-                ctx.fillStyle = colorMap[type]; ctx.globalAlpha = pulse; ctx.beginPath(); ctx.arc(px+14, pCenter.y, 4, 0, Math.PI*2); 
-                ctx.fillRect(px+16, pCenter.y-2, 16, 4); ctx.fillRect(px+26, pCenter.y+2, 3, 6); ctx.fillRect(px+30, pCenter.y+2, 3, 4); ctx.fill(); ctx.globalAlpha = 1; ctx.shadowBlur = 0; break;
-            case 'L': 
-                ctx.fillStyle = colorMap[type]; ctx.fillRect(px, pCenter.y-5, TILE_SIZE, 10);
-                ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(pCenter.x, pCenter.y, 4, 0, Math.PI*2); ctx.fill(); ctx.fillRect(pCenter.x-1, pCenter.y, 2, 6); break;
-            case 6: 
-                ctx.fillStyle = colorMap[type]; ctx.fillRect(px+10, py+10, 20, 20); ctx.fillStyle = '#fff'; ctx.fillRect(px+15, py+15, 10, 10); break;
-            case 7: 
-                ctx.fillStyle = colorMap[type]; ctx.fillRect(px, pCenter.y-5, TILE_SIZE, 10); ctx.strokeStyle = '#222'; ctx.lineWidth = 2;
-                for(let lx=0; lx<TILE_SIZE; lx+=8) { ctx.beginPath(); ctx.moveTo(px+lx, pCenter.y-5); ctx.lineTo(px+lx, pCenter.y+5); ctx.stroke(); } break;
-            case 8: 
-                ctx.fillStyle = 'rgba(0, 255, 102, 0.2)'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE); break;
-            case 'C': 
-                ctx.fillStyle = 'rgba(150, 200, 255, 0.15)'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE); ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1; ctx.strokeRect(px+4, py+4, TILE_SIZE-8, TILE_SIZE-8); 
-                ctx.beginPath(); ctx.moveTo(px+4, py+4); ctx.lineTo(px+TILE_SIZE-4, py+TILE_SIZE-4); ctx.stroke(); break;
-            case 'D': case 'E': 
-                ctx.strokeStyle = colorMap[type]; ctx.lineWidth = 2; ctx.setLineDash([5, 5]); ctx.save(); ctx.translate(pCenter.x, pCenter.y); ctx.rotate(-globalTime * 0.003);
-                ctx.beginPath(); ctx.arc(0, 0, 12 * pulse, 0, Math.PI*2); ctx.stroke(); ctx.restore(); ctx.setLineDash([]); break;
-            case 'H': 
-                ctx.fillStyle = 'rgba(20, 30, 40, 0.9)'; ctx.fillRect(px+4, py+4, TILE_SIZE-8, TILE_SIZE-8);
-                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(px+6, py+6, TILE_SIZE-12, TILE_SIZE-12);
-                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(pCenter.x, pCenter.y, 4, 0, Math.PI*2); ctx.fill(); break;
-            case 'V': 
-                ctx.fillStyle = '#020204'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-                ctx.strokeStyle = 'rgba(0, 243, 255, 0.1)'; ctx.lineWidth = 1; ctx.strokeRect(px+2, py+2, TILE_SIZE-4, TILE_SIZE-4);
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'; ctx.fillRect(px+4, py+4, TILE_SIZE-8, TILE_SIZE-8); break;
-            case 'T': 
-                let trap = map[y][x];
+    function drawObject(x, y, type) {
+        const px = x * TS, py = y * TS, cx = px + TS / 2, cy = py + TS / 2;
+        const t = globalTime, pulse = Math.sin(t * 0.005) * 0.2 + 0.8;
+        switch (type) {
+            case 3: { // relic rune (exit)
+                const s = 1 + Math.sin(t * 0.004) * 0.035;
+                drawGlow(cx, cy, 38, [255, 40, 230], 0.55 * pulse + portalBoost * 0.4);
+                rrPath(ctx, px - 4, py - 4, TS + 8, TS + 8, 9); ctx.fillStyle = 'rgba(0,210,255,0.10)'; ctx.fill();
+                ctx.strokeStyle = 'rgba(0,230,255,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+                ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s);
+                const gr = ctx.createLinearGradient(-14, -14, 14, 14); gr.addColorStop(0, '#ff6af5'); gr.addColorStop(1, '#a600d0');
+                rrPath(ctx, -14, -14, 28, 28, 4); ctx.fillStyle = gr; ctx.fill(); ctx.strokeStyle = '#ffb8f9'; ctx.lineWidth = 2; ctx.stroke();
+                rrPath(ctx, -9, -9, 18, 18, 2); ctx.fillStyle = 'rgba(70,0,100,0.55)'; ctx.fill();
+                ctx.beginPath();
+                for (let a = 0; a <= Math.PI * 5; a += 0.3) { const r = a * 0.46, X = Math.cos(a + t * 0.002) * r, Y = Math.sin(a + t * 0.002) * r; if (a === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); }
+                ctx.strokeStyle = '#ffe0fc'; ctx.lineWidth = 1.7; ctx.stroke();
+                ctx.restore(); break;
+            }
+            case 4: { // breakable amber crystal block
+                drawGlow(cx, cy, 26, [255, 190, 40], 0.35 * pulse);
+                const gr = ctx.createLinearGradient(px, py, px + TS, py + TS); gr.addColorStop(0, '#ffe27a'); gr.addColorStop(1, '#b86a00');
+                polyPath(ctx, [[cx, py + 4], [px + TS - 4, cy], [cx, py + TS - 4], [px + 4, cy]]); ctx.fillStyle = gr; ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,0.42)'; polyPath(ctx, [[cx, py + 4], [cx, py + TS - 4], [px + 4, cy]]); ctx.fill();
+                ctx.strokeStyle = '#fff1b0'; ctx.lineWidth = 1.2; polyPath(ctx, [[cx, py + 4], [px + TS - 4, cy], [cx, py + TS - 4], [px + 4, cy]]); ctx.stroke();
+                ctx.strokeStyle = 'rgba(90,40,0,0.7)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(cx + 2, cy - 9); ctx.lineTo(cx - 3, cy); ctx.lineTo(cx + 3, cy + 4); ctx.lineTo(cx - 1, cy + 11); ctx.stroke();
+                break;
+            }
+            case 5: { // relic tool gem
+                const bob = Math.sin(t * 0.004) * 1.5;
+                drawGlow(cx, cy + bob, 24, [40, 230, 255], 0.55 * pulse);
+                const gr = ctx.createLinearGradient(cx - 8, cy - 10, cx + 8, cy + 10); gr.addColorStop(0, '#d6fdff'); gr.addColorStop(1, '#00a9d4');
+                const pts = [[cx, cy - 11 + bob], [cx + 9, cy - 3 + bob], [cx + 6, cy + 10 + bob], [cx - 6, cy + 10 + bob], [cx - 9, cy - 3 + bob]];
+                polyPath(ctx, pts); ctx.fillStyle = gr; ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,0.5)'; polyPath(ctx, [pts[0], pts[1], [cx, cy + 1 + bob], pts[4]]); ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1; polyPath(ctx, pts); ctx.stroke();
+                break;
+            }
+            case 'O': { // twin orb
+                drawGlow(cx, cy, 28, [60, 170, 255], 0.65 * pulse);
+                const gr = ctx.createRadialGradient(cx - 3, cy - 3, 1, cx, cy, 10);
+                gr.addColorStop(0, '#f0fbff'); gr.addColorStop(0.45, '#4cb4ff'); gr.addColorStop(1, '#0a4fd0');
+                ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(cx, cy, 8.5 + pulse * 1.5, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = 'rgba(140,225,255,0.7)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, 13 + pulse * 1.5, 0, Math.PI * 2); ctx.stroke();
+                break;
+            }
+            case 'G': { // golden barrier
+                drawGlow(cx, cy, 30, [255, 200, 50], 0.28);
+                const gr = ctx.createLinearGradient(px, py, px + TS, py + TS); gr.addColorStop(0, '#e6b52a'); gr.addColorStop(1, '#6b4a05');
+                rrPath(ctx, px + 2, py + 2, TS - 4, TS - 4, 5); ctx.fillStyle = gr; ctx.fill();
+                ctx.strokeStyle = '#ffe27a'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.strokeStyle = 'rgba(255,245,190,0.9)'; ctx.lineWidth = 1.4; polyPath(ctx, [[cx, cy - 9], [cx + 9, cy], [cx, cy + 9], [cx - 9, cy]]); ctx.stroke();
+                ctx.fillStyle = '#fff3b8'; ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2); ctx.fill();
+                break;
+            }
+            case 'K': { // key
+                const bob = Math.sin(t * 0.004) * 1.5;
+                drawGlow(cx, cy + bob, 24, [255, 225, 60], 0.5 * pulse);
+                ctx.save(); ctx.translate(cx, cy + bob); ctx.rotate(-0.5);
+                ctx.strokeStyle = '#ffe35c'; ctx.fillStyle = '#ffe35c'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(-9, 0, 5, 0, Math.PI * 2); ctx.stroke();
+                ctx.fillRect(-4, -1.5, 16, 3); ctx.fillRect(6, 1.5, 3, 6); ctx.fillRect(11, 1.5, 3, 4);
+                ctx.restore(); break;
+            }
+            case 'L': { // locked door bar
+                drawGlow(cx, cy, 28, [255, 140, 20], 0.3);
+                const gr = ctx.createLinearGradient(0, cy - 7, 0, cy + 7); gr.addColorStop(0, '#ffb84d'); gr.addColorStop(0.5, '#ff8a00'); gr.addColorStop(1, '#d36200');
+                ctx.fillStyle = '#120a1c'; ctx.fillRect(px, cy - 9, TS, 18);
+                ctx.fillStyle = gr; ctx.fillRect(px, cy - 7, TS, 14);
+                ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(px, cy - 7, TS, 2);
+                ctx.fillStyle = '#2a1500'; ctx.beginPath(); ctx.arc(cx, cy - 1, 4.2, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(cx - 1.3, cy, 2.6, 5);
+                break;
+            }
+            case 6: { // switch
+                drawGlow(cx, cy, 24, [255, 0, 60], 0.45 * pulse);
+                ctx.strokeStyle = 'rgba(255,120,150,0.8)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, 11, 0, Math.PI * 2); ctx.stroke();
+                const gr = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, 8); gr.addColorStop(0, '#ffd0d8'); gr.addColorStop(1, '#ff003c');
+                ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(cx, cy, 7.5, 0, Math.PI * 2); ctx.fill(); break;
+            }
+            case 7: { // closed gate
+                ctx.fillStyle = '#4a5160'; ctx.fillRect(px, cy - 6, TS, 12); ctx.strokeStyle = '#161a22'; ctx.lineWidth = 2;
+                for (let lx = 0; lx < TS; lx += 8) { ctx.beginPath(); ctx.moveTo(px + lx, cy - 6); ctx.lineTo(px + lx, cy + 6); ctx.stroke(); } break;
+            }
+            case 8: ctx.fillStyle = 'rgba(0,255,102,0.2)'; ctx.fillRect(px, py, TS, TS); break;
+            case 'C': {
+                ctx.fillStyle = 'rgba(150,200,255,0.15)'; ctx.fillRect(px, py, TS, TS); ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1; ctx.strokeRect(px + 4, py + 4, TS - 8, TS - 8);
+                ctx.beginPath(); ctx.moveTo(px + 4, py + 4); ctx.lineTo(px + TS - 4, py + TS - 4); ctx.stroke(); break;
+            }
+            case 'D': case 'E': {
+                drawGlow(cx, cy, 26, [0, 243, 255], 0.4);
+                ctx.strokeStyle = colorMap[type]; ctx.lineWidth = 2; ctx.setLineDash([5, 5]); ctx.save(); ctx.translate(cx, cy); ctx.rotate(-globalTime * 0.003);
+                ctx.beginPath(); ctx.arc(0, 0, 12 * pulse, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); ctx.setLineDash([]); break;
+            }
+            case 'H': {
+                const gr = ctx.createLinearGradient(px, py, px + TS, py + TS); gr.addColorStop(0, '#6a80c8'); gr.addColorStop(1, '#2a3978');
+                rrPath(ctx, px + 4, py + 4, TS - 8, TS - 8, 5); ctx.fillStyle = gr; ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1.6; ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2); ctx.fill(); break;
+            }
+            case 'T': {
+                const trap = map[y][x];
                 if (trap.trapState === 'ACTIVE') {
-                    ctx.shadowBlur = 0; ctx.shadowColor = '#ff003c';
-                    ctx.fillStyle = 'rgba(255, 0, 60, 0.8)'; ctx.fillRect(px+2, py+2, TILE_SIZE-4, TILE_SIZE-4);
-                    ctx.fillStyle = '#ff003c'; ctx.beginPath(); ctx.moveTo(pCenter.x, py+6); ctx.lineTo(px+TILE_SIZE-6, py+TILE_SIZE-6); ctx.lineTo(px+6, py+TILE_SIZE-6); ctx.fill();
-                    ctx.shadowBlur = 0;
+                    drawGlow(cx, cy, 28, [255, 0, 60], 0.7);
+                    ctx.fillStyle = 'rgba(255,0,60,0.8)'; ctx.fillRect(px + 2, py + 2, TS - 4, TS - 4);
+                    ctx.fillStyle = '#ff003c'; ctx.beginPath(); ctx.moveTo(cx, py + 6); ctx.lineTo(px + TS - 6, py + TS - 6); ctx.lineTo(px + 6, py + TS - 6); ctx.fill();
                 } else if (trap.trapState === 'SAFE') {
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.moveTo(px+8, py+8); ctx.lineTo(px+TILE_SIZE-8, py+TILE_SIZE-8); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(px+TILE_SIZE-8, py+8); ctx.lineTo(px+8, py+TILE_SIZE-8); ctx.stroke();
+                    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(px + 8, py + 8); ctx.lineTo(px + TS - 8, py + TS - 8); ctx.moveTo(px + TS - 8, py + 8); ctx.lineTo(px + 8, py + TS - 8); ctx.stroke();
                 }
                 break;
+            }
         }
     }
 
-    function drawSnakeData(sArr, mainColor, glowColor) {
-        if(!sArr || sArr.length === 0 || sArr.escaped) return;
+    function drawEnemy(e) {
+        const ex = e.visualX * TS + TS / 2, ey = e.visualY * TS + TS / 2, d = e.dir;
+        drawGlow(ex, ey, 30, [255, 20, 70], 0.55);
+        const gr = ctx.createRadialGradient(ex - 4, ey - 4, 2, ex, ey, 15);
+        gr.addColorStop(0, '#ff9bb0'); gr.addColorStop(0.5, '#ff1744'); gr.addColorStop(1, '#8e001c');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(ex, ey, 13.5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,205,215,0.7)'; ctx.lineWidth = 1.4; ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.arc(ex - 2, ey - 3, 3.6, 0, Math.PI * 2); ctx.fill();
+        const off = Math.sin(globalTime * 0.012) * 1.5 * d;
+        ctx.fillStyle = '#2f7bff'; ctx.strokeStyle = '#9cc4ff'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(ex + d * (27 + off), ey); ctx.lineTo(ex + d * (17 + off), ey - 7); ctx.lineTo(ex + d * (17 + off), ey + 7); ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+
+    function drawSnakeData(sArr, hi, mid, lo, glowRGB) {
+        if (!sArr || sArr.length === 0 || sArr.escaped) return;
         ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-        let t = isMoving ? moveProgress / moveDuration : 1;
-        
-        let pathPts = [];
-        for(let i=0; i<sArr.length; i++) {
-            let sx = sArr[i].oldX !== undefined ? sArr[i].oldX + (sArr[i].x - sArr[i].oldX)*t : sArr[i].x;
-            let sy = sArr[i].oldY !== undefined ? sArr[i].oldY + (sArr[i].y - sArr[i].oldY)*t : sArr[i].y;
-            pathPts.push({x: sx * TILE_SIZE + TILE_SIZE/2, y: sy * TILE_SIZE + TILE_SIZE/2});
+        const t = isMoving ? moveProgress / moveDuration : 1;
+        const pts = [];
+        for (let i = 0; i < sArr.length; i++) {
+            const sx = sArr[i].oldX !== undefined ? sArr[i].oldX + (sArr[i].x - sArr[i].oldX) * t : sArr[i].x;
+            const sy = sArr[i].oldY !== undefined ? sArr[i].oldY + (sArr[i].y - sArr[i].oldY) * t : sArr[i].y;
+            pts.push({ x: sx * TS + TS / 2, y: sy * TS + TS / 2 });
         }
+        const trace = () => { ctx.beginPath(); pts.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); }); };
+        const head = pts[0], tail = pts[pts.length - 1];
+        if (!LOW_END_DEVICE) { trace(); ctx.lineWidth = 36; ctx.strokeStyle = `rgba(${glowRGB},0.10)`; ctx.stroke(); }
+        trace(); ctx.lineWidth = 26; ctx.strokeStyle = 'rgba(200,228,240,0.95)'; ctx.stroke();       // pale rim
+        let body = mid;
+        if (Math.hypot(head.x - tail.x, head.y - tail.y) > 2) {
+            body = ctx.createLinearGradient(head.x, head.y, tail.x, tail.y);
+            body.addColorStop(0, hi); body.addColorStop(0.35, mid); body.addColorStop(1, lo);
+        }
+        trace(); ctx.lineWidth = 21; ctx.strokeStyle = body; ctx.stroke();                            // body
+        trace(); ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(255,255,255,0.30)'; ctx.stroke();         // gloss
 
-        ctx.beginPath();
-        for(let i=0; i<pathPts.length; i++) { if(i===0) ctx.moveTo(pathPts[i].x, pathPts[i].y); else ctx.lineTo(pathPts[i].x, pathPts[i].y); }
-        ctx.lineWidth = 22; ctx.shadowBlur = 0; ctx.shadowColor = glowColor; ctx.strokeStyle = `rgba(255,255,255,0.1)`; ctx.stroke();
-        ctx.shadowBlur = 0; ctx.lineWidth = 14; 
-        let grad = ctx.createLinearGradient(pathPts[0].x, pathPts[0].y, pathPts[pathPts.length-1].x, pathPts[pathPts.length-1].y);
-        grad.addColorStop(0, '#fff'); grad.addColorStop(0.3, mainColor); grad.addColorStop(1, '#111'); ctx.strokeStyle = grad; ctx.stroke();
-
-        let headPos = pathPts[0];
-        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(headPos.x, headPos.y, 8, 0, Math.PI*2); ctx.fill();
-        
-        let dirX = (sArr[0].x - (sArr[0].oldX||sArr[0].x)) || snakeDir.x || 1;
-        let dirY = (sArr[0].y - (sArr[0].oldY||sArr[0].y)) || snakeDir.y || 0;
-        let angle = Math.atan2(dirY, dirX);
-        ctx.save(); ctx.translate(headPos.x, headPos.y); ctx.rotate(angle);
-        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(3, -3, 2, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(3, 3, 2, 0, Math.PI*2); ctx.fill();
+        let ddx = sArr[0].oldX !== undefined ? sArr[0].x - sArr[0].oldX : 0, ddy = sArr[0].oldY !== undefined ? sArr[0].y - sArr[0].oldY : 0;
+        if (ddx || ddy) sArr.heading = Math.atan2(ddy, ddx);
+        if (sArr.heading === undefined) sArr.heading = Math.atan2(snakeDir.y, snakeDir.x || 1);
+        drawGlow(head.x, head.y, 26, glowRGB.split(',').map(Number), 0.45);
+        ctx.save(); ctx.translate(head.x, head.y); ctx.rotate(sArr.heading);
+        const hg = ctx.createRadialGradient(-2, -3, 1, 0, 0, 14); hg.addColorStop(0, '#ffffff'); hg.addColorStop(1, hi);
+        ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(0, 0, 12.5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = `rgba(${glowRGB},0.85)`; ctx.lineWidth = 1.8; ctx.stroke();
+        ctx.fillStyle = '#10131c'; ctx.beginPath(); ctx.ellipse(4.5, -4.3, 2, 3.1, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(4.5, 4.3, 2, 3.1, 0, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
     }
 
+    function drawMenuPortal() {
+        const sc = Math.min(0.9, canvasW / 520);
+        drawPortal(canvasW / 2, hudH + 195 * sc + 8, sc, globalTime, 0);
+    }
+
     function draw() {
-        ctx.clearRect(0, 0, canvasW, canvasH);
-        ctx.imageSmoothingEnabled = false;
-        if (currentState === STATE.MENU || currentState === STATE.LEVEL_SELECT || currentState === STATE.README) return;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+        drawBackground();
+        if (currentState === STATE.MENU || currentState === STATE.LEVEL_SELECT || currentState === STATE.README || !mapCols) { drawMenuPortal(); return; }
 
-        ctx.save(); ctx.translate(Math.floor(-camera.x), Math.floor(-camera.y));
-        
-        if (!LOW_END_DEVICE) {
-            ctx.strokeStyle = 'rgba(0, 243, 255, 0.05)'; 
-            ctx.lineWidth = 1;
-            let bgOffsetX = (camera.x * 0.5) % TILE_SIZE; let bgOffsetY = (camera.y * 0.5) % TILE_SIZE;
-            for(let x = -bgOffsetX; x < canvasW + TILE_SIZE; x += TILE_SIZE) { ctx.beginPath(); ctx.moveTo(camera.x + x, camera.y); ctx.lineTo(camera.x + x, camera.y + canvasH); ctx.stroke(); }
-            for(let y = -bgOffsetY; y < canvasH + TILE_SIZE; y += TILE_SIZE) { 
-                ctx.beginPath(); 
-                ctx.moveTo(camera.x, camera.y + y); 
-                ctx.lineTo(camera.x + canvasW, camera.y + y); 
-                ctx.stroke(); 
-            }
-        }
+        const mapW = mapCols * TS, mapH = mapRows * TS, P = 14;
+        const vw = canvasW / zoom, vh = canvasH / zoom;
+        ctx.save(); ctx.scale(zoom, zoom); ctx.translate(-camera.x, -camera.y);
 
-        for (let y = 0; y < mapRows; y++) {
-            for (let x = 0; x < mapCols; x++) {
-                let px = x * TILE_SIZE, py = y * TILE_SIZE;
-                if (px > camera.x - TILE_SIZE && px < camera.x + canvasW + TILE_SIZE && py > camera.y - TILE_SIZE && py < camera.y + canvasH + TILE_SIZE) drawTile(x, y, map[y][x].type);
-            }
-        }
-        
-        enemies.forEach(e => {
-            let px = e.visualX * TILE_SIZE + TILE_SIZE/2, py = e.visualY * TILE_SIZE + TILE_SIZE/2;
-            ctx.shadowBlur = 0; ctx.shadowColor = '#ff003c'; ctx.fillStyle = '#ff003c'; ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur = 0; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI*2); ctx.fill();
-        });
-        
-        if(puzzleState.hasMirror) drawSnakeData(mirrorSnake, '#aa00ff', '#ff00ea');
-        if(puzzleState.hasTwin && !twinSnake.escaped) drawSnakeData(twinSnake, '#ff8800', '#ffaa00');
-        if(!snake.escaped) drawSnakeData(snake, '#00f3ff', '#00f3ff');
-        
+        // glowing frame
+        rrPath(ctx, -P, -P, mapW + P * 2, mapH + P * 2, 24); ctx.fillStyle = '#030616'; ctx.fill();
+        if (!LOW_END_DEVICE) { ctx.strokeStyle = 'rgba(0,150,255,0.16)'; ctx.lineWidth = 16; ctx.stroke(); }
+        ctx.strokeStyle = 'rgba(40,190,255,0.40)'; ctx.lineWidth = 7; ctx.stroke();
+        ctx.strokeStyle = '#38b8ff'; ctx.lineWidth = 2.5; ctx.stroke();
+
+        if (camera.y < 40) drawPortal(mapW / 2, -10, portalScale, globalTime, portalBoost);
+
+        const x0 = Math.max(0, Math.floor(camera.x / TS)), x1 = Math.min(mapCols - 1, Math.floor((camera.x + vw) / TS));
+        const y0 = Math.max(0, Math.floor(camera.y / TS)), y1 = Math.min(mapRows - 1, Math.floor((camera.y + vh) / TS));
+        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) drawBaseTile(x, y, map[y][x].type);
+
+        // glowing grid + junction studs
+        ctx.beginPath();
+        for (let i = 0; i <= mapCols; i++) { ctx.moveTo(i * TS, 0); ctx.lineTo(i * TS, mapH); }
+        for (let j = 0; j <= mapRows; j++) { ctx.moveTo(0, j * TS); ctx.lineTo(mapW, j * TS); }
+        if (!LOW_END_DEVICE) { ctx.strokeStyle = 'rgba(20,110,255,0.20)'; ctx.lineWidth = 7; ctx.stroke(); }
+        ctx.strokeStyle = 'rgba(40,140,255,0.78)'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.beginPath();
+        for (let i = 0; i <= mapCols; i++) for (let j = 0; j <= mapRows; j++) { ctx.moveTo(i * TS + 2.6, j * TS); ctx.arc(i * TS, j * TS, 2.6, 0, Math.PI * 2); }
+        ctx.fillStyle = '#8fd8ff'; ctx.fill();
+
+        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) drawObject(x, y, map[y][x].type);
+
+        enemies.forEach(drawEnemy);
+        if (puzzleState.hasMirror) drawSnakeData(mirrorSnake, '#e6c8ff', '#a24bff', '#3c1280', '170,90,255');
+        if (puzzleState.hasTwin && !twinSnake.escaped) drawSnakeData(twinSnake, '#ffe2b0', '#ff9a1a', '#7a3a00', '255,150,30');
+        if (!snake.escaped) drawSnakeData(snake, '#c4fbff', '#1fd3ea', '#087a99', '0,243,255');
+
         particles.forEach(p => {
-            ctx.globalAlpha = p.life; ctx.fillStyle = p.color; 
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = Math.max(0, p.life) * 0.35; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 2.2, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = Math.max(0, p.life); ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
         });
         ctx.globalAlpha = 1.0; ctx.restore();
 
-        if(puzzleState.darkness) {
-            let t = isMoving ? moveProgress / moveDuration : 1;
-            let sx = !snake.escaped ? (snake[0].oldX !== undefined ? snake[0].oldX + (snake[0].x - snake[0].oldX)*t : snake[0].x) : 0;
-            let sy = !snake.escaped ? (snake[0].oldY !== undefined ? snake[0].oldY + (snake[0].y - snake[0].oldY)*t : snake[0].y) : 0;
-            let hx = sx*TILE_SIZE+TILE_SIZE/2-camera.x, hy = sy*TILE_SIZE+TILE_SIZE/2-camera.y;
-            
-            let gradient = ctx.createRadialGradient(hx, hy, 40, hx, hy, 250);
-            gradient.addColorStop(0, 'rgba(5,5,8,0)'); gradient.addColorStop(1, 'rgba(5,5,10,0.98)');
+        if (puzzleState.darkness && !snake.escaped) {
+            const h = visHead(snake), hx = (h.x - camera.x) * zoom, hy = (h.y - camera.y) * zoom;
+            const gradient = ctx.createRadialGradient(hx, hy, 40 * zoom, hx, hy, 250 * zoom);
+            gradient.addColorStop(0, 'rgba(3,4,20,0)'); gradient.addColorStop(1, 'rgba(3,4,20,0.97)');
             ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvasW, canvasH);
         }
     }
