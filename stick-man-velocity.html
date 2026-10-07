@@ -493,6 +493,42 @@
         }
         const shockLasers = [];
 
+        /* ============================================================
+           SKELETAL RIG HELPERS  (2-bone IK, attack key-curves, dust)
+           Local space: x = forward (facing), y = UP, origin = ground under the fighter
+           ============================================================ */
+        const rClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+        const rLerp = (a, b, t) => a + (b - a) * t;
+        const rSmooth = t => t * t * (3 - 2 * t);
+        // a: 0 = guard, 1 = wind-up/chamber, 2 = full strike. returns 0..2 over progress p
+        function keyCurve(p, t1, t2, t3) {
+            if (p < t1) return rSmooth(p / t1);
+            if (p < t2) { const q = (p - t1) / (t2 - t1); return 1 + (1 - (1 - q) * (1 - q)); }
+            if (p < t3) return 2;
+            return 2 * (1 - rSmooth(rClamp((p - t3) / (1 - t3), 0, 1)));
+        }
+        const rK = (a, g, cc, x) => a <= 1 ? g + (cc - g) * a : cc + (x - cc) * (a - 1);
+        const rKP = (a, g, cc, x) => ({ x: rK(a, g[0], cc[0], x[0]), y: rK(a, g[1], cc[1], x[1]) });
+        // side: +1 = joint bends counter-clockwise (knees), -1 = clockwise (elbows), 0 = pick the higher joint
+        function ik2(ax, ay, tx, ty, l1, l2, side) {
+            const dx = tx - ax, dy = ty - ay, d = Math.hypot(dx, dy) || 0.001;
+            const dc = rClamp(d, Math.abs(l1 - l2) + 0.5, l1 + l2 - 0.5);
+            const ux = dx / d, uy = dy / d;
+            const al = Math.acos(rClamp((l1 * l1 + dc * dc - l2 * l2) / (2 * l1 * dc), -1, 1));
+            const base = Math.atan2(uy, ux);
+            const m = sd => ({ x: ax + l1 * Math.cos(base + sd * al), y: ay + l1 * Math.sin(base + sd * al) });
+            let mid;
+            if (side === 0) { const m1 = m(1), m2 = m(-1); mid = m1.y > m2.y ? m1 : m2; } else mid = m(side);
+            return { mx: mid.x, my: mid.y, ex: ax + ux * dc, ey: ay + uy * dc };
+        }
+        function dust(x, y, n) {
+            for (let i = 0; i < (n || 5); i++) {
+                const p = new Particle(x, y, '#ffffff');
+                p.velocity = { x: (Math.random() - 0.5) * 9, y: -Math.random() * 3 };
+                p.alpha = 0.6; particles.push(p);
+            }
+        }
+
         class Sprite {
             constructor({ position, velocity, color, team, type = 'brawler' }) {
                 this.position = position; this.velocity = velocity; this.color = color; this.team = team; this.type = type;
@@ -518,21 +554,269 @@
                 this.animTimer = Math.random() * 100;
                 this.isKnockedDown = false; this.knockdownTimer = 0;
                 this.flashTimer = 0;
+                this.initRig();
+            }
+
+            /* ============================================================
+               RIG  –  pose targets -> smoothing -> 2-bone IK -> draw
+               ============================================================ */
+            initRig() {
+                this.sc = this.baseHeight / 130;
+                this.rig = null; this.J = null; this.S = null;
+                this.vis = { type: null, t: 0, dur: 1, combo: 0 };
+                this.landT = 0; this.wasAir = false; this.gait = Math.random() * 6; this.breath = Math.random() * 6;
+                this.flip = 0; this.trail = []; this.hitFront = true; this.atkA = 0; this.strike = null; this.kickLeg = null;
+            }
+
+            stepRig() {
+                if (this.team === 'player') this.width = hasCarMode ? 120 : 50;
+                this.animTimer += 1;
+                const dir = this.facingRight ? 1 : -1;
+                const vx = this.velocity.x, vy = this.velocity.y, speed = Math.abs(vx);
+                const air = Math.abs(vy) > 1;
+                const fwd = vx * dir > 0;
+                const v = this.vis;
+                if (v.type) { v.t++; if (v.t >= v.dur) v.type = null; }
+                if (this.landT > 0) this.landT--;
+                if (this.wasAir && !air && !this.isDiving) {
+                    this.landT = 8; dust(this.position.x + this.width / 2, this.position.y + this.height, 6);
+                    if (this.type === 'goliath') triggerShake(4);
+                }
+                this.wasAir = air;
+                if (air && this.jumps >= 2 && !this.isDiving && !this.isKnockedDown) this.flip = Math.min(this.flip + 0.3, Math.PI * 2);
+                else if (!air) this.flip = 0;
+                this.breath += 0.09;
+                if (!air && speed > 0.5) this.gait += vx * dir * 0.042;
+
+                // ---- hit-box follows the pose (same logic as before) ----
+                const bottomY = this.position.y + this.height;
+                const isSweeping = (this.isDiving && this.attackType === 'sweep' && this.velocity.y === 0);
+                const isDivingAir = (this.isDiving && this.attackType === 'dive' && this.velocity.y !== 0);
+                if (this.isAttacking) {
+                    this.attackBox.width = (this.attackType === 'kick') ? 60 : 45;
+                    if (isSweeping || isDivingAir) {
+                        this.attackBox.width = 90;
+                        this.attackBox.position.x = this.facingRight ? this.position.x : this.position.x - 40;
+                        this.attackBox.position.y = bottomY - 20;
+                    } else {
+                        this.attackBox.position.x = this.position.x + (this.facingRight ? this.width : -this.attackBox.width);
+                        this.attackBox.position.y = this.position.y + 20;
+                    }
+                }
+
+                if (this.type === 'spider') { this.stepSpider(air, dir, speed); return; }
+
+                // ---- target pose (local space: x forward, y up, units = 130px-tall fighter) ----
+                const gol = this.type === 'goliath', gun = this.type === 'gunner';
+                const bob = Math.sin(this.breath);
+                const G = o => [o.x, o.y];
+                const T = {
+                    px: 0, py: 51 + bob * 1.3, lean: 0.14, arch: 0, head: 0, rot: 0,
+                    fF: { x: 20 + Math.sin(this.breath * 0.5) * 2, y: 0 }, fB: { x: -17 - Math.sin(this.breath * 0.5) * 2, y: 0 },
+                    hF: { x: 19, y: 1 + bob * 1.2 }, hB: { x: 10, y: -6 + bob * 1.2 }, k: 0.35
+                };
+                if (gol) { T.py = 50 + bob * 1.6; T.lean = 0.1; }
+                if (gun) { T.hF = { x: 34, y: -2 + bob }; T.hB = { x: 27, y: -7 + bob }; T.lean = 0.08; }
+                let strike = null, kickLeg = null, a = 0;
+                const knocked = this.isKnockedDown && this.knockdownTimer >= 6;
+
+                if (knocked) {
+                    const bk = this.hitFront;
+                    T.lean = bk ? -0.7 : 0.55; T.arch = bk ? -0.25 : 0.2; T.head = bk ? -0.5 : 0.4; T.rot = bk ? -0.12 : 0.12; T.py = 45;
+                    if (air) { T.fF = { x: 16, y: 18 }; T.fB = { x: -6, y: 26 }; T.py = 43; }
+                    else { T.fF = { x: bk ? 8 : 26, y: 0 }; T.fB = { x: bk ? -28 : -8, y: 0 }; }
+                    if (bk) { T.hF = { x: -14, y: 16 }; T.hB = { x: -28, y: 5 }; } else { T.hF = { x: 28, y: 14 }; T.hB = { x: 20, y: 22 }; }
+                    T.k = 0.7;
+                } else if (isSweeping) {
+                    T.px = -8; T.py = 17; T.lean = -1.15; T.head = 0.5;
+                    T.fF = { x: 52, y: 2 }; T.fB = { x: 6, y: 9 }; T.hF = { x: -16, y: -16 }; T.hB = { x: -24, y: -20 };
+                    T.k = 0.65; kickLeg = 'F'; a = 2;
+                    if (this.animTimer % 3 === 0) dust(this.position.x + this.width / 2 + dir * 20, bottomY, 1);
+                } else if (isDivingAir) {
+                    T.py = 38; T.lean = -0.8; T.head = 0.4; T.rot = -0.5;
+                    T.fF = { x: 56, y: 12 }; T.fB = { x: 6, y: 20 }; T.hF = { x: -4, y: 14 }; T.hB = { x: -20, y: 8 };
+                    T.k = 0.6; kickLeg = 'F'; a = 2;
+                } else if (this.isDashing) {
+                    T.lean = 0.7; T.head = -0.35; T.py = 42;
+                    T.fF = { x: 34, y: 8 }; T.fB = { x: -34, y: 2 }; T.hF = { x: -10, y: -8 }; T.hB = { x: -18, y: -14 }; T.k = 0.6;
+                } else {
+                    // ---------- locomotion ----------
+                    if (air) {
+                        if (this.jumps >= 2 && this.flip > 0 && this.flip < Math.PI * 2 - 0.05) {
+                            T.py = 48; T.lean = 0.6; T.fF = { x: 12, y: 22 }; T.fB = { x: -4, y: 26 }; T.hF = { x: 10, y: -10 }; T.hB = { x: 4, y: -16 }; T.k = 0.5;
+                        } else if (vy < 0) {
+                            T.py = 47; T.lean = 0.12; T.fF = { x: 18, y: 20 }; T.fB = { x: -12, y: 11 }; T.hF = { x: 22, y: 5 }; T.hB = { x: 8, y: -10 }; T.k = 0.45;
+                        } else {
+                            T.py = 54; T.lean = 0.06; T.fF = { x: 12, y: 3 }; T.fB = { x: -13, y: 9 }; T.hF = { x: 24, y: 10 }; T.hB = { x: 2, y: 12 }; T.k = 0.4;
+                        }
+                    } else if (this.isCrouching) {
+                        T.py = 31 + bob; T.lean = 0.38; T.fF = { x: 26, y: 0 }; T.fB = { x: -22, y: 0 }; T.hF = { x: 21, y: -3 }; T.hB = { x: 9, y: -14 };
+                    } else if (speed > 0.5) {
+                        const run = rClamp((speed - 3) / 5, 0, 1), ph = this.gait;
+                        const sx = rLerp(9, 24, rClamp(speed / 9, 0, 1)) * (gol ? 0.7 : 1);
+                        const lift = rLerp(5, 14, rClamp(speed / 9, 0, 1)) * (gol ? 0.7 : 1);
+                        const shrink = 1 - run * 0.55;
+                        T.fF = { x: 20 * shrink + Math.sin(ph) * sx, y: Math.max(0, Math.cos(ph)) * lift };
+                        T.fB = { x: -17 * shrink + Math.sin(ph + Math.PI) * sx, y: Math.max(0, Math.cos(ph + Math.PI)) * lift };
+                        T.py = 52 - Math.abs(Math.cos(ph)) * (gol ? 5 : 3) - run;
+                        T.lean = fwd ? rLerp(0.14, 0.4, run) : 0.1;
+                        T.k = 0.55;
+                        if (fwd && run > 0 && !gun) {
+                            const pf = ph + Math.PI;
+                            T.hF = { x: rLerp(19, 8 + Math.sin(pf) * 15, run), y: rLerp(1, -6 + Math.max(0, Math.cos(pf)) * 9, run) };
+                            T.hB = { x: rLerp(10, 8 + Math.sin(ph) * 15, run), y: rLerp(-6, -6 + Math.max(0, Math.cos(ph)) * 9, run) };
+                        } else { T.hF.y += Math.sin(ph * 2) * 1.5; T.hB.y += Math.sin(ph * 2) * 1.5; }
+                    }
+                    if (this.landT > 0 && !air) { T.py -= this.landT * 1.4; T.lean += this.landT * 0.025; }
+
+                    // ---------- attack overlays ----------
+                    if (v.type === 'punch') {
+                        a = keyCurve(v.t / v.dur, 0.1, 0.26, 0.42);
+                        if (v.combo === 2) {              // cross (rear hand, hip rotation)
+                            T.hB = rKP(a, G(T.hB), [-2, -8], [46, 1]); T.hF = rKP(a, G(T.hF), [18, 2], [16, 0]);
+                            T.px += rK(a, 0, -4, 10); T.lean += rK(a, 0, -0.06, 0.26); T.fB.y += rK(a, 0, 0, 3); T.fF.x += rK(a, 0, 0, 6);
+                            strike = 'B';
+                        } else if (v.combo === 1) {       // jab (lead hand)
+                            T.hF = rKP(a, G(T.hF), [8, -2], [47, 3]); T.hB = rKP(a, G(T.hB), [14, 0], [14, -1]);
+                            T.px += rK(a, 0, -3, 5); T.lean += rK(a, 0, -0.05, 0.14);
+                            strike = 'F';
+                        } else {                          // rising uppercut
+                            T.hF = rKP(a, G(T.hF), [14, -24], [34, 24]); T.hB = rKP(a, G(T.hB), [12, -2], [12, 0]);
+                            T.py += rK(a, 0, -7, 6); T.lean += rK(a, 0, 0.16, -0.12); T.px += rK(a, 0, 0, 7);
+                            strike = 'F';
+                        }
+                        T.k = 0.7;
+                    } else if (v.type === 'kick') {
+                        a = keyCurve(v.t / v.dur, 0.2, 0.4, 0.56);
+                        if (v.combo === 2) {              // roundhouse (rear leg whips round, high)
+                            T.fB = rKP(a, G(T.fB), [10, 46], [52, 62]); T.fF = { x: rK(a, T.fF.x, 10, 6), y: 0 };
+                            T.lean += rK(a, 0, -0.18, -0.55); T.px += rK(a, 0, -4, -10); T.py += rK(a, 0, 2, -1);
+                            T.hF = rKP(a, G(T.hF), [16, 10], [22, 18]); T.hB = rKP(a, G(T.hB), [-6, 6], [-24, 10]);
+                            kickLeg = 'B';
+                        } else if (v.combo === 1) {       // front teep kick
+                            T.fF = rKP(a, G(T.fF), [24, 28], [58, 40]); T.fB = { x: rK(a, T.fB.x, -8, -8), y: 0 };
+                            T.lean += rK(a, 0, -0.1, -0.34); T.px += rK(a, 0, -3, -6);
+                            T.hF = rKP(a, G(T.hF), [12, 6], [10, 8]); T.hB = rKP(a, G(T.hB), [-8, 0], [-18, 4]);
+                            kickLeg = 'F';
+                        } else {                          // side thrust kick
+                            T.fF = rKP(a, G(T.fF), [20, 36], [56, 46]); T.fB = { x: rK(a, T.fB.x, -10, -10), y: 0 };
+                            T.lean += rK(a, 0, -0.24, -0.62); T.px += rK(a, 0, -4, -10); T.py += rK(a, 0, -4, -1);
+                            T.hF = rKP(a, G(T.hF), [14, 4], [4, 6]); T.hB = rKP(a, G(T.hB), [-4, -4], [-22, 2]);
+                            kickLeg = 'F';
+                        }
+                        T.k = 0.7;
+                    } else if (v.type === 'fire') {
+                        a = keyCurve(v.t / v.dur, 0.14, 0.3, 0.6);
+                        if (gun) {                        // gunner: aimed shot with recoil
+                            T.hF = rKP(a, [34, -2], [32, -2], [46, 3]); T.hB = rKP(a, [27, -7], [26, -6], [38, -3]);
+                            T.lean += rK(a, 0, 0, -0.08); T.px += rK(a, 0, 0, -4);
+                        } else {                          // two-hand energy thrust
+                            T.hF = rKP(a, G(T.hF), [-4, -24], [46, -2]); T.hB = rKP(a, G(T.hB), [-8, -28], [40, -5]);
+                            T.fF = rKP(a, G(T.fF), [26, 0], [28, 0]); T.fB = rKP(a, G(T.fB), [-22, 0], [-24, 0]);
+                            T.py += rK(a, 0, -6, -5); T.lean += rK(a, 0, -0.1, 0.22); T.px += rK(a, 0, -4, 7);
+                        }
+                        T.k = 0.7; strike = 'F';
+                    }
+                }
+
+                // ---- smooth toward target ----
+                if (!this.rig) {
+                    this.rig = { px: T.px, py: T.py, lean: T.lean, arch: T.arch, head: T.head, rot: T.rot,
+                        fF: { ...T.fF }, fB: { ...T.fB }, hF: { ...T.hF }, hB: { ...T.hB } };
+                }
+                const R = this.rig, k = T.k;
+                for (const n of ['px', 'py', 'lean', 'arch', 'head', 'rot']) R[n] += (T[n] - R[n]) * k;
+                for (const n of ['fF', 'fB', 'hF', 'hB']) { R[n].x += (T[n].x - R[n].x) * k; R[n].y += (T[n].y - R[n].y) * k; }
+                this.strike = strike; this.kickLeg = kickLeg; this.atkA = a;
+                this.buildJoints();
+
+                // ---- motion trail on the striking limb ----
+                for (const tr of this.trail) tr.l *= 0.78;
+                while (this.trail.length && this.trail[0].l < 0.08) this.trail.shift();
+                if (a > 1.15) {
+                    const J = this.J;
+                    const tip = kickLeg ? (kickLeg === 'F' ? J.aF : J.aB) : (strike ? (strike === 'F' ? J.dF : J.dB) : null);
+                    if (tip) { this.trail.push({ x: tip.x, y: tip.y, l: 1 }); if (this.trail.length > 8) this.trail.shift(); }
+                }
+            }
+
+            buildJoints() {
+                const R = this.rig, s = this.sc, dir = this.facingRight ? 1 : -1;
+                const cx = this.position.x + this.width / 2, gy = this.position.y + this.height;
+                const W = p => ({ x: cx + dir * p.x * s, y: gy - p.y * s });
+                const P = { x: R.px, y: R.py };
+                const a1 = R.lean * 0.55, a2 = R.lean * 1.1 + R.arch, ah = a2 + R.head;
+                const Wp = { x: P.x + 17 * Math.sin(a1), y: P.y + 17 * Math.cos(a1) };
+                const Sh = { x: Wp.x + 19 * Math.sin(a2), y: Wp.y + 19 * Math.cos(a2) };
+                const nA = a2 + R.head * 0.5;
+                const Nk = { x: Sh.x + 6 * Math.sin(nA), y: Sh.y + 6 * Math.cos(nA) };
+                const HR = 15.5;
+                const H = { x: Nk.x + HR * Math.sin(ah), y: Nk.y + HR * Math.cos(ah) };
+                const hipF = { x: P.x + 2, y: P.y }, hipB = { x: P.x - 2, y: P.y };
+                const lf = ik2(hipF.x, hipF.y, R.fF.x, R.fF.y, 29, 29, 1);
+                const lb = ik2(hipB.x, hipB.y, R.fB.x, R.fB.y, 29, 29, 1);
+                const sy = Sh.y - 1;
+                const af = ik2(Sh.x, sy, Sh.x + R.hF.x, sy + R.hF.y, 20, 19, -1);
+                const ab = ik2(Sh.x, sy, Sh.x + R.hB.x, sy + R.hB.y, 20, 19, -1);
+                const toe = (kx, ky, ex, ey) => {
+                    let ux = ex - kx, uy = ey - ky; const l = Math.hypot(ux, uy) || 1; ux /= l; uy /= l;
+                    const flat = rClamp(1 - ey / 6, 0, 1);
+                    let fx = rLerp(-uy, 1, flat), fy = rLerp(ux, 0, flat);
+                    const fl = Math.hypot(fx, fy) || 1;
+                    return { x: ex + fx / fl * 9, y: ey + fy / fl * 9 };
+                };
+                this.J = {
+                    H: W(H), r: HR * s, ah, Nk: W(Nk), Sh: W({ x: Sh.x, y: sy }), Wp: W(Wp), P: W(P), pv: W({ x: P.x, y: P.y + 12 }),
+                    hipF: W(hipF), kF: W({ x: lf.mx, y: lf.my }), aF: W({ x: lf.ex, y: lf.ey }), tF: W(toe(lf.mx, lf.my, lf.ex, lf.ey)),
+                    hipB: W(hipB), kB: W({ x: lb.mx, y: lb.my }), aB: W({ x: lb.ex, y: lb.ey }), tB: W(toe(lb.mx, lb.my, lb.ex, lb.ey)),
+                    eF: W({ x: af.mx, y: af.my }), dF: W({ x: af.ex, y: af.ey }),
+                    eB: W({ x: ab.mx, y: ab.my }), dB: W({ x: ab.ex, y: ab.ey })
+                };
+            }
+
+            // ---------- spider: 8 IK legs, pounce attack ----------
+            stepSpider(air, dir, speed) {
+                const v = this.vis;
+                const cx = this.position.x + this.width / 2, gy = this.position.y + this.height;
+                const a = v.type ? keyCurve(v.t / v.dur, 0.2, 0.4, 0.6) : 0;
+                this.atkA = a;
+                const kn = this.isKnockedDown && this.knockdownTimer >= 4;
+                const moving = speed > 0.5 && !air;
+                const bodyY = kn ? 24 : 38 + Math.sin(this.gait * 2) * (moving ? 2 : 0.8) + (air ? 5 : 0) + Math.sin(this.breath) * 0.8 - (a > 0 && a < 1 ? a * 6 : 0);
+                const lunge = a > 1 ? (a - 1) * 16 : (a > 0 ? -a * 6 : 0);
+                const W = (x, y) => ({ x: cx + dir * x, y: gy - y });
+                const legs = [];
+                for (let i = 0; i < 8; i++) {
+                    const far = i >= 4, j = i % 4;
+                    const axl = (8 - j * 8) + lunge, ayl = bodyY - 2;
+                    let fxl = (44 - j * 29.5) + (far ? 6 : 0), fyl = 0;
+                    if (moving) {
+                        const ph = this.gait + (j % 2) * Math.PI + (far ? Math.PI * 0.5 : 0);
+                        fxl += Math.sin(ph) * 11; fyl = Math.max(0, Math.cos(ph)) * 10;
+                    }
+                    if (air) fyl += 8;
+                    if (j === 0 && a > 0) {
+                        const q = Math.min(a, 1), r2 = a > 1 ? a - 1 : 0;
+                        fyl = Math.max(fyl, q * 14 + r2 * 22); fxl += q * 8 + r2 * 22;
+                    }
+                    if (kn) { fxl = axl + (j - 1.5) * 6; fyl = bodyY * 0.55 + 6; }
+                    const L = ik2(axl, ayl, fxl, fyl, 27, 33, 0);
+                    legs.push({ far, a: W(axl, ayl), k: W(L.mx, L.my), f: W(L.ex, L.ey) });
+                }
+                this.S = {
+                    legs, abd: { ...W(-14 + lunge * 0.5, bodyY + 3), r: 15 }, thx: { ...W(10 + lunge, bodyY), r: 11 },
+                    eyeA: W(15 + lunge, bodyY + 4), eyeB: W(12 + lunge, bodyY + 6), eyeC: W(18 + lunge, bodyY + 1),
+                    fang: W(19 + lunge, bodyY - 4), open: Math.min(a, 1.5)
+                };
             }
 
             draw() {
                 c.save();
                 c.translate(-cameraX, 0);
 
-                if(!reflecting && this.flashTimer > 0 && this.flashTimer % 4 < 2) {
+                if (!reflecting && this.flashTimer > 0 && this.flashTimer % 4 < 2) {
                     c.filter = 'brightness(300%)';
                 }
-
-                if (!reflecting) this.animTimer += 1;
-                let bottomY = this.position.y + this.height;
-                let isMoving = Math.abs(this.velocity.x) > 0.5;
-                let isJumping = this.velocity.y < -1 || this.velocity.y > 1;
-                let directionMod = this.facingRight ? 1 : -1;
 
                 if (this.team === 'player' && hasCarMode) {
                     c.fillStyle = '#00aaff'; c.shadowBlur = 20; c.shadowColor = '#00aaff';
@@ -544,172 +828,179 @@
                     c.beginPath(); c.arc(this.position.x + 80, this.position.y + 100, 15, 0, Math.PI*2); c.fill();
                     c.fillStyle = this.facingRight ? '#ffcc00' : '#ff0055';
                     c.fillRect(this.facingRight ? this.position.x + 95 : this.position.x - 25, this.position.y + 70, 10, 10);
-                    this.width = 120; 
                     c.restore(); return;
-                } else if (this.team === 'player') {
-                    this.width = 50; 
                 }
 
                 if (this.team === 'ally') c.globalAlpha *= 0.6;
                 c.shadowBlur = reflecting ? 0 : 18;
                 c.shadowColor = this.color;
-                
-                let headRadius = this.type === 'spider' ? 15 : (this.type === 'goliath' ? 25 : 20);
-                let headY = this.position.y + headRadius + (this.isCrouching ? 20 : 0);
-                let head = { x: this.position.x + this.width / 2 + (isMoving && !isJumping ? directionMod * 10 : 0), y: headY };
-                
-                let eyeOffsetX = directionMod * 8;
-                let eyeOffsetY = -3;
-                
-                c.fillStyle = this.color;
-                c.beginPath(); c.arc(head.x, head.y, headRadius, 0, Math.PI * 2); c.fill();
+                c.lineCap = 'round'; c.lineJoin = 'round';
+                if (this.type === 'spider') this.drawSpider(); else this.drawFighter();
+                c.restore();
+            }
 
-                if (this.team === 'player' && currentStage >= 2) {
-                    c.fillStyle = '#ff0055'; c.beginPath(); 
-                    c.arc(head.x, head.y - 5, headRadius + 2, Math.PI, 0); c.fill();
-                    c.fillRect(head.x + (this.facingRight?0:-25), head.y - 5, 25, 4);
-                }
+            drawFighter() {
+                const J = this.J; if (!J) return;
+                const s = this.sc, dir = this.facingRight ? 1 : -1, col = this.color;
+                const gol = this.type === 'goliath', gun = this.type === 'gunner', pl = this.team === 'player';
+                const th = gol ? 1.7 : 1, A0 = c.globalAlpha, t = this.animTimer;
+                const speed = Math.abs(this.velocity.x);
+                const hurt = this.isKnockedDown && this.knockdownTimer >= 6;
+                const stage = pl ? currentStage : 0;
 
-                if (this.type !== 'spider') {
-                    c.fillStyle = '#fff';
-                    c.beginPath(); c.arc(head.x + eyeOffsetX, head.y + eyeOffsetY, 3, 0, Math.PI * 2); c.fill();
-                    if (this.team === 'player' || this.team === 'ally') { c.beginPath(); c.arc(head.x + eyeOffsetX - (directionMod*6), head.y + eyeOffsetY, 3, 0, Math.PI * 2); c.fill(); }
-                }
-
-                if (this.type === 'spider') {
-                    c.strokeStyle = this.color; c.lineWidth = 4; c.lineCap = 'round'; c.lineJoin = 'round';
-                    let legCycle = Math.sin(this.animTimer * 0.4) * 15;
-                    for(let i=-1; i<=1; i+=2) {
-                        c.beginPath(); c.moveTo(head.x, head.y); c.lineTo(head.x + 30*i, head.y - 20); c.lineTo(head.x + 40*i + legCycle*i, bottomY); c.stroke();
-                        c.beginPath(); c.moveTo(head.x, head.y); c.lineTo(head.x + 20*i, head.y - 10); c.lineTo(head.x + 30*i - legCycle*i, bottomY); c.stroke();
+                // dash speed-lines
+                if (this.isDashing) {
+                    c.save(); c.shadowBlur = 0; c.strokeStyle = '#ffffff'; c.lineWidth = 2;
+                    for (let i = 0; i < 4; i++) {
+                        c.globalAlpha = A0 * 0.35; const yy = J.P.y - 30 + i * 22, len = 50 + i * 14;
+                        c.beginPath(); c.moveTo(J.P.x - dir * 24, yy); c.lineTo(J.P.x - dir * (24 + len), yy); c.stroke();
                     }
-                    c.restore(); return;
+                    c.restore();
                 }
 
-                c.strokeStyle = this.color; c.lineWidth = this.type === 'goliath' ? 12 : 6; c.lineCap = 'round'; c.lineJoin = 'round';
-                
-                let neck = { x: head.x, y: head.y + headRadius };
-                let pelvis = { x: head.x, y: bottomY - (this.isCrouching ? 20 : 35) };
-                let lHand = { x: 0, y: 0 }, rHand = { x: 0, y: 0 }, lFoot = { x: 0, y: 0 }, rFoot = { x: 0, y: 0 };
-                let shoulderY = neck.y + 10;
-
-                let isSweeping = (this.isDiving && this.attackType === 'sweep' && this.velocity.y === 0);
-                let isDivingAir = (this.isDiving && this.attackType === 'dive' && this.velocity.y !== 0);
-
-                if (isSweeping) {
-                    head.x = this.position.x + (this.facingRight ? 20 : this.width - 20);
-                    head.y = bottomY - 15;
-                    neck = { x: head.x - (directionMod * 15), y: head.y };
-                    pelvis = { x: neck.x - (directionMod * 30), y: head.y };
-                    lFoot = { x: pelvis.x - (directionMod * 25), y: head.y };
-                    rFoot = { x: pelvis.x - (directionMod * 40), y: head.y - 15 };
-                    lHand = { x: neck.x + (directionMod * 25), y: head.y }; 
-                    rHand = { x: neck.x + (directionMod * 10), y: head.y - 10 };
-                    shoulderY = neck.y;
-                } else if (isDivingAir) {
-                    head.x = this.position.x + (this.facingRight ? this.width : 0);
-                    head.y = this.position.y + 20;
-                    neck = { x: head.x - (directionMod * 15), y: head.y };
-                    pelvis = { x: neck.x - (directionMod * 30), y: head.y - 10 };
-                    lFoot = { x: pelvis.x - (directionMod * 30), y: head.y - 20 };
-                    rFoot = { x: pelvis.x - (directionMod * 10), y: head.y }; 
-                    lHand = { x: neck.x + (directionMod * 20), y: head.y };
-                    rHand = { x: neck.x - (directionMod * 10), y: head.y + 10 };
-                    shoulderY = neck.y;
-                } else if (this.isKnockedDown) {
-                    head.x -= directionMod * 20; head.y += 40;
-                    neck = { x: head.x, y: head.y + headRadius };
-                    pelvis = { x: head.x - directionMod * 30, y: bottomY - 10 };
-                    lHand = { x: head.x - 10, y: bottomY }; rHand = { x: head.x + 10, y: bottomY };
-                    lFoot = { x: pelvis.x - 20, y: bottomY }; rFoot = { x: pelvis.x - 10, y: bottomY - 10 };
-                } else {
-                    if (isJumping) {
-                        lFoot = { x: pelvis.x - 15, y: pelvis.y + 20 }; rFoot = { x: pelvis.x + 15, y: pelvis.y + 30 };
-                    } else if (isMoving) {
-                        let legCycle = Math.sin(this.animTimer * 0.25) * 30;
-                        lFoot = { x: pelvis.x - legCycle, y: bottomY }; rFoot = { x: pelvis.x + legCycle, y: bottomY };
-                    } else if (this.isCrouching) {
-                        lFoot = { x: pelvis.x - 25, y: bottomY }; rFoot = { x: pelvis.x + 25, y: bottomY };
-                    } else {
-                        lFoot = { x: pelvis.x - 10, y: bottomY }; rFoot = { x: pelvis.x + 10, y: bottomY };
+                // strike trail
+                if (this.trail.length > 1) {
+                    c.save(); c.strokeStyle = '#ffffff'; c.shadowBlur = reflecting ? 0 : 10;
+                    for (let i = 1; i < this.trail.length; i++) {
+                        const p0 = this.trail[i - 1], p1 = this.trail[i];
+                        c.globalAlpha = A0 * p1.l * 0.85; c.lineWidth = 2 + p1.l * 8 * Math.min(th, 1.3);
+                        c.beginPath(); c.moveTo(p0.x, p0.y); c.lineTo(p1.x, p1.y); c.stroke();
                     }
-                    
-                    if (this.isAttacking && !this.isDiving) {
-                        let ext = this.attackType === 'kick' ? 55 : 45;
-                        if (this.type === 'goliath') ext += 30;
-                        
-                        if (this.attackType === 'punch') {
-                            if (this.attackCombo === 0) { 
-                                rHand = { x: neck.x + (directionMod * ext), y: shoulderY };
-                                lHand = { x: neck.x + (directionMod * 15), y: shoulderY + 15 };
-                            } else if (this.attackCombo === 1) { 
-                                rHand = { x: neck.x + (directionMod * ext * 0.8), y: shoulderY - 20 };
-                                lHand = { x: neck.x + (directionMod * 10), y: shoulderY + 20 };
-                            } else { 
-                                rHand = { x: neck.x + (directionMod * ext), y: shoulderY + 20 };
-                                lHand = { x: neck.x - (directionMod * 5), y: shoulderY + 10 };
-                            }
-                        } else if (this.attackType === 'kick') {
-                            if (this.attackCombo === 0) { 
-                                rFoot = { x: pelvis.x + (directionMod * ext), y: pelvis.y - 10 };
-                            } else if (this.attackCombo === 1) { 
-                                rFoot = { x: pelvis.x + (directionMod * ext * 0.8), y: pelvis.y - 35 };
-                            } else { 
-                                rFoot = { x: pelvis.x + (directionMod * ext), y: pelvis.y + 15 };
-                            }
-                            lHand = { x: neck.x - (directionMod * 10), y: shoulderY - 10 };
-                            rHand = { x: neck.x + (directionMod * 10), y: shoulderY + 15 };
-                        }
-                    } else {
-                        if (isJumping) {
-                            lHand = { x: neck.x - 20, y: shoulderY - 20 }; rHand = { x: neck.x + 20, y: shoulderY - 15 };
-                        } else if (isMoving) {
-                            let armCycle = Math.sin(this.animTimer * 0.25) * 20;
-                            lHand = { x: neck.x - armCycle, y: shoulderY + 15 }; rHand = { x: neck.x + armCycle, y: shoulderY + 15 };
-                        } else if (this.isCrouching) {
-                            lHand = { x: neck.x + (directionMod * 15), y: shoulderY + 15 }; rHand = { x: neck.x - (directionMod * 15), y: shoulderY + 15 };
-                        } else {
-                            lHand = { x: neck.x - 5, y: shoulderY + 25 }; rHand = { x: neck.x + 5, y: shoulderY + 25 };
-                        }
+                    c.restore();
+                }
+
+                // whole-body rotation (flips, flying kick, hit tilt)
+                const rot = this.flip + this.rig.rot;
+                c.save();
+                if (Math.abs(rot) > 0.001) { c.translate(J.pv.x, J.pv.y); c.rotate(dir * rot); c.translate(-J.pv.x, -J.pv.y); }
+
+                const line = (list, w) => { c.beginPath(); for (const q of list) { c.moveTo(q[0].x, q[0].y); c.lineTo(q[1].x, q[1].y); } c.lineWidth = w; c.stroke(); };
+                const legF = { th: [J.hipF, J.kF], sh: [J.kF, J.aF], ft: [J.aF, J.tF] };
+                const legB = { th: [J.hipB, J.kB], sh: [J.kB, J.aB], ft: [J.aB, J.tB] };
+                const armF = { up: [J.Sh, J.eF], fo: [J.eF, J.dF] };
+                const armB = { up: [J.Sh, J.eB], fo: [J.eB, J.dB] };
+                const fistR = 4.8 * th;
+
+                const drawLimbs = (leg, arm, alpha) => {
+                    c.globalAlpha = A0 * alpha; c.strokeStyle = col; c.fillStyle = col;
+                    line([leg.th, arm.up], 7.4 * th);
+                    line([leg.sh, arm.fo, leg.ft], 5.6 * th);
+                    if (stage >= 4) {      // white boots
+                        const k = leg.sh[0], an = leg.sh[1];
+                        c.strokeStyle = '#ffffff';
+                        line([leg.ft, [an, { x: an.x + (k.x - an.x) * 0.28, y: an.y + (k.y - an.y) * 0.28 }]], 8);
+                        c.strokeStyle = col;
+                    }
+                    const hd = arm.fo[1];
+                    c.beginPath(); c.arc(hd.x, hd.y, fistR, 0, Math.PI * 2); c.fill();
+                    if (gol) { c.strokeStyle = '#ffffff'; c.lineWidth = 2; c.globalAlpha = A0 * alpha * 0.7; c.beginPath(); c.arc(hd.x, hd.y, fistR + 1, 0, Math.PI * 2); c.stroke(); c.strokeStyle = col; }
+                };
+
+                const kickB = this.kickLeg === 'B', strikeB = this.strike === 'B';
+                // far limbs (dimmer, behind body)
+                drawLimbs(kickB ? legF : legB, strikeB ? armF : armB, 0.55);
+
+                // torso
+                c.globalAlpha = A0; c.strokeStyle = col;
+                line([[J.P, J.Wp]], 8.6 * th);
+                const core = pl && stage >= 3;
+                c.strokeStyle = core ? '#00ffff' : col;
+                line([[J.Wp, J.Sh]], (core ? 12.5 : 10.5) * th);
+                c.strokeStyle = col; line([[J.Sh, J.Nk]], 5 * th);
+                if (core) { c.fillStyle = '#ffffff'; c.beginPath(); c.arc((J.Wp.x + J.Sh.x) / 2, (J.Wp.y + J.Sh.y) / 2, 3, 0, Math.PI * 2); c.fill(); }
+                if (gol) {   // shoulder pad + belt
+                    c.fillStyle = col; c.beginPath(); c.arc(J.Sh.x, J.Sh.y + 2, 9.5 * s, 0, Math.PI * 2); c.fill();
+                    c.strokeStyle = '#ffffff'; c.globalAlpha = A0 * 0.6; c.lineWidth = 2; c.beginPath(); c.arc(J.Sh.x, J.Sh.y + 2, 9.5 * s, 0, Math.PI * 2); c.stroke();
+                    c.globalAlpha = A0; c.strokeStyle = col;
+                }
+                if (stage >= 5) {   // flowing scarf
+                    c.strokeStyle = '#ff0000'; c.lineWidth = 5; c.beginPath(); c.moveTo(J.Nk.x, J.Nk.y + 3);
+                    const fl = 18 + speed * 1.6;
+                    c.quadraticCurveTo(J.Nk.x - dir * fl * 0.6, J.Nk.y + 8 + Math.sin(t * 0.3) * 4, J.Nk.x - dir * fl, J.Nk.y + 4 + Math.sin(t * 0.3 + 1.2) * 7);
+                    c.stroke(); c.strokeStyle = col;
+                }
+
+                // head
+                const ah = J.ah, HX = J.H.x, HY = J.H.y, R = J.r;
+                const hp = (fw, up) => ({ x: HX + dir * (fw * Math.cos(ah) + up * Math.sin(ah)) * s, y: HY - (-fw * Math.sin(ah) + up * Math.cos(ah)) * s });
+                c.fillStyle = col; c.beginPath(); c.arc(HX, HY, R, 0, Math.PI * 2); c.fill();
+                if (gol) {   // horns
+                    c.strokeStyle = '#ffffff'; c.lineWidth = 4; c.beginPath();
+                    let h0 = hp(2, 12), h1 = hp(-3, 24); c.moveTo(h0.x, h0.y); c.lineTo(h1.x, h1.y);
+                    h0 = hp(9, 9); h1 = hp(14, 20); c.moveTo(h0.x, h0.y); c.lineTo(h1.x, h1.y); c.stroke(); c.strokeStyle = col;
+                }
+                if (stage >= 2) {   // headband + tails
+                    const b0 = hp(-14, 4), b1 = hp(14, 4);
+                    c.strokeStyle = '#ff0055'; c.lineWidth = 4.2; c.beginPath(); c.moveTo(b0.x, b0.y); c.lineTo(b1.x, b1.y); c.stroke();
+                    const fl = 10 + speed * 1.4;
+                    c.lineWidth = 3.2; c.beginPath(); c.moveTo(b0.x, b0.y);
+                    c.quadraticCurveTo(b0.x - dir * fl * 0.5, b0.y + 2 + Math.sin(t * 0.35) * 3, b0.x - dir * fl, b0.y + 6 + Math.sin(t * 0.35 + 1) * 4);
+                    c.moveTo(b0.x, b0.y);
+                    c.quadraticCurveTo(b0.x - dir * fl * 0.4, b0.y - 3 + Math.sin(t * 0.4 + 2) * 3, b0.x - dir * fl * 0.8, b0.y + 1 + Math.sin(t * 0.4 + 3) * 4);
+                    c.stroke(); c.strokeStyle = col;
+                }
+                // face
+                if (hurt) {
+                    c.strokeStyle = '#000000'; c.lineWidth = 2; c.beginPath();
+                    for (const e of (pl || this.team === 'ally') ? [hp(8, 2), hp(1.5, 2)] : [hp(7, 2)]) {
+                        c.moveTo(e.x - 3, e.y - 3); c.lineTo(e.x + 3, e.y + 3); c.moveTo(e.x + 3, e.y - 3); c.lineTo(e.x - 3, e.y + 3);
+                    }
+                    c.stroke(); c.strokeStyle = col;
+                } else if (gun) {   // visor
+                    const v0 = hp(-3, 2), v1 = hp(13, 2);
+                    c.strokeStyle = '#ffffff'; c.lineWidth = 5; c.beginPath(); c.moveTo(v0.x, v0.y); c.lineTo(v1.x, v1.y); c.stroke(); c.strokeStyle = col;
+                } else if (pl || this.team === 'ally') {
+                    c.fillStyle = '#ffffff';
+                    for (const e of [hp(8, 2), hp(1.5, 2)]) { c.beginPath(); c.arc(e.x, e.y, 2.8, 0, Math.PI * 2); c.fill(); }
+                } else {            // angry enemy eye + brow
+                    c.fillStyle = '#ffffff'; const e = hp(7, 2); c.beginPath(); c.arc(e.x, e.y, gol ? 3.6 : 3, 0, Math.PI * 2); c.fill();
+                    const b0 = hp(2.5, 8), b1 = hp(12, 4.5); c.strokeStyle = '#000000'; c.lineWidth = 2.2; c.beginPath(); c.moveTo(b0.x, b0.y); c.lineTo(b1.x, b1.y); c.stroke(); c.strokeStyle = col;
+                }
+                if (this.atkA > 1.1 && !hurt) { const m = hp(8, -6); c.fillStyle = '#000000'; c.beginPath(); c.arc(m.x, m.y, 2.6, 0, Math.PI * 2); c.fill(); }
+
+                // near limbs (bright, in front)
+                drawLimbs(kickB ? legB : legF, strikeB ? armB : armF, 1);
+
+                // gunner blaster
+                if (gun) {
+                    const e = J.eF, hd = J.dF; let ux = hd.x - e.x, uy = hd.y - e.y; const l = Math.hypot(ux, uy) || 1; ux /= l; uy /= l;
+                    const tip = { x: hd.x + ux * 20, y: hd.y + uy * 20 };
+                    c.strokeStyle = '#e8e8ff'; c.lineWidth = 6; c.beginPath(); c.moveTo(hd.x - ux * 4, hd.y - uy * 4); c.lineTo(tip.x, tip.y); c.stroke();
+                    c.lineWidth = 4; c.beginPath(); c.moveTo(hd.x, hd.y); c.lineTo(hd.x - dir * 2, hd.y + 9); c.stroke();
+                    if (this.vis.type === 'fire' && this.atkA > 1.4) {
+                        c.fillStyle = '#ffee55'; c.beginPath(); c.arc(tip.x + ux * 4, tip.y + uy * 4, 8, 0, Math.PI * 2); c.fill();
+                        c.fillStyle = '#ffffff'; c.beginPath(); c.arc(tip.x + ux * 4, tip.y + uy * 4, 4, 0, Math.PI * 2); c.fill();
                     }
                 }
-
-                if (this.team === 'player' && currentStage >= 3) { c.strokeStyle = '#00ffff'; c.lineWidth = 10; }
-                c.beginPath(); c.moveTo(neck.x, neck.y); c.lineTo(pelvis.x, pelvis.y); c.stroke();
-                if (this.team === 'player' && currentStage >= 5) {
-                    c.strokeStyle = '#ff0000'; c.lineWidth = 4;
-                    c.beginPath(); c.moveTo(neck.x, neck.y); c.lineTo(neck.x, neck.y + 25); c.stroke();
-                }
-
-                c.strokeStyle = this.color; c.lineWidth = this.type === 'goliath' ? 12 : 6;
-                c.beginPath(); c.moveTo(shoulderY === neck.y+10 ? neck.x : pelvis.x, shoulderY); c.lineTo(lHand.x, lHand.y); c.stroke();
-                c.beginPath(); c.moveTo(shoulderY === neck.y+10 ? neck.x : pelvis.x, shoulderY); c.lineTo(rHand.x, rHand.y); c.stroke();
-                
-                if(this.team === 'player' && currentStage >= 4) {
-                    c.fillStyle = '#fff'; c.fillRect(lFoot.x - 5, lFoot.y - 5, 10, 10);
-                    c.fillRect(rFoot.x - 5, rFoot.y - 5, 10, 10);
-                }
-
-                c.beginPath(); c.moveTo(pelvis.x, pelvis.y); c.lineTo(lFoot.x, lFoot.y); c.stroke();
-                c.beginPath(); c.moveTo(pelvis.x, pelvis.y); c.lineTo(rFoot.x, rFoot.y); c.stroke();
-
-                if (this.isAttacking) {
-                    c.fillStyle = (this.attackType === 'kick' || this.attackType === 'sweep' || this.attackType === 'dive') ? 'rgba(255,255,255,0.4)' : 'rgba(255,0,0,0.4)';
-                    this.attackBox.width = (this.attackType === 'kick') ? 60 : 45; 
-                    
-                    if(isSweeping || isDivingAir) {
-                        this.attackBox.width = 90;
-                        this.attackBox.position.x = this.facingRight ? this.position.x : this.position.x - 40;
-                        this.attackBox.position.y = bottomY - 20;
-                    } else {
-                        this.attackBox.position.x = this.position.x + (this.facingRight ? this.width : -this.attackBox.width);
-                        this.attackBox.position.y = this.position.y + 20;
-                    }
+                // white-hot fist/foot at impact
+                if (this.atkA > 1.5 && (this.strike || this.kickLeg) && !gun) {
+                    const tip = this.kickLeg ? (this.kickLeg === 'F' ? J.aF : J.aB) : (this.strike === 'F' ? J.dF : J.dB);
+                    c.fillStyle = '#ffffff'; c.globalAlpha = A0 * 0.9; c.beginPath(); c.arc(tip.x, tip.y, 4.5 * th, 0, Math.PI * 2); c.fill();
                 }
                 c.restore();
             }
 
+            drawSpider() {
+                const S = this.S; if (!S) return;
+                const col = this.color, A0 = c.globalAlpha;
+                c.strokeStyle = col; c.fillStyle = col;
+                const legPath = far => { c.beginPath(); for (const L of S.legs) if (L.far === far) { c.moveTo(L.a.x, L.a.y); c.lineTo(L.k.x, L.k.y); c.lineTo(L.f.x, L.f.y); } };
+                c.globalAlpha = A0 * 0.5; legPath(true); c.lineWidth = 3; c.stroke();
+                c.globalAlpha = A0; legPath(false); c.lineWidth = 4.2; c.stroke();
+                c.beginPath(); c.arc(S.abd.x, S.abd.y, S.abd.r, 0, Math.PI * 2); c.fill();
+                c.beginPath(); c.arc(S.thx.x, S.thx.y, S.thx.r, 0, Math.PI * 2); c.fill();
+                c.fillStyle = 'rgba(0,0,0,0.45)'; c.beginPath(); c.arc(S.abd.x, S.abd.y, S.abd.r * 0.45, 0, Math.PI * 2); c.fill();
+                c.fillStyle = '#ff0055';
+                for (const e of [S.eyeA, S.eyeB, S.eyeC]) { c.beginPath(); c.arc(e.x, e.y, 2.2, 0, Math.PI * 2); c.fill(); }
+                const dir = this.facingRight ? 1 : -1, o = S.open * 5;
+                c.strokeStyle = '#ffffff'; c.lineWidth = 2.4; c.beginPath();
+                c.moveTo(S.fang.x, S.fang.y); c.lineTo(S.fang.x + dir * (4 + o * 0.6), S.fang.y + 6 + o * 0.5);
+                c.moveTo(S.fang.x - dir * 3, S.fang.y + 1); c.lineTo(S.fang.x - dir * (3 - o * 0.4), S.fang.y + 7 + o * 0.5);
+                c.stroke();
+            }
+
             update() {
+                this.stepRig();
                 this.draw(); drawReflected(() => this.draw()); drawShield(this);
                 if (this.flashTimer > 0) this.flashTimer--;
                 
@@ -777,14 +1068,14 @@
             sweepAttack() {
                 if (this.isKnockedDown || this.isDiving || this.diveCooldown > 0) return; 
                 this.isDiving = true; this.diveTimer = 20; this.diveCooldown = this.maxDiveCooldown; 
-                this.velocity.y = 0; this.isAttacking = true; this.attackType = 'sweep'; 
+                this.velocity.y = 0; this.isAttacking = true; this.attackType = 'sweep'; this.vis.type = null; 
                 sfxJump(); 
             }
 
             diveAttack() { 
                 if (this.isKnockedDown || this.isDiving || this.diveCooldown > 0) return; 
                 this.isDiving = true; this.diveTimer = 25; this.diveCooldown = this.maxDiveCooldown; 
-                this.velocity.y = 10; this.isAttacking = true; this.attackType = 'dive'; 
+                this.velocity.y = 10; this.isAttacking = true; this.attackType = 'dive'; this.vis.type = null; 
                 sfxJump(); 
             }
 
@@ -800,6 +1091,7 @@
                 this.isAttacking = true; 
                 this.attackType = type;
                 this.attackCombo = (this.attackCombo + 1) % 3;
+                this.vis = { type: type, t: 0, dur: type === 'kick' ? 22 : 14, combo: this.attackCombo };
 
                 if(type === 'punch') sfxPunch(); else sfxKick();
                 
@@ -818,6 +1110,7 @@
                 this.fireballCooldown = (this.team === 'player' && hasFireballBoost) ? 25 : 45;
                 
                 this.isAttacking = true; this.attackType = 'punch';
+                this.vis = { type: 'fire', t: 0, dur: 18, combo: 0 };
                 
                 // Enemy fireball crouch fix
                 if (this.team === 'enemy') {
@@ -855,6 +1148,7 @@
 
                 this.isKnockedDown = true;
                 this.knockdownTimer = 20;
+                this.vis.type = null; this.hitFront = ((sourceX > this.position.x) ? 1 : -1) === (this.facingRight ? 1 : -1);
                 let dir = this.position.x < sourceX ? -1 : 1;
                 this.velocity.x = dir * 10;
                 this.velocity.y = -5;
