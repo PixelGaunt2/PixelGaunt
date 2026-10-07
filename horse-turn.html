@@ -9,7 +9,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             overflow: hidden; 
-            background-color: #87CEEB; /* Day Sky Color */
+            background-color: #0d5560; /* Tunnel base colour */
             color: #fff; 
             font-family: 'Segoe UI', Arial, sans-serif; 
             user-select: none;
@@ -20,34 +20,40 @@
         #uiLayer { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            background: rgba(34, 139, 34, 0.7); backdrop-filter: blur(5px); /* Forest Green Overlay */
+            background: radial-gradient(circle at 50% 50%, rgba(70, 215, 175, 0.55), rgba(8, 100, 105, 0.82)); 
+            backdrop-filter: blur(5px); /* Teal tunnel overlay */
             transition: opacity 0.3s; z-index: 10;
         }
         .hidden { opacity: 0; pointer-events: none !important; display: none !important; }
         
-        h1 { font-size: 4rem; text-shadow: 0 0 20px #000; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 5px; text-align: center; color: #fff;}
-        p { font-size: 1.2rem; margin-bottom: 30px; color: #eee; text-align: center; max-width: 500px; line-height: 1.6; text-shadow: 0 2px 4px #000;}
+        h1 { font-size: 4rem; text-shadow: 0 4px 0 #8a4b00, 0 0 24px rgba(255, 190, 40, 0.7); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 5px; text-align: center; color: #ffd21f;}
+        p { font-size: 1.2rem; margin-bottom: 30px; color: #effffa; text-align: center; max-width: 500px; line-height: 1.6; text-shadow: 0 2px 4px rgba(0,0,0,0.7);}
         
         button.main-btn { 
             padding: 15px 45px; font-size: 1.4rem; 
-            background: linear-gradient(45deg, #8B4513, #D2691E); color: #fff; border: none; border-radius: 50px; 
+            background: linear-gradient(180deg, #ffb52e, #e8731a); color: #fff; border: 3px solid #ffe07a; border-radius: 50px; 
             cursor: pointer; font-weight: bold; transition: all 0.2s;
-            box-shadow: 0 5px 20px rgba(139, 69, 19, 0.6); text-transform: uppercase;
+            box-shadow: 0 5px 0 #a8480a, 0 8px 20px rgba(232, 115, 26, 0.55); text-transform: uppercase;
+            text-shadow: 0 2px 0 rgba(120, 50, 0, 0.6);
         }
-        button.main-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(210, 105, 30, 0.8); }
+        button.main-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 0 #a8480a, 0 12px 26px rgba(255, 170, 40, 0.7); }
 
         /* Secondary Buttons (README, QUIT) */
         button.secondary-btn {
             padding: 12px 35px; font-size: 1.1rem; margin-top: 15px;
-            background: linear-gradient(45deg, #2c3e50, #4ca1af); color: #fff; border: none; border-radius: 50px; 
+            background: linear-gradient(180deg, #1c8c8f, #0d5560); color: #fff; border: 2px solid #e0a41e; border-radius: 50px; 
             cursor: pointer; font-weight: bold; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); text-transform: uppercase;
         }
         button.secondary-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6); }
         
-        button.danger-btn { background: linear-gradient(45deg, #c0392b, #e74c3c); }
+        button.danger-btn { background: linear-gradient(180deg, #e74c3c, #a8281c); }
         
-        #hud { position: absolute; top: 20px; left: 30px; font-size: 1.5rem; font-weight: bold; text-shadow: 0 2px 5px #000; z-index: 5; }
-        .hud-coin { color: #FFD700; text-shadow: 0 0 10px #FFA500; }
+        #hud { 
+            position: absolute; top: 20px; left: 30px; font-size: 1.5rem; font-weight: bold; text-shadow: 0 2px 5px #000; z-index: 5;
+            background: rgba(4, 50, 55, 0.45); border: 2px solid rgba(224, 164, 30, 0.8); border-radius: 40px; padding: 6px 18px;
+        }
+        .hud-coin { color: #ffd21f; text-shadow: 0 0 10px #ff9a1a; }
+        .hud-shield { color: #7dff6a; text-shadow: 0 0 10px #1fa326; }
         
         #controls-hint { position: absolute; bottom: 20px; width: 100%; text-align: center; color: #fff; font-size: 1.1rem; letter-spacing: 1px; z-index: 5; text-shadow: 0 2px 4px #000;}
         
@@ -56,18 +62,18 @@
             position: absolute; top: 20px; right: 30px; z-index: 8; display: flex; gap: 15px;
         }
         .icon-btn {
-            background: rgba(0,0,0,0.4); border: 2px solid #fff; color: white;
+            background: rgba(4, 50, 55, 0.55); border: 2px solid #e0a41e; color: white;
             border-radius: 50%; width: 50px; height: 50px; font-size: 1.5rem;
             cursor: pointer; display: flex; justify-content: center; align-items: center;
             transition: all 0.2s; box-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
-        .icon-btn:hover { transform: scale(1.1); background: rgba(0,0,0,0.6); }
+        .icon-btn:hover { transform: scale(1.1); background: rgba(4, 50, 55, 0.8); }
 
         /* Dash Button */
         #dashBtn {
             position: absolute; bottom: 30px; right: 30px; width: 70px; height: 70px;
-            border-radius: 50%; background: linear-gradient(45deg, #ff0055, #ffaa00);
-            color: white; font-size: 2rem; border: none; box-shadow: 0 0 20px rgba(255, 0, 85, 0.6);
+            border-radius: 50%; background: linear-gradient(180deg, #ffb52e, #e8731a);
+            color: white; font-size: 2rem; border: 3px solid #ffe07a; box-shadow: 0 0 20px rgba(255, 170, 40, 0.7);
             z-index: 8; cursor: pointer; display: flex; justify-content: center; align-items: center;
             opacity: 0.8; transition: opacity 0.2s, transform 0.1s;
         }
@@ -77,21 +83,21 @@
         .modal-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 20;
+            background: rgba(0, 20, 24, 0.85); backdrop-filter: blur(8px); z-index: 20;
         }
         .modal-box {
-            background: rgba(34, 139, 34, 0.95); padding: 35px; border-radius: 20px; 
+            background: linear-gradient(180deg, rgba(24, 150, 140, 0.97), rgba(10, 92, 100, 0.97)); padding: 35px; border-radius: 20px; 
             text-align: center; max-width: 90%; width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); 
-            border: 3px solid #8B4513;
+            border: 3px solid #e0a41e;
         }
-        .modal-box h2 { color: #FFD700; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; font-size: 2rem;}
+        .modal-box h2 { color: #ffd21f; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; font-size: 2rem;}
         .modal-box p { font-size: 1.1rem; line-height: 1.5; text-align: left; margin-bottom: 15px; color: #fff;}
-        .modal-box a { color: #FFD700; font-weight: bold; text-decoration: none;}
+        .modal-box a { color: #ffd21f; font-weight: bold; text-decoration: none;}
         .modal-box a:hover { text-decoration: underline; }
 
         @media (max-width: 768px) {
             h1 { font-size: 2.5rem; }
-            #hud { font-size: 1.1rem; left: 15px; }
+            #hud { font-size: 1.1rem; left: 15px; padding: 5px 14px; max-width: 62%; }
             #gameplayControls { top: 15px; right: 15px; gap: 10px; }
             .icon-btn { width: 40px; height: 40px; font-size: 1.2rem; }
             #controls-hint { font-size: 0.9rem; padding: 0 10px; bottom: 35px; text-align: left; left: 15px; width: auto; max-width: 60%; }
@@ -102,7 +108,7 @@
 </head>
 <body>
 
-    <div id="hud">Score: <span id="scoreVal">0</span> | <span class="hud-coin">Coins: <span id="coinVal">0</span></span> | Level: <span id="levelVal">1</span></div>
+    <div id="hud">Score: <span id="scoreVal">0</span> | <span class="hud-coin">Coins: <span id="coinVal">0</span></span> | Level: <span id="levelVal">1</span><span id="shieldHud" class="hud-shield" style="display:none"> | 🛡️ Shield</span></div>
     <div id="controls-hint">Swipe L/R to Steer | Swipe Up to Jump</div>
     
     <div id="gameplayControls" class="hidden">
@@ -116,7 +122,7 @@
 
     <div id="uiLayer">
         <h1 id="mainTitle">HORSE TURN</h1>
-        <p id="subText">Dodge the trees! Jump over rocks and collect coins. Hold Dash to speed up!</p>
+        <p id="subText">Gallop down the glowing tunnel! Jump over rocks, dodge the tall stone pillars, grab coins and green gems for a shield. Hold Dash to speed up!</p>
         <button id="startBtn" class="main-btn">START RUN</button>
         <button id="readmeBtn" class="secondary-btn">README / DISCLAIMER</button>
     </div>
@@ -154,6 +160,7 @@
         const scoreHUD = document.getElementById('scoreVal');
         const coinHUD = document.getElementById('coinVal');
         const levelHUD = document.getElementById('levelVal');
+        const shieldHUD = document.getElementById('shieldHud');
         const mainTitle = document.getElementById('mainTitle');
         const subText = document.getElementById('subText');
 
@@ -168,6 +175,8 @@
         const resumeBtn = document.getElementById('resumeBtn');
         const quitBtn = document.getElementById('quitBtn');
 
+        const MENU_TEXT = "Gallop down the glowing tunnel! Jump over rocks, dodge the tall stone pillars, grab coins and green gems for a shield. Hold Dash to speed up!";
+
         let width, height;
         let gameState = 'menu'; // menu, playing, paused, gameover
         let score = 0;
@@ -181,12 +190,13 @@
         const R = 160; 
         const FOV = 280; 
         const SLICE_DZ = 50; 
-        const MAX_Z = 1600; 
+        const MAX_Z = 1250; 
         let cameraAngle = 0;
 
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
+            ctx.imageSmoothingEnabled = false;
             if(window.innerWidth > 768) {
                 document.getElementById('controls-hint').innerText = "Keys L/R Steer | UP Arrow Jump | SHIFT/Btn Dash";
             } else {
@@ -385,7 +395,7 @@
                 isMuted: function () { return muted; }
             };
         })();
-        const SFX_MAP = { jump: ['dash', 0.35], crash: ['player_death', 0.5], fall: ['player_death', 0.5], coin: ['coin', 0.45], level: ['levelup', 0.45] };
+        const SFX_MAP = { jump: ['dash', 0.35], crash: ['player_death', 0.5], fall: ['player_death', 0.5], coin: ['coin', 0.45], level: ['levelup', 0.45], gem: ['levelup', 0.35], shield: ['dash', 0.45] };
         function playSFX(type) {
             if (!soundEnabled) return; // Respect Sound Toggle
             const s = SFX_MAP[type]; if (s) GameAudio.sfx(s[0], s[1]);
@@ -395,7 +405,166 @@
             GameAudio.startMusic();
         }
 
-        // --- 3D MATH ---
+        // =====================================================================
+        //  PIXEL / VOXEL SPRITES  (pre-rendered once, drawn with nearest-neighbour)
+        // =====================================================================
+        function makeSprite(rows, pal) {
+            const h = rows.length, w = rows[0].length;
+            const c = document.createElement('canvas'); c.width = w; c.height = h;
+            const g = c.getContext('2d');
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const ch = rows[y][x];
+                    if (ch !== '.' && pal[ch]) { g.fillStyle = pal[ch]; g.fillRect(x, y, 1, 1); }
+                }
+            }
+            return c;
+        }
+
+        function makeGlow(rgbStr) {
+            const c = document.createElement('canvas'); c.width = c.height = 64;
+            const g = c.getContext('2d');
+            const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gr.addColorStop(0, 'rgba(' + rgbStr + ',0.9)');
+            gr.addColorStop(0.35, 'rgba(' + rgbStr + ',0.35)');
+            gr.addColorStop(1, 'rgba(' + rgbStr + ',0)');
+            g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+            return c;
+        }
+
+        // ---- Horse (BACK VIEW: ears + mane on top, rump, tail, two hind legs) ----
+        const HORSE_W = 16, HORSE_H = 24;
+        const HORSE_PAL = {
+            o: '#e4731a', l: '#f89a3e', O: '#bd5210',   // orange coat: base / light edge / shade
+            m: '#7a3010',                                // mane
+            M: '#4e1f0b', N: '#2f1307',                  // tail: body / edge
+            k: '#6b3a28', K: '#3a1d14'                   // hooves
+        };
+        function buildHorseFrame(legFrame, tailSway) {
+            const g = [];
+            for (let y = 0; y < HORSE_H; y++) g.push(new Array(HORSE_W).fill('.'));
+            const sym = (d, n, k, ch) => '.'.repeat(d) + 'o'.repeat(n) + ch.repeat(k) + 'o'.repeat(n) + '.'.repeat(d);
+            const body = [
+                "....oo....oo....",   // ear tips
+                "....ooommooo....",   // top of head + forelock
+                sym(4,2,4,'m'), sym(4,2,4,'m'), sym(4,2,4,'m'),   // back of head + mane
+                sym(3,3,4,'m'), sym(3,3,4,'m'),                   // neck
+                sym(2,4,4,'m'), sym(2,5,2,'m'),                   // neck widening
+                sym(1,6,2,'m'),                                   // withers
+                sym(1,7,0,'o'),                                   // back
+                sym(0,8,0,'o'), sym(0,8,0,'o'), sym(0,8,0,'o'), sym(0,8,0,'o'), sym(0,8,0,'o'), // rump
+                sym(1,7,0,'o'), sym(2,6,0,'o')                    // rump bottom
+            ];
+            for (let y = 0; y < body.length; y++) for (let x = 0; x < HORSE_W; x++) g[y][x] = body[y][x];
+
+            // coat shading: light left edge / dark right edge of every orange run
+            for (let y = 0; y < 18; y++) {
+                let x = 0;
+                while (x < HORSE_W) {
+                    if (g[y][x] === 'o') {
+                        const a = x;
+                        while (x < HORSE_W && g[y][x] === 'o') x++;
+                        const b = x - 1;
+                        if (b > a) { g[y][a] = 'l'; g[y][b] = 'O'; }
+                    } else x++;
+                }
+            }
+            for (let x = 0; x < HORSE_W; x++) if (g[17][x] !== '.') g[17][x] = 'O';
+            for (let y = 13; y <= 16; y++) { g[y][7] = 'O'; g[y][8] = 'O'; }   // rump crease
+
+            // hind legs (one extended, one lifted - swap every stride)
+            const leg = (x0, top, len, outerLeft) => {
+                for (let i = 0; i < len; i++) {
+                    const y = top + i;
+                    let a, b;
+                    if (i < 2) { a = x0; b = x0 + 3; } else if (outerLeft) { a = x0; b = x0 + 2; } else { a = x0 + 1; b = x0 + 3; }
+                    const hoof = i >= len - 2;
+                    for (let x = a; x <= b; x++) g[y][x] = hoof ? (i === len - 1 ? 'K' : 'k') : (x === a ? 'l' : (x === b ? 'O' : 'o'));
+                }
+            };
+            leg(3, 18, legFrame === 0 ? 6 : 4, true);
+            leg(9, 18, legFrame === 0 ? 4 : 6, false);
+
+            // tail (hangs between the legs, swings left/right)
+            for (let i = 0; i < 8; i++) {
+                const y = 12 + i;
+                const off = Math.round(tailSway * (i / 7) * 2);
+                const w = i < 2 ? 2 : (i < 6 ? 3 : 4);
+                const a = Math.round(7.5 - w / 2 + off);
+                for (let k = 0; k < w; k++) {
+                    const x = a + k;
+                    if (x < 0 || x >= HORSE_W) continue;
+                    g[y][x] = (k === 0 || k === w - 1) ? 'N' : 'M';
+                }
+            }
+            return makeSprite(g.map(r => r.join('')), HORSE_PAL);
+        }
+        const HORSE_FRAMES = [[], []];
+        for (let lf = 0; lf < 2; lf++) for (let ts = -2; ts <= 2; ts++) HORSE_FRAMES[lf].push(buildHorseFrame(lf, ts));
+
+        // ---- Obstacles / pickups ----
+        const SPR = {};
+        SPR.rock = makeSprite([
+            "....LL....",
+            "...LLMm...",
+            "..LMMMmm..",
+            ".LMMmMMMD.",
+            ".MMMMmMMDD",
+            "MMmMMMMMDD",
+            "DDDDDDDDDD"
+        ], { L: '#8e9bb0', M: '#566177', m: '#667389', D: '#363e4f' });
+
+        (function () {
+            const rows = ["..LLLL..", ".LLMMmD."];
+            for (let y = 2; y < 19; y++) {
+                let r = 'mMMMMMMD'.split('');
+                if (y % 6 === 0) r = 'DDDDDDDD'.split('');
+                else r[2 + ((y * 3) % 4)] = 'm';
+                if (y === 9 || y === 10) { r[3] = 'R'; r[4] = 'R'; }   // glowing hazard mark
+                rows.push(r.join(''));
+            }
+            rows.push('DDDDDDDD');
+            SPR.pillar = makeSprite(rows, { L: '#8e9bb0', M: '#4d586b', m: '#627088', D: '#2f3646', R: '#ff6a3c' });
+        })();
+
+        SPR.coin = makeSprite([
+            "...oooo...",
+            "..oyyyyO..",
+            ".oyhhyyyO.",
+            "oyhhyyyyyO",
+            "oyhyyyyyyO",
+            "oyyyyyyyyO",
+            "oyyyyyyyyO",
+            ".oyyyyyyO.",
+            "..OyyyyO..",
+            "...OOOO..."
+        ], { o: '#ff9a1a', O: '#e0700f', y: '#ffd21f', h: '#fff27a' });
+
+        (function () {
+            const rows = [];
+            for (let i = 0; i < 7; i++) {
+                const w = 13 - 2 * i;
+                let r = '.'.repeat(i);
+                for (let k = 0; k < w; k++) {
+                    let ch = 'G';
+                    if (i === 0) ch = 'h';
+                    else if (k === 0) ch = 'l';
+                    else if (k === 1 && w >= 4) ch = 'g';
+                    else if (k === w - 1) ch = 'd';
+                    r += ch;
+                }
+                r += '.'.repeat(i);
+                rows.push(r);
+            }
+            SPR.gem = makeSprite(rows, { h: '#b8ff3d', l: '#59e03a', g: '#2ec02f', G: '#1fa326', d: '#0d7a1c' });
+        })();
+
+        const GLOW_GOLD = makeGlow('255,190,40');
+        const GLOW_GREEN = makeGlow('90,255,90');
+
+        // =====================================================================
+        //  3D MATH
+        // =====================================================================
         function getWorldPos(wall, localX, localY) {
             let d = R - localY;
             if (wall === 0) return { x: localX, y: d };     
@@ -416,35 +585,58 @@
             return { x: sx, y: sy };
         }
 
-        // --- TUNNEL & ENVIRONMENT GENERATION ---
+        // 1 = this wall is currently the floor on screen, 0 = ceiling, 0.5 = side wall
+        function wallShadeFor(w) {
+            const wc = getWorldPos(w, 0, 0);
+            const c = Math.cos(-cameraAngle), s = Math.sin(-cameraAngle);
+            const ry = wc.x * s + wc.y * c;
+            return Math.max(0, Math.min(1, (ry / R + 1) / 2));
+        }
+
+        // =====================================================================
+        //  TUNNEL & ENVIRONMENT GENERATION
+        // =====================================================================
         let slices = [];
+        let trail = { left: 0, wall: 0, lane: 1 };   // coin-trail generator
 
         function createSlice(zValue) {
-            let slice = { z: zValue, walls: [], coin: null, obstacle: null };
-            for(let w=0; w<4; w++) slice.walls.push([true, true, true]); // Gaps removed, solid ground
+            let slice = { z: zValue, walls: [], coin: null, obstacle: null, gem: null, tint: [] };
+            for (let w = 0; w < 4; w++) slice.walls.push([true, true, true]); // Gaps removed, solid ground
+            for (let i = 0; i < 12; i++) slice.tint.push(Math.random() * 2 - 1);
 
-            // Generate Obstacles (Rocks or Trees) after certain distance
-            if (zValue > 600 && Math.random() < 0.4) {
-                let validLanes = [0, 1, 2];
-                let chosenLane = validLanes[Math.floor(Math.random() * validLanes.length)];
-                let w = Math.floor(Math.random() * 4);
-                
+            // Generate Obstacles (rocks = jump over, pillars = dodge) after certain distance
+            if (zValue > 600 && Math.random() < 0.38) {
                 slice.obstacle = {
-                    type: Math.random() > 0.5 ? 'tree' : 'rock',
-                    wall: w,
-                    lane: chosenLane
+                    type: Math.random() > 0.65 ? 'pillar' : 'rock',
+                    wall: Math.floor(Math.random() * 4),
+                    lane: Math.floor(Math.random() * 3),
+                    broken: false
                 };
             }
 
-            // Generate Coins
-            if (Math.random() < 0.3) {
-                let validLanes = [0, 1, 2];
-                let chosenLane = validLanes[Math.floor(Math.random() * validLanes.length)];
-                let w = Math.floor(Math.random() * 4);
-                
-                // Ensure coin doesn't overlap perfectly with an obstacle
-                if (!slice.obstacle || slice.obstacle.lane !== chosenLane || slice.obstacle.wall !== w) {
-                    slice.coin = { wall: w, lane: chosenLane, collected: false, rot: Math.random() * Math.PI };
+            // Coin trails: a run of coins along one lane. Over a rock the coin floats high (jump to grab it).
+            if (trail.left <= 0 && Math.random() < 0.07) {
+                trail.left = 4 + Math.floor(Math.random() * 4);
+                trail.wall = Math.floor(Math.random() * 4);
+                trail.lane = Math.floor(Math.random() * 3);
+            }
+            if (trail.left > 0) {
+                trail.left--;
+                const o = slice.obstacle;
+                const blocked = o && o.wall === trail.wall && o.lane === trail.lane;
+                if (!blocked) {
+                    slice.coin = { wall: trail.wall, lane: trail.lane, collected: false, rot: Math.random() * Math.PI, h: 30 };
+                } else if (o.type === 'rock') {
+                    slice.coin = { wall: trail.wall, lane: trail.lane, collected: false, rot: Math.random() * Math.PI, h: 72 };
+                }
+            }
+
+            // Rare green gem -> shield
+            if (!slice.coin && zValue > 600 && Math.random() < 0.012) {
+                const gw = Math.floor(Math.random() * 4), gl = Math.floor(Math.random() * 3);
+                const o = slice.obstacle;
+                if (!(o && o.wall === gw && o.lane === gl)) {
+                    slice.gem = { wall: gw, lane: gl, collected: false, rot: Math.random() * Math.PI * 2 };
                 }
             }
             return slice;
@@ -452,6 +644,7 @@
 
         function initTunnel() {
             slices = [];
+            trail = { left: 0, wall: 0, lane: 1 };
             for (let z = 100; z < MAX_Z; z += SLICE_DZ) slices.push(createSlice(z));
         }
 
@@ -463,31 +656,63 @@
             }
         }
 
-        function drawTunnelAndEnvironment() {
+        // --- colour helpers ---
+        const WALL_CEIL = [16, 122, 138], WALL_FLOOR = [50, 216, 160];
+        const GOLD = [232, 170, 30], HAZE = [160, 240, 226];
+        function mixC(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+        function rgb(c) { return 'rgb(' + (c[0] | 0) + ',' + (c[1] | 0) + ',' + (c[2] | 0) + ')'; }
+
+        // --- sky window at the end of the tunnel ---
+        function drawBackground() {
+            ctx.fillStyle = '#0d5560'; ctx.fillRect(0, 0, width, height);
+            const far = slices.length ? slices[slices.length - 1].z + SLICE_DZ : MAX_Z;
+            const H = R * FOV / far + 1;
+            ctx.save();
+            ctx.translate(width / 2, height / 2);
+            ctx.rotate(-cameraAngle);
+            const sg = ctx.createLinearGradient(0, -H, 0, H);
+            sg.addColorStop(0, '#3d9fe6'); sg.addColorStop(0.55, '#9bd8ff'); sg.addColorStop(1, '#e2f6ff');
+            ctx.fillStyle = sg; ctx.fillRect(-H, -H, 2 * H, 2 * H);
+            const u = H / 10;
+            ctx.fillStyle = 'rgba(255,255,255,0.92)';
+            [[-7, -5, 5, 1], [-6, -6, 3, 1], [3, -3, 4, 1], [4, -4, 2, 1], [-4, 0, 3, 1]].forEach(c => ctx.fillRect(c[0] * u, c[1] * u, c[2] * u, c[3] * u));
+            const gg = ctx.createLinearGradient(0, H * 0.45, 0, H);
+            gg.addColorStop(0, '#4fe3b4'); gg.addColorStop(1, '#1fae94');
+            ctx.fillStyle = gg; ctx.fillRect(-H, H * 0.45, 2 * H, H * 0.55);
+            ctx.fillStyle = '#46506a';
+            ctx.fillRect(-0.5 * H, 0.3 * H, 0.28 * H, 0.15 * H);
+            ctx.fillRect(0.25 * H, 0.34 * H, 0.2 * H, 0.11 * H);
+            ctx.restore();
+        }
+
+        function drawTunnel() {
+            const laneWidth = (2 * R) / 3;
+            const shade = [wallShadeFor(0), wallShadeFor(1), wallShadeFor(2), wallShadeFor(3)];
+            ctx.lineJoin = 'round';
             for (let i = slices.length - 1; i >= 0; i--) {
-                let slice = slices[i];
-                let z1 = slice.z, z2 = slice.z + SLICE_DZ;
-                let depthFactor = Math.max(0, Math.min(1, 1 - z1 / MAX_Z));
-                let laneWidth = (2 * R) / 3;
+                const slice = slices[i];
+                const z1 = slice.z, z2 = slice.z + SLICE_DZ;
+                const fog = Math.pow(Math.max(0, Math.min(1, z1 / MAX_Z)), 1.5) * 0.78;
+                const lw = Math.max(0.7, Math.min(4.5, 520 / z1)) * (keys.Dash ? 1.25 : 1);
+                const goldCol = rgb(mixC(GOLD, HAZE, fog));
 
-                // 1. Draw Grass Path
                 for (let w = 0; w < 4; w++) {
+                    const base = mixC(WALL_CEIL, WALL_FLOOR, shade[w]);
                     for (let l = 0; l < 3; l++) {
-                        let lx1 = -R + l * laneWidth, lx2 = lx1 + laneWidth;
-                        let wP1 = getWorldPos(w, lx1, 0), wP2 = getWorldPos(w, lx2, 0);
+                        const lx1 = -R + l * laneWidth, lx2 = lx1 + laneWidth;
+                        const wP1 = getWorldPos(w, lx1, 0), wP2 = getWorldPos(w, lx2, 0);
 
-                        let p1 = project3D({ x: wP1.x, y: wP1.y, z: z1 });
-                        let p2 = project3D({ x: wP2.x, y: wP2.y, z: z1 });
-                        let p3 = project3D({ x: wP2.x, y: wP2.y, z: z2 });
-                        let p4 = project3D({ x: wP1.x, y: wP1.y, z: z2 });
-
+                        const p1 = project3D({ x: wP1.x, y: wP1.y, z: z1 });
+                        const p2 = project3D({ x: wP2.x, y: wP2.y, z: z1 });
+                        const p3 = project3D({ x: wP2.x, y: wP2.y, z: z2 });
+                        const p4 = project3D({ x: wP1.x, y: wP1.y, z: z2 });
                         if (!p1 || !p2 || !p3 || !p4) continue;
 
-                        let dashWarp = keys.Dash ? 0.8 : 0.6;
-                        ctx.fillStyle = `rgba(34, 139, 34, ${dashWarp * depthFactor})`; // Grass Green
-                        ctx.strokeStyle = `rgba(139, 69, 19, ${(keys.Dash ? 1.0 : 0.7) * depthFactor})`; // Dirt Brown borders
-                        ctx.lineWidth = 2;
-
+                        const t = slice.tint[w * 3 + l] * 9;
+                        const col = mixC([base[0] + t * 0.4, base[1] + t, base[2] + t * 0.7], HAZE, fog);
+                        ctx.fillStyle = rgb(col);
+                        ctx.strokeStyle = goldCol;
+                        ctx.lineWidth = lw;
                         ctx.beginPath();
                         ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
                         ctx.lineTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y);
@@ -495,108 +720,199 @@
                         ctx.fill(); ctx.stroke();
                     }
                 }
+            }
+        }
 
-                // 2. Draw Obstacles (Rocks / Trees)
-                if (slice.obstacle && z1 > 100) {
-                    let lx = -R + slice.obstacle.lane * laneWidth + laneWidth/2;
-                    let wP = getWorldPos(slice.obstacle.wall, lx, 0); 
-                    let p = project3D({ x: wP.x, y: wP.y, z: z1 });
-                    
+        // soft light bloom coming from the tunnel exit
+        function drawBloom() {
+            const far = slices.length ? slices[slices.length - 1].z + SLICE_DZ : MAX_Z;
+            const H = R * FOV / far;
+            const cx = width / 2, cy = height / 2;
+            const g = ctx.createRadialGradient(cx, cy, H * 0.5, cx, cy, H * 4.5);
+            g.addColorStop(0, 'rgba(255,255,255,0.38)');
+            g.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = g;
+            ctx.fillRect(cx - H * 4.5, cy - H * 4.5, H * 9, H * 9);
+            ctx.restore();
+        }
+
+        // --- sprites standing on the tunnel walls ---
+        function drawSpriteBottom(spr, unit, alpha) {
+            const w = spr.width * unit, h = spr.height * unit;
+            ctx.globalAlpha = alpha;
+            ctx.drawImage(spr, -w / 2, -h, w, h);
+            ctx.globalAlpha = 1;
+        }
+        function drawSpriteCenter(spr, unit, alpha) {
+            const w = spr.width * unit, h = spr.height * unit;
+            ctx.globalAlpha = alpha;
+            ctx.drawImage(spr, -w / 2, -h / 2, w, h);
+            ctx.globalAlpha = 1;
+        }
+        function drawGlowAt(glow, radius, alpha) {
+            ctx.save();
+            ctx.imageSmoothingEnabled = true;
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.globalAlpha = alpha;
+            ctx.drawImage(glow, -radius, -radius, radius * 2, radius * 2);
+            ctx.restore();
+        }
+
+        // farPass = true  -> things further than the horse (drawn before it)
+        // farPass = false -> things nearer than the horse (drawn over it)
+        function drawObjects(farPass) {
+            const laneWidth = (2 * R) / 3;
+            for (let i = slices.length - 1; i >= 0; i--) {
+                const sl = slices[i], z1 = sl.z;
+                if (z1 <= 100) continue;
+                if (farPass ? z1 < horse.z : z1 >= horse.z) continue;
+                const scale = FOV / z1;
+                const alpha = Math.max(0, Math.min(1, (MAX_Z - z1) / 220));
+                if (alpha <= 0) continue;
+
+                // Obstacles
+                const o = sl.obstacle;
+                if (o && !o.broken) {
+                    const lx = -R + o.lane * laneWidth + laneWidth / 2;
+                    const wp = getWorldPos(o.wall, lx, 0);
+                    const p = project3D({ x: wp.x, y: wp.y, z: z1 });
                     if (p) {
-                        let scale = FOV / z1;
-                        let s = 35 * scale; // Base size for rendering
-                        
                         ctx.save();
                         ctx.translate(p.x, p.y);
-                        let renderAngle = (slice.obstacle.wall * Math.PI / 2) - cameraAngle;
-                        ctx.rotate(renderAngle); // Stand straight relative to the wall
-                        
-                        if (slice.obstacle.type === 'rock') {
-                            ctx.fillStyle = `rgba(100, 100, 100, ${depthFactor})`; // Grey rock
-                            ctx.beginPath();
-                            ctx.moveTo(-s*0.8, 0);
-                            ctx.lineTo(-s*0.4, -s*0.8);
-                            ctx.lineTo(s*0.3, -s*1.1);
-                            ctx.lineTo(s*0.9, 0);
-                            ctx.fill();
-                            // Rock shadow/detail
-                            ctx.fillStyle = `rgba(70, 70, 70, ${depthFactor})`;
-                            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-s*0.4, -s*0.8); ctx.lineTo(s*0.3, -s*1.1); ctx.fill();
-                        } else if (slice.obstacle.type === 'tree') {
-                            // Tree trunk
-                            ctx.fillStyle = `rgba(92, 64, 51, ${depthFactor})`; // Dark brown
-                            ctx.fillRect(-s*0.2, -s*0.5, s*0.4, s*0.5);
-                            // Tree leaves (Pine tree style)
-                            ctx.fillStyle = `rgba(0, 100, 0, ${depthFactor})`; // Dark green
-                            ctx.beginPath(); ctx.moveTo(-s*1.2, -s*0.5); ctx.lineTo(0, -s*2.5); ctx.lineTo(s*1.2, -s*0.5); ctx.fill();
-                            ctx.fillStyle = `rgba(34, 139, 34, ${depthFactor})`; // Light green detail
-                            ctx.beginPath(); ctx.moveTo(-s*0.8, -s*1.2); ctx.lineTo(0, -s*3.5); ctx.lineTo(s*0.8, -s*1.2); ctx.fill();
-                        }
+                        ctx.rotate(-o.wall * Math.PI / 2 - cameraAngle);
+                        ctx.globalAlpha = alpha * 0.35; ctx.fillStyle = '#05403f';
+                        ctx.beginPath(); ctx.ellipse(0, 0, 34 * scale, 7 * scale, 0, 0, Math.PI * 2); ctx.fill();
+                        ctx.globalAlpha = 1;
+                        drawSpriteBottom(o.type === 'pillar' ? SPR.pillar : SPR.rock, 6 * scale, alpha);
                         ctx.restore();
                     }
                 }
 
-                // 3. Draw Coins
-                if (slice.coin && !slice.coin.collected && z1 > 100) {
-                    let lx = -R + slice.coin.lane * laneWidth + laneWidth/2;
-                    let wP = getWorldPos(slice.coin.wall, lx, 30); 
-                    let p = project3D({ x: wP.x, y: wP.y, z: z1 });
-                    
+                // Coins
+                const c = sl.coin;
+                if (c && !c.collected) {
+                    const lx = -R + c.lane * laneWidth + laneWidth / 2;
+                    const wp = getWorldPos(c.wall, lx, c.h);
+                    const p = project3D({ x: wp.x, y: wp.y, z: z1 });
                     if (p) {
-                        let scale = FOV / z1;
-                        let s = 14 * scale;
-                        slice.coin.rot += 0.05; 
-                        let spin = Math.cos(slice.coin.rot);
-                        
+                        c.rot += 0.05;
+                        const spin = Math.max(0.2, Math.abs(Math.cos(c.rot)));
                         ctx.save();
                         ctx.translate(p.x, p.y);
+                        ctx.rotate(-c.wall * Math.PI / 2 - cameraAngle);
+                        drawGlowAt(GLOW_GOLD, 26 * scale, alpha * 0.8);
                         ctx.scale(spin, 1);
-                        
-                        ctx.fillStyle = `rgba(255, 215, 0, ${depthFactor})`;
-                        ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI*2); ctx.fill();
-                        ctx.fillStyle = `rgba(255, 165, 0, ${depthFactor})`;
-                        ctx.beginPath(); ctx.arc(0, 0, s*0.6, 0, Math.PI*2); ctx.fill();
-                        
+                        drawSpriteCenter(SPR.coin, 3.2 * scale, alpha);
+                        ctx.restore();
+                    }
+                }
+
+                // Gems
+                const g = sl.gem;
+                if (g && !g.collected) {
+                    const lx = -R + g.lane * laneWidth + laneWidth / 2;
+                    g.rot += 0.06;
+                    const wp = getWorldPos(g.wall, lx, 62 + Math.sin(g.rot) * 8);
+                    const p = project3D({ x: wp.x, y: wp.y, z: z1 });
+                    if (p) {
+                        const spin = Math.max(0.4, Math.abs(Math.cos(g.rot * 0.6)));
+                        ctx.save();
+                        ctx.translate(p.x, p.y);
+                        ctx.rotate(-g.wall * Math.PI / 2 - cameraAngle);
+                        drawGlowAt(GLOW_GREEN, 48 * scale, alpha * 0.9);
+                        ctx.scale(spin, 1);
+                        drawSpriteCenter(SPR.gem, 5 * scale, alpha);
                         ctx.restore();
                     }
                 }
             }
         }
 
-        // --- SHADOW-FREE HORSE ---
-        function drawCustomHorse(ctx, s, cycle) {
-            ctx.fillStyle = '#8B4513'; 
-            ctx.beginPath(); ctx.ellipse(0, 0, s*0.35, s*0.45, 0, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#A0522D';
-            ctx.beginPath(); ctx.ellipse(0, -s*0.45, s*0.2, s*0.25, 0, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#5C4033';
-            ctx.beginPath(); ctx.moveTo(-s*0.1, -s*0.65); ctx.lineTo(-s*0.2, -s*0.85); ctx.lineTo(-s*0.05, -s*0.7); ctx.fill();
-            ctx.beginPath(); ctx.moveTo(s*0.1, -s*0.65); ctx.lineTo(s*0.2, -s*0.85); ctx.lineTo(s*0.05, -s*0.7); ctx.fill();
-            ctx.fillStyle = '#3E2723';
-            let tailSway = Math.sin(cycle) * s * 0.4;
-            ctx.beginPath(); ctx.moveTo(-s*0.05, s*0.3); ctx.lineTo(tailSway - s*0.1, s*0.8); ctx.lineTo(tailSway + s*0.1, s*0.8); ctx.lineTo(s*0.05, s*0.3); ctx.fill();
-            ctx.fillStyle = '#5C4033';
-            let legMovement = Math.sin(cycle*2) * s * 0.25;
-            ctx.beginPath(); ctx.rect(-s*0.25, s*0.2, s*0.15, s*0.4 + legMovement); ctx.fill();
-            ctx.beginPath(); ctx.rect(s*0.1, s*0.2, s*0.15, s*0.4 - legMovement); ctx.fill();
-            
-            if (keys.Dash) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; // Wind trail effect
-                ctx.beginPath(); ctx.ellipse(0, 0, s*0.5, s*0.6, 0, 0, Math.PI*2); ctx.fill();
+        // =====================================================================
+        //  SPEED STREAKS & PARTICLES
+        // =====================================================================
+        const streaks = [];
+        function newStreak(initial) {
+            return {
+                a: Math.random() * Math.PI * 2,
+                r: initial ? 0.55 + Math.random() * 0.6 : 0.55 + Math.random() * 0.08,
+                len: 0.14 + Math.random() * 0.2,
+                spd: 0.012 + Math.random() * 0.012,
+                w: 2 + Math.random() * 4
+            };
+        }
+        function initStreaks() { streaks.length = 0; for (let i = 0; i < 14; i++) streaks.push(newStreak(true)); }
+        initStreaks();
+
+        function drawStreaks() {
+            const cx = width / 2, cy = height / 2;
+            const maxR = Math.hypot(width, height) / 2;
+            const boost = (keys.Dash ? 2.6 : 1) * (gameSpeed / 8);
+            for (let i = 0; i < streaks.length; i++) {
+                const s = streaks[i];
+                s.r += s.spd * boost;
+                if (s.r > 1.18) { streaks[i] = newStreak(false); continue; }
+                const ca = Math.cos(s.a), sa = Math.sin(s.a);
+                const ox = cx + ca * s.r * maxR, oy = cy + sa * s.r * maxR;
+                const ix = cx + ca * (s.r - s.len * boost * 0.7) * maxR, iy = cy + sa * (s.r - s.len * boost * 0.7) * maxR;
+                const px = -sa, py = ca;
+                const a = Math.min(1, (s.r - 0.5) * 3) * (keys.Dash ? 0.95 : 0.7);
+                ctx.fillStyle = 'rgba(120,255,225,' + (a * 0.35) + ')';
+                ctx.beginPath(); ctx.moveTo(ix, iy); ctx.lineTo(ox + px * s.w * 2.2, oy + py * s.w * 2.2); ctx.lineTo(ox - px * s.w * 2.2, oy - py * s.w * 2.2); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,' + a + ')';
+                ctx.beginPath(); ctx.moveTo(ix, iy); ctx.lineTo(ox + px * s.w, oy + py * s.w); ctx.lineTo(ox - px * s.w, oy - py * s.w); ctx.closePath(); ctx.fill();
             }
         }
 
-        // --- PLAYER MECHANICS ---
+        const particles = [];
+        function burst(px, py, colors, n, spd) {
+            for (let i = 0; i < n; i++) {
+                particles.push({
+                    x: px, y: py,
+                    vx: (Math.random() - 0.5) * spd, vy: (Math.random() - 0.85) * spd,
+                    life: 1, dec: 0.03 + Math.random() * 0.03,
+                    size: 3 + Math.random() * 4,
+                    col: colors[Math.floor(Math.random() * colors.length)]
+                });
+            }
+        }
+        function updateDrawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.vy += 0.3; p.life -= p.dec;
+                if (p.life <= 0) { particles.splice(i, 1); continue; }
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.col;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // =====================================================================
+        //  PLAYER
+        // =====================================================================
         const horse = {
             wall: 0, x: 0, lane: 1, y: 0, vy: 0, z: 220, size: 70,
             isGrounded: true, isFallingOut: false,
+            shield: false, anim: 0, tilt: 0, screen: null,
 
-            reset() { this.wall = 0; this.lane = 1; this.x = 0; this.y = 0; this.vy = 0; this.isGrounded = true; this.isFallingOut = false; },
+            reset() {
+                this.wall = 0; this.lane = 1; this.x = 0; this.y = 0; this.vy = 0;
+                this.isGrounded = true; this.isFallingOut = false;
+                this.shield = false; this.anim = 0; this.tilt = 0; this.screen = null;
+            },
 
             jump() {
                 if (this.isGrounded && !this.isFallingOut) {
                     this.vy = 6.8; this.isGrounded = false; playSFX('jump');
                 }
+            },
+
+            fxPos(up) {
+                const s = this.screen || { x: width / 2, y: height * 0.72, sc: 1 };
+                return { x: s.x, y: s.y - up * s.sc };
             },
 
             update() {
@@ -606,9 +922,14 @@
                     return;
                 }
 
+                this.anim += gameSpeed;
+
                 // Snap to Lane
                 let targetX = (this.lane - 1) * ((2 * R) / 3);
-                this.x += (targetX - this.x) * 0.3; 
+                const vx = (targetX - this.x) * 0.3;
+                this.x += vx; 
+                const wantTilt = Math.max(-0.22, Math.min(0.22, vx * 0.012));
+                this.tilt += (wantTilt - this.tilt) * 0.3;
 
                 if (!this.isGrounded) {
                     this.y += this.vy; this.vy -= 0.35; 
@@ -618,27 +939,59 @@
                 let laneIndex = Math.max(0, Math.min(2, Math.floor((this.x + R) / ((2 * R) / 3))));
                 
                 slices.forEach(s => {
-                    // Coin Collision
-                    if (s.coin && !s.coin.collected && Math.abs(s.z - this.z) < SLICE_DZ) {
-                        if (s.coin.wall === this.wall && s.coin.lane === laneIndex && this.y < 60) {
-                            s.coin.collected = true;
+                    const near = Math.abs(s.z - this.z) < SLICE_DZ;
+
+                    // Coin Collision (low coins: run through them, high coins: jump)
+                    if (s.coin && !s.coin.collected && near) {
+                        const c = s.coin;
+                        const reach = c.h > 50 ? this.y > 25 : this.y < 75;
+                        if (c.wall === this.wall && c.lane === laneIndex && reach) {
+                            c.collected = true;
                             coinsCount++;
                             score += 25; 
                             scoreHUD.innerText = score;
                             coinHUD.innerText = coinsCount;
                             playSFX('coin');
+                            const f = this.fxPos(70 + this.y);
+                            burst(f.x, f.y, ['#ffd21f', '#ff9a1a', '#fff27a'], 8, 7);
+                        }
+                    }
+
+                    // Gem Collision -> shield
+                    if (s.gem && !s.gem.collected && near) {
+                        if (s.gem.wall === this.wall && s.gem.lane === laneIndex && this.y < 110) {
+                            s.gem.collected = true;
+                            this.shield = true;
+                            score += 100;
+                            scoreHUD.innerText = score;
+                            shieldHUD.style.display = 'inline';
+                            playSFX('gem');
+                            const f = this.fxPos(80 + this.y);
+                            burst(f.x, f.y, ['#b8ff3d', '#59e03a', '#1fa326'], 14, 9);
                         }
                     }
                     
-                    // Obstacle Collision (Rocks & Trees)
-                    if (s.obstacle && Math.abs(s.z - this.z) < SLICE_DZ) {
+                    // Obstacle Collision (Rocks & Pillars)
+                    if (s.obstacle && !s.obstacle.broken && near) {
                         if (s.obstacle.wall === this.wall && s.obstacle.lane === laneIndex) {
-                            // Tree is tall (needs dodge), Rock is small (can jump over)
-                            let collisionHeight = s.obstacle.type === 'tree' ? 120 : 50; 
+                            // Pillar is tall (needs dodge), Rock is small (can jump over)
+                            let collisionHeight = s.obstacle.type === 'pillar' ? 120 : 50; 
                             if (this.y < collisionHeight) {
-                                this.isFallingOut = true; 
-                                this.isGrounded = false; 
-                                playSFX('crash');
+                                if (this.shield) {
+                                    // Shield smashes the obstacle
+                                    this.shield = false;
+                                    s.obstacle.broken = true;
+                                    shieldHUD.style.display = 'none';
+                                    playSFX('shield');
+                                    const f = this.fxPos(50 + this.y);
+                                    burst(f.x, f.y, ['#8e9bb0', '#566177', '#363e4f', '#7dff6a'], 22, 11);
+                                } else {
+                                    this.isFallingOut = true; 
+                                    this.isGrounded = false; 
+                                    playSFX('crash');
+                                    const f = this.fxPos(60 + this.y);
+                                    burst(f.x, f.y, ['#e4731a', '#f89a3e', '#ffffff'], 18, 10);
+                                }
                             }
                         }
                     }
@@ -646,32 +999,80 @@
             },
 
             draw() {
-                let wPos = getWorldPos(this.wall, this.x, this.y);
-                let pProj = project3D({ x: wPos.x, y: wPos.y, z: this.z });
-                if (!pProj) return;
+                const wFloor = getWorldPos(this.wall, this.x, 0);
+                const wAir = getWorldPos(this.wall, this.x, this.y);
+                const pF = project3D({ x: wFloor.x, y: wFloor.y, z: this.z });
+                const pA = project3D({ x: wAir.x, y: wAir.y, z: this.z });
+                if (!pF || !pA) return;
+
+                const sc = FOV / this.z;
+                const ang = -this.wall * Math.PI / 2 - cameraAngle;
+                this.screen = { x: pA.x, y: pA.y, sc: sc };
+
+                // Ground shadow
+                if (!this.isFallingOut) {
+                    const lift = Math.max(0, Math.min(1, this.y / 120));
+                    ctx.save();
+                    ctx.translate(pF.x, pF.y);
+                    ctx.rotate(ang);
+                    ctx.globalAlpha = 0.4 - 0.22 * lift;
+                    ctx.fillStyle = '#05403f';
+                    ctx.beginPath(); ctx.ellipse(0, 0, 46 * sc * (1 - 0.3 * lift), 10 * sc * (1 - 0.3 * lift), 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                }
 
                 ctx.save();
-                ctx.translate(pProj.x, pProj.y);
+                ctx.translate(pA.x, pA.y);
+                ctx.rotate(ang);
 
-                let sizeScale = FOV / this.z;
-                let activeSize = this.size * sizeScale;
-                let renderAngle = (this.wall * Math.PI / 2) - cameraAngle;
-                
-                ctx.rotate(renderAngle);
-                
-                let jumpOffset = this.y > 0 ? -this.y * sizeScale * 1.2 : 0;
-                let runCycle = distanceTraveled * 0.15;
-                let bounce = this.y > 0 ? 0 : Math.abs(Math.sin(runCycle * (keys.Dash ? 3 : 2))) * activeSize * 0.1;
-                
+                const jumpOffset = this.y > 0 ? -this.y * sc * 1.2 : 0;
+                const bounce = this.y > 0 ? 0 : Math.abs(Math.sin(this.anim / 90 * Math.PI)) * 4 * sc * (keys.Dash ? 1.3 : 1);
                 ctx.translate(0, jumpOffset - bounce);
-                drawCustomHorse(ctx, activeSize, runCycle);
+                ctx.rotate(this.tilt);
+
+                const cell = 6 * sc;
+                const w = HORSE_W * cell, h = HORSE_H * cell;
+                const legFrame = this.isGrounded ? Math.floor(this.anim / 90) % 2 : 0;
+                const tailIdx = Math.max(0, Math.min(4, Math.round(Math.sin(this.anim / 45) * 2) + 2));
+
+                // Crash tumble
+                if (this.isFallingOut) {
+                    ctx.translate(0, -h / 2); ctx.rotate(this.y * 0.035); ctx.translate(0, h / 2);
+                    ctx.globalAlpha = Math.max(0, 1 + this.y / 300);
+                }
+
+                // Dash aura
+                if (keys.Dash && !this.isFallingOut) {
+                    ctx.save();
+                    ctx.translate(0, -h * 0.5);
+                    drawGlowAt(GLOW_GOLD, h * 0.85, 0.45);
+                    ctx.restore();
+                }
+
+                ctx.drawImage(HORSE_FRAMES[legFrame][tailIdx], -w / 2, -h, w, h);
+
+                // Shield bubble
+                if (this.shield && !this.isFallingOut) {
+                    const pulse = 0.75 + 0.25 * Math.sin(this.anim / 25);
+                    ctx.save();
+                    ctx.translate(0, -h * 0.5);
+                    const grd = ctx.createRadialGradient(0, 0, h * 0.15, 0, 0, h * 0.66);
+                    grd.addColorStop(0, 'rgba(120,255,120,0)');
+                    grd.addColorStop(1, 'rgba(120,255,120,' + (0.35 * pulse) + ')');
+                    ctx.fillStyle = grd;
+                    ctx.beginPath(); ctx.ellipse(0, 0, w * 0.72, h * 0.66, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = 'rgba(190,255,170,' + (0.8 * pulse) + ')';
+                    ctx.lineWidth = Math.max(1.5, 2.5 * sc);
+                    ctx.stroke();
+                    ctx.restore();
+                }
                 ctx.restore();
             }
         };
 
         // --- GAME LOOP ---
         function updateCamera() {
-            let targetAngle = horse.wall * (Math.PI / 2);
+            let targetAngle = -horse.wall * (Math.PI / 2);
             let diff = targetAngle - cameraAngle;
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
@@ -686,7 +1087,9 @@
             
             score = 0; coinsCount = 0; level = 1; baseGameSpeed = 8; distanceTraveled = 0;
             scoreHUD.innerText = score; coinHUD.innerText = coinsCount; levelHUD.innerText = level;
+            shieldHUD.style.display = 'none';
             
+            cameraAngle = 0; particles.length = 0; initStreaks();
             horse.reset(); initTunnel(); manageBGM(true); loop();
         }
 
@@ -695,11 +1098,12 @@
             uiLayer.classList.remove('hidden');
             dashBtn.classList.add('hidden'); 
             gameplayControls.classList.add('hidden'); // Hide Pause/Sound
+            shieldHUD.style.display = 'none';
             
             if (manualQuit) {
                 mainTitle.innerText = "HORSE TURN"; 
-                mainTitle.style.color = "#fff";
-                subText.innerHTML = "Dodge the trees! Jump over rocks and collect coins. Hold Dash to speed up!";
+                mainTitle.style.color = "#ffd21f";
+                subText.innerHTML = MENU_TEXT;
                 startBtn.innerText = "START RUN";
             } else {
                 mainTitle.innerText = "GAME OVER"; mainTitle.style.color = "#ff3333";
@@ -715,12 +1119,18 @@
             if (gameState !== 'playing') return; // Stops updating when paused
             
             gameSpeed = keys.Dash ? baseGameSpeed * 2.2 : baseGameSpeed;
-            
-            // Sky Background
-            ctx.fillStyle = '#87CEEB'; ctx.fillRect(0, 0, width, height);
+            ctx.imageSmoothingEnabled = false;
 
-            updateTunnel(); drawTunnelAndEnvironment();
-            horse.update(); horse.draw(); updateCamera();
+            updateTunnel();
+            drawBackground();
+            drawTunnel();
+            drawBloom();
+            drawObjects(true);
+            horse.update(); horse.draw();
+            drawObjects(false);
+            drawStreaks();
+            updateDrawParticles();
+            updateCamera();
 
             distanceTraveled += gameSpeed;
             if (Math.floor(distanceTraveled) % 12 === 0) {
