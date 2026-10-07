@@ -184,6 +184,15 @@
         let level = 1;
         let baseGameSpeed = 8;
         let gameSpeed = 8;
+        // ---- SPEED / DASH LIMITS ----
+        const MAX_BASE_SPEED = 13;   // base speed stops growing with levels
+        const DASH_MULT = 1.6;       // dash speed multiplier (was 2.2)
+        const MAX_GAME_SPEED = 19;   // absolute speed cap (dash included)
+        const DASH_MAX = 90;         // dash energy (~1.5 s of dashing at 60fps)
+        const DASH_RESTART = 45;     // energy needed to dash again after running out
+        let dashEnergy = DASH_MAX;
+        let dashLocked = false;
+        let dashing = false;         // true only while dash is really active
         let distanceTraveled = 0;
         let soundEnabled = true;
 
@@ -198,9 +207,9 @@
             height = canvas.height = window.innerHeight;
             ctx.imageSmoothingEnabled = false;
             if(window.innerWidth > 768) {
-                document.getElementById('controls-hint').innerText = "Keys L/R Steer | UP Arrow Jump | SHIFT/Btn Dash";
+                document.getElementById('controls-hint').innerText = "Keys L/R Steer | UP Jump | DOWN Drop | SHIFT/Btn Dash";
             } else {
-                document.getElementById('controls-hint').innerText = "Swipe L/R Steer | Swipe Up Jump | Double Tap Dash";
+                document.getElementById('controls-hint').innerText = "Swipe L/R Steer | Up Jump | Down Drop | Double Tap Dash";
             }
         }
         window.addEventListener('resize', resize);
@@ -290,6 +299,8 @@
                 if (gameState === 'playing') horse.jump(); 
             }
             
+            if (e.code === 'ArrowDown' || e.code === 'KeyS') { e.preventDefault(); if (gameState === 'playing') horse.fastFall(); }
+
             if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.Dash = true;
         });
         
@@ -327,10 +338,26 @@
             lastTapTime = now;
         }, { passive: false });
 
+        let lastSwipeDir = null;   // 'up' / 'down' after a swipe, so a reverse swipe in the same touch is detected
+        let anchorY = 0;
+
         window.addEventListener('touchmove', e => {
-            if (gameState !== 'playing' || e.target.closest('#dashBtn') || e.target.closest('.icon-btn') || swipeHandled) return;
+            if (gameState !== 'playing' || e.target.closest('#dashBtn') || e.target.closest('.icon-btn')) return;
             e.preventDefault(); 
             const touch = e.touches[0];
+
+            if (swipeHandled) {
+                // Swipe up then swipe back down (without lifting the finger) -> drop fast
+                if (lastSwipeDir === 'up') {
+                    anchorY = Math.min(anchorY, touch.clientY);
+                    if (touch.clientY - anchorY > 30) { horse.fastFall(); lastSwipeDir = 'down'; anchorY = touch.clientY; }
+                } else if (lastSwipeDir === 'down') {
+                    anchorY = Math.max(anchorY, touch.clientY);
+                    if (anchorY - touch.clientY > 30) { horse.jump(); lastSwipeDir = 'up'; anchorY = touch.clientY; }
+                }
+                return;
+            }
+
             const dx = touch.clientX - touchStartX;
             const dy = touch.clientY - touchStartY;
             
@@ -338,8 +365,11 @@
                 if (Math.abs(dx) > Math.abs(dy)) {
                     if (dx > 0) moveRight();
                     else moveLeft();
+                    lastSwipeDir = null;
                 } else {
-                    if (dy < 0) horse.jump(); 
+                    if (dy < 0) { horse.jump(); lastSwipeDir = 'up'; }
+                    else { horse.fastFall(); lastSwipeDir = 'down'; }
+                    anchorY = touch.clientY;
                 }
                 swipeHandled = true;
             }
@@ -434,7 +464,7 @@
 
         // ---- Horse (BACK VIEW: ears + mane on top, rump, tail, two hind legs) ----
         const HORSE_W = 16, HORSE_H = 24;
-        const HORSE_SCALE = 0.75; // 1 = original size (100%), 0.5 = 50% smaller. Change this to resize the horse.
+        const HORSE_SCALE = 1.5; // 1 = original size (100%), 1.5 = 50% bigger. Change this to resize the horse.
         const HORSE_PAL = {
             o: '#e4731a', l: '#f89a3e', O: '#bd5210',   // orange coat: base / light edge / shade
             m: '#7a3010',                                // mane
@@ -694,7 +724,7 @@
                 const slice = slices[i];
                 const z1 = slice.z, z2 = slice.z + SLICE_DZ;
                 const fog = Math.pow(Math.max(0, Math.min(1, z1 / MAX_Z)), 1.5) * 0.78;
-                const lw = Math.max(0.7, Math.min(4.5, 520 / z1)) * (keys.Dash ? 1.25 : 1);
+                const lw = Math.max(0.7, Math.min(4.5, 520 / z1)) * (dashing ? 1.25 : 1);
                 const goldCol = rgb(mixC(GOLD, HAZE, fog));
 
                 for (let w = 0; w < 4; w++) {
@@ -850,7 +880,7 @@
         function drawStreaks() {
             const cx = width / 2, cy = height / 2;
             const maxR = Math.hypot(width, height) / 2;
-            const boost = (keys.Dash ? 2.6 : 1) * (gameSpeed / 8);
+            const boost = (dashing ? 2.6 : 1) * (gameSpeed / 8);
             for (let i = 0; i < streaks.length; i++) {
                 const s = streaks[i];
                 s.r += s.spd * boost;
@@ -859,7 +889,7 @@
                 const ox = cx + ca * s.r * maxR, oy = cy + sa * s.r * maxR;
                 const ix = cx + ca * (s.r - s.len * boost * 0.7) * maxR, iy = cy + sa * (s.r - s.len * boost * 0.7) * maxR;
                 const px = -sa, py = ca;
-                const a = Math.min(1, (s.r - 0.5) * 3) * (keys.Dash ? 0.95 : 0.7);
+                const a = Math.min(1, (s.r - 0.5) * 3) * (dashing ? 0.95 : 0.7);
                 ctx.fillStyle = 'rgba(120,255,225,' + (a * 0.35) + ')';
                 ctx.beginPath(); ctx.moveTo(ix, iy); ctx.lineTo(ox + px * s.w * 2.2, oy + py * s.w * 2.2); ctx.lineTo(ox - px * s.w * 2.2, oy - py * s.w * 2.2); ctx.closePath(); ctx.fill();
                 ctx.fillStyle = 'rgba(255,255,255,' + a + ')';
@@ -907,8 +937,12 @@
 
             jump() {
                 if (this.isGrounded && !this.isFallingOut) {
-                    this.vy = 6.8; this.isGrounded = false; playSFX('jump');
+                    this.vy = 8.0; this.isGrounded = false; playSFX('jump');
                 }
+            },
+
+            fastFall() {
+                if (!this.isGrounded && !this.isFallingOut) this.vy = -13; // quick drop back to the track
             },
 
             fxPos(up) {
@@ -976,7 +1010,7 @@
                     if (s.obstacle && !s.obstacle.broken && near) {
                         if (s.obstacle.wall === this.wall && s.obstacle.lane === laneIndex) {
                             // Pillar is tall (needs dodge), Rock is small (can jump over)
-                            let collisionHeight = s.obstacle.type === 'pillar' ? 120 : 50; 
+                            let collisionHeight = s.obstacle.type === 'pillar' ? 120 : 42; 
                             if (this.y < collisionHeight) {
                                 if (this.shield) {
                                     // Shield smashes the obstacle
@@ -1026,8 +1060,8 @@
                 ctx.translate(pA.x, pA.y);
                 ctx.rotate(ang);
 
-                const jumpOffset = this.y > 0 ? -this.y * sc * 1.2 : 0;
-                const bounce = this.y > 0 ? 0 : Math.abs(Math.sin(this.anim / 90 * Math.PI)) * 2 * sc * (keys.Dash ? 1.3 : 1);
+                const jumpOffset = 0; // jump height is already included in the projected position (pA) - adding more made the jump look too high
+                const bounce = this.y > 0 ? 0 : Math.abs(Math.sin(this.anim / 90 * Math.PI)) * 2 * sc * (dashing ? 1.3 : 1);
                 ctx.translate(0, jumpOffset - bounce);
                 ctx.rotate(this.tilt);
 
@@ -1043,7 +1077,7 @@
                 }
 
                 // Dash aura
-                if (keys.Dash && !this.isFallingOut) {
+                if (dashing && !this.isFallingOut) {
                     ctx.save();
                     ctx.translate(0, -h * 0.5);
                     drawGlowAt(GLOW_GOLD, h * 0.85, 0.45);
@@ -1077,7 +1111,7 @@
             let diff = targetAngle - cameraAngle;
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
-            cameraAngle += diff * (keys.Dash ? 0.18 : 0.12); 
+            cameraAngle += diff * (dashing ? 0.18 : 0.12); 
         }
 
         function startGame() {
@@ -1086,7 +1120,7 @@
             dashBtn.classList.remove('hidden'); 
             gameplayControls.classList.remove('hidden'); // Show Pause/Sound
             
-            score = 0; coinsCount = 0; level = 1; baseGameSpeed = 8; distanceTraveled = 0;
+            score = 0; coinsCount = 0; level = 1; baseGameSpeed = 8; distanceTraveled = 0; dashEnergy = DASH_MAX; dashLocked = false; dashing = false;
             scoreHUD.innerText = score; coinHUD.innerText = coinsCount; levelHUD.innerText = level;
             shieldHUD.style.display = 'none';
             
@@ -1119,7 +1153,17 @@
         function loop() {
             if (gameState !== 'playing') return; // Stops updating when paused
             
-            gameSpeed = keys.Dash ? baseGameSpeed * 2.2 : baseGameSpeed;
+            // Dash works only on the ground, for a limited time, then recharges
+            if (dashLocked && dashEnergy >= DASH_RESTART) dashLocked = false;
+            dashing = keys.Dash && horse.isGrounded && !horse.isFallingOut && !dashLocked && dashEnergy > 0;
+            if (dashing) {
+                dashEnergy -= 1;
+                if (dashEnergy <= 0) { dashEnergy = 0; dashLocked = true; dashing = false; }
+            } else if (dashEnergy < DASH_MAX) {
+                dashEnergy = Math.min(DASH_MAX, dashEnergy + 0.5);
+            }
+            gameSpeed = Math.min(MAX_GAME_SPEED, dashing ? baseGameSpeed * DASH_MULT : baseGameSpeed);
+            dashBtn.style.opacity = dashing ? '1' : (dashLocked ? '0.35' : '0.8');
             ctx.imageSmoothingEnabled = false;
 
             updateTunnel();
@@ -1137,7 +1181,7 @@
             if (Math.floor(distanceTraveled) % 12 === 0) {
                 score += 5; scoreHUD.innerText = score;
                 if (score > 0 && score % 800 === 0) {
-                    level++; playSFX('level'); baseGameSpeed += 1.2; levelHUD.innerText = level;
+                    level++; playSFX('level'); baseGameSpeed = Math.min(MAX_BASE_SPEED, baseGameSpeed + 1.2); levelHUD.innerText = level;
                 }
             }
             requestAnimationFrame(loop);
