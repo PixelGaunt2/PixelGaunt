@@ -257,6 +257,19 @@ let particles = [], fishes = [], floatingTexts = [], weatherParticles = [], bull
 let bobber = { x: 0, y: 0, active: false, targetY: 0 };
 let fishProgress = 10, hookedFish = null, fishPos = 50, fishTarget = 50, barPos = 10, moveTimer = 0;
 let battleTimer = 0, battleTarget = null, streak = 0;
+let bossTimer = 10; // seconds until the Giant Octopus Boss shows up when none is in the ocean
+function resetBattleState() {
+    slowMo = 1.0; battleTarget = null; hookedFish = null; document.body.classList.remove('battle-mode');
+    let bc = document.getElementById('boss-hp-container'); if (bc) bc.style.display = 'none';
+    fishes.forEach(f => { if (f.state === 'jump' || f.state === 'hooked' || f.state === 'approach') f.state = 'wander'; });
+}
+function spawnBoss() {
+    let minX = W * 0.45, maxX = W - 90, minY = H/2 + 100, maxY = H - 90;
+    let b = new Fish(minX + Math.random() * Math.max(10, maxX - minX), minY + Math.random() * Math.max(10, maxY - minY), 4);
+    b.vx = (Math.random() > 0.5 ? 1 : -1) * 0.7;
+    fishes.push(b);
+    showNotification("🐙 GIANT OCTOPUS BOSS APPEARED!", "#9b59b6"); playSound('splash');
+}
 
 // --- GAME AUDIO (tries the .wav/.mp3 files; falls back to built-in synthesized sound if they are missing) ---
 const GameAudio = (function () {
@@ -390,23 +403,43 @@ canvas.addEventListener('touchstart', e => { mouse.down = true; mouse.click = tr
 canvas.addEventListener('touchmove', e => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; });
 window.addEventListener('touchend', () => { mouse.down = false; });
 
-function saveData() { localStorage.setItem('pandaFishSave', JSON.stringify(player)); }
-function loadData() { const saved = localStorage.getItem('pandaFishSave'); if (saved) { let p = JSON.parse(saved); player.coins = p.coins || 0; player.upgrades = p.upgrades || { rod: 0, armor: 0, lure: 0 }; } }
+const SAVE_KEY = 'pandaFishSave_v2';
+function saveData() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ coins: player.coins, upgrades: player.upgrades })); } catch (e) {} }
+function loadData() {
+    // Upgrades always start LOCKED (0); only a valid v2 save can unlock them (old save key is ignored for upgrades).
+    player.upgrades = { rod: 0, armor: 0, lure: 0 };
+    try {
+        let saved = localStorage.getItem(SAVE_KEY);
+        if (saved) {
+            let p = JSON.parse(saved);
+            player.coins = Math.max(0, Number(p.coins) || 0);
+            if (p.upgrades) ['rod', 'armor', 'lure'].forEach(k => { player.upgrades[k] = (p.upgrades[k] === 1) ? 1 : 0; });
+        } else {
+            let old = localStorage.getItem('pandaFishSave'); // keep old coins only
+            if (old) player.coins = Math.max(0, Number(JSON.parse(old).coins) || 0);
+        }
+    } catch (e) {}
+}
 loadData();
 
 function hideAllMenus() { document.querySelectorAll('.menu').forEach(m => { m.classList.remove('active'); m.style.display = 'none'; }); }
 function showMenu(id) { hideAllMenus(); let m = document.getElementById(id); if(m) { m.style.display = 'flex'; setTimeout(() => m.classList.add('active'), 10); } }
 
-function startGame() { streak = 0; GameAudio.startMusic(); hideAllMenus(); document.getElementById('hud').style.display = 'flex'; player.hp = player.maxHp; updateHUD(); gameState = STATE.IDLE; fishes = []; spawnFish(8); document.body.classList.remove('battle-mode'); hookedFish = null; battleTarget = null; }
-function openShop() { showMenu('menu-shop'); document.getElementById('shop-coins').innerText = player.coins; document.getElementById('btn-upg-rod').innerText = player.upgrades.rod ? "Maxed" : "50 Coins"; document.getElementById('btn-upg-armor').innerText = player.upgrades.armor ? "Maxed" : "100 Coins"; document.getElementById('btn-upg-lure').innerText = player.upgrades.lure ? "Maxed" : "200 Coins"; }
+function startGame() { streak = 0; GameAudio.startMusic(); hideAllMenus(); document.getElementById('hud').style.display = 'flex'; player.hp = player.maxHp; updateHUD(); gameState = STATE.IDLE; fishes = []; bobber.active = false; resetBattleState(); spawnFish(8); bossTimer = 10; }
+function refreshShopButton(type, cost) {
+    let b = document.getElementById('btn-upg-' + type);
+    if (player.upgrades[type]) { b.innerText = "Owned ✔"; b.disabled = true; b.style.opacity = 0.6; b.style.filter = 'grayscale(1)'; }
+    else { b.innerText = cost + " Coins"; b.disabled = false; b.style.opacity = player.coins >= cost ? 1 : 0.7; b.style.filter = player.coins >= cost ? 'none' : 'grayscale(0.6)'; }
+}
+function openShop() { showMenu('menu-shop'); document.getElementById('shop-coins').innerText = player.coins; refreshShopButton('rod', 50); refreshShopButton('armor', 100); refreshShopButton('lure', 200); }
 function closeShop() { showMenu('menu-main'); }
-function buyUpgrade(type, cost) { if (player.upgrades[type] === 0 && player.coins >= cost) { player.coins -= cost; player.upgrades[type] = 1; saveData(); playSound('buy'); openShop(); } }
+function buyUpgrade(type, cost) { if (player.upgrades[type]) return; if (player.coins < cost) { playSound('hurt'); return; } if (player.upgrades[type] === 0 && player.coins >= cost) { player.coins -= cost; player.upgrades[type] = 1; saveData(); playSound('buy'); openShop(); } }
 let prevState = STATE.IDLE;
 function togglePause() { if (gameState === STATE.PAUSED) resumeGame(); else pauseGame(); }
 function pauseGame() { if (gameState === STATE.MENU || gameState === STATE.GAMEOVER || gameState === STATE.PAUSED) return; prevState = gameState; gameState = STATE.PAUSED; GameAudio.pauseMusic(); document.getElementById('pause-title').innerText = "Paused"; document.getElementById('btn-resume').style.display = "block"; showMenu('menu-pause'); document.body.classList.remove('battle-mode'); }
 function resumeGame() { if (gameState !== STATE.PAUSED) return; GameAudio.startMusic(); hideAllMenus(); gameState = prevState; if (gameState === STATE.BATTLE) document.body.classList.add('battle-mode'); mouse.down = false; mouse.click = false; }
-function toMainMenu() { GameAudio.stopMusic(); document.getElementById('hud').style.display = 'none'; showMenu('menu-main'); gameState = STATE.MENU; document.body.classList.remove('battle-mode'); }
-function triggerGameOver() { GameAudio.stopMusic(); playSound('death'); gameState = STATE.GAMEOVER; document.getElementById('pause-title').innerText = "Knocked Out!"; document.getElementById('btn-resume').style.display = "none"; showMenu('menu-pause'); document.body.classList.remove('battle-mode'); }
+function toMainMenu() { resetBattleState(); bobber.active = false; GameAudio.stopMusic(); document.getElementById('hud').style.display = 'none'; showMenu('menu-main'); gameState = STATE.MENU; document.body.classList.remove('battle-mode'); }
+function triggerGameOver() { resetBattleState(); bobber.active = false; GameAudio.stopMusic(); playSound('death'); gameState = STATE.GAMEOVER; document.getElementById('pause-title').innerText = "Knocked Out!"; document.getElementById('btn-resume').style.display = "none"; showMenu('menu-pause'); document.body.classList.remove('battle-mode'); }
 
 function updateHUD() { document.getElementById('health-bar').style.width = (player.hp / player.maxHp * 100) + '%'; document.getElementById('coin-count').innerText = player.coins; }
 function showNotification(text, color="#fff") { let n = document.getElementById('notification'); n.innerText = text; n.style.color = color; n.style.opacity = 1; setTimeout(() => n.style.opacity = 0, 2000); }
@@ -509,7 +542,7 @@ class Fish {
             if (!bobber.active || (hookedFish && hookedFish !== this) || battleTarget) { this.state = 'wander'; return; }
             
             let dx = bobber.x - this.x, dy = bobber.y - this.y;
-            let dist = Math.hypot(dx, dy);
+            let dist = Math.hypot(dx, dy) || 0.001;
             this.x += (dx/dist) * 2 * dt * 60; this.y += (dy/dist) * 2 * dt * 60;
             
             if (dist < 10) {
@@ -677,7 +710,7 @@ function spawnFish(count) {
         let type = 0; let r = Math.random();
         let bossChance = player.upgrades.lure ? 0.08 : 0.03;
         
-        if (r < bossChance) type = 4; 
+        if (r < bossChance && !fishes.some(f => f.type === 4)) type = 4; 
         else if (r < 0.15) type = 3; 
         else if (r < 0.25) type = 2; 
         else if (r < 0.30) type = 10; // Alligator
@@ -1002,25 +1035,45 @@ function update(dt) {
 
     let pandaX = W * 0.15; let pandaY = H/2 + 20;
 
+    if (gameState !== STATE.BATTLE) slowMo = 1.0; // never leave sea animals stuck in slow motion
+    if (gameState !== STATE.BATTLE) {
+        if (fishes.some(f => f.type === 4)) bossTimer = 20;
+        else { bossTimer -= dt; if (bossTimer <= 0) { spawnBoss(); bossTimer = 20; } }
+    }
+
     if (gameState === STATE.IDLE) {
         if (mouse.click) {
             gameState = STATE.CASTING; bobber.active = true;
-            bobber.x = pandaX + 120; bobber.y = pandaY - 100; bobber.targetY = mouse.y;
+            bobber.x = pandaX + 120; bobber.y = pandaY - 100;
             let targetX = mouse.x; if (targetX < W * 0.35) targetX = W * 0.4; 
-            if (bobber.targetY < H/2 + 50) bobber.targetY = H/2 + 50; 
-            bobber.vx = (targetX - bobber.x) * 2; bobber.vy = (bobber.targetY - bobber.y) * 2;
+            if (targetX > W - 40) targetX = W - 40;
+            bobber.targetX = targetX;
+            bobber.targetY = Math.max(H/2 + 50, Math.min(H - 40, mouse.y)); // keep bobber inside the water, never off the bottom
+            bobber.castTime = 0; bobber.waitTime = 0;
+            bobber.vx = (bobber.targetX - bobber.x) * 2; bobber.vy = (bobber.targetY - bobber.y) * 2;
             playSound('cast'); mouse.click = false;
         }
     }
     else if (gameState === STATE.CASTING) {
-        bobber.x += bobber.vx * dt; bobber.y += bobber.vy * dt;
-        if (Math.abs(bobber.y - bobber.targetY) < 10) {
+        bobber.x += bobber.vx * dt; bobber.y += bobber.vy * dt; bobber.castTime += dt;
+        let reachedY = bobber.vy >= 0 ? bobber.y >= bobber.targetY : bobber.y <= bobber.targetY;
+        if (reachedY || bobber.castTime > 1.0) {
+            bobber.x = bobber.targetX; bobber.y = bobber.targetY; bobber.waitTime = 0;
             gameState = STATE.WAITING; playSound('splash'); spawnParticles(bobber.x, bobber.y, '#fff', 15);
         }
     }
     else if (gameState === STATE.WAITING) {
         bobber.y += Math.sin(time*5) * 0.5;
-        if (mouse.click && mouse.y < H/2) { gameState = STATE.IDLE; bobber.active = false; mouse.click = false; }
+        bobber.waitTime = (bobber.waitTime || 0) + dt;
+        // Click anywhere to reel the line back in (no more stuck rope)
+        if (mouse.click) { gameState = STATE.IDLE; bobber.active = false; mouse.click = false; }
+        // If nothing bites for a while (e.g. cast into an empty spot at the bottom), call the nearest fish over
+        else if (bobber.waitTime > 3.5 && !hookedFish && !battleTarget && !fishes.some(f => f.state === 'approach')) {
+            let best = null, bd = Infinity;
+            fishes.forEach(f => { if (f.state === 'wander') { let d = Math.hypot(f.x - bobber.x, f.y - bobber.y); if (d < bd) { bd = d; best = f; } } });
+            if (best) best.state = 'approach'; else { spawnFish(2); }
+            bobber.waitTime = 0;
+        }
     }
     else if (gameState === STATE.HOOKED) {
         let f = hookedFish;
@@ -1057,7 +1110,7 @@ function update(dt) {
         }
     }
     else if (gameState === STATE.BATTLE) {
-        battleTimer -= dt / slowMo;
+        battleTimer -= dt; // real seconds (was sped up 10x by slow-mo, so the boss vanished almost instantly)
         
         if (mouse.click) {
             playSound('shoot'); screenshake(8, 0.1);
@@ -1100,7 +1153,7 @@ function update(dt) {
         }
     }
 
-    fishes.forEach(f => f.update(dt * slowMo));
+    fishes.forEach(f => f.update(f === battleTarget ? dt * slowMo : dt));
     for(let i=particles.length-1; i>=0; i--) { p = particles[i]; p.x += p.vx * dt * 60; p.y += p.vy * dt * 60; if(p.g) p.vy += 0.5 * dt * 60; p.life -= p.decay * dt * 60; if (p.life <= 0) particles.splice(i, 1); }
     for(let i=floatingTexts.length-1; i>=0; i--) { t = floatingTexts[i]; t.y += t.vy * dt * 60; t.life -= 1 * dt; if (t.life <= 0) floatingTexts.splice(i, 1); }
     mouse.click = false;
