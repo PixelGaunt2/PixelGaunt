@@ -833,10 +833,13 @@ function checkWallCollisions(p) {
                 p.vx *= restitution; 
                 p.vy *= restitution;
                 collided = true;
-                if (b.type === 'bounce') playSfx('powerup_spawn', 0.4, 80); else playSfx('object_hit', 0.35, 60);
+                // Only react (sound/particles/shake) to a real impact - not to the ball resting or rolling on the floor
+                if (-dotProduct > 2.5) {
+                    if (b.type === 'bounce') playSfx('powerup_spawn', 0.4, 80); else playSfx('object_hit', 0.35, 60);
 
-                spawnParticles(closestX, closestY, b.type === 'bounce' ? '#f59e0b' : '#00ffcc', b.type === 'bounce' ? 8 : 4, 3);
-                triggerShake(b.type === 'bounce' ? 8 : 2);
+                    spawnParticles(closestX, closestY, b.type === 'bounce' ? '#f59e0b' : '#00ffcc', b.type === 'bounce' ? 8 : 4, 3);
+                    triggerShake(b.type === 'bounce' ? 8 : 2);
+                }
             }
         }
     }
