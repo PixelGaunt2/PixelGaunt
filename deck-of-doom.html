@@ -395,6 +395,32 @@
  .turn-indicator{position:absolute;top:-4px;left:50%;margin:0;z-index:12}
  .end-turn-btn{font-size:clamp(10px,1.8vw,14px)}
 }
+
+/* ===== MOBILE FIT FIXES ===== */
+#hand-container .card:first-child{margin-left:0}
+@media (max-width:768px){
+ #hand-container{--n:5;--ov:14px;padding-left:8px;padding-right:8px;overflow:visible}
+ #hand-container .card{width:min(100px,calc((100vw - 16px + (var(--n) - 1)*var(--ov))/var(--n)));margin-left:calc(var(--ov)*-1)}
+ #hand-container .card:first-child{margin-left:0}
+ #hand-container .card:hover,#hand-container .card-ready{margin-left:calc(var(--ov)*-1) !important;margin-right:0 !important}
+ #hand-container .card:first-child:hover,#hand-container .card-ready:first-child{margin-left:0 !important}
+ #top-bar{padding:4px 8px !important;gap:4px !important}
+ #top-bar .btn-top{padding:5px 8px;font-size:11px}
+ #top-bar .top-btn-group{gap:6px}
+}
+@media (min-height:561px){
+ :root{--ec:clamp(60px,min(13.5dvh,28vw),140px);--bh:clamp(70px,16dvh,130px)}
+ #battle-area{padding-top:calc(var(--bh)*.72 + 26px) !important}
+ #battle-area::before{top:26px;height:var(--bh)}
+ .turn-indicator{top:4px;background:rgba(5,6,15,.8);padding:5px 10px;border-radius:8px;border:2px solid currentColor;white-space:nowrap}
+}
+/* every menu-type screen scrolls when it is taller than the phone, stays centred when it fits */
+#map-screen,#loot-screen,#death-screen{overflow-y:auto;overflow-x:hidden;justify-content:flex-start !important;touch-action:pan-y;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-top:env(safe-area-inset-top,0px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px)}
+#map-screen>*,#loot-screen>*,#death-screen>*{flex-shrink:0}
+#loot-screen>:first-child,#death-screen>:first-child{margin-top:auto}
+#loot-screen>:last-child,#death-screen>:last-child{margin-bottom:auto}
+#map-container{height:min(600px,calc(100dvh - 200px));min-height:360px;flex-shrink:0;width:calc(100% - 24px)}
+.loot-container .card:first-child,.loot-column .card{margin-left:0}
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -418,7 +444,6 @@
         <div class="title-buttons">
             <button class="btn-play" onclick="openSetup('1v1')">Single Player</button>
             <button class="btn-play highlight" onclick="openSetup('2v2')">2 Player Mode</button>
-            <button class="btn-play disabled" onclick="alert('Online Multiplayer Servers are currently Offline. Coming Soon!')">Multiplayer / Online</button>
             <button class="btn-play" style="border-color: #9b59b6; background: #1e2532;" onclick="showScreen('readme-screen')">📖 Read Me</button>
         </div>
     </div>
@@ -1352,6 +1377,13 @@
   showFloatingText('player-sprite','REDRAW','#f1c40f');
   drawCards(n); state.discard.push(...old); updateUI();
  };
+})();
+</script>
+    <script>
+(function(){
+ const _rh=window.renderHand;
+ window.renderHand=function(){_rh();document.getElementById('hand-container').style.setProperty('--n',Math.max(5,state.hand.length));};
+ window.addEventListener('orientationchange',()=>setTimeout(()=>window.dispatchEvent(new Event('resize')),250));
 })();
 </script>
 </body>
