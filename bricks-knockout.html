@@ -97,22 +97,46 @@
         .lvl-btn.unlocked { background: linear-gradient(135deg, #ff007f, #7f00ff); border-color: #ff80df; color: white; cursor: pointer; box-shadow: 0 4px 0 #4a004a; }
         .lvl-btn.unlocked:active { transform: translateY(4px); box-shadow: none; }
 
+        #game-container { container-type: inline-size; }
+
         #game-hud {
-            position: absolute; top: 0; left: 0; width: 100%; padding: 10px 15px; background: linear-gradient(180deg, rgba(6,8,48,0.96), rgba(18,8,60,0.88)); display: flex; flex-direction: column; z-index: 10; border-bottom: 2px solid #ff2d95; box-shadow: 0 2px 14px rgba(255,45,149,0.45);
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: 8px 10px 8px; display: flex; flex-direction: column; gap: 6px; z-index: 10;
+            background: linear-gradient(180deg, rgba(6,8,48,0.96), rgba(18,8,60,0.88));
+            border-bottom: 2px solid #ff2d95; box-shadow: 0 2px 14px rgba(255,45,149,0.45);
         }
-        
-        .hud-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px;}
-        .hud-btn { background: #121a50; border: 1px solid #33d6ff; color: white; padding: 6px 10px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 13px; }
+        .hud-row { display: flex; align-items: center; width: 100%; gap: 8px; }
+        .hud-row-top { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; }
+
+        .hud-btn {
+            background: #121a50; border: 1px solid #33d6ff; color: white; border-radius: 8px;
+            font-weight: bold; cursor: pointer; line-height: 1;
+            height: clamp(32px, 9cqw, 42px); padding: 0 clamp(8px, 2.8cqw, 14px);
+            font-size: clamp(12px, 3.4cqw, 16px); white-space: nowrap;
+            display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+        }
         .hud-btn:active { background: #445; }
-        
-        .hud-stats-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
-        .hud-stats-rpg { font-size: 11px; color: #aaa; margin-bottom: 4px; text-shadow: 1px 1px 2px black; font-weight: bold; display: flex; align-items: center; gap: 8px;}
-        .hud-stats-rpg span.lvl { color: #00e5ff; }
-        .hud-stats-rpg span.exp { color: #aaff00; }
-        .hud-stats { text-align: center; font-size: 13px; font-weight: bold; text-shadow: 1px 1px 2px black; display: flex; align-items: center; gap: 6px;}
-        .hud-stats span { color: #ffd700; }
-        
-        #btn-sound-toggle { background: #1e1e2f; border: 1px solid #00e5ff; color: #00e5ff; padding: 2px 6px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-left: 5px; }
+        .hud-btn-icon { width: clamp(32px, 9cqw, 42px); padding: 0; font-size: clamp(14px, 4.2cqw, 20px); }
+        #btn-sound-toggle { color: #00e5ff; border-color: #00e5ff; background: #121a50; }
+        .hud-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+
+        .hud-stage { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; text-align: center; }
+        .hud-stage-label { font-size: clamp(13px, 4cqw, 19px); font-weight: 800; letter-spacing: 1px; text-shadow: 1px 1px 2px black; white-space: nowrap; }
+        .hud-stage-label span { color: #fff; }
+        #ui-constraint { font-size: clamp(10px, 2.8cqw, 13px); font-weight: bold; text-transform: uppercase; white-space: nowrap; min-height: 1.3em; line-height: 1.3em; text-shadow: 1px 1px 2px black; }
+
+        .hud-row-stats { display: grid; grid-template-columns: 0.8fr 1.7fr 1.2fr 0.8fr; gap: 6px; }
+        .hud-chip {
+            display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0;
+            background: rgba(18,26,80,0.75); border: 1px solid rgba(51,214,255,0.35); border-radius: 8px;
+            padding: 3px 5px; height: clamp(22px, 6.4cqw, 30px);
+            font-size: clamp(10px, 3cqw, 14px); font-weight: bold; color: #b8c0e8; text-shadow: 1px 1px 2px black; white-space: nowrap; overflow: hidden;
+        }
+        .hud-chip b { overflow: hidden; text-overflow: ellipsis; }
+        .hud-chip .lvl { color: #00e5ff; }
+        .hud-chip .exp { color: #aaff00; }
+        .hud-chip .gold { color: #ffd700; }
+        .hud-chip .atk { color: #ffd700; }
 
         .card-container { display: flex; gap: 8px; width: 100%; max-width: 450px; justify-content: center; align-items: stretch; margin-top: 20px;}
         .ability-card {
@@ -138,21 +162,22 @@
     <canvas id="gameCanvas"></canvas>
 
     <div id="game-hud" class="hidden">
-        <div class="hud-top-row">
+        <div class="hud-row hud-row-top">
             <button class="hud-btn" id="btn-hud-back">◀ Menu</button>
-            <div class="hud-stats-container">
-                <div class="hud-stats-rpg">
-                    Hero LVL <span class="lvl" id="ui-hero-lvl">1</span> | EXP: <span class="exp" id="ui-exp">0/100</span>
-                    <span id="ui-constraint" style="font-size:14px; text-transform:uppercase;"></span>
-                </div>
-                <div class="hud-stats">
-                    Stage <span id="ui-stage" style="color:white;">1</span> | 💰 <span id="ui-gold">0</span> | ⚔️ <span id="ui-atk">1</span>
-                    <button id="btn-sound-toggle">🔊 ON</button>
-                </div>
+            <div class="hud-stage">
+                <div class="hud-stage-label">STAGE <span id="ui-stage">1</span></div>
+                <div id="ui-constraint"></div>
             </div>
-            <div style="display:flex; gap:5px;">
-                <button class="hud-btn" id="btn-hud-pause">⏸️</button>
+            <div class="hud-actions">
+                <button class="hud-btn hud-btn-icon" id="btn-sound-toggle" aria-label="Sound">🔊</button>
+                <button class="hud-btn hud-btn-icon" id="btn-hud-pause" aria-label="Pause">⏸</button>
             </div>
+        </div>
+        <div class="hud-row hud-row-stats">
+            <div class="hud-chip" title="Hero level">LVL <b class="lvl" id="ui-hero-lvl">1</b></div>
+            <div class="hud-chip" title="Experience">EXP <b class="exp" id="ui-exp">0/100</b></div>
+            <div class="hud-chip" title="Coins">💰 <b class="gold" id="ui-gold">0</b></div>
+            <div class="hud-chip" title="Attack">⚔️ <b class="atk" id="ui-atk">1</b></div>
         </div>
     </div>
 
@@ -162,6 +187,7 @@
         <div class="screen-content">
             <h1>Bricks KnockOut</h1>
             <div class="subtitle">RPG Fantasy Edition</div>
+            <button class="btn btn-success hidden" id="btn-continue">Continue</button>
             <button class="btn btn-primary" id="btn-play-now">Play Now</button>
             <button class="btn" id="btn-levels">Select Level</button>
             
@@ -276,11 +302,11 @@ function toggleSound() {
     isMuted = !isMuted; const btn = document.getElementById('btn-sound-toggle');
     if (isMuted) { 
         bgMusic.pause(); 
-        btn.innerText = "🔇 OFF"; btn.style.borderColor = "#ff4444"; btn.style.color = "#ff4444"; 
+        btn.innerText = "🔇"; btn.style.borderColor = "#ff4444"; btn.style.color = "#ff4444"; 
     } else { 
         unlockAudio(); 
         bgMusic.play().catch(()=>{}); 
-        btn.innerText = "🔊 ON"; btn.style.borderColor = "#00e5ff"; btn.style.color = "#00e5ff"; 
+        btn.innerText = "🔊"; btn.style.borderColor = "#00e5ff"; btn.style.color = "#00e5ff"; 
     }
 }
 
@@ -471,9 +497,21 @@ function calculateBlockHP(lvl, isCenter) {
     return Math.max(1, Math.floor(baseHP * hpMultiplier));
 }
 
+function startConstraintTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    if (levelConstraint.type !== 'time') return;
+    timerInterval = setInterval(() => {
+        if ([STATE.IDLE, STATE.AIMING, STATE.SHOOTING].includes(gameState)) {
+            levelConstraint.value--; updateUI();
+            if (levelConstraint.value <= 0) { triggerGameOver("Time's Up!"); }
+        }
+    }, 1000);
+}
+
 function loadLevel(lvl) {
     try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStart(); } catch(e){}
 
+    clearSavedRun();
     if (clearStageTimeout1) clearTimeout(clearStageTimeout1);
     if (clearStageTimeout2) clearTimeout(clearStageTimeout2);
 
@@ -493,14 +531,7 @@ function loadLevel(lvl) {
         else if (constraintRoll < 0.70) { levelConstraint = { type: 'shots', value: Math.max(10, 30 - Math.floor(lvl / 4)) }; }
     }
 
-    if (levelConstraint.type === 'time') {
-        timerInterval = setInterval(() => {
-            if([STATE.IDLE, STATE.AIMING, STATE.SHOOTING].includes(gameState)) {
-                levelConstraint.value--; updateUI();
-                if (levelConstraint.value <= 0) { triggerGameOver("Time's Up!"); }
-            }
-        }, 1000);
-    }
+    startConstraintTimer();
 
     updateLevelBackground(lvl);
     
@@ -538,15 +569,61 @@ function triggerGameOver(reasonText) {
     if(timerInterval) clearInterval(timerInterval);
     try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStop(); } catch(e){}
 
-    SFX.gameover(); triggerShake('strong');
+    clearSavedRun(); SFX.gameover(); triggerShake('strong');
     gameState = STATE.GAMEOVER;
     document.getElementById('gameover-reason').innerText = reasonText;
     document.getElementById('gameover-stage').innerText = `Reached Stage ${currentLevel}`;
     showScreen('screen-gameover'); saveGame();
 }
 
+
+/* ================= CONTINUE (resume saved run) ================= */
+const RUN_KEY = 'bricks_rpg_run_v1';
+function clearSavedRun() { try { localStorage.removeItem(RUN_KEY); } catch(e){} updateContinueButton(); }
+function hasSavedRun() { try { return !!localStorage.getItem(RUN_KEY); } catch(e) { return false; } }
+function updateContinueButton() {
+    const b = document.getElementById('btn-continue'); if (!b) return;
+    b.classList.toggle('hidden', !hasSavedRun());
+}
+function saveRunSnapshot(stateAtSave) {
+    try {
+        const snap = {
+            level: currentLevel, constraint: levelConstraint, baseX: baseX, activeFrames: activeFrames,
+            ballCount: balls.length, pendingDraft: (stateAtSave === STATE.ABILITY_SELECT),
+            blocks: blocks.filter(b => b.active).map(b => ({ x: b.x, y: b.y, w: b.w, h: b.h, hp: b.hp, shape: b.shape, orientation: b.orientation, color: b.color }))
+        };
+        localStorage.setItem(RUN_KEY, JSON.stringify(snap));
+    } catch(e) {}
+}
+function resumeSavedRun() {
+    let snap = null;
+    try { snap = JSON.parse(localStorage.getItem(RUN_KEY)); } catch(e) {}
+    if (!snap || !Array.isArray(snap.blocks)) { clearSavedRun(); return false; }
+
+    if (clearStageTimeout1) clearTimeout(clearStageTimeout1);
+    if (clearStageTimeout2) clearTimeout(clearStageTimeout2);
+    try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStart(); } catch(e){}
+
+    document.getElementById('gameCanvas').style.display = 'block';
+    document.getElementById('game-hud').classList.remove('hidden'); updateTopBound();
+    currentLevel = snap.level; particles = []; lasers = []; lightning = []; drops = []; shards = []; volleyBreaks = 0;
+    blocksFrozen = false; baseX = snap.baseX || gameWidth / 2; nextBaseX = baseX;
+    levelConstraint = snap.constraint || { type: 'none', value: 0 };
+    activeFrames = snap.activeFrames || 0;
+    updateLevelBackground(currentLevel);
+    balls = Array.from({length: snap.ballCount || 10}, () => ({ x: baseX, y: bottomY - 8, vx: 0, vy: 0, r: 4.5, active: false, returning: false, isClone: false }));
+    blocks = snap.blocks.map(b => ({ x: b.x, y: b.y, w: b.w, h: b.h, hp: b.hp, active: true, shape: b.shape || 'square', orientation: b.orientation || 'none', color: b.color }));
+    ballsFiredCount = 0; frameCounter = 0; firstBallLanded = false;
+    startConstraintTimer();
+    updateUI(); gameState = STATE.IDLE; showScreen(null);
+    document.getElementById('cancel-text').classList.add('hidden');
+    if (snap.pendingDraft) triggerPowerupDraft();
+    return true;
+}
+
 function setupMenuEvents() {
     document.getElementById('btn-sound-toggle').onclick = () => { SFX.click(); toggleSound(); };
+    document.getElementById('btn-continue').onclick = () => { SFX.click(); initAudio(); resumeSavedRun(); };
     document.getElementById('btn-play-now').onclick = () => { SFX.click(); initAudio(); loadLevel(player.maxLevelUnlocked); };
     document.getElementById('btn-levels').onclick = () => { SFX.click(); initAudio(); gameState = STATE.LEVEL_SELECT; buildLevelGrid(); showScreen('screen-levels'); };
     document.getElementById('btn-levels-back').onclick = () => { SFX.click(); gameState = STATE.MENU; setMainMenuBackground(); showScreen('screen-main'); };
@@ -555,8 +632,11 @@ function setupMenuEvents() {
     document.getElementById('btn-readme-back').onclick = () => { SFX.click(); showScreen('screen-main'); };
 
     document.getElementById('btn-hud-back').onclick = () => { 
+        if (gameState === STATE.POWERUP_ANIM) return;
         SFX.click(); if(timerInterval) clearInterval(timerInterval); 
         try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStop(); } catch(e){}
+        let stateAtSave = (gameState === STATE.PAUSED) ? previousState : gameState;
+        if ([STATE.IDLE, STATE.AIMING, STATE.SHOOTING, STATE.ABILITY_SELECT].includes(stateAtSave)) saveRunSnapshot(stateAtSave);
         gameState = STATE.MENU; setMainMenuBackground(); showScreen('screen-main'); saveGame(); 
         document.getElementById('cancel-text').classList.add('hidden'); 
     };
@@ -572,7 +652,7 @@ function setupMenuEvents() {
     };
     document.getElementById('btn-resume').onclick = () => { SFX.click(); gameState = previousState; showScreen(null); };
     document.getElementById('btn-quit').onclick = () => { 
-        SFX.click(); if(timerInterval) clearInterval(timerInterval); 
+        clearSavedRun(); SFX.click(); if(timerInterval) clearInterval(timerInterval); 
         try { if(window.CrazyGames && window.CrazyGames.SDK) window.CrazyGames.SDK.game.gameplayStop(); } catch(e){}
         gameState = STATE.MENU; setMainMenuBackground(); showScreen('screen-main'); saveGame(); 
     };
@@ -638,6 +718,7 @@ function showScreen(id) {
     document.querySelectorAll('.screen').forEach(el => el.classList.add('hidden'));
     document.getElementById('game-hud').classList.add('hidden');
     if (id) document.getElementById(id).classList.remove('hidden');
+    if (id === 'screen-main') updateContinueButton();
     if ([STATE.IDLE, STATE.AIMING, STATE.SHOOTING, STATE.PAUSED, STATE.POWERUP_ANIM, STATE.ABILITY_SELECT].includes(gameState)) {
         document.getElementById('game-hud').classList.remove('hidden'); updateTopBound();
     }
@@ -869,7 +950,7 @@ function endTurn() {
     if (allCleared) {
         if(timerInterval) clearInterval(timerInterval);
         SFX.win(); if (currentLevel === player.maxLevelUnlocked) { player.maxLevelUnlocked++; saveGame(); }
-        gameState = STATE.CLEAR; 
+        clearSavedRun(); gameState = STATE.CLEAR; 
         
         // Unblur the girl image
         document.getElementById('game-bg').style.filter = 'blur(0px)';
@@ -1096,7 +1177,7 @@ function loadGame() {
     }
 }
 
-loadGame(); setMainMenuBackground(); setupMenuEvents(); setupGameEvents(); draw();
+loadGame(); setMainMenuBackground(); setupMenuEvents(); setupGameEvents(); updateContinueButton(); draw();
 </script>
 </body>
 </html>
