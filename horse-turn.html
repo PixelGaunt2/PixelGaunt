@@ -434,6 +434,7 @@
 
         // ---- Horse (BACK VIEW: ears + mane on top, rump, tail, two hind legs) ----
         const HORSE_W = 16, HORSE_H = 24;
+        const HORSE_SCALE = 0.75; // 1 = original size (100%), 0.5 = 50% smaller. Change this to resize the horse.
         const HORSE_PAL = {
             o: '#e4731a', l: '#f89a3e', O: '#bd5210',   // orange coat: base / light edge / shade
             m: '#7a3010',                                // mane
@@ -952,7 +953,7 @@
                             scoreHUD.innerText = score;
                             coinHUD.innerText = coinsCount;
                             playSFX('coin');
-                            const f = this.fxPos(70 + this.y);
+                            const f = this.fxPos(35 + this.y);
                             burst(f.x, f.y, ['#ffd21f', '#ff9a1a', '#fff27a'], 8, 7);
                         }
                     }
@@ -966,7 +967,7 @@
                             scoreHUD.innerText = score;
                             shieldHUD.style.display = 'inline';
                             playSFX('gem');
-                            const f = this.fxPos(80 + this.y);
+                            const f = this.fxPos(40 + this.y);
                             burst(f.x, f.y, ['#b8ff3d', '#59e03a', '#1fa326'], 14, 9);
                         }
                     }
@@ -983,13 +984,13 @@
                                     s.obstacle.broken = true;
                                     shieldHUD.style.display = 'none';
                                     playSFX('shield');
-                                    const f = this.fxPos(50 + this.y);
+                                    const f = this.fxPos(25 + this.y);
                                     burst(f.x, f.y, ['#8e9bb0', '#566177', '#363e4f', '#7dff6a'], 22, 11);
                                 } else {
                                     this.isFallingOut = true; 
                                     this.isGrounded = false; 
                                     playSFX('crash');
-                                    const f = this.fxPos(60 + this.y);
+                                    const f = this.fxPos(30 + this.y);
                                     burst(f.x, f.y, ['#e4731a', '#f89a3e', '#ffffff'], 18, 10);
                                 }
                             }
@@ -1017,7 +1018,7 @@
                     ctx.rotate(ang);
                     ctx.globalAlpha = 0.4 - 0.22 * lift;
                     ctx.fillStyle = '#05403f';
-                    ctx.beginPath(); ctx.ellipse(0, 0, 46 * sc * (1 - 0.3 * lift), 10 * sc * (1 - 0.3 * lift), 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(0, 0, 23 * sc * HORSE_SCALE * (1 - 0.3 * lift), 5 * sc * HORSE_SCALE * (1 - 0.3 * lift), 0, 0, Math.PI * 2); ctx.fill();
                     ctx.restore();
                 }
 
@@ -1026,11 +1027,11 @@
                 ctx.rotate(ang);
 
                 const jumpOffset = this.y > 0 ? -this.y * sc * 1.2 : 0;
-                const bounce = this.y > 0 ? 0 : Math.abs(Math.sin(this.anim / 90 * Math.PI)) * 4 * sc * (keys.Dash ? 1.3 : 1);
+                const bounce = this.y > 0 ? 0 : Math.abs(Math.sin(this.anim / 90 * Math.PI)) * 2 * sc * (keys.Dash ? 1.3 : 1);
                 ctx.translate(0, jumpOffset - bounce);
                 ctx.rotate(this.tilt);
 
-                const cell = 6 * sc;
+                const cell = 3 * sc * HORSE_SCALE; // horse size (see HORSE_SCALE)
                 const w = HORSE_W * cell, h = HORSE_H * cell;
                 const legFrame = this.isGrounded ? Math.floor(this.anim / 90) % 2 : 0;
                 const tailIdx = Math.max(0, Math.min(4, Math.round(Math.sin(this.anim / 45) * 2) + 2));
