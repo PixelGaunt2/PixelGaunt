@@ -17,6 +17,7 @@ button:active{transform:translateY(3px);box-shadow:0 1px 0 #a85a00}
 .boy{background:linear-gradient(#5aa9ff,#2870d6);box-shadow:0 4px 0 #1b4a96}
 .girl{background:linear-gradient(#ff8fb8,#e8458a);box-shadow:0 4px 0 #a82a5e}
 .red{background:linear-gradient(#ff6b5b,#d62828);box-shadow:0 4px 0 #8f1a1a}
+.grn{background:linear-gradient(#6df08f,#1fae4f);box-shadow:0 4px 0 #14783a}
 .grey{background:linear-gradient(#b5bdc2,#7f8c8d);box-shadow:0 4px 0 #5d6869}
 .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 .panel{background:#4a2410;border:4px solid #ffd93b;border-radius:14px;padding:18px;max-width:560px;text-align:left;line-height:1.8;font-size:10px}
@@ -68,6 +69,7 @@ button:active{transform:translateY(3px);box-shadow:0 1px 0 #a85a00}
 <div id="menu" class="screen">
   <h1>🍕 PIZZA CHAOS</h1>
   <h2>25 stages · Multi-boss campaign</h2>
+  <button id="resume" class="grn" style="display:none" onclick="resumeGame()">▶ Resume</button>
   <div class="row"><button class="boy" onclick="startGame('boy')">Play Boy Pizza</button><button class="girl" onclick="startGame('girl')">Play Girl Pizza</button></div>
   <h2 style="font-size:8px;opacity:.8">WASD move · Space dash · Q jump · Mouse aim<br>Auto-aim is on by default</h2>
   <button class="grey" onclick="show('readme')">Readme / Disclaimer</button>
@@ -119,7 +121,7 @@ const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0');
 const circ=(x,y,r)=>{ctx.beginPath();ctx.arc(x,y,r,0,7)};
 function rnd(h,k){let x=Math.imul(h^(k*374761393),668265263);x^=x>>>13;x=Math.imul(x,1274126177);return((x^x>>>16)>>>0)/4294967296}
-function show(id){document.querySelectorAll('.screen').forEach(s=>s.style.display='none');if(id)$(id).style.display='flex'}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.style.display='none');if(id)$(id).style.display='flex';if(id==='menu')refreshResume()}
 
 /* ---------- audio (plays your .wav/.mp3 files if present, silent otherwise) ---------- */
 const A=(()=>{const pool={};let mute=false,mu=null,want=false;
@@ -314,17 +316,34 @@ function checkDone(){if(gs.run&&!gs.ending&&gs.got>=LV[gs.lvl].n)endLevel()}
 function startLevel(){
   en=[];pr=[];it=[];pt=[];tx=[];bolts=[];gs.dT=3;gs.got=0;gs.time=0;gs.ending=false;gs.pause=false;gs.spawnT=1;gs.ambT=0;gs.ban=2.6;P.hp=P.max;P.inv=1;
   const o=LV[gs.lvl];if(o.t==='boss')o.b.forEach((b,i)=>{const a=6.28/o.b.length*i;mk(b,P.x+Math.cos(a)*380,P.y+Math.sin(a)*380)});
-  show(null);A.start()}
+  show(null);A.start();saveGame(false)}
+/* ---------- save / resume ---------- */
+const SAVE_KEY='pizzaChaosSave_v1',SAVE_KEYS=['g','hp','max','xp','need','lvl','spdM','dmgM','rate','proj','pierce','size','mag','fire','water'];
+function readSave(){try{const d=JSON.parse(localStorage.getItem(SAVE_KEY));return d&&d.v===1&&d.lvl>=1&&d.lvl<=25&&d.P?d:null}catch(e){return null}}
+function clearSave(){try{localStorage.removeItem(SAVE_KEY)}catch(e){}}
+function saveGame(mid){
+  if(!P||!gs.run)return;
+  try{const p={};SAVE_KEYS.forEach(k=>p[k]=P[k]);
+    localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,lvl:gs.lvl,score:gs.score,P:p,mid:!!mid,got:mid?gs.got:0,time:mid?gs.time:0}))}catch(e){}
+}
+function refreshResume(){const b=$('resume'),d=readSave();b.style.display=d?'':'none';if(d)b.textContent='▶ Resume · Stage '+d.lvl}
+function resumeGame(){
+  const d=readSave();if(!d)return refreshResume();
+  P=Object.assign(newPlayer(d.P.g==='girl'?'girl':'boy'),d.P);P.pend=0;P.x=0;P.y=0;
+  gs.run=true;gs.lvl=d.lvl;gs.score=d.score||0;gs.cx=-W/2;gs.cy=-H/2;$('ui').style.display='block';startLevel();
+  if(d.mid&&LV[gs.lvl].t!=='boss'){gs.got=Math.min(d.got||0,LV[gs.lvl].n-1);gs.time=d.time||0;saveGame(true)}
+}
+addEventListener('pagehide',()=>{if(gs.run&&!(gs.ending&&gs.lvl>=25))saveGame(!gs.ending)});
 function startGame(g){P=newPlayer(g);gs.run=true;gs.lvl=1;gs.score=0;gs.cx=-W/2;gs.cy=-H/2;$('ui').style.display='block';startLevel()}
 function endLevel(){
   gs.ending=true;gs.pause=true;A.pause();sfx('win_fanfare',.5);burst(P.x,P.y,'#ffd93b',40,260);
   $('end-t').textContent=fmt(gs.time);$('end-s').textContent=gs.score;
-  if(gs.lvl>=25){$('end-h').textContent='PIZZA CHAMPION!';$('end-n').textContent='You beat all 25 stages!';$('end-b').textContent='Play Again';$('end-b').onclick=()=>location.reload()}
-  else{$('end-n').textContent='Next: '+LV[gs.lvl+1].d;gs.lvl++;$('end-b').onclick=startLevel}
+  if(gs.lvl>=25){clearSave();$('end-h').textContent='PIZZA CHAMPION!';$('end-n').textContent='You beat all 25 stages!';$('end-b').textContent='Play Again';$('end-b').onclick=()=>location.reload()}
+  else{$('end-n').textContent='Next: '+LV[gs.lvl+1].d;gs.lvl++;$('end-b').onclick=startLevel;saveGame(false)}
   show('end')}
 function gameOver(){gs.run=false;A.stop();sfx('player_death',.5);$('o-l').textContent=gs.lvl;$('o-s').textContent=gs.score;show('over')}
 function togglePause(){if(!gs.run||gs.ending||$('lvl').style.display==='flex')return;gs.pause=!gs.pause;show(gs.pause?'pause':null);gs.pause?A.pause():A.start()}
-function backToTitle(){gs.run=false;gs.pause=false;P=null;$('ui').style.display='none';A.stop();show('menu')}
+function backToTitle(){saveGame(!gs.ending);gs.run=false;gs.pause=false;P=null;$('ui').style.display='none';A.stop();show('menu')}
 const UP=[
   {n:'Sriracha',d:'Shots burn',f:()=>P.fire++},{n:'Ice Water',d:'Shots slow',f:()=>P.water++},
   {n:'Extra Dough',d:'+20 Max HP',f:()=>{P.max+=20;P.hp+=20}},{n:'Roller Cutter',d:'+15% Speed',f:()=>P.spdM+=.15},
