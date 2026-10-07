@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Deck of Doom</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Righteous&display=swap');
 
         * { box-sizing: border-box; cursor: none !important; }
@@ -296,6 +297,104 @@
             .card-ready { transform: translateY(-30px) scale(1.1) !important; margin-left: 0 !important; margin-right: 8px !important; }
             .game-modal-box { padding: 14px; gap: 8px; } .game-modal-box h2 { font-size: 22px; }
         }
+
+/* ===== PIXEL DUNGEON THEME (matches reference image) ===== */
+:root{--rc:70px}
+@media (max-width:768px){:root{--rc:52px}}
+@media (max-width:768px) and (min-height:561px) and (max-height:720px){:root{--rc:46px}}
+@media (max-height:560px){:root{--rc:38px}}
+@keyframes flick{0%{filter:drop-shadow(0 0 14px #ff7a1a) brightness(.9)}100%{filter:drop-shadow(0 0 26px #ffb02e) brightness(1.25)}}
+@keyframes bossFloat{0%{transform:translateX(-50%) translateY(0)}100%{transform:translateX(-50%) translateY(7px)}}
+@keyframes tapPulse{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.15)}}
+
+#title-screen,#setup-screen,#readme-screen,#map-screen,#loot-screen,#death-screen,#game-screen{
+ background:radial-gradient(ellipse at 50% 0%,rgba(170,30,80,.4),transparent 58%),repeating-linear-gradient(0deg,rgba(0,0,0,.3) 0 2px,transparent 2px 36px),repeating-linear-gradient(90deg,rgba(0,0,0,.22) 0 2px,transparent 2px 72px),linear-gradient(#0b0f2e,#1b1347 62%,#0a0c20) !important}
+
+/* wall torches */
+#game-screen::before,#game-screen::after,#title-screen::before,#title-screen::after{content:'';position:absolute;top:20%;width:34px;height:130px;z-index:-1;pointer-events:none;
+ background:radial-gradient(ellipse 13px 22px at 50% 24px,#fff3a0 0 28%,#ffb52e 55%,#ff4a1c 82%,transparent 86%) 0 0/100% 60px no-repeat,linear-gradient(#4a4f6a,#2a2d44) 50% 52px/30px 12px no-repeat,linear-gradient(#2b2e48,#171829) 50% 62px/12px 68px no-repeat;
+ animation:flick .2s steps(2) infinite alternate}
+#game-screen::before,#title-screen::before{left:2.5%} #game-screen::after,#title-screen::after{right:2.5%}
+
+/* pixel fonts + panels */
+.game-title,.setup-header,.loot-header,.death-title,.map-title,.game-modal-box h2,.turn-indicator,.end-turn-btn,.floating-text{font-family:'Press Start 2P','Righteous',monospace}
+.game-title{font-size:clamp(20px,5.2vw,44px);color:#ffd23f;-webkit-text-stroke:0;text-shadow:3px 3px 0 #b3121f,0 0 24px #ff8a00;line-height:1.3}
+.setup-header{font-size:clamp(14px,3.2vw,24px);line-height:1.4}
+.loot-header{font-size:clamp(18px,4vw,34px)} .death-title{font-size:clamp(22px,6vw,56px)} .map-title{font-size:clamp(18px,4vw,30px)}
+.game-modal-box h2{font-size:18px;line-height:1.4}
+.floating-text{font-size:22px}
+.setup-container,.game-modal-box{background:linear-gradient(#141a3a,#0c1028);border:3px solid #3d4c9a;box-shadow:0 0 28px rgba(60,90,255,.35),inset 0 0 20px rgba(0,0,0,.55)}
+#map-container{background:rgba(10,13,40,.75);border:3px solid #2a3158}
+.btn-play{background:linear-gradient(#232b57,#121733);border:3px solid #f39c12;border-radius:10px}
+.btn-play.highlight{background:linear-gradient(#3da0ff,#0b4fd1);border-color:#8fd0ff;box-shadow:0 0 20px rgba(60,150,255,.6)}
+.portrait-img img{height:1em;width:auto;image-rendering:pixelated;filter:drop-shadow(0 0 14px rgba(255,60,80,.6))}
+.hero-portrait .portrait-img img{filter:drop-shadow(0 0 14px rgba(60,150,255,.7))}
+
+/* top bar, buttons */
+#top-bar{background:linear-gradient(#05060f,#0b0d1f);border-bottom:3px solid #2a3158}
+.btn-top{background:#171b3a;border:2px solid #4a5aa8}
+
+/* pixel sprites */
+.px-sprite{position:relative;z-index:5;width:72%;height:72%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 4px 0 rgba(0,0,0,.45))}
+.has-px .emoji-char{display:none}
+.emoji-char.anim-dead+.px-sprite{animation:deathFall .6s forwards ease-in}
+.has-px:has(.emoji-char.anim-power) .px-sprite{animation:powerUpGlow .6s ease-in-out}
+
+/* neon battle cards */
+.enemy-box{background:radial-gradient(circle at 50% 40%,#5a1420,#2a0710 75%);border:4px solid #ff6a2b;box-shadow:0 0 18px rgba(255,61,46,.6),inset 0 0 14px rgba(0,0,0,.65);border-radius:14px}
+.player-box{background:radial-gradient(circle at 50% 40%,#16336b,#0a1332 75%);border:4px solid #26aaff;box-shadow:0 0 18px rgba(38,170,255,.6),inset 0 0 14px rgba(0,0,0,.65);border-radius:14px}
+.selected-target{border-color:#ffd23f !important;box-shadow:0 0 24px #ffd23f !important}
+.entity-info{background:linear-gradient(transparent,rgba(0,0,0,.7));border:0}
+.entity-name{text-shadow:1px 1px 0 #000}
+.hp-bar-bg{background:#2a0a0a;border:2px solid #000;border-radius:7px}
+.hp-bar-fill{background:linear-gradient(#ff7b7b,#e01b24 60%,#a30d16)}
+.intent-badge{background:#0a0710;border:3px solid #ff3347;box-shadow:0 0 12px #ff3347;border-radius:22px;padding:2px 7px;font-size:13px;top:-14px;right:-14px}
+.block-badge{background:radial-gradient(circle at 35% 30%,#8fd0ff,#2a7fd8);border:2px solid #fff;box-shadow:0 0 10px #26aaff}
+.turn-indicator{font-size:clamp(10px,2.2vw,15px);text-shadow:2px 2px 0 #000}
+
+/* hand of neon cards on a stone floor */
+#hand-container{background-color:#0c0f24;background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.35) 0 2px,transparent 2px 20px),repeating-linear-gradient(90deg,rgba(0,0,0,.3) 0 2px,transparent 2px 48px);border-top:4px solid #2a3158}
+.card{background:linear-gradient(165deg,#5b1018,#2b0910);border:2px solid #ff3b4a;box-shadow:0 0 14px rgba(255,59,74,.55),inset 0 0 16px rgba(0,0,0,.7);border-radius:14px}
+.card.skill{background:linear-gradient(165deg,#10305a,#0a1a38);border-color:#27b4ff;box-shadow:0 0 14px rgba(39,180,255,.55),inset 0 0 16px rgba(0,0,0,.7)}
+.card.power{background:linear-gradient(165deg,#3a1560,#1a0a33);border-color:#c06bff;box-shadow:0 0 14px rgba(192,107,255,.6),inset 0 0 16px rgba(0,0,0,.7)}
+.card-header{background:none;border:0;padding:5px 3px 0}
+.card-cost{position:absolute;left:3px;top:3px;width:30px;height:30px;background:radial-gradient(circle at 35% 30%,#ffe27a,#f0a500);border:3px solid #7a4a00;color:#1a0d00;box-shadow:0 0 8px rgba(255,200,0,.7);z-index:5}
+.card-title{text-shadow:1px 1px 0 #000}
+.card-art{filter:drop-shadow(0 0 8px rgba(255,255,255,.6))}
+.card-desc{background:rgba(0,0,0,.55);border-top:0}
+@media (max-width:768px){.card-cost{width:20px;height:20px;font-size:11px;border-width:2px;left:2px;top:2px}}
+
+/* gold energy coin, blue end-turn button */
+.energy-orb{background:radial-gradient(circle at 35% 30%,#ffe27a,#f2a30f 55%,#a85a00);border:5px solid #ffcf3f;outline:3px solid #7a4300;color:#3a1c00;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+.end-turn-btn{background:linear-gradient(#3da0ff,#0b4fd1);border:4px solid #8fd0ff;border-radius:14px;box-shadow:0 0 22px rgba(60,150,255,.7),inset 0 3px 0 rgba(255,255,255,.35),0 8px 0 #06308a;text-shadow:2px 2px 0 #06308a}
+.end-turn-btn:active{transform:translateY(4px);box-shadow:0 0 22px rgba(60,150,255,.7),0 4px 0 #06308a}
+
+/* NEW: redraw coin + tap hint */
+.redraw-container{pointer-events:auto;position:absolute;right:5%;bottom:-15px;z-index:40}
+@media (max-width:768px){.redraw-container{right:10px;bottom:0}}
+@media (max-height:560px){.redraw-container{right:6px;bottom:0}}
+.redraw-coin{width:var(--rc);height:var(--rc);border-radius:50%;border:5px solid #ffcf3f;outline:3px solid #7a4300;background:radial-gradient(circle at 35% 30%,#ffe27a,#f2a30f 55%,#a85a00);box-shadow:0 0 24px rgba(255,179,0,.55),inset 0 0 12px rgba(255,255,255,.55);color:#4a2600;font-size:calc(var(--rc)*.5);line-height:1;display:flex;align-items:center;justify-content:center;padding:0;font-weight:900;transition:transform .2s}
+.redraw-coin:hover{transform:rotate(90deg) scale(1.08)}
+.redraw-coin.off{filter:grayscale(1) brightness(.6)}
+#tap-hint{position:absolute;right:calc(5% + var(--rc) + 16px);top:-6px;font-size:34px;display:none;pointer-events:none;z-index:45;filter:drop-shadow(0 0 10px #ff5a2b);animation:tapPulse 1s infinite}
+#tap-hint.on{display:block}
+
+/* layout: enemies on top, heroes below, skull king looming over them */
+@media (min-height:561px){
+ :root{--ec:clamp(78px,13.5dvh,140px)}
+ #battle-area{padding-top:clamp(64px,15dvh,120px) !important}
+ #battle-area::before{content:'';position:absolute;top:2px;left:50%;height:clamp(84px,19dvh,150px);aspect-ratio:24/19;background:var(--skull-url) center/100% 100% no-repeat;image-rendering:pixelated;filter:drop-shadow(0 0 18px #ff2e4d);animation:bossFloat 3s ease-in-out infinite alternate;pointer-events:none;z-index:0}
+ #battlefield{flex-direction:column !important;justify-content:center !important;gap:clamp(8px,1.8dvh,16px) !important}
+ #enemy-team{order:1 !important;width:100%;justify-content:center} #player-team{order:2 !important;width:100%;justify-content:center}
+ .team-container{gap:clamp(12px,3vw,24px)}
+ .battle-entity{width:var(--ec);max-width:none}
+ .entity-sprite-box{width:var(--ec);height:var(--ec);font-size:calc(var(--ec)*.6);border-radius:14px}
+ .entity-info{position:absolute;left:4px;right:4px;bottom:4px;margin:0;padding:10px 4px 3px;border-radius:0 0 11px 11px}
+ .entity-name{font-size:clamp(9px,1.5dvh,13px);margin-bottom:1px}
+ .hp-bar-bg{height:clamp(10px,1.8dvh,15px)} .hp-text{font-size:clamp(7px,1.2dvh,10px)}
+ .turn-indicator{position:absolute;top:-4px;left:50%;margin:0;z-index:12}
+ .end-turn-btn{font-size:clamp(10px,1.8vw,14px)}
+}
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -452,6 +551,8 @@
             <div class="hud-layer">
                 <div class="energy-orb-container"><div class="energy-orb" id="energy-text">3/3</div></div>
                 <button class="end-turn-btn" onclick="endTurn()">END TURN</button>
+                <div class="redraw-container"><button class="redraw-coin" id="redraw-btn" title="Redraw hand (1 energy, once per turn)" onclick="redrawHand()">⟳</button></div>
+                <div id="tap-hint">👆</div>
             </div>
         </div>
         
@@ -1202,5 +1303,56 @@
         function closeBackConfirm() { document.getElementById('back-modal').classList.remove('open'); }
         function confirmBack() { closeBackConfirm(); showScreen('map-screen'); }
     </script>
+    <script>
+(function(){
+ const PAL={k:'#150a26',g:'#7ed321',G:'#3b8a17',l:'#cffb6a',w:'#f4f0e6',e:'#b9b2c9',r:'#ff2e4d',R:'#8a0f2a',y:'#ffd23f',o:'#e8890c',P:'#2a1650',Q:'#5a2a8a',b:'#3d5bd9',B:'#24347f',s:'#f6a65a',E:'#9fb4c8',W:'#e3f1ff',m:'#4f86c6'};
+ function mk(rows,mir){const n=Math.max(...rows.map(r=>r.length)),H=rows.length,W=mir?n*2:n;const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  rows.forEach((r,y)=>{r=r.padEnd(n,'.');const f=mir?r+[...r].reverse().join(''):r;[...f].forEach((ch,i)=>{if(PAL[ch]){x.fillStyle=PAL[ch];x.fillRect(i,y,1,1);}});});return c.toDataURL();}
+ const SPR={
+  skull:mk(["..........y.","......y..yy.","......yyyyyy","......yyyyrr","......oooooo","....kkPPPPPP","..kkPPQQQQQQ",".kPPQkkkkkkk",".kPQkwwwwwww","kPPQkwwwwwww","kPQQkwrrrwww","kPQQkwrrrwww","kPQQkwwwwwwk","kPQQkewwwwkk","kPPQkkwkwkwk","kPPQQkkkkkkk","kPPPQQQQRRRR","kPPPPPPRRrrR","kPPPPPPPPPPP"],true),
+  slime:mk(["........","........","....kkkk","..kkgggg",".kgglllg",".kglllgg","kgglgggg","kgggkkgg","kggkwkgg","kggkkkgg","kgggggkk","kggggkwk","kGggggkk",".kGGGGGg","..kkkkkk"],true),
+  wizard:mk(["......kk",".....kbb",".....kbb","....kbbb","....kbbb",".kbbbbbb","kkBBBBBB","..ksssss","..ksksss","..kswwww",".kwwwwww",".kwwwwww","kbbwwwww","kbbbwwww","kbbbbbbw","kBBBBBBB"],true),
+  worm:mk(["................","...kkkk.........","..kgggGk........",".kgllgggk.......",".kgkwgggk.......",".kgkkgggk.......",".kggggggk.......","..kgGggk........","..kgbGgk........","...kgGgkkkkk....","...kgbggggGkk...","...kgGgbgggGGk..","...kggGggbgggGk.","....kGGGGGGGGGk.",".....kkkkkkkkkk."],false),
+  shield:mk(["................","..kkkkkkkkkkkk..",".kEEEEEEEEEEEEk.",".kEWWWWWmmmmmEk.",".kEWWWWWmmmmmEk.",".kEWWWWWmmmmmEk.",".kEWWWWWmmmmmEk.",".kEWWWWWmmmmmEk.","..kEWWWWmmmmEk..","..kEWWWWmmmmEk..","...kEWWWmmmEk...","....kEWWmmEk....",".....kEWmEk.....","......kEEk......",".......kk......."],false)
+ };
+ const BY={'\u{1F41B}':'worm','\u{1F922}':'slime','\u{1F9D9}':'wizard','\u{1F6E1}':'shield'};
+ document.documentElement.style.setProperty('--skull-url','url('+SPR.skull+')');
+ function applySprites(){
+  document.querySelectorAll('.entity-sprite-box').forEach(box=>{
+   const sp=box.querySelector('.emoji-char'); if(!sp) return;
+   box.querySelectorAll('.px-sprite').forEach(i=>i.remove());
+   const k=BY[[...(sp.dataset.orig||'')][0]]; box.classList.toggle('has-px',!!k);
+   if(k){const im=new Image(); im.src=SPR[k]; im.className='px-sprite anim-idle'; sp.after(im);}
+  });
+ }
+ // title screen portraits -> pixel art
+ const pi=(k)=>'<img src="'+SPR[k]+'" alt="">';
+ document.querySelector('.hero-portrait .portrait-img').innerHTML=pi('wizard');
+ document.querySelector('.boss-portrait .portrait-img').innerHTML=pi('skull');
+
+ const _sb=window.startBattle; window.startBattle=function(i){_sb(i); applySprites();};
+
+ // redraw coin: pay 1 energy, swap your whole hand for fresh cards (once per turn)
+ let hintTurns=2;
+ const _st=window.startTurn; window.startTurn=function(){
+  state._redrawn=false; _st();
+  const h=document.getElementById('tap-hint'); if(h) h.classList.toggle('on',hintTurns-->0);
+  refreshRedraw();
+ };
+ const _et=window.endTurn; window.endTurn=function(){ const h=document.getElementById('tap-hint'); if(h) h.classList.remove('on'); _et(); refreshRedraw(); };
+ const _uu=window.updateUI; window.updateUI=function(){_uu(); refreshRedraw();};
+ function refreshRedraw(){
+  const b=document.getElementById('redraw-btn'); if(!b) return;
+  b.classList.toggle('off',!isPlayerTurn||state._redrawn||state.player.energy<1||!state.hand.length);
+ }
+ window.redrawHand=function(){
+  if(!isPlayerTurn||state._redrawn||state.player.energy<1||!state.hand.length){playSound('error');return;}
+  state._redrawn=true; state.player.energy--;
+  const old=state.hand, n=old.length; state.hand=[];
+  showFloatingText('player-sprite','REDRAW','#f1c40f');
+  drawCards(n); state.discard.push(...old); updateUI();
+ };
+})();
+</script>
 </body>
 </html>
