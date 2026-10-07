@@ -84,6 +84,11 @@
         #hpBarWrap { width: 170px; height: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.35); }
         #hpBar { height: 100%; width: 100%; background: #2dff7a; transition: width 0.15s; }
         @media (max-height: 600px) { #hud { font-size: 12px; padding: 8px 12px 8px 10px; bottom: 12px; left: 12px; } #hpBarWrap { width: 110px; height: 9px; } }
+        #hud-btns { position: absolute; top: 12px; left: 12px; display: flex; gap: 8px; pointer-events: none; z-index: 30; }
+        .hud-btn { pointer-events: auto; cursor: pointer; background: rgba(5,10,28,0.7); border: 2px solid #00ccff; color: #00ccff; font-family: inherit; font-weight: bold; font-size: 14px; padding: 8px 12px; border-radius: 8px; touch-action: none; user-select: none; }
+        .hud-btn:hover { background: #00ccff; color: #000; }
+        .hud-btn small { opacity: 0.6; font-weight: normal; }
+        #btn-main-resume { border-color: #00ff00; color: #00ff00; }
     </style>
 </head>
 <body>
@@ -92,6 +97,7 @@
         <div id="vignette"></div>
         <div id="damageOverlay"></div>
         <div id="game-hud" class="hidden">
+            <div id="hud-btns"><div class="hud-btn" id="hud-pause">❚❚ PAUSE <small>(P)</small></div><div class="hud-btn" id="hud-sound">🔊 SOUND <small>(M)</small></div></div>
             <div id="crosshair"></div>
             <div id="hitMarker">X</div>
             <div id="hud">
@@ -106,6 +112,7 @@
         <div id="main-menu" class="screen">
             <h1>Iron Tide<br>Rising</h1>
             <div class="readme-content" style="font-size:.85rem;padding:10px">WASD move · SHIFT+A / SHIFT+D fast dodge · SPACE jump (hop onto low objects) · LMB fire · 1/2/3 rifle/bazooka/knife · F quick stab · G bomb · solve each stage's puzzle + reach the kill goal</div>
+            <button class="btn btn-green hidden" id="btn-main-resume">Resume Game</button>
             <button class="btn btn-green" id="btn-play-now">Play Now</button>
             <button class="btn btn-blue" id="btn-readme">Readme</button>
         </div>
@@ -130,7 +137,8 @@
             <button class="btn btn-green" id="btn-resume">Resume Game</button>
             <button class="btn btn-blue" id="btn-sound">Sound: ON</button>
             <button class="btn btn-blue" id="btn-pixel">Pixel Look: ON</button>
-            <button class="btn" id="btn-menu-back">Quit</button>
+            <button class="btn btn-blue" id="btn-main-menu">Main Menu</button>
+            <button class="btn" id="btn-menu-back">Quit Game</button>
         </div>
 
         <div id="game-over-screen" class="screen hidden">
@@ -818,9 +826,22 @@
 
         bindUIBtn('btn-play-now', startGame);
         bindUIBtn('btn-retry', startGame);
-        bindUIBtn('btn-resume', () => {
+        let resumeAvail = false;
+        function setResumeBtn(v) { resumeAvail = v; document.getElementById('btn-main-resume').classList.toggle('hidden', !v); }
+        function resumeGame() {
+            if (gameState !== 'paused') return; setResumeBtn(false);
             gameState = 'playing'; setScreen('game-hud'); GameAudio.startMusic();
             if (!isTouchActive && !isMobileUA && document.body.requestPointerLock) document.body.requestPointerLock();
+        }
+        function pauseGame() { if (gameState !== 'playing') return; gameState = 'paused'; setScreen('pause-menu'); GameAudio.pauseMusic(); isMouseDown = false; document.exitPointerLock(); }
+        bindUIBtn('btn-resume', resumeGame);
+        bindUIBtn('btn-main-resume', resumeGame);
+        bindUIBtn('btn-main-menu', () => { if (gameState !== 'paused') return; setResumeBtn(true); setScreen('main-menu'); });
+        bindUIBtn('hud-pause', pauseGame);
+        bindUIBtn('hud-sound', () => toggleSound());
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyP') { if (gameState === 'playing') pauseGame(); else if (gameState === 'paused' && !ui.pause.classList.contains('hidden')) resumeGame(); }
+            else if (e.code === 'KeyM' && (gameState === 'playing' || gameState === 'paused')) toggleSound();
         });
         bindUIBtn('btn-readme', () => { setScreen('readme-screen'); });
         bindUIBtn('btn-close-readme', () => { setScreen('main-menu'); });
@@ -829,6 +850,7 @@
         function toggleSound() {
             isMuted = !isMuted; GameAudio.setMuted(isMuted); ui.btnSound.innerText = isMuted ? "Sound: OFF" : "Sound: ON";
             ui.btnSound.style.borderColor = isMuted ? "#888" : "#00ccff"; ui.btnSound.style.color = isMuted ? "#888" : "#00ccff";
+            const hs = document.getElementById('hud-sound'); hs.firstChild.nodeValue = isMuted ? '🔇 MUTED ' : '🔊 SOUND '; hs.style.color = hs.style.borderColor = isMuted ? '#888' : '#00ccff';
         }
         bindUIBtn('btn-sound', toggleSound);
         bindUIBtn('btn-pixel', () => { pixelLook = !pixelLook; ui.btnPixel.innerText = pixelLook ? 'Pixel Look: ON' : 'Pixel Look: OFF'; applyRenderSize(); });
@@ -886,7 +908,7 @@
             expLight.intensity = 0;
         }
         function startGame() {
-            clearScene(); hp = 100; score = 0; updateHpUI(); ui.scoreTxt.innerText = score;
+            setResumeBtn(false); clearScene(); hp = 100; score = 0; updateHpUI(); ui.scoreTxt.innerText = score;
             playerY = playerHeight; bobOffset = 0; camera.position.set(0, playerHeight, 10); camera.rotation.set(0, 0, 0); velocity.set(0, 0, 0);
             moveForward = moveBackward = moveLeft = moveRight = false; rifleCooldown = bazookaCooldown = dashCooldown = bombCooldown = 0;
             ui.dashTxt.innerText = "READY"; ui.dashTxt.style.color = "#00ff00"; ui.bombTxt.innerText = "READY"; ui.bombTxt.style.color = "#00ff00";
@@ -894,7 +916,7 @@
             setWeapon(0); setScreen('game-hud'); GameAudio.startMusic();
             if (!isTouchActive && !isMobileUA && document.body.requestPointerLock) document.body.requestPointerLock();
         }
-        function returnToMenu() { GameAudio.stopMusic(); gameState = 'menu'; setScreen('main-menu'); document.exitPointerLock(); clearScene(); clearPuzzle(); camera.rotation.set(0, 0, 0); camera.position.set(0, playerHeight, 10); }
+        function returnToMenu() { setResumeBtn(false); GameAudio.stopMusic(); gameState = 'menu'; setScreen('main-menu'); document.exitPointerLock(); clearScene(); clearPuzzle(); camera.rotation.set(0, 0, 0); camera.position.set(0, playerHeight, 10); }
 
         // --- COMBAT & MECHANICS ---
         function dash(dir) { if (dashCooldown > 0) return; velocity.x += dir * 180; dashCooldown = 1.0; fovKick = 1; ui.dashTxt.innerText = "WAIT"; ui.dashTxt.style.color = "red"; }
