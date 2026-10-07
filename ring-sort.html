@@ -9,7 +9,7 @@
         html, body { width: 100%; height: 100%; }
         body {
             margin: 0; overflow: hidden;
-            background: linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #1a1a2e);
+            background: linear-gradient(-45deg,#0a1470,#1b2fb0,#0d1f8f,#2a1b9a);
             background-size: 400% 400%;
             animation: gradientBG 20s ease infinite;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -22,6 +22,27 @@
             100% { background-position: 0% 50%; }
         }
 
+
+        /* --- SPACE SCENE (reference look) --- */
+        #space-bg{position:fixed;top:0;bottom:0;left:-6%;width:112%;z-index:0;overflow:hidden;pointer-events:none}
+        .star{position:absolute;border-radius:50%;background:#fff;animation:tw 3s ease-in-out infinite}
+        @keyframes tw{50%{opacity:.2}}
+        .sp{position:absolute;width:26px;height:26px;background:#ffe066;clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);animation:tw 2.4s infinite}
+        #planet{position:absolute;right:9%;top:3%;width:15vmin;height:15vmin;border-radius:50%;background:radial-gradient(circle at 35% 30%,#7a6cff,#3b2fb8 60%,#1d1a7a);box-shadow:0 0 30px rgba(90,120,255,.5)}
+        #planet::after{content:'';position:absolute;left:-45%;top:35%;width:190%;height:30%;border:.9vmin solid rgba(80,170,255,.85);border-radius:50%;transform:rotate(-18deg);box-shadow:0 0 14px #3aa0ff}
+        #moon{position:absolute;left:46%;top:9%;width:6vmin;height:6vmin;border-radius:50%;background:radial-gradient(circle at 35% 30%,#b06cff,#6a2fc0)}
+        .fi{position:absolute;height:16vmin;animation:fl 7s ease-in-out infinite;filter:drop-shadow(0 0 12px #2ad0ff)}
+        .fi::before{content:'';position:absolute;inset:0 0 auto 0;height:34%;background:linear-gradient(#58c46a,#2e8f5a);clip-path:polygon(0 30%,10% 0,90% 0,100% 30%,100% 100%,0 100%)}
+        .fi::after{content:'';position:absolute;inset:30% 0 0 0;background:linear-gradient(#4a3fc0,#1f2a8a);clip-path:polygon(0 0,100% 0,62% 100%,38% 86%)}
+        @keyframes fl{50%{transform:translateY(-14px)}}
+        body.m3d .fi{display:none}
+        #platform-2d{display:none;position:fixed;left:50%;top:54%;width:min(94vw,1150px);height:min(62vh,540px);transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse at 50% 30%,#d2b4ff,#a67cf0 60%,#8660d8);box-shadow:0 24px 0 #5a3aa8,0 30px 70px rgba(60,170,255,.55);z-index:0;pointer-events:none}
+        #platform-2d::after{content:'';position:absolute;left:14%;right:14%;top:100%;margin-top:24px;height:14vh;background:linear-gradient(#3b34b8,#1b2c9a);clip-path:polygon(0 0,100% 0,62% 100%,38% 100%);filter:drop-shadow(0 0 10px #35d4ff)}
+        .peg-container{background:none}
+        .peg{background:linear-gradient(90deg,#e8a860,#c47c36 55%,#8f5522)}
+        .ring{border:0;height:30px;border-radius:50%;background-image:radial-gradient(ellipse at 50% 18%,rgba(255,255,255,.75),rgba(255,255,255,0) 55%),linear-gradient(rgba(255,255,255,.2),rgba(0,0,0,.28));box-shadow:0 5px 7px rgba(0,0,0,.35),inset 0 -5px 7px rgba(0,0,0,.25)}
+        .ring::after{content:'';position:absolute;left:36%;right:36%;top:20%;height:36%;border-radius:50%;background:#e0a15a;box-shadow:inset 0 3px 3px rgba(0,0,0,.5)}
+        .ring.selected{box-shadow:0 12px 16px rgba(0,0,0,.45),0 0 18px rgba(255,255,255,.8),inset 0 -5px 7px rgba(0,0,0,.25)}
         /* --- 3D CANVAS --- */
         #game-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 1; cursor: grab; }
         #game-canvas:active { cursor: grabbing; }
@@ -168,6 +189,8 @@
         <p>This game is best played in <b>Horizontal (Landscape)</b> mode to see all the rings clearly.</p>
     </div>
 
+    <div id="space-bg"></div>
+    <div id="platform-2d"></div>
     <!-- 3D & 2D Containers -->
     <canvas id="game-canvas"></canvas>
     <div id="game-board"></div>
@@ -240,6 +263,11 @@
             </div>
         </div>
         
+        <div style="position:absolute;bottom:20px;right:20px;display:flex;gap:10px;align-items:center;pointer-events:auto;">
+            <div id="hud-moves" class="btn" style="width:auto;padding:8px 14px;font-size:14px;">Moves 0</div>
+            <div class="btn btn-icon" onclick="undoMove()" title="Undo">↩</div>
+            <div class="btn btn-icon" onclick="restartLevel()" title="Restart">🔄</div>
+        </div>
         <!-- Status Bar -->
         <div id="dog-status-container" style="position: absolute; bottom: 20px; left: 20px; display: flex; align-items: center; gap: 10px; pointer-events: auto;">
             <div id="dog-graphic" style="font-size: 35px; text-shadow: 2px 2px 0 #333;">💎</div>
@@ -330,16 +358,15 @@
 
         // --- 3. THEMES & GLOBALS (MERGED) ---
         const themes = [
-            { name: "Deep Space", css: "linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #1a1a2e)", fog: 0x1a1a2e, light: 0xffffff, pColor: 0xe94560, behavior: "float" },
-            { name: "Twilight", css: "linear-gradient(-45deg, #2c3e50, #34495e, #1f2a38, #2c3e50)", fog: 0x2c3e50, light: 0xffffee, pColor: 0x85c1e9, behavior: "dust" },
-            { name: "Dark Forest", css: "linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #0f2027)", fog: 0x0f2027, light: 0xffd1a4, pColor: 0x58d68d, behavior: "fall" },
-            { name: "Midnight", css: "linear-gradient(-45deg, #000000, #111111, #222222, #111111)", fog: 0x111111, light: 0xccffff, pColor: 0xffffff, behavior: "snow" },
-            { name: "Royal Void", css: "linear-gradient(-45deg, #1d0f2e, #2b164d, #3c1e68, #1d0f2e)", fog: 0x1d0f2e, light: 0xaa88ff, pColor: 0x00ffcc, behavior: "fireflies" }
+            { name: "Deep Space", css: "linear-gradient(-45deg,#0a1470,#1b2fb0,#0d1f8f,#2a1b9a)", fog: 0x0d1a80, light: 0xffffff, pColor: 0xaad4ff, behavior: "float" },
+            { name: "Nebula", css: "linear-gradient(-45deg,#14126b,#3a1fa8,#1a2fb8,#14126b)", fog: 0x14126b, light: 0xffeeff, pColor: 0xffe08a, behavior: "dust" },
+            { name: "Cosmic Night", css: "linear-gradient(-45deg,#07104f,#10279a,#0a3aa8,#07104f)", fog: 0x07104f, light: 0xe8f4ff, pColor: 0x7fe0ff, behavior: "fireflies" },
+            { name: "Royal Void", css: "linear-gradient(-45deg,#1a0f6b,#2d1b9c,#4524b4,#1a0f6b)", fog: 0x1a0f6b, light: 0xddccff, pColor: 0xffffff, behavior: "float" }
         ];
         let currentTheme = themes[0];
 
-        const colors2D = ['#ff3b30', '#007aff', '#34c759', '#ffcc00', '#af52de', '#ff9500', '#5ac8fa', '#e5e5ea'];
-        const colors3D = [0xff3b30, 0x007aff, 0x34c759, 0xffcc00, 0xaf52de, 0xff9500, 0x5ac8fa, 0xe5e5ea];
+        const colors2D = ['#e8203a', '#1f7bff', '#1fc83c', '#ffd400', '#9b3fe0', '#ff8c00', '#3ad6ff', '#f4f4f8'];
+        const colors3D = [0xe8203a, 0x1f7bff, 0x1fc83c, 0xffd400, 0x9b3fe0, 0xff8c00, 0x3ad6ff, 0xf4f4f8];
         
         const maxCapacity = 4;
         let selectedPeg = null; 
@@ -354,9 +381,9 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
-        scene.fog = new THREE.FogExp2(0x1a1a2e, 0.015);
+        scene.fog = new THREE.FogExp2(0x0d1a80, 0.005);
         const hemiLight = new THREE.HemisphereLight(0xffffff, 0x555555, 0.9); hemiLight.position.set(0, 20, 0); scene.add(hemiLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); dirLight.position.set(5, 20, 10); dirLight.castShadow = true; scene.add(dirLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); dirLight.position.set(5, 20, 10); dirLight.castShadow = true; const sc = dirLight.shadow.camera; sc.left = sc.bottom = -22; sc.right = sc.top = 22; sc.far = 80; dirLight.shadow.mapSize.set(2048, 2048); dirLight.target.position.set(0, 0, -4); scene.add(dirLight.target); scene.add(dirLight);
         const environmentGroup = new THREE.Group(); scene.add(environmentGroup);
         const rewardObjectGroup = new THREE.Group(); scene.add(rewardObjectGroup);
         let pegMeshes = []; let ringObjects = []; let activeParticles = [];
@@ -375,10 +402,16 @@
         const particlesMat = new THREE.PointsMaterial({ size: 1.2, map: createCircleTexture(), color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false });
         const bgParticles = new THREE.Points(particlesGeo, particlesMat); scene.add(bgParticles);
 
-        const platform = new THREE.Mesh(new THREE.CylinderGeometry(15, 15, 0.5, 32), new THREE.MeshStandardMaterial({ color: 0x777777 }));
+        const platform = new THREE.Group(); platform.position.set(0, -0.2, -4);
+        const discTop = new THREE.Mesh(new THREE.CylinderGeometry(16, 16, 0.6, 48), new THREE.MeshStandardMaterial({ color: 0xb48cf5, roughness: 0.45, metalness: 0.1 })); discTop.receiveShadow = true;
+        const discRim = new THREE.Mesh(new THREE.CylinderGeometry(16.3, 15.6, 0.5, 48), new THREE.MeshStandardMaterial({ color: 0x7e57d0, roughness: 0.5 })); discRim.position.y = -0.45;
+        const crystal = new THREE.Mesh(new THREE.ConeGeometry(15.6, 11, 8), new THREE.MeshStandardMaterial({ color: 0x3b34b8, emissive: 0x0a2a9a, flatShading: true, roughness: 0.7 })); crystal.rotation.x = Math.PI; crystal.position.y = -6.2;
+        const cEdges = new THREE.LineSegments(new THREE.EdgesGeometry(crystal.geometry), new THREE.LineBasicMaterial({ color: 0x35d4ff })); cEdges.rotation.x = Math.PI; cEdges.position.y = -6.2;
+        platform.add(discTop, discRim, crystal, cEdges); scene.add(platform);
         platform.position.set(0, -0.2, -4); platform.receiveShadow = true; scene.add(platform);
-        const pegGeo = new THREE.CylinderGeometry(0.5, 0.6, 7, 16); const pegMat = new THREE.MeshStandardMaterial({ color: 0xcd853f, roughness: 0.8 });
-        const ringGeo = new THREE.TorusGeometry(0.85, 0.45, 12, 32);
+        const pegGeo = new THREE.CylinderGeometry(0.5, 0.5, 7, 20); const pegMat = new THREE.MeshStandardMaterial({ color: 0xd08a45, roughness: 0.55 });
+        const capGeo = new THREE.SphereGeometry(0.5, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2); const baseGeo = new THREE.CylinderGeometry(0.85, 0.95, 0.5, 20);
+        const ringGeo = new THREE.TorusGeometry(1.05, 0.52, 16, 36);
 
         // 2D Specific Globals
         let ringElements = []; 
@@ -455,14 +488,14 @@
         }
 
         // --- 6. 2D RENDERER & INTERACTION ---
-        function initLevel2D() {
+        function initLevel2D(preset) {
             applyTheme(themes[Math.floor(Math.random() * themes.length)]);
             document.getElementById('hud-level').innerText = "Level " + levelIndex;
             updateCoinsHUD();
             document.getElementById('win-message').style.display = 'none';
             document.getElementById('next-btn-container').style.display = 'none';
             selectedPeg = null;
-            currentLogic = generateLevelLogic(levelIndex);
+            currentLogic = preset ? JSON.parse(JSON.stringify(preset)) : generateLevelLogic(levelIndex); if (!preset) levelStart = JSON.parse(JSON.stringify(currentLogic)); moveLog = []; updateMoves();
             
             const board = document.getElementById('game-board'); board.innerHTML = '';
             ringElements = [];
@@ -626,7 +659,7 @@
             rewardObjectGroup.children.forEach(c => { c.castShadow = true; c.receiveShadow = true; });
         }
 
-        function initLevel3D() {
+        function initLevel3D(preset) {
             applyTheme(themes[Math.floor(Math.random() * themes.length)]);
             generateRandomBiome();
             document.getElementById('hud-level').innerText = "Level " + levelIndex;
@@ -641,7 +674,7 @@
             rewardObjectGroup.rotation.y = 0;
             
             selectedPeg = null;
-            currentLogic = generateLevelLogic(levelIndex);
+            currentLogic = preset ? JSON.parse(JSON.stringify(preset)) : generateLevelLogic(levelIndex); if (!preset) levelStart = JSON.parse(JSON.stringify(currentLogic)); moveLog = []; updateMoves();
             const numPegs = currentLogic.length;
             const rowWidth = Math.min(window.innerWidth / 50, 4.5); 
             const startX = -((numPegs - 1) * rowWidth) / 2;
@@ -654,15 +687,15 @@
                 const xOffset = numPegs > 6 ? rowStartX + ((i >= Math.ceil(numPegs/2) ? i - Math.ceil(numPegs/2) : i) * rowWidth) : startX + (i * rowWidth);
 
                 peg.position.set(xOffset, 3.3, zPos); peg.castShadow = true; peg.receiveShadow = true; peg.userData = { id: i };
-                scene.add(peg); pegMeshes.push(peg);
+                const cap = new THREE.Mesh(capGeo, pegMat); cap.position.y = 3.5; const pbase = new THREE.Mesh(baseGeo, pegMat); pbase.position.y = -3.05; peg.add(cap, pbase); scene.add(peg); pegMeshes.push(peg);
 
                 ringObjects[i] = [];
                 for (let j = 0; j < currentLogic[i].length; j++) {
                     const colorId = currentLogic[i][j];
-                    const rMat = new THREE.MeshStandardMaterial({ color: colors3D[colorId], roughness: 0.1, metalness: 0.1 });
+                    const rMat = new THREE.MeshPhysicalMaterial({ color: colors3D[colorId], roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.08 });
                     const ring = new THREE.Mesh(ringGeo, rMat);
                     ring.position.set(peg.position.x, 1.3 + (j * 1.15), peg.position.z);
-                    ring.rotation.x = Math.PI / 2; ring.castShadow = true;
+                    ring.rotation.x = Math.PI / 2; ring.scale.z = 0.9; ring.castShadow = true;
                     ring.userData = { targetPos: ring.position.clone(), colorId: colorId };
                     scene.add(ring); ringObjects[i].push(ring);
                 }
@@ -720,7 +753,7 @@
         function executeMove3D(from, to) {
             const colorId = currentLogic[from].pop(); currentLogic[to].push(colorId);
             const rMesh = ringObjects[from].pop(); ringObjects[to].push(rMesh);
-            rMesh.userData.targetPos.set(pegMeshes[to].position.x, 1.3 + ((currentLogic[to].length - 1) * 1.15), pegMeshes[to].position.z);
+            rMesh.userData.path = [new THREE.Vector3(pegMeshes[from].position.x, 8, pegMeshes[from].position.z), new THREE.Vector3(pegMeshes[to].position.x, 8, pegMeshes[to].position.z)]; rMesh.userData.targetPos.set(pegMeshes[to].position.x, 1.3 + ((currentLogic[to].length - 1) * 1.15), pegMeshes[to].position.z);
             playSound('pop'); updateDogStatus(); checkWinCondition3D();
         }
 
@@ -836,7 +869,13 @@
             bgParticles.geometry.attributes.position.needsUpdate = true;
             if(currentTheme.behavior === 'dust' || currentTheme.behavior === 'float') bgParticles.rotation.y += 0.001;
 
-            for (let stack of ringObjects) { for (let r of stack) r.position.lerp(r.userData.targetPos, 0.2); }
+            environmentGroup.children.forEach(g => { g.position.y = g.userData.y0 + Math.sin(time + g.userData.ph) * 0.8; g.rotation.y += 0.002; });
+            spaceBg.style.transform = 'translateX(' + (-cameraAngle * 60) + 'px)';
+            for (let stack of ringObjects) { for (let r of stack) {
+                const u = r.userData; let tgt = u.targetPos;
+                if (u.path && u.path.length) { tgt = u.path[0]; if (r.position.distanceTo(tgt) < 0.4) u.path.shift(); }
+                r.position.lerp(tgt, 0.2);
+            } }
             
             for(let i = activeParticles.length - 1; i >= 0; i--) {
                 let p = activeParticles[i]; p.position.add(p.userData.velocity); 
@@ -848,6 +887,50 @@
             if(gameState === 'win' && rewardObjectGroup.children.length > 0) { rewardObjectGroup.rotation.y += 0.01; }
             renderer.render(scene, camera);
         }
+
+        // --- 10. SPACE SCENE, 3D ISLANDS, UNDO / RESTART ---
+        const spaceBg = document.getElementById('space-bg');
+        for (let i = 0; i < 90; i++) { const st = document.createElement('div'); st.className = 'star'; const z = Math.random() * 2 + 1; st.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;width:${z}px;height:${z}px;animation-delay:${Math.random()*3}s`; spaceBg.appendChild(st); }
+        spaceBg.insertAdjacentHTML('beforeend', '<div id="planet"></div><div id="moon"></div>' +
+            [[8,10],[88,30],[7,48],[92,70],[30,86]].map(p => `<div class="sp" style="left:${p[0]}%;top:${p[1]}%"></div>`).join('') +
+            '<div class="fi" style="left:2%;top:14%;width:22vmin"></div><div class="fi" style="right:3%;top:36%;width:17vmin"></div><div class="fi" style="left:0;bottom:2%;width:18vmin"></div><div class="fi" style="right:6%;bottom:0;width:22vmin"></div>');
+
+        generateRandomBiome = function () {
+            while (environmentGroup.children.length) environmentGroup.remove(environmentGroup.children[0]);
+            [[-34,10,-30,5],[36,14,-34,6],[-42,-6,-12,4],[40,-8,-18,5],[-20,22,-50,6],[18,-14,-40,5]].forEach(([x, y, z, sz]) => {
+                const g = new THREE.Group();
+                const top = new THREE.Mesh(new THREE.CylinderGeometry(sz, sz * 0.95, sz * 0.35, 7), new THREE.MeshStandardMaterial({ color: 0x3fae5a, flatShading: true }));
+                const bot = new THREE.Mesh(new THREE.ConeGeometry(sz * 0.95, sz * 1.4, 7), new THREE.MeshStandardMaterial({ color: 0x3a36b0, emissive: 0x0a2090, flatShading: true }));
+                bot.rotation.x = Math.PI; bot.position.y = -sz * 0.85;
+                const ed = new THREE.LineSegments(new THREE.EdgesGeometry(bot.geometry), new THREE.LineBasicMaterial({ color: 0x35d4ff })); ed.rotation.x = Math.PI; ed.position.y = -sz * 0.85;
+                g.add(top, bot, ed); g.position.set(x, y, z); g.userData = { y0: y, ph: Math.random() * 6 }; environmentGroup.add(g);
+            });
+        };
+        generateRandomBiome();
+
+        let moveLog = [], undoing = false, levelStart = null;
+        function updateMoves() { document.getElementById('hud-moves').innerText = 'Moves ' + moveLog.length; }
+        const _m2 = executeMove2D; executeMove2D = function (f, t) { _m2(f, t); if (!undoing) moveLog.push([f, t]); updateMoves(); };
+        const _m3 = executeMove3D; executeMove3D = function (f, t) { _m3(f, t); if (!undoing) moveLog.push([f, t]); updateMoves(); };
+        window.undoMove = function () {
+            if (gameState !== 'playing' || !moveLog.length) return;
+            if (selectedPeg !== null) {
+                if (gameMode === '2D') ringElements[selectedPeg][ringElements[selectedPeg].length - 1].classList.remove('selected');
+                else ringObjects[selectedPeg][ringObjects[selectedPeg].length - 1].userData.targetPos.y -= 2.5;
+                selectedPeg = null;
+            }
+            const [f, t] = moveLog.pop(); undoing = true;
+            (gameMode === '2D' ? executeMove2D : executeMove3D)(t, f);
+            undoing = false; updateMoves();
+        };
+        window.restartLevel = function () {
+            if (!levelStart || gameState === 'paused' || gameState === 'menu') return;
+            (gameMode === '2D' ? initLevel2D : initLevel3D)(levelStart);
+        };
+        const _ssm = window.startSelectedMode;
+        window.startSelectedMode = function (m) { _ssm(m); document.body.classList.toggle('m3d', m === '3D'); document.getElementById('platform-2d').style.display = m === '2D' ? 'block' : 'none'; };
+        const _gh = window.goHome;
+        window.goHome = function () { _gh(); document.body.classList.remove('m3d'); document.getElementById('platform-2d').style.display = 'none'; spaceBg.style.transform = ''; };
 
         // Initialize defaults
         applyTheme(themes[0]); 
