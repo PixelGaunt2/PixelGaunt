@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Face Merge</title>
 <style>
-  :root { --gw: min(98vw, 420px, calc(100vh - 160px)); }
-  @supports (height:100dvh) { :root { --gw: min(98vw, 420px, calc(100dvh - 160px)); } }
+  :root { --gw: min(98vw, 420px, calc(100vh - 200px)); }
+  @supports (height:100dvh) { :root { --gw: min(98vw, 420px, calc(100dvh - 200px)); } }
   @media (max-width:600px) {
-    :root { --gw: min(98vw, calc(100vh - 160px)); }
-    @supports (height:100dvh) { :root { --gw: min(98vw, calc(100dvh - 160px)); } }
+    :root { --gw: min(98vw, calc(100vh - 200px)); }
+    @supports (height:100dvh) { :root { --gw: min(98vw, calc(100dvh - 200px)); } }
   }
   html { height:100%; background:#1a0033; overflow:hidden; -webkit-tap-highlight-color:transparent; }
   body { margin:0; font-family:sans-serif; background:#1a0033; color:#fff; display:flex; justify-content:center; align-items:center; height:100vh; height:100dvh; width:100%; position:fixed; top:0; left:0; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; }
@@ -111,17 +111,17 @@
   @keyframes birdFly { 0% { transform: scale(1); } 30% { transform: scale(1.3) rotate(-10deg); } 100% { transform: scale(2) translateY(-100px) translateX(20px); opacity: 0; } }
 
   .face { position:absolute; width:100%; height:100%; }
-  .eye { position:absolute; width:14%; height:14%; background:#2c3e50; border-radius:50%; top:32%; }
+  .eye { position:absolute; width:14%; height:14%; background:var(--ink); border-radius:50%; top:32%; }
   .eye-l { left:25%; } .eye-r { right:25%; }
-  .mouth { position:absolute; left:50%; transform:translateX(-50%); background:#2c3e50; }
+  .mouth { position:absolute; left:50%; transform:translateX(-50%); background:var(--ink); }
 
   .face-red .eye { border-radius:0 0 50% 50%; height:10%; top:35%; }
   .face-red .eye-l { transform:rotate(20deg); } .face-red .eye-r { transform:rotate(-20deg); }
-  .face-red .mouth { width:30%; height:15%; border-radius:50% 50% 0 0; background:transparent; border-top:3px solid #2c3e50; top:65%; }
+  .face-red .mouth { width:30%; height:15%; border-radius:50% 50% 0 0; background:transparent; border-top:3px solid var(--ink); top:65%; }
 
   .face-blue .eye { border-radius:50% 50% 0 0; height:10%; }
   .face-blue .eye-l { transform:rotate(-15deg); } .face-blue .eye-r { transform:rotate(15deg); }
-  .face-blue .mouth { width:25%; height:10%; border-radius:50% 50% 0 0; background:transparent; border-top:3px solid #2c3e50; top:65%; }
+  .face-blue .mouth { width:25%; height:10%; border-radius:50% 50% 0 0; background:transparent; border-top:3px solid var(--ink); top:65%; }
   .face-blue::after { content:''; position:absolute; width:10%; height:15%; background:#7efff5; border-radius:50%; left:25%; top:45%; opacity:0.8; }
 
   .face-green .eye-l { width:10%; height:10%; } .face-green .eye-r { width:18%; height:18%; top:28%; }
@@ -130,8 +130,8 @@
   .face-yellow .eye { height:18%; }
   .face-yellow .mouth { width:35%; height:20%; border-radius:0 0 50px 50px; top:55%; }
 
-  .face-purple .eye { border-radius:50% 50% 0 0; background:transparent; border-top:4px solid #2c3e50; height:15%; }
-  .face-purple .mouth { width:35%; height:15%; border-radius:0 0 50% 0; background:transparent; border-bottom:3px solid #2c3e50; border-right:3px solid #2c3e50; top:55%; left:45%; }
+  .face-purple .eye { border-radius:50% 50% 0 0; background:transparent; border-top:4px solid var(--ink); height:15%; }
+  .face-purple .mouth { width:35%; height:15%; border-radius:0 0 50% 0; background:transparent; border-bottom:3px solid var(--ink); border-right:3px solid var(--ink); top:55%; left:45%; }
 
   .face-orange .eye { display:none; } 
   .face-orange::before { content:''; position:absolute; width:65%; height:20%; background:#222; border-radius:5px 5px 15px 15px; left:17.5%; top:30%; box-shadow:inset 2px 2px 5px rgba(255,255,255,0.3); }
@@ -155,10 +155,87 @@
   .readme-content p { font-size:16px; line-height:1.6; text-align:justify; margin-bottom:15px; }
   .readme-content a { color:#2ed573; text-decoration:none; font-weight:bold; word-break:break-all; }
 </style>
+
+<style id="fm-theme">
+  :root { --ink:#2a1248; }
+  .screen { background:
+      repeating-conic-gradient(from 0deg at 50% 14%, rgba(255,255,255,.06) 0 7deg, transparent 7deg 18deg),
+      radial-gradient(ellipse at 50% 12%, rgba(90,175,255,.95) 0, rgba(60,70,235,.55) 24%, transparent 58%),
+      linear-gradient(180deg,#2a14a8 0%,#14086a 45%,#0a0436 100%); }
+  .screen > *:not(.decor) { position:relative; z-index:1; }
+  .decor { position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0 !important; }
+  .float-face { position:absolute; border-radius:50%; opacity:.93; animation:floaty 5s ease-in-out infinite;
+      box-shadow:inset -5px -6px 10px rgba(0,0,0,.3), inset 3px 3px 7px rgba(255,255,255,.35), 0 8px 16px rgba(0,0,0,.35); }
+  @keyframes floaty { 0%,100%{transform:translateY(0) rotate(var(--r));} 50%{transform:translateY(-12px) rotate(calc(var(--r) * -1));} }
+  .spark { position:absolute; color:#ffe680; text-shadow:0 0 8px #ffd34d; animation:twinkle 2.2s ease-in-out infinite; }
+  @keyframes twinkle { 0%,100%{opacity:.15;transform:scale(.6);} 50%{opacity:1;transform:scale(1.2);} }
+
+  /* glossy bubble faces */
+  .cell::before, .float-face::before { content:''; position:absolute; left:14%; top:8%; width:46%; height:26%; border-radius:50%;
+      background:linear-gradient(rgba(255,255,255,.7),rgba(255,255,255,0)); transform:rotate(-20deg); pointer-events:none; }
+  .bean-bird::before { display:none; }
+  .cell { box-shadow:inset -4px -5px 8px rgba(0,0,0,.35), inset 3px 3px 6px rgba(255,255,255,.35), 0 3px 6px rgba(0,0,0,.45); }
+  .bean-red    { background:radial-gradient(circle at 30% 30%, #ff7d95, #e8264f); }
+  .bean-orange { background:radial-gradient(circle at 30% 30%, #ffb25c, #f26a10); }
+  .bean-blue   { background:radial-gradient(circle at 30% 30%, #62b8ff, #1a6fe0); }
+  .bean-green  { background:radial-gradient(circle at 30% 30%, #6bf59a, #12b24a); }
+  .bean-yellow { background:radial-gradient(circle at 30% 30%, #fff07a, #ffb800); }
+  .bean-purple { background:radial-gradient(circle at 30% 30%, #c79bff, #7b3fe0); }
+  .face-yellow .mouth { overflow:hidden; }
+  .face-yellow .mouth::after { content:''; position:absolute; left:22%; bottom:0; width:56%; height:55%; background:#ff6b81; border-radius:50% 50% 0 0; }
+  .face-yellow .eye::after, .face-green .eye::after { content:''; position:absolute; width:30%; height:30%; left:20%; top:15%; background:#fff; border-radius:50%; }
+  .pop { animation:pop .3s forwards; }
+  @keyframes pop { 40%{transform:scale(1.25);filter:brightness(1.6);} 100%{transform:scale(0);opacity:0;} }
+  .drop-in { animation:dropIn .34s cubic-bezier(.3,1.4,.5,1) backwards; }
+  @keyframes dropIn { from{transform:translateY(-140%);opacity:.2;} to{transform:none;opacity:1;} }
+
+  /* hero dog peeking over the panel */
+  .hero { position:relative; width:var(--gw); height:62px; margin-bottom:-16px; display:flex; justify-content:center; align-items:flex-end; }
+  #game-screen > .hero { z-index:3; }
+  .hero-dog { font-size:62px; line-height:1; filter:drop-shadow(0 4px 8px rgba(0,0,0,.5)) drop-shadow(0 0 18px rgba(120,190,255,.9)); animation:breathe 2.4s infinite; }
+  .hero-dog.cheer { animation:cheer .5s; }
+  @keyframes cheer { 0%,100%{transform:scale(1);} 30%{transform:scale(1.25) rotate(-8deg);} 60%{transform:scale(1.15) rotate(8deg);} }
+  .paw { position:absolute; bottom:-12px; width:26px; height:17px; background:#fff3de; border-radius:50% 50% 40% 40%; box-shadow:inset 0 -3px 0 #e8c9a0, 0 2px 4px rgba(0,0,0,.4); }
+  .paw-l { left:calc(50% - 44px); } .paw-r { left:calc(50% + 18px); }
+  .start-dog { font-size:110px; line-height:1; margin-bottom:-6px; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)) drop-shadow(0 0 24px rgba(120,190,255,.9)); animation:breathe 2.4s infinite; }
+
+  /* top panel: stats + power-ups */
+  .panel { width:var(--gw); box-sizing:border-box; display:flex; flex-direction:column; align-items:center; padding:8px 8px 8px;
+      background:linear-gradient(#1b1a8a,#0f1160); border:3px solid #5a4cff; border-radius:28px 28px 14px 14px;
+      box-shadow:0 0 22px rgba(90,76,255,.65), inset 0 0 14px rgba(0,0,0,.5); }
+  .panel #ui-target { margin-bottom:6px; background:linear-gradient(#3ee27f,#16b455); font-size:14px; padding:4px 14px; }
+  .panel .header { width:100%; margin-bottom:8px; padding:6px; background:rgba(0,0,0,.3); }
+  .stat span { color:#ffe14d; text-shadow:0 0 8px rgba(255,225,77,.6); }
+  .panel .powers { width:100%; margin:0; gap:8px; }
+  .power-slot { gap:0; }
+  .power-btn { height:54px; padding:0; font-size:28px; line-height:1; border:none; border-radius:12px 12px 4px 4px;
+      background:linear-gradient(#b068ff,#7a2fe0); box-shadow:inset 0 2px 0 rgba(255,255,255,.35), 0 2px 0 #4c1a96;
+      display:flex; align-items:center; justify-content:center; }
+  .power-btn span { width:20px; height:20px; padding:0; display:flex; align-items:center; justify-content:center; font-size:12px; top:-7px; right:-6px; background:#1fcf6a; border:2px solid #fff; }
+  .power-slot:nth-child(3) .power-btn span { background:#1e90ff; }
+  .power-btn.active-power { background:linear-gradient(#ff6b81,#e8264f); }
+  .buy-btn { height:22px; padding:0; border-radius:4px 4px 10px 10px; background:linear-gradient(#ffd23f,#ff9f1c); color:#6b3300; text-shadow:none; box-shadow:0 3px 0 #c76a00; }
+
+  /* dog tube + board */
+  .dog-container { width:84px; }
+  .dog-room { background:linear-gradient(#050a2c,#081348); border:3px solid #4fd0ff; border-radius:18px; box-shadow:0 0 14px rgba(79,208,255,.7), inset 0 0 18px rgba(0,0,20,.9); }
+  .dog-char { font-size:46px; }
+  .dog-speech { top:34%; font-size:13px; padding:6px 10px; border-radius:14px; }
+  .water-fill { background:linear-gradient(0deg,#0a7cff,#43c6ff); border-top:3px solid rgba(255,255,255,.7); }
+  #board { gap:3px; padding:8px; background:linear-gradient(#0b1250,#070b36); border:3px solid #2b4bd8; border-radius:16px;
+      box-shadow:0 0 18px rgba(60,100,255,.6), inset 0 0 20px rgba(0,0,20,.8); }
+
+  /* combo popup */
+  .combo-pop { position:absolute; left:50%; top:40%; transform:translate(-50%,-50%); font-size:34px; font-weight:900; white-space:nowrap; color:#ffe14d;
+      -webkit-text-stroke:2px #c2410c; text-shadow:0 4px 0 #7c2d12, 0 0 18px rgba(255,200,0,.9); z-index:60; pointer-events:none; animation:comboPop .9s forwards; }
+  @keyframes comboPop { 0%{transform:translate(-50%,-30%) scale(.3);opacity:0;} 25%{transform:translate(-50%,-50%) scale(1.25);opacity:1;} 100%{transform:translate(-50%,-120%) scale(1);opacity:0;} }
+</style>
 </head>
 <body>
 
 <div id="start-screen" class="screen">
+  <div class="decor" id="decor-start"></div>
+  <div class="start-dog">🐶</div>
   <h1 class="animated-title">Face<br>Merge</h1>
   <button class="btn" onclick="showLevelSelector()">Play Now</button>
   <button class="btn" style="margin-top: 15px; background: #1e90ff; box-shadow: 0 6px 0 #0984e3; font-size: 18px; padding: 10px 25px;" onclick="showReadme()">Readme</button>
@@ -188,6 +265,7 @@
 </div>
 
 <div id="game-screen" class="screen hidden">
+  <div class="decor" id="decor-game"></div>
   <div class="top-bar">
       <div style="display:flex; gap:5px;">
           <button class="back-btn" onclick="showLevelSelector()" title="Back to Levels">⬅</button>
@@ -197,6 +275,8 @@
       <div class="coin-counter">🪙 <span id="ui-coins">50</span></div>
   </div>
 
+  <div class="hero"><div class="hero-dog" id="hero-dog">🐶</div><div class="paw paw-l"></div><div class="paw paw-r"></div></div>
+  <div class="panel">
   <div style="text-align:center;"><div id="ui-target">Target: Score 500 pts</div></div>
 
   <div class="header">
@@ -222,6 +302,7 @@
         <button class="power-btn" id="btn-magic" onclick="togglePower('magic')">🌈<span id="m-cnt">1</span></button>
         <button class="buy-btn" id="buy-magic" onclick="buyPower('magic')">+ 250🪙</button>
     </div>
+  </div>
   </div>
   
   <div class="game-layout">
@@ -260,7 +341,7 @@
   
   let grid=[], iceGrid=[], score=0, moves=0, lvl=1, coins=250;
   let targetAmount=0, targetType='score', targetColor='';
-  let isAnim=false, activePower=null;
+  let isAnim=false, activePower=null, combo=0;
   let isPaused=false;
   
   // Power Inventory & Costs
@@ -377,7 +458,7 @@
   // ================= LEVEL TARGET LOGIC =================
   function loadLevel(l) {
     if(l>25){ alert("You completed all 25 levels!"); l=25; }
-    lvl=l; score=0; isAnim=false; activePower=null; isPaused=false; GameAudio.startMusic();
+    lvl=l; score=0; combo=0; isAnim=false; activePower=null; isPaused=false; GameAudio.startMusic();
     document.querySelectorAll('.power-btn').forEach(b=>b.classList.remove('active-power'));
     
     moves = 15 + Math.floor(l/2); timeLimit = 70 - Math.min(30, l);
@@ -419,7 +500,7 @@
       const speech = document.getElementById('dog-speech');
       speech.innerText = text;
       speech.style.opacity = 1;
-      if (!persistent) { setTimeout(() => { speech.style.opacity = 0; }, 2000); }
+      if (!persistent) { heroCheer(); setTimeout(() => { speech.style.opacity = 0; }, 2000); }
   }
 
   function getFaceHTML(c) {
@@ -687,6 +768,7 @@
   function doMatches() {
     let m = checkMatches();
     if(m.size>0) {
+      combo++; if(combo>1) { score += (combo-1)*20; showCombo(combo); }
       if(m.size>=4) { 
         sndBlast();
         coins += 10; // Extra coins for big matches!
@@ -713,7 +795,7 @@
       m.forEach(id=>{ breakCell(id); showCoin(id); });
       updateUI(); setTimeout(fall, 400);
     } else {
-      isAnim=false; checkWin();
+      combo=0; isAnim=false; checkWin();
     }
   }
 
@@ -780,7 +862,7 @@
       
       while(col.length<W) {
         let clr=colors[Math.floor(Math.random()*colors.length)];
-        col.unshift({clr:clr, cls:'cell bean-'+clr, html: getFaceHTML(clr)});
+        col.unshift({clr:clr, cls:'cell drop-in bean-'+clr, html: getFaceHTML(clr)});
       }
       
       for(let r=0; r<W; r++) {
@@ -789,7 +871,7 @@
         grid[r*W+c].innerHTML=col[r].html;
       }
     }
-    setTimeout(doMatches, 300);
+    setTimeout(()=>grid.forEach(g=>g.classList.remove('drop-in')), 340); setTimeout(doMatches, 300);
   }
 
   function updateUI() {
@@ -853,6 +935,39 @@
         if(win) { if(lvl < 25) loadLevel(lvl+1); else showLevelSelector(); } else { loadLevel(lvl); }
     };
   }
+
+  // ================= VISUAL EXTRAS =================
+  function heroCheer() {
+      const h = document.getElementById('hero-dog'); if(!h) return;
+      h.classList.remove('cheer'); void h.offsetWidth; h.classList.add('cheer');
+      h.onanimationend = () => h.classList.remove('cheer');
+  }
+
+  function showCombo(n) {
+      const d = document.createElement('div'); d.className = 'combo-pop';
+      d.innerText = 'COMBO x' + n + ' 🔥';
+      const b = document.getElementById('board'); b.appendChild(d);
+      setTimeout(() => d.remove(), 900);
+  }
+
+  function buildDecor(el, n) {
+      if(!el) return;
+      let h = '';
+      for(let i=0; i<n; i++) {
+          const c = colors[i % colors.length];
+          const size = 40 + Math.round(Math.random()*36);
+          const left = (i%2) ? 68 + Math.random()*26 : -6 + Math.random()*22;
+          const top = Math.random()*58;
+          const rot = Math.round(-18 + Math.random()*36);
+          h += '<div class="float-face bean-'+c+'" style="width:'+size+'px;height:'+size+'px;left:'+left+'%;top:'+top+'%;--r:'+rot+'deg;animation-duration:'+(4+Math.random()*3).toFixed(1)+'s;animation-delay:-'+(Math.random()*4).toFixed(1)+'s">'+getFaceHTML(c)+'</div>';
+      }
+      for(let i=0; i<8; i++) {
+          h += '<span class="spark" style="left:'+(Math.random()*95)+'%;top:'+(Math.random()*95)+'%;font-size:'+(10+Math.random()*14)+'px;animation-delay:-'+(Math.random()*2).toFixed(1)+'s">✦</span>';
+      }
+      el.innerHTML = h;
+  }
+  buildDecor(document.getElementById('decor-game'), 9);
+  buildDecor(document.getElementById('decor-start'), 11);
 </script>
 </body>
 </html>
