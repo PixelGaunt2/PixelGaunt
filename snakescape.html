@@ -200,8 +200,8 @@ button.accent{background:linear-gradient(180deg,#ff6aa2,#e0215f)}button.accent:h
             <div class="modal" style="background: transparent; box-shadow: none;">
                 <h1 style="color: var(--accent); font-size: 4rem; text-shadow: 0 4px 15px rgba(0,0,0,0.8); margin-bottom: 40px;">SnakeScape</h1>
                 <div class="btn-group-vertical">
+                    <button id="continue-btn" style="font-size: 1.2rem; padding: 15px; display: none;" onclick="game.continueGame()">Continue</button>
                     <button style="font-size: 1.2rem; padding: 15px;" class="accent" onclick="game.start()">Play Now</button>
-                    <button style="font-size: 1.1rem; padding: 12px;" onclick="game.showLevels()">Levels</button>
                     <button style="font-size: 1.1rem; padding: 12px;" onclick="game.showReadme()">Readme</button>
                 </div>
             </div>
@@ -217,16 +217,6 @@ button.accent{background:linear-gradient(180deg,#ff6aa2,#e0215f)}button.accent:h
                 <p style="font-weight: bold; font-size: 1.1rem;"><a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" rel="noopener noreferrer" style="color: var(--accent);">Join WhatsApp Group</a></p>
                 <div class="btn-group" style="justify-content: center; margin-top: 25px;">
                     <button onclick="game.closeReadme()" style="padding: 10px 30px;">Close</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="levels-modal" class="modal-overlay">
-            <div class="modal">
-                <h2>Select Level</h2>
-                <p>Play through 100 challenging levels!</p>
-                <div class="btn-group" style="justify-content: center; margin-top: 20px;">
-                    <button onclick="document.getElementById('levels-modal').classList.remove('active')">Back</button>
                 </div>
             </div>
         </div>
@@ -569,6 +559,7 @@ const game = {
     lastTime: 0, textTimer: 3.0, activeHelpMouseId: null, hintSnake: null,
 
     init() {
+        this.updateContinueBtn();
         this.resize();
         window.addEventListener('resize', () => this.resize());
         this.setupInputs();
@@ -589,11 +580,30 @@ const game = {
         };
     },
 
-    showLevels() { document.getElementById('levels-modal').classList.add('active'); },
+    hasSave() { return !!localStorage.getItem('snakeScape_level'); },
+    updateContinueBtn() {
+        const b = document.getElementById('continue-btn');
+        if (b) b.style.display = this.hasSave() ? '' : 'none';
+    },
     showReadme() { document.getElementById('readme-modal').classList.add('active'); },
     closeReadme() { document.getElementById('readme-modal').classList.remove('active'); },
 
     start() {
+        // New game: begin from level 1
+        this.level = 1;
+        this.score = 0;
+        localStorage.setItem('snakeScape_score', 0);
+        this.beginPlay();
+    },
+
+    continueGame() {
+        // Resume from the last saved level
+        this.level = parseInt(localStorage.getItem('snakeScape_level')) || 1;
+        this.score = parseInt(localStorage.getItem('snakeScape_score')) || 0;
+        this.beginPlay();
+    },
+
+    beginPlay() {
         audio.init();
         document.getElementById('menu-modal').classList.remove('active');
         document.getElementById('body').classList.add('playing');
@@ -681,6 +691,7 @@ const game = {
         GameAudio.stopMusic(); this.state = 'MENU'; this.particles = [];
         document.getElementById('body').classList.remove('playing');
         document.getElementById('menu-modal').classList.add('active');
+        this.updateContinueBtn();
         this.resize();
     },
 
