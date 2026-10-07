@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Beggar Catcher - Voxel Visual Update</title>
+    <title>Beggar Catcher - Seasons, Puzzles & Monsters Update</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #fff; user-select: none; }
@@ -153,6 +155,46 @@
 #hp-fill{width:100%;background:linear-gradient(#5cff3a,#1fc400);transition:width .2s}
 #coin-text{position:absolute;left:0;right:0;top:0;line-height:24px;text-align:center;font-size:13px;font-weight:bold;text-shadow:1px 1px 2px #000}
 @media (max-width:1024px){#hud-right{right:90px;width:210px} #top-ui{top:120px!important} #mission-panel{max-width:240px;padding:6px 12px} #mission-desc{font-size:12px}}
+
+/* ===== MENU & FONT POLISH ===== */
+body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bold','Segoe UI',sans-serif;}
+.menu-screen:not(#pause-menu){background:linear-gradient(rgba(5,15,40,.15),rgba(5,15,40,.45)),linear-gradient(#1478e0 0%,#4db4f7 52%,#c4e8ff 62%,#58e030 62%,#3fb81f 100%)!important;}
+.menu-screen:not(#pause-menu)::before{content:"";position:absolute;left:0;right:0;bottom:0;height:38%;background:repeating-conic-gradient(rgba(0,0,0,.10) 0 25%,transparent 0 50%) 0 0/64px 64px;pointer-events:none;z-index:-1}
+.menu-screen>*{position:relative;z-index:1}
+.menu-title{font-family:'Lilita One','Fredoka',sans-serif;font-weight:400;font-size:48px;letter-spacing:2px;color:#ffd23f;-webkit-text-stroke:2px #5a3300;paint-order:stroke fill;text-shadow:0 4px 0 #8a5200,0 8px 14px rgba(0,0,0,.45);margin-bottom:22px}
+.logo{margin-bottom:26px;text-align:center;line-height:.95;font-family:'Lilita One','Fredoka',sans-serif}
+.logo-a,.logo-b{font-size:clamp(46px,11vw,92px);letter-spacing:3px;-webkit-text-stroke:3px #1a1200;paint-order:stroke fill}
+.logo-a{color:#ffd23f;text-shadow:0 5px 0 #b87400,0 10px 0 #6b4200,0 16px 20px rgba(0,0,0,.5)}
+.logo-b{color:#fff;text-shadow:0 5px 0 #7d8fa8,0 10px 0 #3a4658,0 16px 20px rgba(0,0,0,.5)}
+.logo-sub{display:inline-block;margin-top:18px;padding:5px 18px;background:#14202e;border:3px solid #ffd23f;border-radius:20px;color:#ffd23f;font-size:clamp(13px,3.2vw,18px);font-weight:600;letter-spacing:1px}
+.btn{font-family:'Lilita One','Fredoka',sans-serif;font-weight:400;font-size:22px;letter-spacing:1px;text-transform:uppercase;color:#fff;min-width:270px;padding:12px 36px;margin:8px;border:3px solid #1a1200;border-radius:14px;background:linear-gradient(#4a5d7a,#2b3a52);box-shadow:inset 0 3px 0 rgba(255,255,255,.35),0 6px 0 #121a28,0 10px 14px rgba(0,0,0,.4);text-shadow:0 2px 0 rgba(0,0,0,.6);transition:transform .08s,box-shadow .08s,filter .15s}
+.btn:hover{background:linear-gradient(#5d7396,#364a68);color:#fff;filter:brightness(1.12);transform:translateY(-2px)}
+.btn:active{transform:translateY(4px);box-shadow:inset 0 3px 0 rgba(255,255,255,.3),0 2px 0 #121a28}
+#btn-play{background:linear-gradient(#5cf03a,#23a615);box-shadow:inset 0 3px 0 rgba(255,255,255,.45),0 6px 0 #0f5a08,0 10px 14px rgba(0,0,0,.4);font-size:28px;padding:14px 40px}
+#btn-play:hover{background:linear-gradient(#78ff58,#2dbb1d)}
+#btn-resume{background:linear-gradient(#35d8c0,#16907f);box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 6px 0 #0b4f46,0 10px 14px rgba(0,0,0,.4)}
+#btn-readme{background:linear-gradient(#ffb02e,#d97b00);box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 6px 0 #7a4100,0 10px 14px rgba(0,0,0,.4)}
+#btn-levels{background:linear-gradient(#5aa8ff,#2468c9);box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 6px 0 #123a78,0 10px 14px rgba(0,0,0,.4)}
+#btn-shop{background:linear-gradient(#c77dff,#7a35c9);box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 6px 0 #3f1a73,0 10px 14px rgba(0,0,0,.4)}
+.btn[style*="ff3333"]{background:linear-gradient(#ff6a5c,#c92a1c);box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 6px 0 #6e1008,0 10px 14px rgba(0,0,0,.4)}
+.btn:disabled,.btn:disabled:hover{background:linear-gradient(#6b7280,#4b5260);color:#c7ccd6;filter:none;transform:none;cursor:not-allowed;border-color:#1a1200}
+.level-btn{font-family:'Lilita One','Fredoka',sans-serif;font-size:20px;letter-spacing:1px;color:#fff;padding:16px 8px;border:3px solid #1a1200;border-radius:12px;background:linear-gradient(#59606e,#3a404c);box-shadow:inset 0 3px 0 rgba(255,255,255,.25),0 5px 0 #1a1d24;cursor:pointer;transition:transform .08s,filter .15s}
+.level-btn:disabled{opacity:.65;cursor:not-allowed}
+.level-btn.unlocked{background:linear-gradient(#ffd23f,#e09a00);color:#3a2300;text-shadow:0 1px 0 rgba(255,255,255,.5);box-shadow:inset 0 3px 0 rgba(255,255,255,.5),0 5px 0 #7a4a00}
+.level-btn.unlocked:hover{background:linear-gradient(#ffe270,#f0aa10);color:#3a2300;transform:translateY(-2px)}
+.grid-container{gap:14px;max-width:820px}
+.shop-item{background:linear-gradient(#1b2740,#101828);border:3px solid #ffd23f;border-radius:14px;padding:16px;box-shadow:0 6px 0 #6b4a00,0 10px 14px rgba(0,0,0,.4)}
+.shop-item h3{font-family:'Lilita One','Fredoka',sans-serif;font-weight:400;font-size:24px;color:#fff;margin:4px 0 6px;letter-spacing:1px}
+.shop-item p{font-size:16px;color:#cfd8e6;margin:4px 0}
+.shop-item .btn{min-width:0;width:100%;font-size:18px;padding:9px;margin:10px 0 0}
+.readme-box{font-family:'Fredoka',sans-serif;background:rgba(14,22,38,.94);border:4px solid #ffd23f;border-radius:16px;box-shadow:0 8px 0 #6b4a00,0 14px 24px rgba(0,0,0,.5);line-height:1.55;font-size:17px;color:#e8eef8}
+.readme-box a{color:#ffd23f}
+#stats-bar{font-family:'Lilita One','Fredoka',sans-serif;font-size:22px;letter-spacing:1px;top:14px;left:14px;padding:6px 16px;background:#14202e;border:3px solid #ffd23f;border-radius:20px;color:#ffd23f;text-shadow:0 2px 0 #000;box-shadow:0 4px 0 #6b4a00}
+#complete-menu div[style*="font-size: 24px"]{font-family:'Lilita One','Fredoka',sans-serif;font-size:30px!important;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.6)}
+#mission-panel,#hud-right,#interaction-prompt,.progress-container,#stance-indicator{font-family:'Fredoka',sans-serif}
+#mission-title{font-family:'Lilita One','Fredoka',sans-serif;font-weight:400;letter-spacing:.5px;font-size:18px}
+#interaction-prompt{font-family:'Lilita One','Fredoka',sans-serif;font-weight:400;font-size:22px;letter-spacing:.5px;-webkit-text-stroke:1px rgba(0,0,0,.6);paint-order:stroke fill}
+@media (max-width:1024px),(max-height:700px){.menu-title{font-size:32px;margin-bottom:12px}.btn{font-size:18px;min-width:220px;padding:10px 22px;margin:6px}#btn-play{font-size:22px}.level-btn{font-size:16px;padding:12px 6px}.shop-item h3{font-size:19px}.shop-item p{font-size:14px}.readme-box{font-size:14px}.logo{margin-bottom:14px}}
 </style>
 </head>
 <body>
@@ -166,16 +208,16 @@
     </div>
 
     <div id="main-menu" class="menu-screen">
-        <div class="menu-title">BEGGAR CATCHER<br><span style="font-size:20px; color:#fff;">Bounty Hunter Edition</span></div>
-        <button id="btn-resume" class="btn" style="display:none; border-color:#00ffcc;">Resume Game</button>
-        <button id="btn-play" class="btn">Play Now</button>
-        <button id="btn-readme" class="btn" style="border-color:#ff9900;">Read Me</button>
-        <button id="btn-levels" class="btn">Levels</button>
-        <button id="btn-shop" class="btn">Upgrades Shop</button>
+        <div class="logo"><div class="logo-a">BEGGAR</div><div class="logo-b">CATCHER</div><div class="logo-sub">⭐ Bounty Hunter Edition ⭐</div></div>
+        <button id="btn-resume" class="btn" style="display:none; border-color:#00ffcc;">⏩ Resume Game</button>
+        <button id="btn-play" class="btn">▶ Play Now</button>
+        <button id="btn-readme" class="btn" style="border-color:#ff9900;">📖 Read Me</button>
+        <button id="btn-levels" class="btn">🗺️ Levels</button>
+        <button id="btn-shop" class="btn">🛒 Upgrades Shop</button>
     </div>
 
     <div id="readme-menu" class="menu-screen" style="display:none;">
-        <div class="menu-title" style="font-size: 40px;">Readme & Disclaimer</div>
+        <div class="menu-title">Readme &amp; Disclaimer</div>
         <div class="readme-box">
             <p style="color: #FFD700; font-size: 20px; margin-top: 0;"><strong>Welcome to Beggar Catcher!</strong></p>
             <p>Please note that this game was developed with the assistance of Artificial Intelligence. While every effort has been made to ensure a smooth, stable, and enjoyable experience, you may occasionally encounter bugs, graphical glitches, or unexpected behavior.</p>
@@ -189,14 +231,14 @@
             </ul>
             <p style="text-align: center; margin-top: 20px; font-weight: bold;">Thank you for playing!</p>
         </div>
-        <button class="btn btn-back" onclick="showMenu('main-menu')">Back to Menu</button>
+        <button class="btn btn-back" onclick="showMenu('main-menu')">⬅ Back to Menu</button>
         <button class="btn" onclick="showMenu('main-menu')" style="border-color:#ff3333;">Close</button>
     </div>
 
     <div id="level-menu" class="menu-screen" style="display:none;">
         <div class="menu-title">Select Level</div>
         <div class="grid-container" id="level-grid"></div>
-        <button class="btn btn-back" onclick="showMenu('main-menu')">Back to Menu</button>
+        <button class="btn btn-back" onclick="showMenu('main-menu')">⬅ Back to Menu</button>
     </div>
 
     <div id="shop-menu" class="menu-screen" style="display:none;">
@@ -215,18 +257,18 @@
                 <button class="btn" id="buy-trolley" onclick="buyUpgrade('trolley', 300)">Buy</button>
             </div>
         </div>
-        <button class="btn btn-back" onclick="showMenu('main-menu')">Back</button>
+        <button class="btn btn-back" onclick="showMenu('main-menu')">⬅ Back</button>
     </div>
 
     <div id="complete-menu" class="menu-screen" style="display:none;">
-        <div class="menu-title" style="color:#00ffcc;">MISSION COMPLETE!</div>
+        <div class="menu-title" style="color:#5cff9a;">🏆 MISSION COMPLETE!</div>
         <div style="font-size: 24px; margin-bottom: 30px;">Bounty Collected: <span id="reward-text" style="color:#FFD700;"></span></div>
         <button id="btn-next" class="btn">Next Level</button>
         <button class="btn" onclick="quitToMenu()">Main Menu</button>
     </div>
 
     <div id="pause-menu" class="menu-screen" style="display:none; background:rgba(0,0,0,0.85);">
-        <div class="menu-title">PAUSED</div>
+        <div class="menu-title">⏸ PAUSED</div>
         <button class="btn" onclick="resumeGame()">Resume Game</button>
         <button class="btn" onclick="quitToMenu()" style="border-color:#ff3333;">Quit to Menu (Back)</button>
     </div>
@@ -385,6 +427,19 @@
             { id: 10, title: "Level 10: The Nervous Informant", desc: "Very jumpy. Use Crouch [C] to approach safely.", color: "Yellow", hex: 0xf1c40f, hp: 50, speed: 3.0, scale: 0.9, role: 'thief', susMul: 5.0, bounty: 500, spook: 80 }
         ];
 
+        LEVEL_DATA[4].puzzle='sequence'; LEVEL_DATA[6].horde=[{kind:'dog',n:2}]; LEVEL_DATA[7].puzzle='keys'; LEVEL_DATA[8].horde=[{kind:'zombie',n:3}]; LEVEL_DATA[9].puzzle='sequence';
+        LEVEL_DATA.push(
+         { id: 11, title: "Level 11: The Frozen Pickpocket", desc: "A fast lady thief in the snow. Wolves roam nearby!", color: "Pink", hex: 0xff66aa, kind:'woman', hp: 40, speed: 4.2, scale: 1, role: 'thief', susMul: 1.5, bounty: 450, spook: 100, horde:[{kind:'dog',n:3}] },
+         { id: 12, title: "Level 12: The Fox Thief", desc: "Sly and very fast. Find the keys to open the jail.", color: "Orange", hex: 0xe67e22, kind:'dog', hp: 50, speed: 5.0, scale: 0.9, role: 'thief', susMul: 2, bounty: 500, spook: 100, puzzle:'keys' },
+         { id: 13, title: "Level 13: The Flower Fraud", desc: "Spring is here. She spooks very easily.", color: "Pink", hex: 0xff9ccf, kind:'woman', hp: 50, speed: 3.0, scale: 1, role: 'thief', susMul: 3, bounty: 550, spook: 100, puzzle:'sequence', horde:[{kind:'dog',n:2}] },
+         { id: 14, title: "Level 14: Queen of Thorns", desc: "A tough lady boss with a zombie escort.", color: "Purple", hex: 0x9b59b6, kind:'woman', hp: 100, speed: 2.2, scale: 1.2, role: 'aggressive', susMul: 1.5, bounty: 600, spook: 100, horde:[{kind:'zombie',n:3}], puzzle:'sequence' },
+         { id: 15, title: "Level 15: The Rabid Hound", desc: "A huge angry dog. It bites on sight!", color: "Gray", hex: 0x888888, kind:'dog', hp: 150, speed: 3.2, scale: 1.6, role: 'aggressive', susMul: 1, bounty: 650, spook: 100, auto: 18, puzzle:'keys' },
+         { id: 16, title: "Level 16: The Twin Ladies", desc: "Tiny, quick and nervous. Crouch to approach.", color: "Red", hex: 0xff3366, kind:'woman', hp: 35, speed: 4.5, scale: 0.8, role: 'thief', susMul: 4, bounty: 700, spook: 80, puzzle:'sequence', horde:[{kind:'dog',n:3}] },
+         { id: 17, title: "Level 17: Graveyard Shift", desc: "Night falls. The Zombie Chief rises!", color: "Green", hex: 0x556b3a, kind:'zombie', hp: 150, speed: 2.2, scale: 1.4, role: 'zombie', susMul: 1, bounty: 800, spook: 100, auto: 16, horde:[{kind:'zombie',n:6}], puzzle:'keys' },
+         { id: 18, title: "Level 18: The Vampire Lady", desc: "Dark and fast. Zombies guard her.", color: "Black", hex: 0x330033, kind:'woman', hp: 70, speed: 4.5, scale: 1, role: 'thief', susMul: 2, bounty: 850, spook: 100, horde:[{kind:'zombie',n:5}], puzzle:'sequence' },
+         { id: 19, title: "Level 19: The Werewolf", desc: "Giant wolf plus zombies and hounds.", color: "Gray", hex: 0x555566, kind:'dog', hp: 220, speed: 3.5, scale: 1.8, role: 'aggressive', susMul: 1, bounty: 1000, spook: 100, auto: 22, horde:[{kind:'dog',n:4},{kind:'zombie',n:4}], puzzle:'keys' },
+         { id: 20, title: "Level 20: The Beggar King", desc: "The final boss. Solve the lock, beat his army!", color: "Gold", hex: 0xFFD700, hp: 120, speed: 4.0, scale: 1.3, role: 'thief', susMul: 2, bounty: 1500, spook: 70, horde:[{kind:'zombie',n:6},{kind:'dog',n:3}], puzzle:'sequence' }
+        );
         function loadGameData() {
             const saved = localStorage.getItem('beggarSaveBugFix');
             if(saved) saveData = JSON.parse(saved);
@@ -427,11 +482,11 @@
             document.getElementById('btn-resume').style.display = saveData.hasSavedGame ? 'block' : 'none';
             
             const grid = document.getElementById('level-grid'); grid.innerHTML = '';
-            for(let i=0; i<10; i++) {
+            for(let i=0; i<LEVEL_DATA.length; i++) {
                 const isUnlocked = (i+1) <= saveData.maxLevelUnlocked;
                 const btn = document.createElement('button');
                 btn.className = `level-btn ${isUnlocked ? 'unlocked' : ''}`;
-                btn.innerText = `Level ${i+1}`; btn.disabled = !isUnlocked;
+                btn.innerText = `${SEASON_ICON[seasonFor(i+1)]} Level ${i+1}`; btn.disabled = !isUnlocked;
                 if(isUnlocked) btn.onclick = () => startLevel(i+1);
                 grid.appendChild(btn);
             }
@@ -465,7 +520,7 @@
         const road = new THREE.Mesh(new THREE.PlaneGeometry(700, 25), new THREE.MeshLambertMaterial({ map: makeTileTex(['#3b3b44','#43434c','#4b4b55','#34343c'],700/24,25/24) }));
         road.rotation.x = -Math.PI / 2; road.position.y = 0.05; scene.add(road);
 
-        const colliders = []; const jailDropZonePos = new THREE.Vector3(0, 0, -35);
+        var jailZone; const colliders = []; const jailDropZonePos = new THREE.Vector3(0, 0, -35);
         
         function buildCity() {
             const jailGroup = new THREE.Group();
@@ -477,14 +532,14 @@
                 bar.position.set(-8 + (i*1.8), 5, -37.4); jailGroup.add(bar);
             }
             const zone = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 0.2, 16), new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.5 }));
-            zone.position.copy(jailDropZonePos); jailGroup.add(zone); scene.add(jailGroup); jailGroup.updateMatrixWorld(true); colliders.push(new THREE.Box3().setFromObject(base));
+            zone.position.copy(jailDropZonePos); jailZone = zone; jailGroup.add(zone); scene.add(jailGroup); jailGroup.updateMatrixWorld(true); colliders.push(new THREE.Box3().setFromObject(base));
 
             const buildingColors = [0xc2571a, 0xa8481a, 0x8a3f16, 0xd2691e];
             for (let i = 0; i < 30; i++) {
                 const bMesh = new THREE.Mesh(new THREE.BoxGeometry(8+Math.random()*8, 10+Math.random()*15, 8+Math.random()*8), new THREE.MeshLambertMaterial({ color: buildingColors[i%4] }));
                 let x = (Math.random() - 0.5) * 250, z = (Math.random() - 0.5) * 250;
                 if (Math.abs(z) < 20) z += 30; if (Math.abs(x) < 25 && z < 0 && z > -60) x += 40; if (Math.abs(x) < 15 && Math.abs(z) < 15) { x += 25; z += 25; } 
-                bMesh.position.set(x, bMesh.geometry.parameters.height / 2, z); bMesh.castShadow = true; bMesh.receiveShadow = true; { const gp = bMesh.geometry.parameters; const roof = new THREE.Mesh(new THREE.BoxGeometry(gp.width+1.2, 1.6, gp.depth+1.2), new THREE.MeshLambertMaterial({ color: 0x5b2e14 })); roof.position.y = gp.height/2 + 0.6; roof.castShadow = true; bMesh.add(roof); }
+                bMesh.position.set(x, bMesh.geometry.parameters.height / 2, z); bMesh.castShadow = true; bMesh.receiveShadow = true; { const gp = bMesh.geometry.parameters; const roof = new THREE.Mesh(new THREE.BoxGeometry(gp.width+1.2, 1.6, gp.depth+1.2), new THREE.MeshLambertMaterial({ color: 0x5b2e14 })); roof.position.y = gp.height/2 + 0.6; roof.userData.roof = 1; roof.castShadow = true; bMesh.add(roof); }
                 scene.add(bMesh); bMesh.updateMatrixWorld(true); bMesh.geometry.computeBoundingBox(); colliders.push(new THREE.Box3().setFromObject(bMesh));
             }
 
@@ -492,7 +547,7 @@
             for(let i=0; i<40; i++) {
                 const treeGroup = new THREE.Group();
                 const trunk = new THREE.Mesh(new THREE.BoxGeometry(0.8, 4, 0.8), trunkMat); trunk.position.y = 2; trunk.castShadow = true; treeGroup.add(trunk);
-                const leaves = new THREE.Mesh(new THREE.BoxGeometry(3.5, 3.5, 3.5), leafMat); leaves.position.y = 4.5; leaves.castShadow = true; treeGroup.add(leaves); const top = new THREE.Mesh(new THREE.BoxGeometry(2.3, 2, 2.3), new THREE.MeshLambertMaterial({ color: 0x2fae2a })); top.position.y = 6.9; top.castShadow = true; treeGroup.add(top);
+                const leaves = new THREE.Mesh(new THREE.BoxGeometry(3.5, 3.5, 3.5), leafMat); leaves.position.y = 4.5; leaves.castShadow = true; treeGroup.add(leaves); const top = new THREE.Mesh(new THREE.BoxGeometry(2.3, 2, 2.3), new THREE.MeshLambertMaterial({ color: 0x2fae2a })); top.position.y = 6.9; top.userData.leaf = 2; leaves.userData.leaf = 1; top.castShadow = true; treeGroup.add(top);
                 let x = (Math.random() - 0.5) * 250, z = (Math.random() - 0.5) * 250;
                 if (Math.abs(z) < 25) z += 35; if (Math.abs(x) < 30 && z < 0 && z > -70) x -= 50; if (Math.abs(x) < 20 && Math.abs(z) < 20) { x += 30; z += 30; } 
                 treeGroup.position.set(x, 0, z); const s = 0.7 + Math.random() * 0.6; treeGroup.scale.set(s, s, s);
@@ -515,6 +570,84 @@
         const sunMesh = new THREE.Mesh(new THREE.BoxGeometry(26,26,3), new THREE.MeshBasicMaterial({color:0xfff36b,fog:false})); scene.add(sunMesh);
         const coinGeo = new THREE.CylinderGeometry(0.6,0.6,0.15,16); coinGeo.rotateX(Math.PI/2);
         const coinMat = new THREE.MeshLambertMaterial({color:0xffc800,emissive:0x664400});
+        const SEASON_ICON = {summer:'☀️',autumn:'🍂',winter:'❄️',spring:'🌸',night:'🎃'};
+        function seasonFor(n){ return ['summer','autumn','winter','spring','night'][Math.floor((n-1)/4)%5]; }
+        const SEASONS = {
+            summer:{sky:['#1478e0','#4db4f7','#c4e8ff'],fog:0xb4e0ff,ground:['#4fd62a','#58e030','#46c524','#62e83a','#3fb81f'],leaf:[0x35c42e,0x2fae2a],roof:0x5b2e14,fx:null,amb:0.8,sun:1.0},
+            autumn:{sky:['#d9682a','#f0a458','#ffe0b0'],fog:0xf3c99a,ground:['#c9a227','#b8862a','#a8741f','#d18a2d','#8f6a1c'],leaf:[0xe0721a,0xc9341a],roof:0x5b2e14,fx:'leaf',amb:0.75,sun:0.9},
+            winter:{sky:['#7aa4cc','#b3d0e8','#eef6ff'],fog:0xe4f0fb,ground:['#f4f8ff','#e6eef8','#dbe6f3','#fafdff','#d0dded'],leaf:[0xe8f2ff,0xd5e6f7],roof:0xffffff,fx:'snow',amb:0.9,sun:0.9},
+            spring:{sky:['#2a8fe8','#6cc4f9','#d6f1ff'],fog:0xcdeaff,ground:['#6be04a','#7aea55','#5fd13f','#86f060','#ffb6d9'],leaf:[0xff9ccf,0xff7fbf],roof:0x7a3b3b,fx:'petal',amb:0.8,sun:1.0},
+            night:{sky:['#05061a','#141a40','#2a2f66'],fog:0x1a1f45,ground:['#1f3a2a','#264832','#1a3024','#2c523a','#183022'],leaf:[0x1f5a2a,0x174a22],roof:0x2a1a2a,fx:'rain',amb:0.4,sun:0.35}
+        };
+        const FXCOL = {snow:0xffffff,leaf:0xe0721a,petal:0xff8fc8,rain:0x9ec8ff}, FXSPD = {snow:3,leaf:2.5,petal:1.8,rain:30};
+        const FX_N = 450, fxPos = new Float32Array(FX_N*3); for (let i=0;i<FX_N;i++){ fxPos[i*3]=(Math.random()-0.5)*80; fxPos[i*3+1]=Math.random()*45; fxPos[i*3+2]=(Math.random()-0.5)*80; }
+        const fxGeo = new THREE.BufferGeometry(); fxGeo.setAttribute('position', new THREE.BufferAttribute(fxPos,3));
+        const fxMat = new THREE.PointsMaterial({size:0.8,color:0xffffff,transparent:true,opacity:0.9,depthWrite:false}); const fxPoints = new THREE.Points(fxGeo,fxMat); fxPoints.frustumCulled=false; fxPoints.visible=false; scene.add(fxPoints);
+        let fxType = null, pLight = null, jailLocked = false, puzzle = null; const decor = [], puzzleObjs = [], keyObjs = [];
+        function skyTex(st){const c=document.createElement('canvas');c.width=2;c.height=256;const g=c.getContext('2d');const gr=g.createLinearGradient(0,0,0,256);gr.addColorStop(0,st[0]);gr.addColorStop(0.55,st[1]);gr.addColorStop(1,st[2]);g.fillStyle=gr;g.fillRect(0,0,2,256);return new THREE.CanvasTexture(c);}
+        function applySeason(name){
+            const S = SEASONS[name]; scene.background = skyTex(S.sky); scene.fog.color.setHex(S.fog);
+            ground.material.map = makeTileTex(S.ground,700/24,700/24); ground.material.needsUpdate = true;
+            ambientLight.intensity = S.amb; sunLight.intensity = S.sun; sunMesh.material.color.setHex(name==='night'?0xdfe8ff:0xfff36b);
+            scene.traverse(o => { if (o.userData.leaf) o.material.color.setHex(S.leaf[o.userData.leaf-1]); if (o.userData.roof) o.material.color.setHex(S.roof); });
+            fxType = S.fx; fxPoints.visible = !!S.fx; if (S.fx) { fxMat.color.setHex(FXCOL[S.fx]); fxMat.size = S.fx==='rain' ? 0.35 : 0.8; }
+            if (!pLight) { pLight = new THREE.PointLight(0xffeeaa,0,40); pLight.position.y = 4; playerGroup.add(pLight); } pLight.intensity = name==='night' ? 1.3 : 0;
+        }
+        function spawnDecor(season){
+            const M = (w,h,d,c,x,y,z,g) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshLambertMaterial({color:c})); m.position.set(x,y,z); m.castShadow = true; g.add(m); };
+            for (let i=0;i<45;i++){
+                let x,z,t=0; do { x=(Math.random()-0.5)*260; z=(Math.random()-0.5)*260; t++; } while ((Math.abs(z)<16 || checkCollision(new THREE.Vector3(x,0,z))) && t<20);
+                const g = new THREE.Group();
+                if (season==='winter'){ M(1.6,1.2,1.6,0xffffff,0,0.6,0,g); M(1.1,1,1.1,0xffffff,0,1.7,0,g); M(0.8,0.8,0.8,0xffffff,0,2.6,0,g); M(0.15,0.15,0.5,0xff7a00,0,2.6,0.5,g); }
+                else if (season==='spring'){ const c=[0xff6fb5,0xffe14a,0xffffff,0xb06cff][i%4]; for(let k=0;k<3;k++){ M(0.15,0.8,0.15,0x2e9d2e,k*0.7,0.4,0,g); M(0.55,0.4,0.55,c,k*0.7,0.95,0,g); } }
+                else if (season==='autumn'){ M(1.3,1,1.3,0xff7a14,0,0.5,0,g); M(0.2,0.3,0.2,0x2e7d1e,0,1.15,0,g); }
+                else if (season==='night'){ M(0.9,1.5,0.3,0x8a8f9a,0,0.75,0,g); M(0.5,0.3,0.32,0x9aa0aa,0,1.6,0,g); }
+                else { M(1.8,1.3,1.8,0x1f8f22,0,0.65,0,g); M(0.3,0.3,0.3,0xe02b2b,0.6,1,0.9,g); M(0.3,0.3,0.3,0xe02b2b,-0.5,0.7,0.9,g); }
+                g.position.set(x,0,z); g.rotation.y = Math.random()*6; scene.add(g); decor.push(g);
+            }
+        }
+        function clearExtras(){ [decor,puzzleObjs,keyObjs].forEach(a => { a.forEach(o => scene.remove(o)); a.length = 0; }); puzzle = null; jailLocked = false; if (jailZone) jailZone.material.color.setHex(0x00aaff); }
+        function setupLevelExtras(cfg, innocentData){
+            const season = seasonFor(cfg.id); applySeason(season); spawnDecor(season);
+            const desc = document.getElementById('mission-desc'); document.getElementById('mission-title').innerText = SEASON_ICON[season] + ' ' + cfg.title;
+            (cfg.horde || []).forEach(h => { for (let i=0;i<h.n;i++){ let x,z; do { x=(Math.random()-0.5)*180; z=(Math.random()-0.5)*180; } while (Math.abs(x)<25 && Math.abs(z)<25);
+                new NPC(x,z,{ role: h.kind==='zombie'?'zombie':'aggressive', hp: h.kind==='zombie'?60:45, speed: h.kind==='zombie'?2.0:3.2, scale: h.kind==='zombie'?1.05:0.9, susMul:1, bounty:0, spook:100, color:'Horde', hex: h.kind==='zombie'?0x556b3a:0x7a5230, kind:h.kind, auto: h.kind==='zombie'?16:20, horde:true }, false); } });
+            if (cfg.puzzle === 'keys') {
+                jailLocked = true; puzzle = { type:'keys', got:0, solved:false };
+                for (let i=0;i<3;i++){ const g = new THREE.Group(); const gm = new THREE.MeshLambertMaterial({color:0xffd700,emissive:0x886600});
+                    const a = new THREE.Mesh(new THREE.BoxGeometry(0.3,1,0.3),gm), b = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.35,0.3),gm); b.position.y = 0.6;
+                    const beam = new THREE.Mesh(new THREE.BoxGeometry(0.25,40,0.25), new THREE.MeshBasicMaterial({color:0x00ffff,transparent:true,opacity:0.35,fog:false})); beam.position.y = 20; g.add(a,b,beam);
+                    let x,z,t=0; do { x=(Math.random()-0.5)*200; z=(Math.random()-0.5)*200; t++; } while (checkCollision(new THREE.Vector3(x,0,z)) && t<20);
+                    g.position.set(x,1.5,z); scene.add(g); keyObjs.push(g); }
+                desc.innerText += ' | PUZZLE: find the 3 glowing KEYS (cyan beams) to unlock the jail.';
+            } else if (cfg.puzzle === 'sequence') {
+                jailLocked = true; const seq = [0,1,2].sort(() => Math.random()-0.5), cols = [0xff3030,0x30e030,0x3060ff], names = ['RED','GREEN','BLUE'], peds = [], mats = [];
+                for (let i=0;i<3;i++){ const g = new THREE.Group(); const base = new THREE.Mesh(new THREE.CylinderGeometry(1.3,1.5,1,12), new THREE.MeshLambertMaterial({color:0x666a74})); base.position.y = 0.5;
+                    const mat = new THREE.MeshLambertMaterial({color:cols[i],emissive:cols[i],emissiveIntensity:0.25}); const top = new THREE.Mesh(new THREE.CylinderGeometry(1,1,0.4,12), mat); top.position.y = 1.2; g.add(base,top);
+                    g.position.set(-12+i*12,0,-24); scene.add(g); puzzleObjs.push(g); peds.push(g); mats.push(mat); }
+                puzzle = { type:'sequence', seq, step:0, peds, mats, solved:false };
+                desc.innerText += ' | PUZZLE: near the jail, press [E] on the pedestals in order: ' + seq.map(i => names[i]).join(' → ');
+            }
+            if (jailLocked && jailZone) jailZone.material.color.setHex(0xff3030);
+        }
+        function solvePuzzle(){ puzzle.solved = true; jailLocked = false; if (jailZone) jailZone.material.color.setHex(0x00aaff); SoundManager.playComplete(); addCoins(25); document.getElementById('mission-desc').innerText = 'PUZZLE SOLVED! +25 coins. Jail unlocked. Catch the target!'; }
+        function tryPuzzleInteract(){
+            if (!puzzle || puzzle.type !== 'sequence' || puzzle.solved || player.carriedNPC) return false;
+            for (let i=0;i<3;i++){ if (playerGroup.position.distanceTo(puzzle.peds[i].position) < 3.5){
+                const d = document.getElementById('mission-desc');
+                if (puzzle.seq[puzzle.step] === i) { puzzle.mats[i].emissiveIntensity = 1.8; puzzle.step++; SoundManager.playPickup(); if (puzzle.step === 3) solvePuzzle(); }
+                else { puzzle.step = 0; puzzle.mats.forEach(m => m.emissiveIntensity = 0.25); SoundManager.playHurt(); d.innerText = 'WRONG ORDER! Sequence reset. Try again.'; }
+                return true; } }
+            return false;
+        }
+        function updateExtras(dt,time){
+            const p = playerGroup.position;
+            if (fxType){ fxPoints.position.set(p.x,0,p.z); const sp = FXSPD[fxType], arr = fxGeo.attributes.position.array;
+                for (let i=0;i<FX_N;i++){ arr[i*3+1] -= sp*dt; if (fxType!=='rain') arr[i*3] += Math.sin(time+i)*dt*2; if (arr[i*3+1]<0) arr[i*3+1] = 45; } fxGeo.attributes.position.needsUpdate = true; }
+            for (let i=keyObjs.length-1;i>=0;i--){ const k = keyObjs[i]; k.rotation.y += dt*2;
+                if (Math.hypot(p.x-k.position.x,p.z-k.position.z) < 2.5){ scene.remove(k); keyObjs.splice(i,1); puzzle.got++; SoundManager.playPickup();
+                    if (puzzle.got >= 3) solvePuzzle(); else document.getElementById('mission-desc').innerText = 'Keys: ' + puzzle.got + '/3 - follow the cyan beams!'; } }
+        }
         function hudCoins(){ document.getElementById('coin-text').innerText = levelCoins+'/'+COINS_PER_LEVEL; document.getElementById('coin-fill').style.width = (levelCoins/COINS_PER_LEVEL*100)+'%'; }
         function spawnCoins(){
             levelCoins = 0;
@@ -528,7 +661,7 @@
             const p=playerGroup.position;
             sunMesh.position.set(p.x+130,p.y+120,p.z-230); sunMesh.lookAt(camera.position);
             sunLight.position.set(p.x+30,p.y+60,p.z+25); sunLight.target.position.copy(p); sunLight.target.updateMatrixWorld();
-            clouds.forEach(c=>{ c.position.x+=dt*1.5; if(c.position.x>260) c.position.x=-260; });
+            clouds.forEach(c=>{ c.position.x+=dt*1.5; if(c.position.x>260) c.position.x=-260; }); updateExtras(dt,time);
             for(let i=coinPickups.length-1;i>=0;i--){
                 const c=coinPickups[i]; c.rotation.y+=dt*3; c.position.y=1.2+Math.sin(time*3+c.userData.o)*0.25;
                 if(p.distanceTo(c.position)<2.6){
@@ -539,7 +672,7 @@
         }
 
         // --- 3. CHARACTER & PLAYER SYSTEM ---
-        function createCharacterMesh(isPlayer, bodyColor) {
+        function createBaseMesh(isPlayer, bodyColor) {
             const group = new THREE.Group();
             const skinMat = new THREE.MeshLambertMaterial({ color: 0xf8d8b8 });
             const shirtMat = new THREE.MeshLambertMaterial({ color: bodyColor });
@@ -564,6 +697,29 @@
 
             group.add(head); group.add(torso); group.add(armL_pivot); group.add(armR_pivot); group.add(legL_pivot); group.add(legR_pivot);
             return { group, head, armL: armL_pivot, armR: armR_pivot, legL: legL_pivot, legR: legR_pivot, shirtMat, headMesh };
+        }
+
+        function createAnimalMesh(hex) {
+            const g = new THREE.Group(), mat = new THREE.MeshLambertMaterial({ color: hex }), dark = new THREE.MeshLambertMaterial({ color: 0x222222 }), red = new THREE.MeshBasicMaterial({ color: 0xff2222 });
+            const B = (w,h,d,m,x,y,z,p) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), m); b.position.set(x,y,z); b.castShadow = true; p.add(b); return b; };
+            B(0.9,0.8,1.8,mat,0,1.0,0,g); B(0.2,0.2,0.8,mat,0,1.3,-1.2,g);
+            const head = new THREE.Group(); const hm = B(0.8,0.7,0.8,mat,0,0,0,head); B(0.4,0.3,0.5,dark,0,-0.1,0.55,head);
+            B(0.2,0.3,0.15,dark,-0.28,0.5,0,head); B(0.2,0.3,0.15,dark,0.28,0.5,0,head); B(0.12,0.12,0.05,red,-0.2,0.1,0.41,head); B(0.12,0.12,0.05,red,0.2,0.1,0.41,head);
+            head.position.set(0,1.5,1.1); g.add(head);
+            const leg = (x,z) => { const p = new THREE.Group(); p.position.set(x,0.8,z); B(0.25,0.8,0.25,dark,0,-0.4,0,p); g.add(p); return p; };
+            return { group: g, head, armL: leg(-0.3,0.7), armR: leg(0.3,0.7), legL: leg(-0.3,-0.7), legR: leg(0.3,-0.7), shirtMat: mat, headMesh: hm };
+        }
+        function createCharacterMesh(isPlayer, bodyColor, kind) {
+            if (kind === 'dog') return createAnimalMesh(bodyColor);
+            const m = createBaseMesh(isPlayer, bodyColor);
+            if (kind === 'zombie') { m.headMesh.material.color.setHex(0x6fae5a); m.legL.children[0].material.color.setHex(0x3a4a2a); }
+            if (kind === 'woman') {
+                const hm = new THREE.MeshLambertMaterial({ color: 0x4a2c17 });
+                const h1 = new THREE.Mesh(new THREE.BoxGeometry(1.0,1.2,0.3), hm); h1.position.set(0,-0.2,-0.5); const h2 = new THREE.Mesh(new THREE.BoxGeometry(1.0,0.25,0.95), hm); h2.position.y = 0.5;
+                m.head.add(h1); m.head.add(h2);
+                const sk = new THREE.Mesh(new THREE.BoxGeometry(1.4,0.8,0.8), m.shirtMat); sk.position.y = 0.95; sk.castShadow = true; m.group.add(sk);
+            }
+            return m;
         }
 
         const player = {
@@ -598,9 +754,9 @@
                 this.evidence = 0; this.suspicion = 0; this.revealed = false;
                 this.state = 'idle'; this.timer = Math.random() * 5; 
                 this.susMultiplier = data.susMul; this.bounty = data.bounty; this.spookThreshold = data.spook;
-                this.evMultiplier = (data.color === 'Black' && isTarget) ? 0.5 : 1; this.colorName = data.color; this.baseHex = data.hex;
+                this.kind = data.kind; this.autoAggro = data.auto || 0; this.horde = !!data.horde; this.lastHit = 0; this.dmg = data.kind === 'zombie' ? 8 : (data.kind === 'dog' ? 12 : 10); this.skinHex = data.kind === 'zombie' ? 0x6fae5a : (data.kind === 'dog' ? data.hex : 0xf8d8b8); this.evMultiplier = (data.color === 'Black' && isTarget) ? 0.5 : 1; this.colorName = data.color; this.baseHex = data.hex;
                 
-                this.models = createCharacterMesh(false, this.baseHex);
+                this.models = createCharacterMesh(false, this.baseHex, data.kind);
                 this.mesh = this.models.group; this.mesh.scale.set(data.scale, data.scale, data.scale);
                 this.mesh.position.set(x, 0, z); scene.add(this.mesh);
                 
@@ -618,10 +774,10 @@
                 if(this.state === 'carried' || this.state === 'surrendered') return;
                 this.hp -= amt;
                 this.models.headMesh.material.color.setHex(0xff0000);
-                setTimeout(() => { if(this.hp > 0) this.models.headMesh.material.color.setHex(0xf5d0b5); }, 200);
+                setTimeout(() => { if(this.hp > 0) this.models.headMesh.material.color.setHex(this.skinHex); }, 200);
                 
-                if (this.hp <= 0) { this.state = 'knocked_out'; SoundManager.playKO(); this.mesh.rotation.x = -Math.PI/2; this.mesh.position.y = 0.5; } 
-                else if (this.role === 'aggressive') this.state = 'attacking';
+                if (this.hp <= 0) { this.state = 'knocked_out'; SoundManager.playKO(); if (this.horde) addCoins(8); this.mesh.rotation.x = -Math.PI/2; this.mesh.position.y = 0.5; } 
+                else if (this.role === 'aggressive' || this.role === 'zombie') this.state = 'attacking';
                 else this.state = 'fleeing';
             }
 
@@ -632,6 +788,7 @@
                     this.models.legL.rotation.x = 0; this.models.legR.rotation.x = 0; return; 
                 }
 
+                if (this.autoAggro) { const dd = this.mesh.position.distanceTo(playerGroup.position); if (this.state !== 'attacking' && dd < this.autoAggro) this.state = 'attacking'; else if (this.state === 'attacking' && dd > 50) { this.state = 'wander'; this.timer = 0; } }
                 this.timer -= dt; let speed = this.baseSpeed; let isMoving = false;
 
                 if (this.timer <= 0 && this.state !== 'attacking' && this.state !== 'fleeing') {
@@ -639,6 +796,7 @@
                     if (this.role === 'innocent') this.state = rand > 0.5 ? 'idle' : 'wander';
                     else if (this.role === 'thief') this.state = rand > 0.3 ? 'stealing' : 'wander';
                     else if (this.role === 'aggressive') this.state = rand > 0.4 ? 'begging' : 'idle';
+                    else if (this.role === 'zombie') this.state = rand > 0.5 ? 'wander' : 'idle';
                     if (this.state === 'wander' || this.state === 'stealing') this.targetPos.set(this.mesh.position.x + (Math.random()-0.5)*25, 0, this.mesh.position.z + (Math.random()-0.5)*25);
                 }
 
@@ -652,8 +810,8 @@
 
                 if (this.state === 'attacking') {
                     speed *= 2.2; this.targetPos.copy(playerGroup.position);
-                    if (this.mesh.position.distanceTo(playerGroup.position) < 2.5 && performance.now() - player.lastAttack > 1000) {
-                        player.hp -= 10; document.getElementById('combat-flash').style.opacity = 0.5; setTimeout(() => document.getElementById('combat-flash').style.opacity = 0, 100);
+                    if (this.mesh.position.distanceTo(playerGroup.position) < 2.5 * Math.max(1, this.mesh.scale.x * 0.8) && performance.now() - this.lastHit > 900) { this.lastHit = performance.now();
+                        player.hp -= this.dmg; document.getElementById('combat-flash').style.opacity = 0.5; setTimeout(() => document.getElementById('combat-flash').style.opacity = 0, 100);
                         SoundManager.playHurt(); updatePlayerUI(); this.models.armR.rotation.x = -Math.PI/2; setTimeout(()=>{ this.models.armR.rotation.x = 0; }, 200);
                     }
                 }
@@ -675,6 +833,7 @@
                     this.models.legL.rotation.x = 0; this.models.legR.rotation.x = 0; this.models.armL.rotation.x = 0; 
                     if(this.state !== 'attacking') this.models.armR.rotation.x = 0;
                 }
+                if (this.kind === 'zombie') { this.models.armL.rotation.x = -Math.PI / 2.2; this.models.armR.rotation.x = -Math.PI / 2.2; }
                 if (this.suspicion > 0) this.suspicion -= dt * 3;
             }
         }
@@ -690,7 +849,7 @@
             });
             npcs = [];
             
-            items.forEach(i => scene.remove(i.mesh)); items = []; coinPickups.forEach(c => scene.remove(c)); coinPickups.length = 0;
+            items.forEach(i => scene.remove(i.mesh)); items = []; coinPickups.forEach(c => scene.remove(c)); coinPickups.length = 0; clearExtras();
             
             trolleyMesh.visible = false;
             playerGroup.position.set(0,0,0); 
@@ -712,7 +871,7 @@
             new NPC(15, -15, levelConfig, true);
             const innocentData = { role: 'innocent', hp: 20, speed: 1.5, scale: 1, susMul: 1, bounty: 0, spook: 100, color: "Gray", hex: 0x888888 };
             for(let i=0; i<26; i++) {
-                innocentData.hex = [0xe02b2b, 0xe02b2b, 0xe02b2b, 0x2ecc71, 0xf1c40f, 0xffffff][Math.floor(Math.random()*6)];
+                innocentData.hex = [0xe02b2b, 0xe02b2b, 0xe02b2b, 0x2ecc71, 0xf1c40f, 0xffffff][Math.floor(Math.random()*6)]; innocentData.kind = Math.random() < 0.35 ? 'woman' : null;
                 new NPC((Math.random()-0.5)*150, (Math.random()-0.5)*150, innocentData, false);
             }
 
@@ -721,7 +880,7 @@
                 mesh.position.set(x, 1, z); mesh.castShadow = true; scene.add(mesh);
                 items.push({ mesh, type: t, color: c, startY: 1, timeOffset: Math.random()*100 });
             }
-            sI('Baton', 0x8B4513, 10, 15); sI('Bottle', 0x2ecc71, -10, 20); spawnCoins();
+            sI('Baton', 0x8B4513, 10, 15); sI('Bottle', 0x2ecc71, -10, 20); spawnCoins(); setupLevelExtras(levelConfig, innocentData);
 
             showMenu('ui-layer'); gameState = 'PLAYING'; updatePlayerUI(); document.body.requestPointerLock();
         }
@@ -729,14 +888,14 @@
         function levelComplete(bounty) {
             gameState = 'MENU'; document.exitPointerLock();
             SoundManager.stopBGM(); SoundManager.playComplete(); addCoins(bounty);
-            if(saveData.currentLevel === saveData.maxLevelUnlocked && saveData.maxLevelUnlocked < 10) saveData.maxLevelUnlocked++;
+            if(saveData.currentLevel === saveData.maxLevelUnlocked && saveData.maxLevelUnlocked < LEVEL_DATA.length) saveData.maxLevelUnlocked++;
             saveData.hasSavedGame = false; saveGameData();
             
             document.getElementById('reward-text').innerText = `+${bounty}`;
             document.getElementById('complete-menu').style.display = 'flex'; document.getElementById('ui-layer').style.display = 'none';
 
             document.getElementById('btn-next').onclick = () => {
-                if(saveData.currentLevel < 10) startLevel(saveData.currentLevel + 1); else alert("Congratulations! You beat the game!");
+                if(saveData.currentLevel < LEVEL_DATA.length) startLevel(saveData.currentLevel + 1); else alert("Congratulations! You beat the game!");
             };
         }
 
@@ -829,8 +988,10 @@
         }
 
         function tryInteract() {
+            if (tryPuzzleInteract()) return;
             if (player.carriedNPC) {
                 if (playerGroup.position.distanceTo(jailDropZonePos) < 6) {
+                    if (jailLocked) { document.getElementById('interaction-prompt').innerText = 'Jail is LOCKED! Solve the puzzle first.'; return; }
                     const isTarget = player.carriedNPC.isTarget; const bounty = player.carriedNPC.bounty;
                     
                     playerGroup.remove(player.carriedNPC.mesh); 
@@ -850,7 +1011,7 @@
             let pickedUp = false;
             npcs.forEach(npc => {
                 if (!pickedUp && npc.mesh.position.distanceTo(playerGroup.position) < 5 && (npc.revealed || npc.state === 'knocked_out' || npc.state === 'surrendered' || npc.state === 'fleeing')) {
-                    if (npc.role !== 'innocent') {
+                    if (npc.role !== 'innocent' && !npc.horde) {
                         playerGroup.add(npc.mesh);
                         if(saveData.upgrades.trolley) {
                             trolleyMesh.visible = true; npc.mesh.position.set(0, 1.0, 1.5); npc.mesh.rotation.x = 0; npc.mesh.rotation.y = Math.PI; 
@@ -958,7 +1119,7 @@
 
                 if (intersects.length > 0 && intersects[0].distance < 30) {
                     const npc = npcs.find(n => n.hitBox === intersects[0].object);
-                    if (npc && npc.state !== 'carried') {
+                    if (npc && npc.state !== 'carried' && !npc.horde) {
                         const dist = playerGroup.position.distanceTo(npc.mesh.position); 
                         
                         if (npc.suspicion >= npc.spookThreshold && npc.state !== 'attacking' && npc.state !== 'surrendered') {
@@ -1021,6 +1182,7 @@
                 }
             }
 
+            if (puzzle && puzzle.type === 'sequence' && !puzzle.solved && !player.carriedNPC && puzzle.peds.some(pd => playerGroup.position.distanceTo(pd.position) < 3.5)) { document.getElementById('interaction-prompt').innerText = 'Press [E] to activate pedestal'; document.getElementById('interaction-prompt').style.color = '#00ffcc'; }
             renderer.render(scene, camera);
         }
 
