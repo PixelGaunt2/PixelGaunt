@@ -55,14 +55,6 @@
             font-size: 18px; font-weight: bold; color: white; text-shadow: 2px 2px 0 #000;
         }
 
-        /* SOUND BUTTON STYLING */
-        #soundBtn {
-            position: absolute; top: 20px; left: calc(50% + 220px); /* 220px right of the center timer */
-            background: rgba(0,0,0,0.7); border: 2px solid #fff; color: #fff; 
-            padding: 8px 15px; cursor: pointer; z-index: 100; font-weight: bold; 
-            border-radius: 5px; font-family: 'Courier New', monospace; box-shadow: 0 0 10px #fff;
-        }
-
         .screen-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh;
             background: rgba(10, 3, 18, 0.85); display: flex; flex-direction: column;
@@ -103,7 +95,6 @@
         .continue-btn.no-save { opacity: 0.55; box-shadow: none; }
         .continue-btn:hover { background: #fff; color: #000; box-shadow: 0 0 25px #fff; }
 
-        #pauseBtnHint { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; font-size: 12px; pointer-events: auto; cursor: pointer; z-index: 10; border: 1px solid #fff; }
 
         /* --- MOBILE UI --- */
         #mobileUI {
@@ -152,11 +143,6 @@
             #levelTimerContainer { width: 220px; height: 22px; border: 2px solid #00ff88; top: 10px; }
             #levelTimerText { font-size: 11px; top: 1px; }
             
-            /* Adjusting Sound Button for mobile so it stays right of the narrower mobile timer */
-            #soundBtn {
-                top: 10px; left: calc(50% + 120px); 
-                padding: 4px 8px; font-size: 10px;
-            }
         }
             /* Short screens (phones in landscape) */
         @media (max-height: 600px) {
@@ -185,16 +171,150 @@
         .health-bar-container { border-radius: 8px; border-color: #35d0ff; overflow: hidden; box-shadow: 0 0 14px rgba(53,208,255,0.6); }
         #playerHealth { background: linear-gradient(90deg,#39ff14,#00ffd0); box-shadow: 0 0 12px #39ff14; }
         .neon-title { text-shadow: 0 0 6px #ff2e9a, 0 0 18px #ff2e9a, 0 0 40px #b020ff, 0 0 80px #3b6bff; }
+
+        /* ====================== UI v2 (clean neon skin) ====================== */
+        :root { --cyan:#35d0ff; --pink:#ff2e9a; --green:#39ff14; --gold:#ffcc00; --purple:#b020ff; }
+        button { font-family: 'Courier New', Courier, monospace; }
+        .panel {
+            background: linear-gradient(180deg, rgba(24,10,46,0.82), rgba(8,3,22,0.82));
+            border: 1px solid rgba(53,208,255,0.5); border-radius: 12px;
+            box-shadow: 0 0 16px rgba(53,208,255,0.22), inset 0 0 14px rgba(176,32,255,0.14);
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        }
+        #ui { top: 14px; left: 14px; right: 14px; align-items: flex-start; }
+        #playerStageText {
+            display: inline-block; padding: 3px 12px; margin-bottom: 6px; border-radius: 999px;
+            font-size: 14px !important; font-weight: bold; letter-spacing: 2px; color: #fff;
+            background: linear-gradient(90deg, rgba(255,46,154,0.75), rgba(176,32,255,0.75));
+            box-shadow: 0 0 12px rgba(255,46,154,0.55); text-shadow: 0 1px 0 #000;
+        }
+        .health-bar-container {
+            position: relative; width: 300px; height: 26px; margin-bottom: 8px;
+            background: rgba(6,3,18,0.85); border: 2px solid var(--cyan); border-radius: 14px;
+            box-shadow: 0 0 14px rgba(53,208,255,0.55), inset 0 0 8px #000; overflow: hidden;
+        }
+        #playerHealth {
+            height: 100%; width: 100%; border-radius: 12px; transition: width 0.15s ease-out, background 0.3s;
+            background: linear-gradient(180deg, #7dff6a 0%, #39ff14 45%, #00c98a 100%); box-shadow: 0 0 12px #39ff14;
+        }
+        #playerHealth.low { background: linear-gradient(180deg, #ff8aa0 0%, #ff2a55 50%, #b0002a 100%); box-shadow: 0 0 12px #ff2a55; }
+        #hpText {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: bold; letter-spacing: 1px; color: #fff; text-shadow: 0 1px 2px #000, 0 0 4px #000;
+        }
+        .hud-timers { width: 300px; gap: 6px; padding: 8px 10px; margin-bottom: 8px;
+            background: linear-gradient(180deg, rgba(24,10,46,0.72), rgba(8,3,22,0.72));
+            border: 1px solid rgba(53,208,255,0.35); border-radius: 10px; }
+        .timer-row { gap: 8px; font-size: 11px; letter-spacing: 1px; }
+        .timer-row > span { width: 104px; flex-shrink: 0; text-align: left; }
+        .bar-bg { flex: 1; width: auto; height: 9px; background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.28); border-radius: 6px; overflow: hidden; }
+        .bar-fill { border-radius: 6px; box-shadow: 0 0 6px rgba(255,255,255,0.45); }
+        #ultTracker {
+            margin-top: 0; padding: 7px 12px; font-size: 12px; letter-spacing: 1px; line-height: 1.35;
+            background: linear-gradient(180deg, rgba(40,10,60,0.85), rgba(14,4,28,0.85));
+            border: 2px solid var(--pink); border-radius: 10px; color: #ff9be0;
+            text-shadow: 0 0 6px var(--pink); box-shadow: 0 0 12px rgba(255,46,154,0.45);
+        }
+        #ultTracker.ready { background: linear-gradient(180deg, #ff4fd0, #b020ff); color: #fff; border-color: #fff; text-shadow: 0 1px 2px #000; animation: pulse 1s infinite; }
+        #scoreContainer { padding: 8px 14px; min-width: 150px; font-size: 22px; letter-spacing: 1px; }
+        #scoreBoard { font-size: 22px; }
+        #coinBoard { font-size: 16px; margin-top: 3px; }
+        #orbBoard { font-size: 13px; margin-top: 3px; color: #d8c8ff; text-shadow: 0 0 8px #b020ff; }
+
+        #levelTimerContainer {
+            top: 14px; width: 360px; height: 26px; border-radius: 14px; border: 2px solid var(--green);
+            background: rgba(6,3,18,0.85); box-shadow: 0 0 14px rgba(57,255,20,0.45), inset 0 0 8px #000; align-items: center;
+        }
+        #levelTimerFill { border-radius: 12px; background: linear-gradient(180deg, #7dff6a, #00c98a); box-shadow: 0 0 12px #39ff14; position: absolute; left: 0; top: 0; bottom: 0; }
+        #levelTimerText { top: 0; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 13px; letter-spacing: 1px; z-index: 1; }
+
+        #topControls { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 60; }
+        .icon-btn {
+            width: 42px; height: 42px; border-radius: 50%; cursor: pointer; font-size: 16px; font-weight: bold; color: #fff;
+            display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1;
+            background: linear-gradient(180deg, rgba(40,16,70,0.9), rgba(12,4,30,0.9));
+            border: 2px solid var(--cyan); box-shadow: 0 0 12px rgba(53,208,255,0.5);
+            transition: transform 0.1s, box-shadow 0.15s, background 0.15s; pointer-events: auto; -webkit-tap-highlight-color: transparent;
+        }
+        .icon-btn:hover { background: linear-gradient(180deg, #35d0ff, #1a7fb0); box-shadow: 0 0 20px var(--cyan); }
+        .icon-btn:active { transform: scale(0.9); }
+        #pauseBtn { border-color: var(--gold); box-shadow: 0 0 12px rgba(255,204,0,0.5); letter-spacing: -2px; }
+        #pauseBtn:hover { background: linear-gradient(180deg, #ffd84a, #c28a00); box-shadow: 0 0 20px var(--gold); }
+        #soundBtn { position: static; padding: 0; left: auto; top: auto; font-size: 18px; box-shadow: 0 0 12px rgba(53,208,255,0.5); }
+        #soundBtn.off { opacity: 0.6; border-color: #888; box-shadow: none; }
+
+        .screen-overlay { background: radial-gradient(ellipse at center, rgba(30,8,56,0.88), rgba(6,2,16,0.94)); }
+        #mainMenu { background: radial-gradient(ellipse at center, rgba(24,6,48,0.55), rgba(6,2,16,0.8)); }
+        .neon-title { color: #fff; }
+        .arcade-btn {
+            display: block; padding: 14px 28px; margin-top: 14px; font-size: 20px; letter-spacing: 2px; font-weight: bold; color: #fff;
+            width: min(330px, 85vw); border: 3px solid rgba(255,255,255,0.9); border-radius: 14px; cursor: pointer;
+            background: linear-gradient(180deg, #ff4d94 0%, #d4004f 100%); text-shadow: 0 2px 0 rgba(0,0,0,0.45);
+            box-shadow: 0 5px 0 #7a0030, 0 0 18px rgba(255,0,85,0.55);
+            transition: transform 0.1s, box-shadow 0.1s, filter 0.15s; -webkit-tap-highlight-color: transparent;
+        }
+        .arcade-btn:hover { background: linear-gradient(180deg, #ff4d94 0%, #d4004f 100%); color: #fff; border-color: #fff; filter: brightness(1.18); transform: translateY(-2px); box-shadow: 0 7px 0 #7a0030, 0 0 26px rgba(255,0,85,0.8); }
+        .arcade-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #7a0030, 0 0 14px rgba(255,0,85,0.6); }
+        .arcade-btn.btn-green { background: linear-gradient(180deg, #5dffb0 0%, #00b868 100%); color: #021a10; text-shadow: none; box-shadow: 0 5px 0 #006b3c, 0 0 18px rgba(0,255,136,0.55); border-color: #fff; }
+        .arcade-btn.btn-green:hover { background: linear-gradient(180deg, #5dffb0 0%, #00b868 100%); color: #021a10; box-shadow: 0 7px 0 #006b3c, 0 0 26px rgba(0,255,136,0.85); }
+        .arcade-btn.btn-gold { background: linear-gradient(180deg, #ffe066 0%, #e09a00 100%); color: #1c1200; text-shadow: none; box-shadow: 0 5px 0 #8a5d00, 0 0 18px rgba(255,204,0,0.55); }
+        .arcade-btn.btn-gold:hover { background: linear-gradient(180deg, #ffe066 0%, #e09a00 100%); color: #1c1200; box-shadow: 0 7px 0 #8a5d00, 0 0 26px rgba(255,204,0,0.85); }
+        .arcade-btn.btn-dark { background: linear-gradient(180deg, #2a1650 0%, #120828 100%); border-color: var(--cyan); box-shadow: 0 5px 0 #05030f, 0 0 16px rgba(53,208,255,0.5); }
+        .arcade-btn.btn-dark:hover { background: linear-gradient(180deg, #2a1650 0%, #120828 100%); box-shadow: 0 7px 0 #05030f, 0 0 24px rgba(53,208,255,0.8); }
+        .continue-btn.no-save { opacity: 0.5; filter: grayscale(0.5); box-shadow: 0 5px 0 #006b3c; }
+        #noSaveMsg { color: var(--gold); font-weight: bold; margin-top: 10px; text-align: center; font-size: 14px; }
+
+        #mobileUI { bottom: 22px; padding: 0 28px; align-items: flex-end; }
+        .joy-zone { width: 130px; height: 130px; background: radial-gradient(circle, rgba(53,208,255,0.16), rgba(53,208,255,0.05)); border: 2px solid rgba(53,208,255,0.5); box-shadow: 0 0 16px rgba(53,208,255,0.3), inset 0 0 18px rgba(53,208,255,0.15); }
+        .joy-knob { width: 52px; height: 52px; background: radial-gradient(circle at 35% 30%, #aef3ff, #35d0ff 70%); box-shadow: 0 0 14px #35d0ff; }
+        .action-zone { gap: 10px; }
+        .action-btn {
+            width: 60px; height: 60px; font-size: 11px; letter-spacing: 0.5px; color: #fff; user-select: none; -webkit-tap-highlight-color: transparent;
+            background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.28), rgba(255,0,85,0.35) 70%);
+            border: 2px solid rgba(255,255,255,0.55); box-shadow: 0 0 12px rgba(255,0,85,0.45), inset 0 -4px 8px rgba(0,0,0,0.35);
+            text-shadow: 0 1px 2px #000;
+        }
+        .action-btn:active { background: radial-gradient(circle at 35% 30%, #fff, #ff2e7a 75%); box-shadow: 0 0 22px #ff0055; transform: scale(0.92); }
+        .action-btn.special { background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.28), rgba(255,204,0,0.38) 70%); box-shadow: 0 0 12px rgba(255,204,0,0.45), inset 0 -4px 8px rgba(0,0,0,0.35); }
+        .action-btn.special:active { background: radial-gradient(circle at 35% 30%, #fff, #ffcc00 75%); box-shadow: 0 0 22px #ffcc00; }
+        .action-btn.jump { background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.28), rgba(0,255,136,0.38) 70%); box-shadow: 0 0 12px rgba(0,255,136,0.45), inset 0 -4px 8px rgba(0,0,0,0.35); }
+        .action-btn.jump:active { background: radial-gradient(circle at 35% 30%, #fff, #00ff88 75%); box-shadow: 0 0 22px #00ff88; }
+        .action-btn.ult-btn { top: -76px; width: 64px; height: 64px; }
+
+        @media (max-width: 768px) {
+            #ui { top: 8px; left: 8px; right: 8px; }
+            #playerStageText { font-size: 10px !important; padding: 2px 8px; margin-bottom: 4px; }
+            .health-bar-container { width: 170px; height: 20px; border-width: 2px; margin-bottom: 5px; }
+            #hpText { font-size: 10px; }
+            .hud-timers { width: 170px; padding: 5px 7px; gap: 4px; }
+            .timer-row { font-size: 8px; gap: 5px; }
+            .timer-row > span { width: 62px; }
+            .bar-bg { height: 7px; }
+            #ultTracker { font-size: 8px; padding: 4px 6px; }
+            #scoreContainer { padding: 5px 9px; min-width: 100px; }
+            #scoreBoard { font-size: 13px !important; } #coinBoard { font-size: 11px !important; } #orbBoard { font-size: 9px !important; }
+            #levelTimerContainer { top: 8px; width: 190px; height: 20px; }
+            #levelTimerText { font-size: 10px; }
+            #topControls { top: 36px; gap: 8px; }
+            .icon-btn { width: 34px; height: 34px; font-size: 13px; }
+            #soundBtn { top: auto; left: auto; padding: 0; font-size: 15px; }
+            #mobileUI { bottom: 14px; padding: 0 16px; }
+            .joy-zone { width: 112px; height: 112px; }
+            .action-btn { width: 50px; height: 50px; font-size: 9px; }
+            .action-zone { gap: 8px; }
+            .action-btn.ult-btn { top: -62px; width: 54px; height: 54px; font-size: 13px; }
+        }
+        @media (max-height: 600px) {
+            .arcade-btn { font-size: 16px; padding: 9px 20px; margin-top: 10px; width: min(280px, 80vw); border-width: 2px; }
+        }
     </style>
 </head>
 <body>
 
-    <div id="soundBtn" onclick="toggleSound()">SOUND: ON</div>
-    
-    <div id="ui">
+    <div id="ui" style="display:none;">
         <div>
             <div style="font-weight:bold; font-size: 18px; text-shadow: 1px 1px #000;" id="playerStageText">PLAYER 1 (LVL 1)</div>
-            <div class="health-bar-container"><div id="playerHealth"></div></div>
+            <div class="health-bar-container"><div id="playerHealth"></div><div id="hpText">100 / 100</div></div>
             
             <div class="hud-timers">
                 <div class="timer-row"><span style="color:#00ffff;">MEGA FIRE</span><div class="bar-bg"><div id="fbBar" class="bar-fill" style="background:#00ffff;"></div></div></div>
@@ -211,7 +331,7 @@
                 ULT TARGETS: Small 0/15 | Spiders 0/5 | Big 0/5
             </div>
         </div>
-        <div id="scoreContainer">
+        <div id="scoreContainer" class="panel">
             <div id="scoreBoard">SCORE: 0</div>
             <div id="coinBoard">COINS: 0</div>
             <div id="orbBoard">BLACK ORBS: 0/10</div>
@@ -223,26 +343,29 @@
         <div id="levelTimerText">LEVEL ENDS IN: 1:30</div>
     </div>
 
-    <div id="pauseBtnHint" onclick="togglePause()">Press P or Tap Here to Pause</div>
+    <div id="topControls" style="display:none;">
+        <button id="pauseBtn" class="icon-btn" onclick="togglePause()" title="Pause (P)" aria-label="Pause">&#10074;&#10074;</button>
+        <button id="soundBtn" class="icon-btn" onclick="toggleSound()" title="Sound" aria-label="Toggle sound">&#128266;</button>
+    </div>
 
     <div id="mainMenu" class="screen-overlay">
         <div class="neon-title">STICKMAN VELOCITY</div>
-        <button class="arcade-btn continue-btn" id="btnContinue" onclick="continueGame()">RESUME GAME</button>
-        <div id="noSaveMsg" style="display:none; color:#ffcc00; font-weight:bold; margin-top:8px; text-align:center;">No saved game yet — press NEW GAME</div>
+        <button class="arcade-btn btn-green continue-btn" id="btnContinue" onclick="continueGame()">RESUME GAME</button>
+        <div id="noSaveMsg" style="display:none;">No saved game yet — press NEW GAME</div>
         <button class="arcade-btn" onclick="startNewGame()">NEW GAME</button>
-        <button class="arcade-btn" id="btnReadme" style="background: #ffcc00; color: #000; box-shadow: 0 0 15px #ffcc00; margin-top: 20px;" onclick="showReadme()">README</button>
+        <button class="arcade-btn btn-gold" id="btnReadme" onclick="showReadme()">README</button>
     </div>
 
     <div id="pauseMenu" class="screen-overlay" style="display: none;">
         <div class="neon-title" style="text-shadow: 0 0 10px #ffaa00, 0 0 40px #ffaa00; color: #ffaa00;">GAME PAUSED</div>
-        <button class="arcade-btn" style="background: #ffaa00; box-shadow: 0 0 15px #ffaa00;" onclick="togglePause()">RESUME</button>
-        <button class="arcade-btn" style="background: #111; margin-top: 10px;" onclick="location.reload()">QUIT TO MENU</button>
+<button class="arcade-btn btn-gold" onclick="togglePause()">&#9654; RESUME</button>
+        <button class="arcade-btn btn-dark" onclick="goToMainMenu()">MAIN MENU</button>
     </div>
 
     <div id="gameOver" class="screen-overlay" style="display: none;">
         <div class="neon-title" style="text-shadow: 0 0 10px #ff0055, 0 0 40px #ff0055; color: #ff0055;">GAME OVER</div>
         <div id="finalStats" style="font-size: 18px; margin-top: 10px;">Stage: 1 | Score: 0 | Coins: 0</div>
-        <button class="arcade-btn" onclick="location.reload()">MAIN MENU</button>
+        <button class="arcade-btn btn-dark" onclick="goToMainMenu()">MAIN MENU</button>
     </div>
 
     <div id="levelComplete" class="screen-overlay" style="display: none;">
@@ -252,7 +375,7 @@
         
     </div>
 
-    <div id="mobileUI">
+    <div id="mobileUI" style="display:none;">
         <div class="joy-zone" id="joystick"><div class="joy-knob" id="knob"></div></div>
         <div class="action-zone">
             <div class="action-btn ult-btn" id="btnUlt" onclick="triggerUltimate()">ULT</div>
@@ -317,8 +440,35 @@
         let framesElapsed = 0; let levelCompleted = false; 
         const LEVEL_TIMER_FRAMES = 90 * 60; 
 
-        let savedData = localStorage.getItem('stickmanVelocitySave');
-        if (!savedData) { document.getElementById('btnContinue').classList.add('no-save'); }
+        const SAVE_KEY = 'stickmanVelocitySave';
+        function readSave() {
+            try {
+                const raw = localStorage.getItem(SAVE_KEY);
+                if (!raw) return null;
+                const d = JSON.parse(raw);
+                return (d && typeof d.stage === 'number') ? d : null;
+            } catch (e) { return null; }
+        }
+        function refreshResumeButton() {
+            const d = readSave(), b = document.getElementById('btnContinue');
+            b.classList.toggle('no-save', !d);
+            b.innerText = d ? `RESUME GAME (STAGE ${d.stage})` : 'RESUME GAME';
+        }
+        refreshResumeButton();
+        function showHud(on) {
+            document.getElementById('ui').style.display = on ? 'flex' : 'none';
+            document.getElementById('mobileUI').style.display = on ? 'flex' : 'none';
+            document.getElementById('topControls').style.display = on ? 'flex' : 'none';
+            if (!on) document.getElementById('levelTimerContainer').style.display = 'none';
+        }
+        function resetInputs() {
+            keys.a.pressed = false; keys.d.pressed = false; keys.s.pressed = false; keys.fire.pressed = false;
+            player.stand();
+        }
+        function goToMainMenu() {
+            if (gameState === 'PLAYING' || gameState === 'PAUSED') saveGame();
+            location.reload();
+        }
 
         function triggerShake(intensity = 10) { shakeTime = intensity; }
         function applyShake() {
@@ -334,7 +484,7 @@
         let soundMuted = false;
         function toggleSound() {
             soundMuted = !soundMuted; GameAudio.setMuted(soundMuted);
-            document.getElementById('soundBtn').innerText = soundMuted ? "SOUND: OFF" : "SOUND: ON";
+            const sb = document.getElementById('soundBtn'); sb.innerHTML = soundMuted ? '&#128263;' : '&#128266;'; sb.classList.toggle('off', soundMuted);
         }
 
         // --- GAME AUDIO (HTML5 Audio: provided .wav sound effects + .mp3 background music) ---
@@ -545,11 +695,12 @@
                 
                 this.attackCombo = 0;
                 this.attackTimeout = null;
+                this.attackFrames = 0; this.attackBuffer = null;
 
                 this.isCrouching = false; this.isDashing = false; this.dashCooldown = 0; this.maxDashCooldown = 60; this.dashTimer = 0;
                 this.isDiving = false; this.diveCooldown = 0; this.maxDiveCooldown = 90; this.diveTimer = 0;
                 this.jumps = 0; this.maxJumps = 2;
-                this.fireballCooldown = 0;
+                this.fireballCooldown = (team === 'enemy' && type === 'gunner') ? 90 : 0;
                 
                 this.animTimer = Math.random() * 100;
                 this.isKnockedDown = false; this.knockdownTimer = 0;
@@ -1001,6 +1152,7 @@
 
             update() {
                 this.stepRig();
+                this.tickAttack();
                 this.draw(); drawReflected(() => this.draw()); drawShield(this);
                 if (this.flashTimer > 0) this.flashTimer--;
                 
@@ -1068,14 +1220,16 @@
             sweepAttack() {
                 if (this.isKnockedDown || this.isDiving || this.diveCooldown > 0) return; 
                 this.isDiving = true; this.diveTimer = 20; this.diveCooldown = this.maxDiveCooldown; 
-                this.velocity.y = 0; this.isAttacking = true; this.attackType = 'sweep'; this.vis.type = null; 
+                this.velocity.y = 0; this.isAttacking = true; this.attackType = 'sweep'; this.vis.type = null;
+                this.attackFrames = 0; this.attackBuffer = null; if (this.attackTimeout && this.team === 'player') { clearTimeout(this.attackTimeout); this.attackTimeout = null; } 
                 sfxJump(); 
             }
 
             diveAttack() { 
                 if (this.isKnockedDown || this.isDiving || this.diveCooldown > 0) return; 
                 this.isDiving = true; this.diveTimer = 25; this.diveCooldown = this.maxDiveCooldown; 
-                this.velocity.y = 10; this.isAttacking = true; this.attackType = 'dive'; this.vis.type = null; 
+                this.velocity.y = 10; this.isAttacking = true; this.attackType = 'dive'; this.vis.type = null;
+                this.attackFrames = 0; this.attackBuffer = null; if (this.attackTimeout && this.team === 'player') { clearTimeout(this.attackTimeout); this.attackTimeout = null; } 
                 sfxJump(); 
             }
 
@@ -1087,19 +1241,38 @@
 
             attack(type) {
                 if (hasCarMode || this.isDashing || this.isKnockedDown || this.isDiving) return;
-                
-                this.isAttacking = true; 
+
+                // An attack is already playing: let it finish. The player's next press is buffered
+                // and fires the moment the swing is far enough along (no more cancelled kicks).
+                const v = this.vis;
+                if ((v.type === 'punch' || v.type === 'kick') && v.t < v.dur * 0.7) {
+                    if (this.team === 'player') this.attackBuffer = type;
+                    return;
+                }
+                this.startAttack(type);
+            }
+
+            startAttack(type) {
+                this.attackBuffer = null;
+                this.isAttacking = true;
                 this.attackType = type;
                 this.attackCombo = (this.attackCombo + 1) % 3;
                 this.vis = { type: type, t: 0, dur: type === 'kick' ? 22 : 14, combo: this.attackCombo };
+                // hit window counted in game frames (not setTimeout) so it always matches the animation
+                this.attackFrames = type === 'kick' ? 14 : 9;
+                if (this.attackTimeout) { clearTimeout(this.attackTimeout); this.attackTimeout = null; }
+                if (type === 'punch') sfxPunch(); else sfxKick();
+            }
 
-                if(type === 'punch') sfxPunch(); else sfxKick();
-                
-                if (this.attackTimeout) clearTimeout(this.attackTimeout);
-                this.attackTimeout = setTimeout(() => { 
-                    this.isAttacking = false; 
-                    this.attackType = null; 
-                }, type === 'kick' ? 200 : 120);
+            tickAttack() {
+                if (this.attackFrames > 0) {
+                    this.attackFrames--;
+                    if (this.attackFrames === 0 && !this.isDiving) { this.isAttacking = false; this.attackType = null; }
+                }
+                if (this.attackBuffer && !hasCarMode && !this.isDashing && !this.isKnockedDown && !this.isDiving) {
+                    const v = this.vis;
+                    if (!(v.type === 'punch' || v.type === 'kick') || v.t >= v.dur * 0.7) this.startAttack(this.attackBuffer);
+                }
             }
 
             shootFireball() {
@@ -1107,8 +1280,12 @@
                 if(this.team === 'player' && hasGunShock) return;
 
                 if(this.fireballCooldown > 0) return; 
-                this.fireballCooldown = (this.team === 'player' && hasFireballBoost) ? 25 : 45;
+                // player: fast. Enemy gunners (red): much slower, a bit faster each stage
+                this.fireballCooldown = (this.team === 'player')
+                    ? (hasFireballBoost ? 25 : 45)
+                    : Math.max(110, 200 - currentStage * 10);
                 
+                this.attackFrames = 0; this.attackBuffer = null;
                 this.isAttacking = true; this.attackType = 'punch';
                 this.vis = { type: 'fire', t: 0, dur: 18, combo: 0 };
                 
@@ -1128,6 +1305,7 @@
                 let speed = this.facingRight ? 8 : -8;
                 if (hasCarMode) speed = this.facingRight ? 12 : -12;
                 if (hasFireballBoost && this.team === 'player') speed = this.facingRight ? 18 : -18;
+                if (this.team === 'enemy') speed = this.facingRight ? 6.5 : -6.5;
                 
                 const sizeBoost = (this.team === 'player') && hasFireballBoost;
                 projectiles.push(new Projectile(this.position.x + (this.facingRight ? this.width : 0), this.position.y + 40, speed, this.color, this.team, sizeBoost));
@@ -1148,6 +1326,8 @@
 
                 this.isKnockedDown = true;
                 this.knockdownTimer = 20;
+                this.attackBuffer = null;
+                if (this.attackFrames > 0) { this.attackFrames = 0; this.isAttacking = false; this.attackType = null; }
                 this.vis.type = null; this.hitFront = ((sourceX > this.position.x) ? 1 : -1) === (this.facingRight ? 1 : -1);
                 let dir = this.position.x < sourceX ? -1 : 1;
                 this.velocity.x = dir * 10;
@@ -1181,27 +1361,110 @@
 
         class Bat {
             constructor(x, y) {
-                this.position = { x, y }; this.velocity = { x: -4 - (currentStage*0.5), y: 0 }; this.width = 40; this.height = 30; this.health = 20 + (currentStage*5); this.dead = false; this.animTimer = Math.random()*100;
+                this.position = { x, y }; this.velocity = { x: -4 - (currentStage * 0.5), y: 0 };
+                this.width = 40; this.height = 30; this.health = 20 + (currentStage * 5); this.dead = false;
+                this.animTimer = Math.random() * 100; this.hitCooldown = 0; this.flash = 0; this.tilt = 0;
             }
+            get cx() { return this.position.x + 20; }
+            get cy() { return this.position.y + 15; }
+
+            // Rigged bat: body + head + ears, and two wings made of bones (arm -> forearm -> 3 fingers)
+            // with a scalloped membrane. Local space: +x = forward, +y = down.
             draw() {
-                c.save(); c.translate(-cameraX, 0); this.animTimer+=0.2; c.fillStyle = '#8800ff';
-                c.beginPath(); c.arc(this.position.x + 20, this.position.y + 15, 15, 0, Math.PI*2); c.fill();
-                let wingY = Math.sin(this.animTimer) * 20;
-                c.beginPath(); c.moveTo(this.position.x + 20, this.position.y + 15); c.lineTo(this.position.x - 10, this.position.y + 15 + wingY); c.lineTo(this.position.x + 10, this.position.y + 30); c.fill();
-                c.beginPath(); c.moveTo(this.position.x + 20, this.position.y + 15); c.lineTo(this.position.x + 50, this.position.y + 15 + wingY); c.lineTo(this.position.x + 30, this.position.y + 30); c.fill();
-                c.fillStyle = '#f00'; c.beginPath(); c.arc(this.position.x + 15, this.position.y + 10, 3, 0, Math.PI*2); c.fill();
+                const dir = this.velocity.x <= 0 ? -1 : 1;
+                const t = this.animTimer, hurt = this.flash > 0;
+                const flap = Math.sin(t), flap2 = Math.sin(t - 0.85);
+                const bodyC = hurt ? '#ffffff' : '#5b1aa8', bellyC = hurt ? '#ffffff' : '#8b45e6';
+                const memNear = hurt ? 'rgba(255,255,255,0.95)' : 'rgba(110,40,200,0.92)';
+                const memFar  = hurt ? 'rgba(255,255,255,0.8)'  : 'rgba(60,20,120,0.9)';
+                const boneC = hurt ? '#ffffff' : '#c9a0ff';
+
+                const wing = (sh, phase, mem, far) => {
+                    const f1 = Math.sin(t + phase), f2 = Math.sin(t - 0.85 + phase);
+                    const a1 = 0.15 - f1 * 2.1, a2 = 0.35 - f2 * 2.1;
+                    const E = { x: sh.x + 15 * Math.cos(a1), y: sh.y + 15 * Math.sin(a1) };
+                    const W = { x: E.x + 19 * Math.cos(a2), y: E.y + 19 * Math.sin(a2) };
+                    const offs = [-0.45, 0.35, 1.05], lens = [17, 24, 19];
+                    const tips = offs.map((o, i) => ({ x: W.x + lens[i] * Math.cos(a2 + o), y: W.y + lens[i] * Math.sin(a2 + o) }));
+                    const hip = { x: -9, y: 9 };
+                    c.fillStyle = mem; c.beginPath();
+                    c.moveTo(sh.x, sh.y); c.lineTo(E.x, E.y); c.lineTo(W.x, W.y); c.lineTo(tips[0].x, tips[0].y);
+                    for (let i = 0; i < 2; i++) {      // scalloped trailing edge
+                        const m = { x: (tips[i].x + tips[i + 1].x) / 2, y: (tips[i].y + tips[i + 1].y) / 2 };
+                        c.quadraticCurveTo(m.x + (W.x - m.x) * 0.3, m.y + (W.y - m.y) * 0.3, tips[i + 1].x, tips[i + 1].y);
+                    }
+                    const mh = { x: (tips[2].x + hip.x) / 2, y: (tips[2].y + hip.y) / 2 };
+                    c.quadraticCurveTo(mh.x + (sh.x - mh.x) * 0.3, mh.y + (sh.y - mh.y) * 0.3, hip.x, hip.y);
+                    c.closePath(); c.fill();
+                    c.strokeStyle = far ? 'rgba(150,110,220,0.8)' : boneC; c.lineWidth = far ? 1.6 : 2; c.lineCap = 'round'; c.lineJoin = 'round';
+                    c.beginPath(); c.moveTo(sh.x, sh.y); c.lineTo(E.x, E.y); c.lineTo(W.x, W.y);
+                    for (const tp of tips) { c.moveTo(W.x, W.y); c.lineTo(tp.x, tp.y); }
+                    c.stroke();
+                };
+
+                c.save();
+                c.translate(this.cx - cameraX, this.cy + Math.sin(t * 0.5) * 1.5);
+                c.scale(dir, 1); c.rotate(this.tilt * dir);
+                c.shadowBlur = reflecting ? 0 : 12; c.shadowColor = '#8800ff';
+
+                wing({ x: -2, y: -5 }, 0.6, memFar, true);            // far wing (behind, offset in phase)
+
+                // body
+                c.fillStyle = bodyC; c.beginPath(); c.ellipse(-1, 2, 9.5, 14, -0.25, 0, Math.PI * 2); c.fill();
+                c.fillStyle = bellyC; c.beginPath(); c.ellipse(2, 5, 5, 9, -0.25, 0, Math.PI * 2); c.fill();
+                // feet (tucked claws)
+                c.strokeStyle = boneC; c.lineWidth = 1.6; c.lineCap = 'round'; c.beginPath();
+                c.moveTo(-5, 15); c.lineTo(-7, 19); c.moveTo(-3, 16); c.lineTo(-3, 20); c.moveTo(-1, 15); c.lineTo(0, 19); c.stroke();
+
+                // head + ears
+                c.fillStyle = bodyC;
+                c.beginPath(); c.moveTo(5, -11); c.lineTo(8, -24 + flap * 0.8); c.lineTo(12, -13); c.closePath(); c.fill();
+                c.beginPath(); c.moveTo(12, -13); c.lineTo(17, -23 + flap2 * 0.8); c.lineTo(18, -9); c.closePath(); c.fill();
+                c.beginPath(); c.arc(11, -6, 8.5, 0, Math.PI * 2); c.fill();
+                c.fillStyle = bellyC; c.beginPath(); c.ellipse(17.5, -3, 4.5, 3.5, 0.2, 0, Math.PI * 2); c.fill();   // snout
+                c.fillStyle = '#1a0033'; c.beginPath(); c.arc(20, -4.5, 1.2, 0, Math.PI * 2); c.fill();               // nose
+                // fangs
+                c.fillStyle = '#fff'; c.beginPath();
+                c.moveTo(15.5, -0.5); c.lineTo(16.5, 4); c.lineTo(17.5, -0.5);
+                c.moveTo(18.5, -0.8); c.lineTo(19.5, 3.5); c.lineTo(20.5, -1); c.fill();
+                // glowing eye
+                c.shadowBlur = reflecting ? 0 : 10; c.shadowColor = '#ff2030';
+                c.fillStyle = hurt ? '#ff9090' : '#ff2030'; c.beginPath(); c.arc(14, -8, 2.6, 0, Math.PI * 2); c.fill();
+                c.shadowBlur = 0; c.fillStyle = '#fff'; c.beginPath(); c.arc(14.8, -8.8, 0.9, 0, Math.PI * 2); c.fill();
+
+                c.shadowBlur = reflecting ? 0 : 12; c.shadowColor = '#8800ff';
+                wing({ x: -1, y: -4 }, 0, memNear, false);            // near wing (in front)
                 c.restore();
             }
+
             update(player) {
-                this.draw(); this.position.x += this.velocity.x;
-                let targetY = player.position.y - 100; this.position.y += (targetY - this.position.y) * 0.02;
+                this.animTimer += 0.3;
+                this.position.x += this.velocity.x;
+                if (this.hitCooldown > 0) this.hitCooldown--;
+                if (this.flash > 0) this.flash--;
+
+                // cruise above the player, swoop to chest height as it passes, then pull up again
+                const px = player.position.x + player.width / 2;
+                const dx = this.cx - px, bob = Math.sin(this.animTimer * 0.35) * 14;
+                let targetCY, ease;
+                if (dx > 380)       { targetCY = player.position.y - 95 + bob;               ease = 0.04; }
+                else if (dx > -70)  { targetCY = player.position.y + player.height * 0.35;   ease = 0.08; }
+                else                { targetCY = player.position.y - 140 + bob;              ease = 0.05; }
+                const prevY = this.position.y;
+                this.position.y += (targetCY - 15 - this.position.y) * ease;
+                this.tilt = rClamp((this.position.y - prevY) * 0.06, -0.45, 0.45);
+
+                this.draw(); drawReflected(() => this.draw());
             }
+
             takeHit(dmg, sourceX) {
-                this.health -= dmg; createParticles(this.position.x, this.position.y, '#8800ff'); sfxHit();
-                if(this.health <= 0) { 
-                    this.dead = true; score+=15; 
-                    for(let k=0; k<2; k++) coinsArray.push(new Coin(this.position.x, this.position.y)); 
-                    powerUps.push(new PowerUp(this.position.x + 20, this.position.y, 'blackorb'));
+                this.health -= dmg; this.flash = 6;
+                this.position.x += (sourceX < this.cx) ? 14 : -14;     // small knock-back
+                createParticles(this.cx, this.cy, '#8800ff'); sfxHit();
+                if (this.health <= 0) {
+                    this.dead = true; score += 15;
+                    for (let k = 0; k < 2; k++) coinsArray.push(new Coin(this.cx, this.cy));
+                    powerUps.push(new PowerUp(this.cx, this.cy, 'blackorb'));
                 }
             }
         }
@@ -1262,7 +1525,7 @@
         function checkUltimateTrigger() {
             if(!ultReady && killsSmall >= reqSmall && killsSpider >= reqSpider && killsBig >= reqBig) {
                 ultReady = true; 
-                document.getElementById('ultTracker').style.background = '#ff00ff';
+                document.getElementById('ultTracker').classList.add('ready');
                 document.getElementById('ultTracker').innerText = "⚡ ULTIMATE READY! TAP TO UNLEASH! ⚡";
                 document.getElementById('btnUlt').classList.add('ready');
             }
@@ -1272,7 +1535,7 @@
             if(ultReady) {
                 ultReady = false;
                 killsSmall = 0; killsSpider = 0; killsBig = 0; 
-                document.getElementById('ultTracker').style.background = 'rgba(0,0,0,0.7)';
+                document.getElementById('ultTracker').classList.remove('ready');
                 document.getElementById('btnUlt').classList.remove('ready');
                 triggerShake(35);
                 sfxZap();
@@ -1286,8 +1549,11 @@
 
         const keys = { a: { pressed: false }, d: { pressed: false }, w: { pressed: false }, s: { pressed: false }, fire: { pressed: false } };
         window.addEventListener('keydown', (event) => {
+            const kk = event.key.toLowerCase();
+            if (kk === 'p' || kk === 'escape') { if (!event.repeat && (gameState === 'PLAYING' || gameState === 'PAUSED')) togglePause(); return; }
             if(gameState !== 'PLAYING') return;
-            switch (event.key.toLowerCase()) {
+            if (event.repeat && ['w', ' ', 'j', 'l', 'u', 'i', 'shift'].includes(kk)) return;   // holding a key must not restart attacks
+            switch (kk) {
                 case 'd': keys.d.pressed = true; if(!player.isDiving && !player.isDashing) player.facingRight = true; break;
                 case 'a': keys.a.pressed = true; if(!player.isDiving && !player.isDashing) player.facingRight = false; break;
                 case 's': keys.s.pressed = true; break;
@@ -1298,7 +1564,6 @@
                 case 'u': player.doSweepOrDive(); break;
                 case 'i': triggerUltimate(); break; 
                 case 'shift': player.dash(); break;
-                case 'p': case 'escape': togglePause(); break;
             }
         });
         window.addEventListener('keyup', (event) => {
@@ -1326,13 +1591,17 @@
             if(dy > 30) { keys.s.pressed = true; } else { keys.s.pressed = false; player.stand(); }
         }
 
-        document.getElementById('btnPunch').addEventListener('touchstart', (e) => { e.preventDefault(); player.attack('punch'); });
-        document.getElementById('btnKick').addEventListener('touchstart', (e) => { e.preventDefault(); player.attack('kick'); });
-        document.getElementById('btnFire').addEventListener('touchstart', (e) => { e.preventDefault(); keys.fire.pressed = true; });
-        document.getElementById('btnFire').addEventListener('touchend', (e) => { e.preventDefault(); keys.fire.pressed = false; });
-        document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); player.jump(); });
-        document.getElementById('btnDash').addEventListener('touchstart', (e) => { e.preventDefault(); player.dash(); });
-        document.getElementById('btnDive').addEventListener('touchstart', (e) => { e.preventDefault(); player.doSweepOrDive(); });
+        function bindBtn(id, onDown, onUp) {
+            const el = document.getElementById(id);
+            el.addEventListener('pointerdown', (e) => { e.preventDefault(); if (gameState === 'PLAYING') onDown(); });
+            if (onUp) ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => el.addEventListener(ev, (e) => { e.preventDefault(); onUp(); }));
+        }
+        bindBtn('btnPunch', () => player.attack('punch'));
+        bindBtn('btnKick',  () => player.attack('kick'));
+        bindBtn('btnFire',  () => { keys.fire.pressed = true; }, () => { keys.fire.pressed = false; });
+        bindBtn('btnJump',  () => player.jump());
+        bindBtn('btnDash',  () => player.dash());
+        bindBtn('btnDive',  () => player.doSweepOrDive());
 
         function drawReflected(fn) {
             const gy = groundY();
@@ -1479,7 +1748,7 @@
                 stage: currentStage, score: score, coins: coins, blackOrbs: blackOrbs,
                 maxHealth: player.maxHealth, dashCD: player.maxDashCooldown, diveCD: player.maxDiveCooldown
             };
-            localStorage.setItem('stickmanVelocitySave', JSON.stringify(saveObj));
+            try { localStorage.setItem(SAVE_KEY, JSON.stringify(saveObj)); } catch (e) {}
         }
 
         function triggerLevelComplete() {
@@ -1494,9 +1763,7 @@
             
             document.getElementById('rewardText').innerHTML = `STATS UPGRADED!<br><span style="color:#00ffff">${costumes}</span>`;
             document.getElementById('levelComplete').style.display = 'flex';
-            document.getElementById('ui').style.display = 'none';
-            document.getElementById('mobileUI').style.display = 'none';
-            document.getElementById('levelTimerContainer').style.display = 'none';
+            showHud(false);
 
             currentStage++;
             player.maxHealth += 20;
@@ -1538,8 +1805,7 @@
             keys.s.pressed = false;
 
             document.getElementById('levelComplete').style.display = 'none';
-            document.getElementById('ui').style.display = 'flex';
-            document.getElementById('mobileUI').style.display = 'flex';
+            showHud(true);
             document.getElementById('playerStageText').innerText = `PLAYER 1 (LVL ${currentStage})`;
             
             gameState = 'PLAYING'; GameAudio.startMusic();
@@ -1683,9 +1949,9 @@
                     if(!hitSomething) {
                         for (let bat of flyingBats) {
                             if(!bat.dead) {
-                                let distX = Math.abs(proj.x - bat.position.x);
-                                let distY = Math.abs(proj.y - bat.position.y);
-                                if (distX < 60 && distY < 300) { 
+                                let distX = Math.abs(proj.x - bat.cx);
+                                let distY = Math.abs(proj.y - bat.cy);
+                                if (distX < 45 && distY < 55) { 
                                     bat.takeHit(hasFireballBoost ? 60 : 30, proj.x); 
                                     proj.active = false; 
                                 }
@@ -1719,18 +1985,26 @@
             for (let i = flyingBats.length - 1; i >= 0; i--) {
                 const bat = flyingBats[i]; if (bat.dead || bat.position.x < cameraX - 200) { flyingBats.splice(i, 1); continue; }
                 bat.update(player);
-                if (player.isAttacking) {
-                    let dist = Math.hypot((player.position.x + player.width/2) - bat.position.x, (player.position.y + player.height/2) - bat.position.y);
-                    if (dist < 120) { bat.takeHit(player.attackType === 'kick' ? 25+(currentStage*5) : 15+(currentStage*5), player.position.x); }
+                if (player.isAttacking && bat.hitCooldown <= 0) {
+                    const bb = { x: bat.position.x, y: bat.position.y, w: bat.width, h: bat.height };
+                    const ab = player.attackBox;
+                    const hitBox = ab.position.x < bb.x + bb.w + 12 && ab.position.x + ab.width > bb.x - 12 &&
+                                   ab.position.y < bb.y + bb.h + 30 && ab.position.y + ab.height + 40 > bb.y;
+                    if (hitBox) {
+                        bat.hitCooldown = 12;
+                        let bd = player.attackType === 'kick' ? 25+(currentStage*5) : 15+(currentStage*5);
+                        if (player.attackType === 'sweep' || player.attackType === 'dive') bd = 35+(currentStage*5);
+                        bat.takeHit(bd, player.position.x); triggerShake(6);
+                    }
                 }
                 
-                if (hasCarMode && Math.hypot((player.position.x + player.width/2) - bat.position.x, (player.position.y + player.height/2) - bat.position.y) < 100) {
+                if (hasCarMode && Math.hypot((player.position.x + player.width/2) - bat.cx, (player.position.y + player.height/2) - bat.cy) < 100) {
                     bat.takeHit(100, player.position.x); triggerShake();
                 }
 
                 if (!player.isDashing && !player.isKnockedDown && !hasCarMode) {
-                    let pDist = Math.hypot(bat.position.x - (player.position.x + player.width/2), bat.position.y - (player.position.y + player.height/2));
-                    if(pDist < 50) { player.takeHit(10+(currentStage*2), bat.position.x); bat.dead = true; createParticles(bat.position.x, bat.position.y, '#8800ff'); }
+                    let pDist = Math.hypot(bat.cx - (player.position.x + player.width/2), bat.cy - (player.position.y + player.height/2));
+                    if(pDist < 55) { player.takeHit(10+(currentStage*2), bat.cx); bat.dead = true; createParticles(bat.cx, bat.cy, '#8800ff'); }
                 }
             }
 
@@ -1759,7 +2033,8 @@
                         enemy.attack(Math.random() < 0.5 ? 'punch' : 'kick');
                     } else if(enemy.type === 'spider' && cDist < 100 && Math.random() < 0.05 && !enemy.isAttacking) {
                         enemy.attack('punch');
-                    } else if (enemy.type === 'gunner' && Math.random() < 0.03 && !enemy.isAttacking) {
+                    } else if (enemy.type === 'gunner' && !enemy.isAttacking && enemy.fireballCooldown <= 0 &&
+                               Math.abs(targetP.position.x - enemy.position.x) < canvas.width * 0.6 && Math.random() < 0.012) {
                         enemy.facingRight = targetP.position.x > enemy.position.x;
                         enemy.shootFireball();
                     }
@@ -1790,7 +2065,10 @@
             player.update();
             drawWaterOverlay();
 
-            document.getElementById('playerHealth').style.width = (player.health / player.maxHealth * 100) + '%';
+            const hpPct = Math.max(0, player.health / player.maxHealth * 100);
+            const hpEl = document.getElementById('playerHealth');
+            hpEl.style.width = hpPct + '%'; hpEl.classList.toggle('low', hpPct < 30);
+            document.getElementById('hpText').innerText = Math.max(0, Math.ceil(player.health)) + ' / ' + player.maxHealth;
             document.getElementById('scoreBoard').innerText = `SCORE: ${score}`;
             document.getElementById('coinBoard').innerText = `COINS: ${coins}`;
             
@@ -1802,62 +2080,72 @@
                 gameState = 'GAME_OVER'; GameAudio.stopMusic(); sfxGameOver();
                 document.getElementById('finalStats').innerText = `Reached Stage: ${currentStage} | Score: ${score} | Coins: ${coins}`; 
                 document.getElementById('gameOver').style.display = 'flex'; 
-                document.getElementById('mobileUI').style.display = 'none'; 
-                document.getElementById('ui').style.display = 'none'; 
-                localStorage.removeItem('stickmanVelocitySave');
+                showHud(false);
             }
             
             c.restore();
         }
 
         function startNewGame() {
-            localStorage.removeItem('stickmanVelocitySave');
+            try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
             currentStage = 1; score = 0; coins = 0; blackOrbs = 0;
             player.maxHealth = 100; player.health = 100;
             player.maxDashCooldown = 60; player.maxDiveCooldown = 90;
             document.getElementById('playerStageText').innerText = `PLAYER 1 (LVL 1)`;
             document.getElementById('orbBoard').innerText = `BLACK ORBS: 0/10`;
-            startMusic(); document.getElementById('mainMenu').style.display = 'none'; gameState = 'PLAYING'; 
-            cancelAnimationFrame(animationId);
-            gameLoop();
+            beginPlaying();
         }
 
         function continueGame() {
-            if(!savedData) {
+            const data = readSave();
+            if (!data) {
                 const m = document.getElementById('noSaveMsg'); m.style.display = 'block';
                 setTimeout(() => { m.style.display = 'none'; }, 2500);
                 return;
             }
-            if(savedData) {
-                const data = JSON.parse(savedData);
-                currentStage = data.stage;
-                score = data.score;
-                coins = data.coins;
-                blackOrbs = data.blackOrbs || 0;
-                player.maxHealth = data.maxHealth;
-                player.health = player.maxHealth;
-                player.maxDashCooldown = data.dashCD;
-                player.maxDiveCooldown = data.diveCD;
-                document.getElementById('playerStageText').innerText = `PLAYER 1 (LVL ${currentStage})`;
-                document.getElementById('orbBoard').innerText = `BLACK ORBS: ${blackOrbs}/${maxBlackOrbs}`;
-            }
-            startMusic(); document.getElementById('mainMenu').style.display = 'none'; gameState = 'PLAYING'; 
+            currentStage = data.stage;
+            score = data.score || 0;
+            coins = data.coins || 0;
+            blackOrbs = data.blackOrbs || 0;
+            player.maxHealth = data.maxHealth || 100;
+            player.health = player.maxHealth;
+            player.maxDashCooldown = data.dashCD || 60;
+            player.maxDiveCooldown = data.diveCD || 90;
+            document.getElementById('playerStageText').innerText = `PLAYER 1 (LVL ${currentStage})`;
+            document.getElementById('orbBoard').innerText = `BLACK ORBS: ${blackOrbs}/${maxBlackOrbs}`;
+            beginPlaying();
+        }
+
+        function beginPlaying() {
+            framesElapsed = 0; levelCompleted = false;
+            enemies = []; flyingBats.length = 0; projectiles.length = 0; powerUps.length = 0; allies.length = 0;
+            resetInputs();
+            startMusic();
+            document.getElementById('mainMenu').style.display = 'none';
+            showHud(true);
+            gameState = 'PLAYING';
+            saveGame();
             cancelAnimationFrame(animationId);
             gameLoop();
         }
 
         function togglePause() {
-            if(gameState === 'PLAYING') { 
+            if (gameState === 'PLAYING') {
                 gameState = 'PAUSED'; GameAudio.pauseMusic();
-                document.getElementById('pauseMenu').style.display = 'flex'; 
-                cancelAnimationFrame(animationId); 
+                resetInputs(); saveGame();
+                document.getElementById('pauseMenu').style.display = 'flex';
+                cancelAnimationFrame(animationId);
             }
-            else if(gameState === 'PAUSED') { 
+            else if (gameState === 'PAUSED') {
                 gameState = 'PLAYING'; GameAudio.startMusic();
-                document.getElementById('pauseMenu').style.display = 'none'; 
-                gameLoop(); 
+                document.getElementById('pauseMenu').style.display = 'none';
+                cancelAnimationFrame(animationId);
+                gameLoop();
             }
         }
+
+        document.addEventListener('visibilitychange', () => { if (document.hidden && gameState === 'PLAYING') togglePause(); });
+        window.addEventListener('pagehide', () => { if (gameState === 'PLAYING' || gameState === 'PAUSED') saveGame(); });
 
         drawBackground();
         (function menuLoop() {
@@ -1881,7 +2169,7 @@
         </div>
         
         <!-- CLOSE BUTTON -->
-        <button class="arcade-btn readme-close" style="background: #ffcc00; color: #000; box-shadow: 0 0 15px #ffcc00; border-color: #000; width: auto; margin-top: 0;" onclick="closeReadme()">&#9664; BACK TO MAIN MENU</button>
+        <button class="arcade-btn btn-gold readme-close" style="width: auto; margin-top: 0;" onclick="closeReadme()">&#9664; BACK TO MAIN MENU</button>
     </div>
     <!-- README MODAL END -->
 
