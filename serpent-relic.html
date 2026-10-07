@@ -468,17 +468,13 @@ window.onload = () => {
                 let tip = deadEndTips.pop(); 
                 grid[tip.y][tip.x] = 'W'; 
                 
-                // Add Orb 'O' for 2nd snake to find
-                if (deadEndTips.length > 0) {
-                    let orbTip = deadEndTips.pop();
-                    grid[orbTip.y][orbTip.x] = 'O'; 
-                } else {
-                    let randP = path[Math.floor(Math.random() * (path.length / 3))];
-                    grid[randP.y][randP.x] = 'O';
-                }
+                // Orb always sits on the main path BEFORE the golden barrier, so it is always reachable
+                let orbIdx = Math.max(2, Math.floor(path.length * 0.3));
+                while (orbIdx < path.length - 2 && grid[path[orbIdx].y][path[orbIdx].x] !== '1') orbIdx++;
+                grid[path[orbIdx].y][path[orbIdx].x] = 'O';
 
                 // Add Golden Barrier 'G' to block main snake
-                let blockIdx = Math.floor(path.length * 0.5); 
+                let blockIdx = Math.max(Math.floor(path.length * 0.5), Math.floor(path.length * 0.3) + 4); 
                 if (grid[path[blockIdx].y][path[blockIdx].x] === '1') {
                     grid[path[blockIdx].y][path[blockIdx].x] = 'G';
                 }
@@ -997,7 +993,17 @@ window.onload = () => {
 
         if (tType === 0 || tType === 7) return false; 
         if (tType === 'V') { if(isMain){AudioEngine.hit(); cameraShake(5);} return false; }
-        if (tType === 'G') { if(isMain){AudioEngine.hit(); cameraShake(5);} showPopup("Blocked by Golden Barrier!", 1500); return false; }
+        if (tType === 'G') {
+            // Failsafe: if no orb is left on the map, the barrier can never open, so dissolve it
+            let orbLeft = false;
+            for (let yy = 0; yy < mapRows && !orbLeft; yy++) for (let xx = 0; xx < mapCols; xx++) if (map[yy][xx].type === 'O') { orbLeft = true; break; }
+            if (!orbLeft) {
+                for (let yy = 0; yy < mapRows; yy++) for (let xx = 0; xx < mapCols; xx++) if (map[yy][xx].type === 'G') map[yy][xx].type = 1;
+                showPopup("Golden Barrier dissolved!", 1500);
+                return tryMoveSnake(sArr, dx, dy, isMain);
+            }
+            if(isMain){AudioEngine.hit(); cameraShake(5);} showPopup("Collect the Blue Orb to open the Golden Barrier!", 2000); return false;
+        }
 
         // Breakable Block logic + Naye "Push" Mechanics
         if (tType === 4 || tType === 'H') {
