@@ -3,8 +3,8 @@
    ----------------------------------------------------------------------------
    Renders ONLY: destroyable objects/asteroids, the Jet, the space background,
    minerals and coins, the Drill, the Pickaxe/Axe, the Mining Rocket / Jet Missiles, the
-   Extra-Level Jet Fireballs, the Extra-Level Black Holes, the Dragon Skull / Flower collectables and the Girl (a 3D model).
-   Everything else (Girl, HUD, menus, other weapons, projectiles, power-ups, ...)
+   Extra-Level Jet Fireballs, the Extra-Level Black Holes, the Dragon Skull / Flower collectables.
+   Everything else (Girl (2D sprite), HUD, menus, other weapons, projectiles, power-ups, ...)
    stays on the existing 2D canvas / DOM.
 
    The game stays the single source of truth: every frame the existing render
@@ -59,6 +59,7 @@
 
     G.resize = function (w, h, dpr) {
         W = Math.max(1, w); H = Math.max(1, h); DPR = dpr || 1;
+        if ((navigator.maxTouchPoints || 0) > 0) DPR = Math.min(DPR, 1.5);   // PERF: phones/tablets - fewer pixels for the 3D layer to shade (it sits under the 2D canvas, so it still looks sharp)
         renderer.setPixelRatio(DPR);
         renderer.setSize(W, H, false);
         cv.style.width = W + 'px'; cv.style.height = H + 'px';
@@ -1447,203 +1448,6 @@
     };
 
 
-    // ------------------------------------------------------------------ the Girl
-    // The playable Girl (Nova) as a 2.5D character built from code - no sprite textures. Same character as the game's art: glass helmet with ear pods, short navy hair with
-    // bangs, big cyan eyes, white / silver suit with blue ring joints, chest plate with four blue panels, belly hoses, orange shoulder patches, backpack, gloved hands
-    // (palm, four jointed fingers, thumb) and boots. 2.5D means a layered, front-facing figure with SHALLOW depth (the whole rig is flattened to ~40% depth, like the other 2.5D
-    // assets) - never a turning 3D figure: the game keeps rotating her in the screen plane (aim / dash direction / Black-Hole spin) exactly as it rotated the sprite, plus a
-    // mild fixed depth tilt like the Drill / Axe.
-    // Animation is a smooth, continuous in-plane cycle (legs alternate lifting and scissoring, arms swing out and in, a gentle zero-g bob) instead of swinging in depth. Its SPEED
-    // comes from the game's own animation clock - the game hands in cycles-per-second derived from her existing idle / moving / thrusting frame thresholds - but the phase is
-    // integrated here per rendered frame, so it can never jump when the game's 9-frame clock wraps or when she switches between idle, moving and thrusting.
-    // Visual only: the game still owns position, movement, hitbox, health, mining, attacks, dash, thrust particles and every other mechanic.
-    // Performance: ~15 meshes (rigid parts merged with vertex colours: torso, head, 2 arms x 2, 2 legs x 2, + face, glass); the dash afterimages are pooled clones built at load.
-    const GIRL_Z = 340;                                 // in front of the Drill (260), Rockets (270), Axe (300) - the 2D sprite was above all of them
-    const GIRL_TILT_X = 0.2, GIRL_TILT_Y = -0.16;       // mild fixed tilt; she stays front-facing
-    const GIRL_FLAT = 0.4;                              // depth of the whole rig relative to its width/height: shallow, layered, 2.5D
-    const GIRL_H = 10.31, GIRL_CY = 5.115;              // model height and vertical centre (boots' soles .. helmet top), model units
-    const GC = { white: 0xe6eef7, silver: 0xb9c7da, shade: 0x7388ad, blue: 0x3b92d4, cyan: 0x57d3f2, navy: 0x1d2252, navy2: 0x343a86, orange: 0xd9633a, dark: 0x232842 };
-    const girlSolidMat = (function () {
-        const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.1, emissive: 0xffffff, emissiveIntensity: 0.36 });
-        m.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = emissive * vColor;'); };
-        return m;
-    })();
-    function girlFaceTexture() {                        // painted face: big cyan eyes, brows, blush, small nose and mouth (drawn at load into a canvas - no image file)
-        const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512; const x = cv.getContext('2d');
-        x.fillStyle = '#f1b296'; x.fillRect(0, 0, 1024, 512); const cx = 256, cy = 285;
-        const gr = x.createRadialGradient(cx, cy - 20, 10, cx, cy, 170); gr.addColorStop(0, '#f8c4a8'); gr.addColorStop(1, '#e9a58a'); x.fillStyle = gr; x.fillRect(0, 0, 1024, 512);
-        x.strokeStyle = '#241f48'; x.lineWidth = 7; x.lineCap = 'round';
-        x.beginPath(); x.moveTo(cx - 95, cy - 70); x.quadraticCurveTo(cx - 65, cy - 86, cx - 30, cy - 72); x.stroke();
-        x.beginPath(); x.moveTo(cx + 30, cy - 72); x.quadraticCurveTo(cx + 65, cy - 86, cx + 95, cy - 70); x.stroke();
-        for (const sg of [-1, 1]) {
-            const ex = cx + sg * 62, ey = cy - 8;
-            x.fillStyle = '#fff'; x.beginPath(); x.ellipse(ex, ey, 36, 42, 0, 0, 7); x.fill();
-            const ig = x.createRadialGradient(ex, ey + 4, 4, ex, ey + 4, 34); ig.addColorStop(0, '#bff3ff'); ig.addColorStop(0.5, '#4fb8e6'); ig.addColorStop(1, '#2a7fb8');
-            x.fillStyle = ig; x.beginPath(); x.ellipse(ex, ey + 5, 29, 35, 0, 0, 7); x.fill();
-            x.fillStyle = '#17294a'; x.beginPath(); x.ellipse(ex, ey + 6, 13, 17, 0, 0, 7); x.fill();
-            x.fillStyle = '#fff'; x.beginPath(); x.arc(ex - 9, ey - 8, 8, 0, 7); x.fill(); x.beginPath(); x.arc(ex + 10, ey + 16, 4, 0, 7); x.fill();
-            x.strokeStyle = '#241f48'; x.lineWidth = 6; x.beginPath(); x.ellipse(ex, ey, 37, 43, 0, Math.PI * 1.05, Math.PI * 1.95); x.stroke();
-        }
-        x.fillStyle = 'rgba(235,110,110,.35)'; x.beginPath(); x.ellipse(cx - 100, cy + 52, 24, 13, 0, 0, 7); x.fill(); x.beginPath(); x.ellipse(cx + 100, cy + 52, 24, 13, 0, 0, 7); x.fill();
-        x.fillStyle = '#d58a74'; x.beginPath(); x.ellipse(cx, cy + 42, 7, 5, 0, 0, 7); x.fill();
-        x.strokeStyle = '#b8605a'; x.lineWidth = 5; x.beginPath(); x.moveTo(cx - 22, cy + 82); x.quadraticCurveTo(cx, cy + 90, cx + 22, cy + 82); x.stroke();
-        const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
-    }
-    const girlFaceMat = new THREE.MeshStandardMaterial({ map: girlFaceTexture(), roughness: 0.7, emissive: 0xffffff, emissiveIntensity: 0.4 });
-    girlFaceMat.emissiveMap = girlFaceMat.map;
-    const girlGlassMat = new THREE.MeshStandardMaterial({ color: 0xaee4ff, transparent: true, opacity: 0.17, roughness: 0.05, metalness: 0, side: THREE.DoubleSide, depthWrite: false });
-    const girlRig = (function () {
-        const hexMat = {}; const hm = (c) => hexMat[c] || (hexMat[c] = new THREE.MeshBasicMaterial({ color: c }));   // colour holders only - baked into vertex colours below
-        const P = (g, geo, c, x, y, z, o) => { const m = new THREE.Mesh(geo, hm(c)); m.position.set(x, y, z); if (o) { if (o.s) m.scale.set(o.s[0], o.s[1], o.s[2]); if (o.r) m.rotation.set(o.r[0], o.r[1], o.r[2]); } g.add(m); return m; };
-        const piv = (name, parent, x, y, z) => { const g = new THREE.Group(); g.name = name; g.userData.pivot = true; g.position.set(x, y, z); parent.add(g); return g; };
-        const root = new THREE.Group(); root.name = 'rig';
-        const TY = 4.55, HY = 7.55;
-        // ---- torso (pivot at its centre)
-        const torso = piv('torso', root, 0, TY, 0);
-        P(torso, new THREE.CapsuleGeometry(1.45, 1.35, 5, 14), GC.white, 0, 0, 0, { s: [1.12, 1, 0.82] });
-        P(torso, new THREE.CylinderGeometry(1.5, 1.3, 0.45, 18), GC.silver, 0, -1.35, 0, { s: [1.1, 1, 0.8] });
-        P(torso, new THREE.BoxGeometry(1.6, 1.2, 0.14), GC.shade, 0, 0.35, 1.02);
-        P(torso, new THREE.BoxGeometry(1.45, 1.05, 0.2), 0x8aa0c2, 0, 0.35, 1.12);
-        for (const [i, j] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { P(torso, new THREE.BoxGeometry(0.5, 0.3, 0.1), 0x46b4ee, -0.33 + i * 0.66, 0.6 - j * 0.45, 1.24); P(torso, new THREE.BoxGeometry(0.17, 0.06, 0.05), 0xbff0ff, -0.43 + i * 0.66, 0.7 - j * 0.45, 1.3); }
-        for (const sg of [-1, 1]) P(torso, new THREE.TorusGeometry(0.5, 0.1, 5, 14), GC.silver, sg * 0.8, -0.75, 1.0, { r: [0, 0.4 * sg, 0] });   // belly hoses
-        P(torso, new THREE.CapsuleGeometry(0.16, 0.9, 3, 8), GC.blue, 0, -0.35, 1.18, { r: [0, 0, Math.PI / 2] });
-        P(torso, new THREE.TorusGeometry(2.05, 0.2, 6, 28), GC.cyan, 0, HY - 1.85 - TY, 0, { r: [Math.PI / 2, 0, 0] });    // helmet neck ring
-        P(torso, new THREE.TorusGeometry(2.0, 0.14, 6, 28), GC.silver, 0, HY - 2.1 - TY, 0, { r: [Math.PI / 2, 0, 0] });
-        P(torso, new THREE.BoxGeometry(2.3, 2.5, 0.95), GC.silver, 0, 0.2, -1.25);                                         // backpack
-        P(torso, new THREE.BoxGeometry(2.0, 2.2, 0.2), GC.shade, 0, 0.2, -1.78);
-        for (const [x, y, w, h] of [[-0.6, 0.75, 0.2, 1.2], [0.6, 0.75, 0.2, 1.2], [0, -0.55, 1.5, 0.16]]) P(torso, new THREE.BoxGeometry(w, h, 0.1), GC.cyan, x, y, -1.86);
-        P(torso, new THREE.CylinderGeometry(0.28, 0.34, 0.5, 8), GC.blue, -0.7, -1.3, -1.4); P(torso, new THREE.CylinderGeometry(0.28, 0.34, 0.5, 8), GC.blue, 0.7, -1.3, -1.4);
-        // ---- head (pivot at the head centre): painted face sphere, hair, ear pods, glass helmet
-        const head = piv('head', root, 0, HY, 0);
-        const faceMesh = new THREE.Mesh(new THREE.SphereGeometry(1.95, 24, 16), girlFaceMat); faceMesh.scale.set(1, 1.04, 1); faceMesh.name = 'face'; faceMesh.userData.keep = true; head.add(faceMesh);
-        const FRONT = Math.PI / 2, OPEN = 1.0;
-        P(head, new THREE.SphereGeometry(2.14, 24, 14, FRONT + OPEN, Math.PI * 2 - 2 * OPEN, 0, Math.PI * 0.66), GC.navy, 0, 0.04, -0.1, { s: [1, 1.05, 1.02] });
-        P(head, new THREE.SphereGeometry(2.13, 24, 8, 0, Math.PI * 2, 0, Math.PI * 0.27), GC.navy, 0, 0.06, -0.04, { s: [1, 1.05, 1.02] });
-        for (const sg of [-1, 1]) {
-            P(head, new THREE.CapsuleGeometry(0.5, 1.35, 3, 8), GC.navy, sg * 1.95, -0.95, -0.05, { r: [0, 0, sg * 0.08] });
-            P(head, new THREE.CapsuleGeometry(0.2, 1.0, 3, 6), GC.navy2, sg * 1.55, -0.55, 0.95, { r: [0, 0, sg * 0.12] });
-            P(head, new THREE.CylinderGeometry(0.5, 0.5, 0.45, 12), GC.silver, sg * 2.62, -0.2, 0, { r: [0, 0, Math.PI / 2] });
-            P(head, new THREE.CylinderGeometry(0.3, 0.3, 0.5, 10), GC.cyan, sg * 2.78, -0.2, 0, { r: [0, 0, Math.PI / 2] });
-        }
-        for (let i = -3; i <= 3; i++) { const len = 0.55 + Math.abs(Math.sin(i * 2.1)) * 0.25; P(head, new THREE.CapsuleGeometry(0.27, len, 3, 8), i % 2 ? GC.navy2 : GC.navy, i * 0.5, 1.18 - Math.abs(i) * 0.1, 1.55 - Math.abs(i) * 0.17, { r: [0.35, 0, -i * 0.1] }); }
-        const glass = new THREE.Mesh(new THREE.SphereGeometry(2.62, 24, 16), girlGlassMat); glass.scale.set(1, 1.03, 1); glass.position.y = 0.02; glass.name = 'glass'; glass.userData.keep = true; glass.renderOrder = 2; head.add(glass);
-        // ---- arms: shoulder -> elbow; the gloved hand (palm, 4 jointed fingers, thumb) is part of the forearm
-        function arm(sg) {
-            const sh = piv(sg < 0 ? 'shL' : 'shR', root, sg * 1.95, TY + 0.95, 0); sh.rotation.z = sg * 0.3; sh.rotation.x = -0.12;
-            P(sh, new THREE.SphereGeometry(0.78, 14, 10), GC.white, 0, 0, 0);
-            P(sh, new THREE.BoxGeometry(0.46, 0.36, 0.14), GC.orange, 0, 0.3, 0.7, { r: [0.25, 0, 0] });
-            P(sh, new THREE.CapsuleGeometry(0.5, 1.0, 3, 10), GC.white, 0, -1.05, 0);
-            for (const y of [-0.7, -1.25]) P(sh, new THREE.TorusGeometry(0.53, 0.09, 5, 14), GC.blue, 0, y, 0, { r: [Math.PI / 2, 0, 0] });
-            const fo = piv(sg < 0 ? 'elL' : 'elR', sh, 0, -1.95, 0); fo.rotation.z = -sg * 0.06; fo.rotation.x = -0.45;
-            P(fo, new THREE.SphereGeometry(0.52, 12, 8), GC.silver, 0, 0, 0);
-            P(fo, new THREE.CapsuleGeometry(0.45, 0.85, 3, 10), GC.white, 0, -0.75, 0);
-            P(fo, new THREE.TorusGeometry(0.47, 0.09, 5, 14), GC.blue, 0, -0.4, 0, { r: [Math.PI / 2, 0, 0] });
-            P(fo, new THREE.CylinderGeometry(0.52, 0.56, 0.3, 12), GC.silver, 0, -1.4, 0);
-            P(fo, new THREE.TorusGeometry(0.54, 0.07, 5, 14), GC.cyan, 0, -1.26, 0, { r: [Math.PI / 2, 0, 0] });
-            const hand = new THREE.Group(); hand.position.set(0, -1.78, 0.02); hand.rotation.x = 0.2; fo.add(hand);
-            P(hand, new THREE.SphereGeometry(0.5, 12, 8), GC.white, 0, 0, 0, { s: [1.02, 0.92, 0.62] });
-            P(hand, new THREE.BoxGeometry(0.62, 0.42, 0.1), GC.shade, 0, -0.04, -0.28);
-            P(hand, new THREE.BoxGeometry(0.5, 0.1, 0.12), GC.blue, 0, -0.02, -0.33);
-            const lens = [0.42, 0.5, 0.46, 0.36], xs = [-0.3, -0.1, 0.1, 0.3], spread = [0.16, 0.05, -0.05, -0.16];
-            xs.forEach((fx, i) => {
-                const L = lens[i] / 2, f = new THREE.Group(); f.position.set(fx, -0.42, 0); f.rotation.z = -spread[i] * sg; f.rotation.x = 0.18; hand.add(f);
-                P(f, new THREE.CapsuleGeometry(0.115, L * 1.1, 2, 6), GC.white, 0, -L * 0.5, 0);
-                const f2 = new THREE.Group(); f2.position.set(0, -L * 1.15, 0); f2.rotation.x = 0.38; f.add(f2);
-                P(f2, new THREE.CapsuleGeometry(0.105, L, 2, 6), GC.white, 0, -L * 0.5, 0);
-                const f3 = new THREE.Group(); f3.position.set(0, -L * 1.05, 0); f3.rotation.x = 0.45; f2.add(f3);
-                P(f3, new THREE.CapsuleGeometry(0.095, L * 0.7, 2, 6), GC.silver, 0, -L * 0.38, 0);
-            });
-            const th = new THREE.Group(); th.position.set(-sg * 0.42, -0.12, 0.1); th.rotation.z = sg * 0.9; th.rotation.x = -0.25; hand.add(th);
-            P(th, new THREE.CapsuleGeometry(0.14, 0.28, 2, 6), GC.white, 0, -0.22, 0);
-            const th2 = new THREE.Group(); th2.position.set(0, -0.46, 0); th2.rotation.x = 0.35; th.add(th2);
-            P(th2, new THREE.CapsuleGeometry(0.12, 0.22, 2, 6), GC.silver, 0, -0.14, 0);
-        }
-        arm(-1); arm(1);
-        // ---- legs: hip -> knee; boot is part of the shin
-        for (const sg of [-1, 1]) {
-            const hip = piv(sg < 0 ? 'hipL' : 'hipR', root, sg * 0.72, 3.15, 0);
-            P(hip, new THREE.CapsuleGeometry(0.62, 1.1, 3, 10), GC.white, 0, -0.6, 0);
-            for (const y of [-0.35, -0.9]) P(hip, new THREE.TorusGeometry(0.64, 0.09, 5, 14), GC.blue, 0, y, 0, { r: [Math.PI / 2, 0, 0] });
-            const knee = piv(sg < 0 ? 'knL' : 'knR', hip, 0, -1.45, 0.04);
-            P(knee, new THREE.SphereGeometry(0.66, 12, 8), GC.silver, 0, 0, 0);
-            P(knee, new THREE.CapsuleGeometry(0.56, 0.85, 3, 10), GC.white, 0, -0.75, -0.02);
-            P(knee, new THREE.BoxGeometry(1.05, 0.5, 1.7), GC.silver, 0, -1.42, 0.24);
-            P(knee, new THREE.BoxGeometry(1.1, 0.2, 1.75), GC.blue, 0, -1.64, 0.24);
-            P(knee, new THREE.SphereGeometry(0.55, 10, 7), GC.white, 0, -1.28, 0.86, { s: [1, 0.7, 0.8] });
-        }
-        // ---- bake every rigid part (all its descendant meshes down to the next pivot) into ONE vertex-coloured mesh, at the rest pose
-        root.updateMatrixWorld(true);
-        const pivots = []; root.traverse(o => { if (o.userData.pivot) pivots.push(o); });
-        for (const pv of pivots) {
-            const inv = pv.matrixWorld.clone().invert(), list = [];
-            // meshes can sit inside plain (non-pivot) sub-groups (fingers / hand): collect those too
-            const collect = (o) => { for (const c of o.children) { if (c.userData.pivot || c.userData.keep) continue; if (c.isMesh) list.push(c); else collect(c); } };
-            collect(pv);
-            let n = 0; const parts = list.map(m => { const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone(); g.applyMatrix4(inv.clone().multiply(m.matrixWorld)); n += g.attributes.position.count; return [g, m.material.color]; });
-            const Pp = new Float32Array(n * 3), Nn = new Float32Array(n * 3), Cc = new Float32Array(n * 3); let o = 0;
-            parts.forEach(([g, col]) => { const c = g.attributes.position.count; Pp.set(g.attributes.position.array, o * 3); Nn.set(g.attributes.normal.array, o * 3); for (let i = 0; i < c; i++) { Cc[(o + i) * 3] = col.r; Cc[(o + i) * 3 + 1] = col.g; Cc[(o + i) * 3 + 2] = col.b; } o += c; g.dispose(); });
-            const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.BufferAttribute(Pp, 3)); bg.setAttribute('normal', new THREE.BufferAttribute(Nn, 3)); bg.setAttribute('color', new THREE.BufferAttribute(Cc, 3));
-            for (const m of list) m.parent.remove(m);
-            const baked = new THREE.Mesh(bg, girlSolidMat); baked.name = 'baked'; baked.frustumCulled = false; pv.add(baked);
-        }
-        root.traverse(o => { if (o.userData.pivot) { o.userData.rest = o.rotation.clone(); o.userData.restY = o.position.y; } if (o.isMesh) o.frustumCulled = false; });
-        return root;
-    })();
-    const girlOuter = new THREE.Group(); girlOuter.matrixAutoUpdate = false; girlOuter.visible = false; girlRig.position.y = -GIRL_CY; girlRig.scale.set(1, 1, GIRL_FLAT); girlOuter.add(girlRig); scene.add(girlOuter);
-    const GHOST_MAX = 6, girlGhostPool = [];
-    function girlGhostRig(i) {
-        if (girlGhostPool[i]) return girlGhostPool[i];
-        const outer = new THREE.Group(); outer.matrixAutoUpdate = false; outer.visible = false; const rig = girlRig.clone(true); outer.add(rig);
-        const mats = []; rig.traverse(o => { if (o.isMesh && (o.name === 'face' || o.name === 'glass')) o.visible = false; else if (o.isMesh) { const base = o.material === girlGlassMat ? 0.17 : 1; const m = o.material.clone(); m.transparent = true; m.depthWrite = false; o.material = m; mats.push([m, base]); } });
-        scene.add(outer); return (girlGhostPool[i] = { outer, rig, mats, used: false });
-    }
-    for (let i = 0; i < GHOST_MAX; i++) girlGhostRig(i);   // built at load, not on the first dash: creating Three.js objects draws random numbers (for their ids) and must not happen mid-game
-    const gM = new THREE.Matrix4(), gTilt = new THREE.Matrix4(), gSc = new THREE.Matrix4(), gRz = new THREE.Matrix4(), gT = new THREE.Matrix4(), gE = new THREE.Euler(), gV = new THREE.Vector3();
-    function girlMatrix(out, x, y, z, angle, unit) {
-        gE.set(GIRL_TILT_X, GIRL_TILT_Y, 0, 'YXZ'); gTilt.makeRotationFromEuler(gE);
-        gSc.makeScale(1 / Math.cos(GIRL_TILT_Y), 1 / Math.cos(GIRL_TILT_X), 1);              // undo the tilt's foreshortening so her on-screen size is unchanged
-        gRz.makeRotationZ(-angle).scale(gV.set(unit, unit, unit));                           // game y is down: clockwise sprite rotation = -z in the y-up scene
-        gT.makeTranslation(toX(x), toY(y), z);
-        out.copy(gT).multiply(gSc).multiply(gTilt).multiply(gRz); return out;
-    }
-    // pose the rig from a continuous cycle angle (radians) and activity (0 idle, 1 moving, 2 thrusting); everything moves IN THE SCREEN PLANE (2.5D), all smooth sin/cos of the angle
-    function girlPose(rig, ang, A, t) {                                                       // A = swing amplitude, eased by the caller (0.32 idle .. 1.0 moving .. 1.2 thrusting)
-        const g = (n) => rig.getObjectByName(n), m = Math.min(Math.max((A - 0.32) / 0.68, 0), 1);   // m: 0 = idle bob only .. 1 = full cycle bob
-        const lift = (ph) => 0.5 + 0.5 * Math.sin(ph);                                       // 0..1 smooth: how raised a leg is
-        const set = (n, rx, rz, dy) => { const o = g(n), r = o.userData.rest; o.rotation.set(r.x + (rx || 0), r.y, r.z + (rz || 0)); if (dy !== undefined) o.position.y = o.userData.restY + dy; };
-        for (const sg of [-1, 1]) {
-            const side = sg > 0 ? 'R' : 'L', ph = ang + (sg > 0 ? 0 : Math.PI), l = lift(ph), c = Math.cos(ph);
-            set('hip' + side, 0, sg * (0.05 + 0.13 * l) * A, l * 0.5 * A);                    // leg raises and swings outward as it lifts, drops back as it lowers
-            set('kn' + side, 0, -sg * 0.38 * l * A);                                          // knee folds the shin inward while the leg is raised
-            set('sh' + side, 0, sg * 0.2 * c * A * -1);                                       // arms swing out and in, opposite the legs
-            set('el' + side, 0, -sg * 0.12 * (0.5 - 0.5 * c) * A);
-        }
-        set('head', 0, Math.sin(ang) * 0.025 * A);
-        rig.position.y = -GIRL_CY + Math.sin(t * 2.2) * 0.13 * (1 - m) + Math.sin(ang * 2) * 0.07 * A * m;   // gentle zero-g bob, blended smoothly between idle and moving
-    }
-    G.girlReady = true;
-    G._girlRig = girlRig;                                                                     // exposed for inspection / tests only
-    let girlAng = 0, girlHz = 0, girlAmp = 0.32, girlLastT = 0;
-    // x,y = her world position (the point the sprite rotated about), angle = existing facing + capture spin (radians, y-down world), scale = the game's girlBaseScale,
-    // hz = cycles per second of her step cycle (from the game's own idle / moving / thrusting frame thresholds), act = 0 idle / 1 moving / 2 thrusting.
-    G.girl = function (x, y, angle, frame, scale, hz, act) {
-        if (!G.active) return;
-        const t = timeMs / 1000, dt = Math.min(Math.max(t - girlLastT, 0), 0.1); girlLastT = t;
-        girlHz += ((hz || 0) - girlHz) * Math.min(1, dt * 5);                                 // ease the speed between states ...
-        girlAmp += (((act | 0) === 0 ? 0.32 : (act | 0) === 1 ? 1.0 : 1.2) - girlAmp) * Math.min(1, dt * 5);   // ... and the swing size ...
-        girlAng += Math.PI * 2 * girlHz * dt;                                                 // ... and integrate: the phase is continuous, so it can never jump
-        girlPose(girlRig, girlAng, girlAmp, t);
-        girlMatrix(girlOuter.matrix, x, y, GIRL_Z, angle, scale * 90 / GIRL_H * T.a); girlOuter.matrixWorldNeedsUpdate = true; girlOuter.visible = true;
-    };
-    // translucent dash afterimage: a pooled clone of the rig, posed at the cycle angle captured with the ghost; alpha = the game's own fade value, scale includes the game's shrink
-    let ghostN = 0;
-    G.girlGhost = function (x, y, angle, frame, scale, alpha, cycleAngle) {
-        if (!G.active || ghostN >= GHOST_MAX) return;
-        const gh = girlGhostRig(ghostN++); girlPose(gh.rig, cycleAngle || 0, 1.0, timeMs / 1000);
-        for (const [m, base] of gh.mats) m.opacity = alpha * base;
-        girlMatrix(gh.outer.matrix, x, y, GIRL_Z - 3, angle, scale * 90 / GIRL_H * T.a); gh.outer.matrixWorldNeedsUpdate = true; gh.outer.visible = true; gh.used = true;
-    };
-    function girlHideAll() { girlOuter.visible = false; ghostN = 0; for (const gh of girlGhostPool) if (gh) gh.outer.visible = false; }
     // ----------------------------------------------------------- frame API
     G.begin = function (cfg) {
         if (!G.active) return;
@@ -1656,7 +1460,6 @@
         renderer.setClearColor(clearCol, 1);
         nGem = nCoin = nBgRock = 0; MIN_KINDS.forEach(k => { nMin[k] = 0; });
         drillUsed = 0; axeUsed = 0; nFire = 0; nRk = 0; nBh = 0; nDs = 0; nFl = 0;
-        girlHideAll();
     };
 
     G.end = function () {
@@ -1771,15 +1574,52 @@
         try { urls[c.getAttribute('data-mineral')] = c.toDataURL('image/png'); } catch (e) { }
     });
 
+    // PERF FIX: the icons used to be re-rendered by this second WebGL renderer and read back into
+    // the 2D canvases ~30 times a second, for the whole game. That GPU->CPU readback stalls the
+    // pipeline and was the main cause of the game running slowly on PC and mobile. The turn is a
+    // fixed loop, so it is now rendered ONCE (a few frames per animation tick, so loading never
+    // hitches) into small cached 2D frames; the loop below only copies a cached frame at ~12 fps,
+    // and the extra WebGL renderer is released as soon as the cache is complete.
+    const NF = 24, PERIOD = Math.PI * 2 / 0.9;            // frames per turn cycle / length of the cycle in seconds
+    const cache = canvases.map(() => new Array(NF).fill(null));
+    let nextFrame = 0, cacheDone = false;
+    function buildSome() {
+        const stop = Math.min(NF, nextFrame + 3);
+        for (; nextFrame < stop; nextFrame++) {
+            canvases.forEach((c, i) => {
+                const m = G.mineralModels[c.getAttribute('data-mineral')];
+                if (!m) return;
+                mesh.geometry = m.geo; mesh.material = m.mats;
+                // one frame of the turn cycle (the per-icon phase offset is applied when the frames are played back)
+                mesh.rotation.set(0.35, 0.55 + Math.sin(2 * Math.PI * nextFrame / NF) * 0.7, 0);
+                r.render(scene, cam);
+                const f = document.createElement('canvas'); f.width = f.height = SIZE;
+                f.getContext('2d').drawImage(r.domElement, 0, 0, SIZE, SIZE);
+                cache[i][nextFrame] = f;
+            });
+        }
+        if (nextFrame < NF) { requestAnimationFrame(buildSome); return; }
+        cacheDone = true;
+        canvases.forEach((c, i) => { const x = c.getContext('2d'); x.clearRect(0, 0, SIZE, SIZE); if (cache[i][0]) x.drawImage(cache[i][0], 0, 0); });
+        try { r.dispose(); const gl = r.getContext(); const ext = gl && gl.getExtension('WEBGL_lose_context'); if (ext) ext.loseContext(); } catch (e) { }
+    }
+    requestAnimationFrame(buildSome);
+
     let last = 0;
     function loop(ms) {
         requestAnimationFrame(loop);
-        if (document.hidden || ms - last < 33) return;
+        if (document.hidden || ms - last < 80) return;
         if (!canvases[0].getClientRects().length) return; // Minerals panel hidden -> don't render
+        if (!cacheDone) return;                            // until the cache is built the first (static) icon stays on screen
         last = ms;
         const t = ms / 1000;
-        for (let i = 0; i < canvases.length; i++) draw(canvases[i], i, t);
+        for (let i = 0; i < canvases.length; i++) {
+            const k = Math.floor((((t * 0.9 + i) / (Math.PI * 2)) % 1) * NF) % NF;
+            const f = cache[i][k]; if (!f) continue;
+            const x = canvases[i].getContext('2d');
+            x.clearRect(0, 0, SIZE, SIZE); x.drawImage(f, 0, 0);
+        }
     }
     requestAnimationFrame(loop);
-    r.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); spriteFallback(); });
+    r.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); if (!cacheDone) spriteFallback(); });
 })();

@@ -13181,17 +13181,7 @@ const GTDTutorial = (function () {
                 fxShadow(suitTier.color, suitTier.glow + (gpActive ? gpRamp * 20 : 0));
             }
 
-            if (g3on() && window.GTD3D.girlReady && girlFrames === GIRL0_GAMEPLAY_FRAMES && girlBaseScale && !suitTier.color) {
-                // 2.5D Three.js Girl (visual only): same position, same facing + capture spin and same scale as the sprite below. Her flying / walking cycle runs at the speed of the
-                // game's own animation clock (cycles/sec = 60 ticks / (frame threshold x 8-step cycle), using the existing idle / moving / thrusting thresholds) + activity (0 idle,
-                // 1 moving, 2 thrusting); the phase itself is integrated in the 3D layer so it is continuous. The boot-thrust fire below is unchanged (same local anchor).
-                {
-                    const gMoving = Math.hypot(this.velocityX, this.velocityY) > 0.5;
-                    const gThr = this.isThrusting ? girlFrameThresholds.thrust : (gMoving ? girlFrameThresholds.moving : girlFrameThresholds.idle);
-                    window.GTD3D.girl(this.x, this.y, this.drawAngle + this.deathSpinAngle, this.currentFrameIndex, girlBaseScale,
-                        60 / (gThr * Math.max(1, girlFrames.length - 1)), this.isThrusting ? 2 : (gMoving ? 1 : 0));
-                }
-            } else if (activeFrame && activeFrame.complete && activeFrame.naturalWidth !== 0) { 
+            if (activeFrame && activeFrame.complete && activeFrame.naturalWidth !== 0) { 
                 if (suitTier.color) {
                     // Tint the sprite with the current suit-tier color on an isolated
                     // offscreen buffer (source-atop there, not on the main canvas) so the
@@ -13380,12 +13370,6 @@ const GTDTutorial = (function () {
             let srcX = 0, srcY = 0, srcW = frame.naturalWidth, srcH = frame.naturalHeight;
             if (bbox && girlBaseScale) { curW = bbox.width * girlBaseScale; curH = bbox.height * girlBaseScale; srcX = bbox.x; srcY = bbox.y; srcW = bbox.width; srcH = bbox.height; }
 
-            if (g3on() && window.GTD3D.girlReady && girlFrames === GIRL0_GAMEPLAY_FRAMES && girlBaseScale) {
-                // 2.5D Three.js dash afterimage (visual only): same position / angle, same fade (alpha) and proportional shrink as the sprite ghost below; posed at the point of the
-                // step cycle its captured animation frame corresponds to
-                window.GTD3D.girlGhost(g.x, g.y, g.drawAngle, g.frameIndex, girlBaseScale * scale, alpha, 2 * Math.PI * g.frameIndex / Math.max(1, girlFrames.length - 1));
-                continue;
-            }
             ctx.save();
             ctx.translate(g.x, g.y);
             ctx.rotate(g.drawAngle);
