@@ -4,15 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Tetris Reimagine - 100 Levels</title>
+<meta name="theme-color" content="#0a0840">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Poppins:wght@400;700&display=swap" media="print" onload="this.media='all'">
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Poppins:wght@400;700&display=swap');
-
+    
     :root { --cyan:#00e5ff; --blue:#2a6bff; --violet:#b44bff; --orange:#ff9a1f; --green:#2dff6a; }
-    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
     html, body { margin:0; padding:0; }
     body {
         background:#0a0840; color:#fff; font-family:'Poppins', sans-serif;
-        height:100vh; height:100dvh; width:100vw; overflow:hidden; touch-action:none;
+        height:100vh; height:100dvh; width:100vw; overflow:hidden; touch-action:none; overscroll-behavior:none;
         display:flex; justify-content:center; align-items:center;
     }
     #bg-layer { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; }
@@ -78,16 +81,18 @@
     #volSegs span.on { background:linear-gradient(180deg,#5ff3ff,#00a8e8); box-shadow:0 0 6px #00e5ff; }
 
     /* ===== Board ===== */
-    #board-glow { flex:1; min-height:0; width:100%; --cut:18px; --bw:3px; --gl:rgba(0,170,255,.9); transition: filter .2s; }
+    #board-glow { flex:1; min-height:0; width:100%; position:relative; display:flex; --cut:18px; --bw:3px; }
+    #board-glow > .nb { position:relative; z-index:1; }
+    .glowbg { position:absolute; top:0; left:0; right:0; bottom:0; pointer-events:none; display:flex; filter:drop-shadow(0 0 5px rgba(0,170,255,.9)); }
+    .glowbg.red { filter:drop-shadow(0 0 14px rgba(255,40,70,1)); opacity:0; }
     #board-glow .nb { --cut:18px; --bw:3px; }
     #canvas-container { background:linear-gradient(180deg,#040a38,#030624); padding:8px; overflow:hidden; transition:transform .06s; }
-    #board-glow.danger { animation:dangerPulse .6s infinite alternate; }
-    @keyframes dangerPulse { from { filter: drop-shadow(0 0 4px rgba(255,40,70,.4)); } to { filter: drop-shadow(0 0 14px rgba(255,40,70,1)); } }
+    #board-glow.danger .glowbg.red { animation:dangerPulse .6s infinite alternate; }
+    @keyframes dangerPulse { from { opacity:.25; } to { opacity:1; } }
     canvas#gameCanvas { display:block; }
 
     .overlay {
-        position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(2,4,30,.88);
-        backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+        position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(2,4,30,.94);
         display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
         z-index:20; text-align:center; padding:18px 10px; overflow-y:auto; touch-action:pan-y; transition:opacity .3s;
     }
@@ -104,7 +109,7 @@
         padding:13px 20px; font-size:1rem; font-family:'Orbitron',sans-serif; font-weight:800; color:#fff;
         background:linear-gradient(45deg,#e91e63 0%,#ff8a80 100%); border:none; cursor:pointer;
         clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 12px) 100%,12px 100%,0 calc(100% - 12px),0 12px);
-        transition:transform .15s, filter .15s; margin:7px 0; width:80%; max-width:260px; text-transform:uppercase; letter-spacing:2px; flex:none;
+        transition:transform .08s, filter .08s; margin:7px 0; width:80%; max-width:260px; text-transform:uppercase; letter-spacing:2px; flex:none;
     }
     button:active { transform:scale(.96); filter:brightness(1.25); }
     button.green { background:linear-gradient(45deg,#11998e 0%,#38ef7d 100%); }
@@ -122,7 +127,7 @@
     #mobile-controls { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; height:54px; flex:none; }
     .btn { cursor:pointer; touch-action:none; --cut:12px; --bw:2px; }
     .btn .nb { --bc: linear-gradient(135deg,#7fe9ff,#2a62ff 50%,#b44bff); }
-    .btn .in { background:linear-gradient(180deg,#0a1f6e,#04103d); transition:background .08s; }
+    .btn .in { background:linear-gradient(180deg,#0a1f6e,#04103d); }
     .btn svg { width:28px; height:28px; pointer-events:none; filter:drop-shadow(0 0 4px currentColor); }
     .btn.pressed .in, .btn:active .in { background:linear-gradient(180deg,#1b46c4,#0a2a8a); }
     #btnDown { --gl:rgba(45,255,106,.7); }
@@ -169,7 +174,9 @@
     </div>
 
     <!-- Board -->
-    <div class="gl" id="board-glow">
+    <div id="board-glow">
+        <div class="glowbg"><div class="nb"><div class="in"></div></div></div>
+        <div class="glowbg red"><div class="nb"><div class="in"></div></div></div>
         <div class="nb"><div class="in" id="canvas-container">
             <canvas id="gameCanvas"></canvas>
 
@@ -187,7 +194,7 @@
                     <p>If you encounter any issues or have feedback, please feel free to reach out to us!</p>
                     <p>📧 <strong>Email:</strong> <a href="mailto:pixelgaunt@gmail.com">pixelgaunt@gmail.com</a></p>
                     <p>💬 <strong>WhatsApp:</strong> <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" style="color:#38ef7d;">Join our Group</a></p>
-                    <p><strong>Controls:</strong> ◀ ▶ move · ▲ / X rotate · ▼ soft drop · SPACE instant drop · P pause</p>
+                    <p><strong>Keyboard:</strong> ◀ ▶ / A D move · ▲ / W / X rotate · Z rotate back · ▼ / S soft drop · SPACE instant drop · P pause<br><strong>Touch:</strong> buttons, or on the board: drag to move · tap to rotate · swipe down to drop · flick down for instant drop</p>
                 </div>
                 <button id="closeReadmeBtn" class="green">CLOSE</button>
             </div>
@@ -232,12 +239,22 @@
     // ===================== AUDIO =====================
     const GameAudio = (function () {
         const MUSIC_FILE = 'The_Silver_Path.mp3';
-        const POOL_SIZE = 3;
+        const POOL_SIZE = 4;
         const pools = {};
         let muted = false, music = null, musicWanted = false, master = 1;
         function pool(name) { if (!pools[name]) pools[name] = { list: [], i: 0 }; return pools[name]; }
+        const lastPlayed = {};
+        function preload(names) {
+            names.forEach(function (name) {
+                const p = pool(name);
+                for (let i = 0; i < POOL_SIZE; i++) if (!p.list[i]) { try { const a = new Audio(name + '.wav'); a.preload = 'auto'; a.load(); p.list[i] = a; } catch (e) {} }
+            });
+        }
         function sfx(name, vol) {
             if (muted) return;
+            const now = performance.now();
+            if (lastPlayed[name] && now - lastPlayed[name] < 45) return; // avoid sound spam on fast repeats
+            lastPlayed[name] = now;
             try {
                 const p = pool(name);
                 let a = p.list[p.i];
@@ -261,6 +278,7 @@
         });
         return {
             sfx: sfx,
+            preload: preload,
             startMusic: function () { musicWanted = true; tryPlayMusic(); },
             stopMusic: function () { musicWanted = false; if (music) { music.pause(); music.currentTime = 0; } },
             pauseMusic: function () { musicWanted = false; if (music) music.pause(); },
@@ -308,11 +326,12 @@
     applyVolume();
 
     // ===================== ANIMATED SPACE BACKGROUND =====================
-    const bgCv = document.getElementById('bg-layer'); const bgx = bgCv.getContext('2d');
+    const bgCv = document.getElementById('bg-layer'); const bgx = bgCv.getContext('2d', { alpha: false });
     let BW = 0, BH = 0, bgStatic = null; const stars = []; const rocks = [];
     function rand(a, b) { return a + Math.random() * (b - a); }
     function buildBg() {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        bgLast = 0;
         BW = window.innerWidth; BH = window.innerHeight;
         bgCv.width = Math.floor(BW * dpr); bgCv.height = Math.floor(BH * dpr);
         bgx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -363,29 +382,40 @@
         g.beginPath(); g.moveTo(sx - u*1.8, sy + u*.3); g.lineTo(sx + u*2, sy + u*.3); g.stroke(); g.shadowBlur = 0;
 
         bgStatic = c;
-        stars.length = 0; for (let i = 0; i < 110; i++) stars.push({ x: Math.random()*BW, y: Math.random()*BH, r: rand(.4,1.5), p: rand(0, 6.28), s: rand(.5,2) });
-        rocks.length = 0; for (let i = 0; i < 9; i++) {
+        stars.length = 0; for (let i = 0; i < (small < 500 ? 55 : 90); i++) stars.push({ x: Math.random()*BW, y: Math.random()*BH, r: rand(.4,1.5), p: rand(0, 6.28), s: rand(.5,2) });
+        rocks.length = 0;
+        const nRocks = small < 500 ? 6 : 9;
+        for (let i = 0; i < nRocks; i++) {
             const n = 7, pts = []; const r = rand(10, 30) * (small > 500 ? 1.3 : 1);
             for (let k = 0; k < n; k++) pts.push([Math.cos(k/n*6.283) * r * rand(.7,1.1), Math.sin(k/n*6.283) * r * rand(.7,1.1)]);
-            rocks.push({ x: Math.random()*BW, y: Math.random()*BH, vx: rand(-.15,.15), vy: rand(-.1,.12), rot: rand(0,6.28), vr: rand(-.004,.004), pts, r });
+            // pre-render each rock once; per-frame cost is just a drawImage
+            const sz = Math.ceil(r * 1.3) * 2 + 6, sp = document.createElement('canvas');
+            sp.width = sp.height = Math.round(sz * dpr);
+            const sg = sp.getContext('2d'); sg.scale(dpr, dpr); sg.translate(sz / 2, sz / 2);
+            sg.beginPath(); pts.forEach((p, ix) => ix ? sg.lineTo(p[0], p[1]) : sg.moveTo(p[0], p[1])); sg.closePath();
+            const rg = sg.createLinearGradient(-r, -r, r, r); rg.addColorStop(0, '#6a58d8'); rg.addColorStop(1, '#2a1f80');
+            sg.fillStyle = rg; sg.fill(); sg.strokeStyle = 'rgba(170,150,255,.55)'; sg.lineWidth = 1.5; sg.stroke();
+            rocks.push({ x: Math.random()*BW, y: Math.random()*BH, vx: rand(-.15,.15), vy: rand(-.1,.12), rot: rand(0,6.28), vr: rand(-.004,.004), sp, sz });
         }
     }
+    let bgLast = 0;
     function drawBg(t) {
         if (!bgStatic) return;
+        if (t - bgLast < 30) return; // background animates at ~30fps; frees the main thread for gameplay
+        const k = Math.min(3, bgLast ? (t - bgLast) / 16.67 : 1); bgLast = t;
         bgx.drawImage(bgStatic, 0, 0, BW, BH);
+        bgx.fillStyle = '#fff';
         for (const s of stars) {
             bgx.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.001 * s.s + s.p));
-            bgx.fillStyle = '#fff'; bgx.fillRect(s.x, s.y, s.r, s.r);
+            bgx.fillRect(s.x, s.y, s.r, s.r);
         }
         bgx.globalAlpha = 1;
-        for (const k of rocks) {
-            k.x += k.vx; k.y += k.vy; k.rot += k.vr;
-            if (k.x < -50) k.x = BW + 50; if (k.x > BW + 50) k.x = -50;
-            if (k.y < -50) k.y = BH + 50; if (k.y > BH + 50) k.y = -50;
-            bgx.save(); bgx.translate(k.x, k.y); bgx.rotate(k.rot);
-            bgx.beginPath(); k.pts.forEach((p, i) => i ? bgx.lineTo(p[0], p[1]) : bgx.moveTo(p[0], p[1])); bgx.closePath();
-            const rg = bgx.createLinearGradient(-k.r, -k.r, k.r, k.r); rg.addColorStop(0, '#6a58d8'); rg.addColorStop(1, '#2a1f80');
-            bgx.fillStyle = rg; bgx.fill(); bgx.strokeStyle = 'rgba(170,150,255,.55)'; bgx.lineWidth = 1.5; bgx.stroke();
+        for (const r of rocks) {
+            r.x += r.vx * k; r.y += r.vy * k; r.rot += r.vr * k;
+            if (r.x < -50) r.x = BW + 50; if (r.x > BW + 50) r.x = -50;
+            if (r.y < -50) r.y = BH + 50; if (r.y > BH + 50) r.y = -50;
+            bgx.save(); bgx.translate(r.x, r.y); bgx.rotate(r.rot);
+            bgx.drawImage(r.sp, -r.sz / 2, -r.sz / 2, r.sz, r.sz);
             bgx.restore();
         }
     }
@@ -426,25 +456,38 @@
     if (savedLevel > 1) document.getElementById('resumeBtn').classList.remove('hidden');
 
     // ===================== LAYOUT (keeps board 1:2, no cropping) =====================
+    const IS_DESKTOP = !!(window.matchMedia && matchMedia('(hover:hover) and (pointer:fine)').matches);
+    let SC = 1, boardBg = null, lastFit = '';
     function fitLayout() {
         const vw = window.innerWidth, vh = window.innerHeight, frame = 22;
         document.body.style.height = vh + 'px';
         const wrap = document.getElementById('game-wrapper');
         const glow = document.getElementById('board-glow');
         const availH = glow.clientHeight - frame;
-        const availW = Math.min(vw - 8, 440) - 8 - frame;
-        let w = Math.floor(Math.min(availW, availH / 2, 400));
+        const maxW = IS_DESKTOP ? 560 : 440, maxBoard = IS_DESKTOP ? 460 : 400;
+        const availW = Math.min(vw - 8, maxW) - 8 - frame;
+        let w = Math.floor(Math.min(availW, availH / 2, maxBoard));
         w = Math.max(w, 100); const h = w * 2;
         wrap.style.width = Math.min(vw, Math.max(w + frame + 8, 300)) + 'px';
         const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+        const key = w + 'x' + vw + 'x' + vh + '@' + dpr;
+        if (key === lastFit) return; // nothing really changed (mobile URL bar jitter etc.)
+        lastFit = key;
         canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
-        canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+        // keep device-pixel cell size an integer so cached block sprites line up perfectly
+        const cw = Math.max(10, Math.round(w * dpr / COLS) * COLS);
+        canvas.width = cw; canvas.height = cw * 2;
+        SC = canvas.width / LW;
+        spriteCache.clear(); boardBg = null;
         glow.style.width = '100%';
         buildBg();
+        if (state === 'PAUSED') { drawBg(performance.now() + 100); draw(); }
     }
-    window.addEventListener('resize', fitLayout);
-    window.addEventListener('orientationchange', () => setTimeout(fitLayout, 150));
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', fitLayout);
+    let fitRaf = 0;
+    function scheduleFit() { if (fitRaf) return; fitRaf = requestAnimationFrame(() => { fitRaf = 0; fitLayout(); }); }
+    window.addEventListener('resize', scheduleFit);
+    window.addEventListener('orientationchange', () => setTimeout(scheduleFit, 150));
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleFit);
 
     // ===================== GAMEPLAY =====================
     function refillBag() {
@@ -510,6 +553,36 @@
         g.restore();
     }
 
+    // Pre-rendered block sprites: bevels/gradients/glow are painted once, then just blitted every frame.
+    const spriteCache = new Map();
+    function getSprite(col, glow) {
+        const px = Math.max(8, Math.round(CELL * SC));
+        const key = col.base + (glow ? 'g' : 'n') + px;
+        let sp = spriteCache.get(key); if (sp) return sp;
+        const pad = glow ? Math.ceil(px * 0.6) : 0;
+        const c = document.createElement('canvas'); c.width = c.height = px + pad * 2;
+        paintBlock(c.getContext('2d'), pad, pad, px, col, 1, glow);
+        sp = { c, pad }; spriteCache.set(key, sp); return sp;
+    }
+    function drawBlock(x, y, col, alpha, glow, scale) {
+        const sp = getSprite(col, glow), f = (scale || 1) / SC;
+        const dw = sp.c.width * f, o = sp.pad * f, off = CELL * (1 - (scale || 1)) / 2;
+        if (alpha !== 1) ctx.globalAlpha = alpha;
+        ctx.drawImage(sp.c, x + off - o, y + off - o, dw, dw);
+        if (alpha !== 1) ctx.globalAlpha = 1;
+    }
+    function buildBoardBg() {
+        boardBg = document.createElement('canvas'); boardBg.width = canvas.width; boardBg.height = canvas.height;
+        const g = boardBg.getContext('2d'); g.setTransform(SC, 0, 0, SC, 0, 0);
+        const bgG = g.createRadialGradient(LW/2, LH*0.55, 20, LW/2, LH*0.55, LH*0.7);
+        bgG.addColorStop(0, 'rgba(40,80,220,.22)'); bgG.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = bgG; g.fillRect(0, 0, LW, LH);
+        g.strokeStyle = 'rgba(70,120,255,0.28)'; g.lineWidth = 1; g.beginPath();
+        for (let r = 1; r < ROWS; r++) { g.moveTo(0, r * CELL + .5); g.lineTo(LW, r * CELL + .5); }
+        for (let c = 1; c < COLS; c++) { g.moveTo(c * CELL + .5, 0); g.lineTo(c * CELL + .5, LH); }
+        g.stroke();
+    }
+
     function drawNextPiece() {
         nextCtx.setTransform(1, 0, 0, 1, 0, 0);
         nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
@@ -539,10 +612,10 @@
         if (isGrounded() && lockResets < MAX_LOCK_RESETS) { lockTimer = 0; lockResets++; }
     }
 
-    function playerRotate() {
+    function playerRotate(ccw) {
         if (!activePiece || clearingAnimation.active) return;
         const origMat = activePiece.mat, N = origMat.length, originalX = activePiece.x, originalY = activePiece.y;
-        activePiece.mat = origMat.map((row, i) => row.map((v, j) => origMat[N - 1 - j][i]));
+        activePiece.mat = ccw ? origMat.map((row, i) => row.map((v, j) => origMat[j][N - 1 - i])) : origMat.map((row, i) => row.map((v, j) => origMat[N - 1 - j][i]));
         const kicks = [[0,0],[1,0],[-1,0],[2,0],[-2,0],[0,-1]];
         let ok = false;
         for (const k of kicks) {
@@ -556,10 +629,10 @@
         if (!activePiece || clearingAnimation.active) return;
         if (!collide(activePiece, 0, dir)) { activePiece.x += dir; AudioSys.move(); onPieceAdjusted(); }
     }
-    function softDrop() {
+    function softDrop(isRepeat) {
         if (!activePiece || clearingAnimation.active) return;
         if (!collide(activePiece, 1, 0)) { activePiece.y++; score += 1; updateHUD(); dropCounter = 0; lockTimer = 0; }
-        else lockPiece();
+        else if (!isRepeat) lockPiece();
     }
     function hardDrop() {
         if (!activePiece || clearingAnimation.active) return;
@@ -629,11 +702,14 @@
         document.getElementById('board-glow').classList.toggle('danger', top <= 4);
     }
 
+    const elScore = document.getElementById('scoreDisplay'), elLevel = document.getElementById('levelDisplay'),
+          elLines = document.getElementById('linesDisplay'), elProg = document.getElementById('progFill');
+    const hudCache = {};
+    function setHud(el, key, v) { if (hudCache[key] !== v) { hudCache[key] = v; el.textContent = v; } }
     function updateHUD() {
-        document.getElementById('scoreDisplay').innerText = score;
-        document.getElementById('levelDisplay').innerText = level;
-        document.getElementById('linesDisplay').innerText = `${linesThisLevel}/10`;
-        document.getElementById('progFill').style.width = Math.min(100, linesThisLevel * 10) + '%';
+        setHud(elScore, 's', score); setHud(elLevel, 'l', level); setHud(elLines, 'n', `${linesThisLevel}/10`);
+        const pw = Math.min(100, linesThisLevel * 10) + '%';
+        if (hudCache.p !== pw) { hudCache.p = pw; elProg.style.width = pw; }
     }
 
     function shakeScreen(amount = 4) {
@@ -646,7 +722,7 @@
         setTimeout(() => msg.classList.add('hidden'), 1500);
     }
     function createExplosionByCell(r, c, color) {
-        for (let i = 0; i < 7; i++) particles.push({ x: c*CELL + CELL/2, y: r*CELL + CELL/2, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, color, life: 1, decay: Math.random()*0.03 + 0.02, s: rand(2, 5) });
+        if (particles.length > 260) return; for (let i = 0; i < 7; i++) particles.push({ x: c*CELL + CELL/2, y: r*CELL + CELL/2, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, color, life: 1, decay: Math.random()*0.03 + 0.02, s: rand(2, 5) });
     }
     function addFloatingText(text, x, y, size, color) { floatingTexts.push({ text, x, y, life: 1, vy: -0.8, size: size || 20, color: color || '#fff' }); }
 
@@ -658,7 +734,7 @@
     }
 
     function updateClearAnim(dt) {
-        const a = clearingAnimation; a.progress += dt / 32; const p = a.progress;
+        const a = clearingAnimation; a.progress += dt / 20; const p = a.progress;
         a.rows.forEach(r => { for (let c = 0; c < COLS; c++) {
             if (grid[r][c] === null) continue;
             const delay = Math.abs(c - COLS / 2), key = r * COLS + c;
@@ -675,25 +751,18 @@
 
     // ===================== RENDER =====================
     function draw() {
-        const sc = canvas.width / LW;
-        ctx.setTransform(sc, 0, 0, sc, 0, 0);
-        ctx.clearRect(0, 0, LW, LH);
-
-        // soft vertical glow + grid
-        const bgG = ctx.createRadialGradient(LW/2, LH*0.55, 20, LW/2, LH*0.55, LH*0.7);
-        bgG.addColorStop(0, 'rgba(40,80,220,.22)'); bgG.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = bgG; ctx.fillRect(0, 0, LW, LH);
-        ctx.strokeStyle = 'rgba(70,120,255,0.28)'; ctx.lineWidth = 1;
-        ctx.beginPath();
-        for (let r = 1; r < ROWS; r++) { ctx.moveTo(0, r * CELL + .5); ctx.lineTo(LW, r * CELL + .5); }
-        for (let c = 1; c < COLS; c++) { ctx.moveTo(c * CELL + .5, 0); ctx.lineTo(c * CELL + .5, LH); }
-        ctx.stroke();
+        if (!boardBg) buildBoardBg();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(boardBg, 0, 0);
+        ctx.setTransform(SC, 0, 0, SC, 0, 0);
 
         // locked blocks
         const clr = clearingAnimation.active ? clearingAnimation.rows : null;
         for (let r = 0; r < ROWS; r++) {
             if (clr && clr.includes(r)) continue;
-            for (let c = 0; c < COLS; c++) if (grid[r][c] !== null) paintBlock(ctx, c * CELL, r * CELL, CELL, grid[r][c], 1, false);
+            const row = grid[r];
+            for (let c = 0; c < COLS; c++) if (row[c] !== null) drawBlock(c * CELL, r * CELL, row[c], 1, false, 1);
         }
 
         // line clear dissolve
@@ -704,27 +773,26 @@
                     if (grid[r][c] === null) continue;
                     const delay = Math.abs(c - COLS / 2);
                     if (p > delay) {
-                        const a = Math.max(0, 1 - (p - delay) / 5), s = Math.max(0, 1 - (p - delay) / 6);
-                        if (a > 0 && s > 0) { const sz = CELL * s, off = (CELL - sz) / 2; paintBlock(ctx, c * CELL + off, r * CELL + off, sz, grid[r][c], a, true); }
-                    } else paintBlock(ctx, c * CELL, r * CELL, CELL, grid[r][c], 1, false);
+                        const a = Math.max(0, 1 - (p - delay) / 5), sc2 = Math.max(0, 1 - (p - delay) / 6);
+                        if (a > 0 && sc2 > 0) drawBlock(c * CELL, r * CELL, grid[r][c], a, true, sc2);
+                    } else drawBlock(c * CELL, r * CELL, grid[r][c], 1, false, 1);
                 }
                 const fl = Math.max(0, 0.6 - p / 8);
                 if (fl > 0) { ctx.fillStyle = `rgba(255,255,255,${fl})`; ctx.fillRect(0, r * CELL, LW, CELL); }
             });
         }
 
-        // ghost piece (outlined, like the reference)
+        // ghost piece
         if (activePiece && !clr) {
             const gy = getGhostY();
             if (gy !== activePiece.y) {
-                ctx.save(); ctx.strokeStyle = activePiece.color.base; ctx.fillStyle = activePiece.color.base; ctx.lineWidth = 2;
-                ctx.shadowColor = activePiece.color.base; ctx.shadowBlur = 6;
+                ctx.strokeStyle = activePiece.color.base; ctx.fillStyle = activePiece.color.base; ctx.lineWidth = 2;
                 for (let r = 0; r < activePiece.mat.length; r++) for (let c = 0; c < activePiece.mat[r].length; c++) if (activePiece.mat[r][c]) {
                     const gx = (activePiece.x + c) * CELL, gyy = (gy + r) * CELL;
-                    ctx.globalAlpha = 0.14; ctx.fillRect(gx + 2, gyy + 2, CELL - 4, CELL - 4);
-                    ctx.globalAlpha = 0.7; ctx.strokeRect(gx + 2, gyy + 2, CELL - 4, CELL - 4);
+                    ctx.globalAlpha = 0.16; ctx.fillRect(gx + 2, gyy + 2, CELL - 4, CELL - 4);
+                    ctx.globalAlpha = 0.75; ctx.strokeRect(gx + 2, gyy + 2, CELL - 4, CELL - 4);
                 }
-                ctx.restore();
+                ctx.globalAlpha = 1;
             }
         }
 
@@ -735,22 +803,28 @@
             ctx.globalAlpha = t.life * 0.5; ctx.fillStyle = g; ctx.fillRect(t.x + 4, t.y1, CELL - 8, t.y2 - t.y1 + CELL); ctx.globalAlpha = 1;
         });
 
-        // active piece (glowing)
+        // active piece (glowing sprite)
         if (activePiece && !clr) {
-            const lockGlow = isGrounded() ? 0.75 + 0.25 * Math.sin(Date.now() / 60) : 1;
+            const lockGlow = isGrounded() ? 0.8 + 0.2 * Math.sin(performance.now() / 60) : 1;
             for (let r = 0; r < activePiece.mat.length; r++) for (let c = 0; c < activePiece.mat[r].length; c++)
-                if (activePiece.mat[r][c]) paintBlock(ctx, (activePiece.x + c) * CELL, (activePiece.y + r) * CELL, CELL, activePiece.color, lockGlow, true);
+                if (activePiece.mat[r][c]) drawBlock((activePiece.x + c) * CELL, (activePiece.y + r) * CELL, activePiece.color, lockGlow, true, 1);
         }
 
-        // particles + text
-        particles.forEach(p => { ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.shadowColor = p.color; ctx.shadowBlur = 6; ctx.fillRect(p.x - p.s/2, p.y - p.s/2, p.s, p.s); });
-        ctx.shadowBlur = 0; ctx.globalAlpha = 1; ctx.textAlign = 'center';
-        floatingTexts.forEach(f => {
-            ctx.globalAlpha = Math.max(0, Math.min(1, f.life * 1.5)); ctx.font = `800 ${f.size}px Orbitron, sans-serif`;
-            ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,20,.85)'; ctx.strokeText(f.text, f.x, f.y);
-            ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y);
-        });
+        // particles + text (no per-particle shadow blur)
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+            ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.fillRect(p.x - p.s/2, p.y - p.s/2, p.s, p.s);
+        }
         ctx.globalAlpha = 1;
+        if (floatingTexts.length) {
+            ctx.textAlign = 'center';
+            floatingTexts.forEach(f => {
+                ctx.globalAlpha = Math.max(0, Math.min(1, f.life * 1.5)); ctx.font = `800 ${f.size}px Orbitron, sans-serif`;
+                ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,20,.85)'; ctx.strokeText(f.text, f.x, f.y);
+                ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y);
+            });
+            ctx.globalAlpha = 1;
+        }
     }
 
     function gameLoop(timestamp) {
@@ -766,11 +840,14 @@
                     if (lockTimer >= LOCK_DELAY) lockPiece();
                 } else {
                     lockTimer = 0; dropCounter += dt;
-                    if (dropCounter >= dropInterval) { activePiece.y++; dropCounter = 0; }
+                    let n = 0;
+                    while (dropCounter >= dropInterval && n++ < 3 && activePiece && !collide(activePiece, 1, 0)) { activePiece.y++; dropCounter -= dropInterval; }
+                    if (dropCounter >= dropInterval) dropCounter = 0;
                 }
             }
         } else if (state === 'MENU' || state === 'GAMEOVER') updateEffects(dt);
-        drawBg(timestamp); draw(); requestAnimationFrame(gameLoop);
+        if (state !== 'PAUSED') { drawBg(timestamp); draw(); } // nothing moves while paused: skip all rendering
+        requestAnimationFrame(gameLoop);
     }
 
     // ===================== INPUT =====================
@@ -783,27 +860,42 @@
         document.getElementById('pauseMenu').classList.add('hidden');
         state = 'PLAY'; GameAudio.startMusic();
     }
+    // Custom key repeat (DAS/ARR) so movement is fast and identical on every OS
+    const DAS = 110, ARR = 32, SDF_DELAY = 70, SDF_RATE = 28;
+    const LEFT_KEYS = ['ArrowLeft', 'KeyA'], RIGHT_KEYS = ['ArrowRight', 'KeyD'];
+    const keyTimers = {};
+    function keyStop(code) { const t = keyTimers[code]; if (t) { clearTimeout(t.a); clearInterval(t.b); delete keyTimers[code]; } }
+    function keyStart(code, fn, first, rep) {
+        if (keyTimers[code]) return;
+        fn(false);
+        const t = {}; keyTimers[code] = t;
+        t.a = setTimeout(() => { t.b = setInterval(() => { if (state === 'PLAY') fn(true); else keyStop(code); }, rep); }, first);
+    }
     window.addEventListener('keydown', e => {
-        if (e.code === 'KeyP' || e.code === 'Escape') { if (state === 'PLAY') pauseGame(); else if (state === 'PAUSED') resumeGame(); return; }
+        if (e.code === 'KeyP' || e.code === 'Escape') { if (e.repeat) return; if (state === 'PLAY') pauseGame(); else if (state === 'PAUSED') resumeGame(); return; }
         if (state !== 'PLAY') return;
-        if (e.code === 'ArrowLeft') { e.preventDefault(); pieceMove(-1); }
-        if (e.code === 'ArrowRight') { e.preventDefault(); pieceMove(1); }
-        if (e.code === 'ArrowUp' || e.code === 'KeyX') { e.preventDefault(); playerRotate(); }
-        if (e.code === 'ArrowDown') { e.preventDefault(); softDrop(); }
-        if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) hardDrop(); }
+        const code = e.code;
+        if (LEFT_KEYS.includes(code)) { e.preventDefault(); if (!e.repeat) { RIGHT_KEYS.forEach(keyStop); keyStart(code, () => pieceMove(-1), DAS, ARR); } }
+        else if (RIGHT_KEYS.includes(code)) { e.preventDefault(); if (!e.repeat) { LEFT_KEYS.forEach(keyStop); keyStart(code, () => pieceMove(1), DAS, ARR); } }
+        else if (code === 'ArrowDown' || code === 'KeyS') { e.preventDefault(); if (!e.repeat) keyStart(code, rep => softDrop(rep), SDF_DELAY, SDF_RATE); }
+        else if (code === 'ArrowUp' || code === 'KeyX' || code === 'KeyW') { e.preventDefault(); if (!e.repeat) playerRotate(false); }
+        else if (code === 'KeyZ') { e.preventDefault(); if (!e.repeat) playerRotate(true); }
+        else if (code === 'Space') { e.preventDefault(); if (!e.repeat) hardDrop(); }
     });
+    window.addEventListener('keyup', e => keyStop(e.code));
+    window.addEventListener('blur', () => stopHolds());
     document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
 
     const holds = [];
-    function stopHolds() { holds.forEach(h => h()); }
+    function stopHolds() { holds.forEach(h => h()); Object.keys(keyTimers).forEach(keyStop); }
     function bindHold(id, fn, first, rep) {
         const el = document.getElementById(id); let t1 = null, t2 = null;
         const stop = () => { clearTimeout(t1); clearInterval(t2); t1 = t2 = null; el.classList.remove('pressed'); };
         holds.push(stop);
         el.addEventListener('pointerdown', e => {
             e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch (er) {}
-            if (state !== 'PLAY') return; stop(); el.classList.add('pressed'); fn();
-            t1 = setTimeout(() => { t2 = setInterval(() => { if (state === 'PLAY') fn(); else stop(); }, rep); }, first);
+            if (state !== 'PLAY') return; stop(); el.classList.add('pressed'); fn(false);
+            t1 = setTimeout(() => { t2 = setInterval(() => { if (state === 'PLAY') fn(true); else stop(); }, rep); }, first);
         });
         ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => el.addEventListener(ev, stop));
         el.addEventListener('contextmenu', e => e.preventDefault());
@@ -814,16 +906,44 @@
         ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => el.addEventListener(ev, () => el.classList.remove('pressed')));
         el.addEventListener('contextmenu', e => e.preventDefault());
     }
-    bindHold('btnLeft', () => pieceMove(-1), 170, 60);
-    bindHold('btnRight', () => pieceMove(1), 170, 60);
-    bindHold('btnDown', softDrop, 120, 50);
-    bindTap('btnRotate', playerRotate);
+    bindHold('btnLeft', () => pieceMove(-1), 120, 35);
+    bindHold('btnRight', () => pieceMove(1), 120, 35);
+    bindHold('btnDown', rep => softDrop(rep), 80, 28);
+    bindTap('btnRotate', () => playerRotate(false));
     bindTap('btnSpaceGl', hardDrop);
+
+    // Touch gestures on the board: drag = move, tap = rotate, slow swipe down = soft drop, fast flick down = instant drop
+    (function () {
+        let id = null, lx = 0, ly = 0, sx = 0, sy = 0, t0 = 0, moved = false;
+        const cellPx = () => canvas.clientWidth / COLS;
+        canvas.addEventListener('pointerdown', e => {
+            if (state !== 'PLAY' || e.pointerType === 'mouse' || id !== null) return;
+            id = e.pointerId; sx = lx = e.clientX; sy = ly = e.clientY; t0 = performance.now(); moved = false;
+            try { canvas.setPointerCapture(id); } catch (er) {}
+        });
+        canvas.addEventListener('pointermove', e => {
+            if (e.pointerId !== id) return;
+            if (state !== 'PLAY') { id = null; return; }
+            const cp = cellPx();
+            while (e.clientX - lx >= cp * 0.9) { pieceMove(1); lx += cp; moved = true; }
+            while (lx - e.clientX >= cp * 0.9) { pieceMove(-1); lx -= cp; moved = true; }
+            while (e.clientY - ly >= cp * 0.8) { softDrop(true); ly += cp * 0.8; moved = true; }
+        });
+        const end = e => {
+            if (e.pointerId !== id) return; id = null;
+            if (state !== 'PLAY' || e.type === 'pointercancel') return;
+            const cp = cellPx(), dx = e.clientX - sx, dy = e.clientY - sy, dur = performance.now() - t0;
+            if (dy > cp * 3 && dur < 250 && Math.abs(dx) < dy) hardDrop();
+            else if (!moved && Math.abs(dx) < 12 && Math.abs(dy) < 12 && dur < 300) playerRotate(false);
+        };
+        canvas.addEventListener('pointerup', end);
+        canvas.addEventListener('pointercancel', end);
+    })();
 
     document.getElementById('pauseBtn').addEventListener('pointerdown', e => { e.preventDefault(); pauseGame(); });
 
     function startGame(lv) {
-        AudioSys.init(); document.getElementById('menu').classList.add('hidden');
+        AudioSys.init(); GameAudio.preload(['hover', 'click', 'object_hit', 'object_destroy_base', 'levelup', 'player_death']); document.getElementById('menu').classList.add('hidden');
         initGame(lv); if (state !== 'GAMEOVER') { state = 'PLAY'; GameAudio.startMusic(); }
     }
     document.getElementById('playBtn').addEventListener('click', () => startGame(1));
