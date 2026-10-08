@@ -56,6 +56,20 @@
             font-size: 18px; font-weight: bold; color: white; text-shadow: 2px 2px 0 #000;
         }
 
+        #levelBanner {
+            position: fixed; left: 50%; top: 22%; transform: translate(-50%, 0); z-index: 40; display: none;
+            text-align: center; pointer-events: none; font-family: inherit; font-weight: 900; letter-spacing: 3px;
+            font-size: 34px; color: #fff; white-space: nowrap; animation: lvlBannerAnim 2.8s ease-out forwards;
+        }
+        #levelBanner small { display: block; font-size: 15px; letter-spacing: 2px; margin-top: 6px; color: #fff; text-shadow: 0 0 8px #000; }
+        @keyframes lvlBannerAnim {
+            0% { opacity: 0; transform: translate(-50%, -20px) scale(0.8); }
+            12% { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
+            20% { transform: translate(-50%, 0) scale(1); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%, 0) scale(1); }
+        }
+        @media (max-width: 700px) { #levelBanner { font-size: 22px; top: 18%; } #levelBanner small { font-size: 11px; } }
         .screen-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh;
             background: rgba(10, 3, 18, 0.85); display: flex; flex-direction: column;
@@ -362,6 +376,8 @@
         </div>
     </div>
 
+    <div id="levelBanner"></div>
+
     <div id="levelTimerContainer">
         <div id="levelTimerFill"></div>
         <div id="levelTimerText">LEVEL ENDS IN: 1:30</div>
@@ -527,6 +543,38 @@
         }
         const gunOn = () => hasGunShock && !hasCarMode, fbOn = () => hasFireballBoost && !hasCarMode,
               spdOn = () => hasSpeedBoost && !hasCarMode, shieldOn = () => hasShield && !hasCarMode;
+        // ---------------- LEVEL TYPES ----------------
+        // 'normal'  : regular enemies, NO car power-up drops
+        // 'bike'    : ENEMY BIKE level  - riders on motorbikes, car power-up can drop
+        // 'car'     : ENEMY CAR level   - drivers in cars, car power-up can drop
+        // Stage 1 is always normal; from stage 2 every level is rolled at random (never the same special type twice in a row).
+        const BIKE_LEVEL_CHANCE = 0.25, CAR_LEVEL_CHANCE = 0.25;   // the rest are normal levels
+        const NINJA_CHANCE = 0.25;   // chance that a spawned enemy is a sword ninja (any level)
+        let levelType = 'normal', lastLevelType = 'normal';
+        function rollLevelType() {
+            let t = 'normal';
+            if (currentStage >= 2) {
+                const r = Math.random();
+                t = r < BIKE_LEVEL_CHANCE ? 'bike' : (r < BIKE_LEVEL_CHANCE + CAR_LEVEL_CHANCE ? 'car' : 'normal');
+                if (t !== 'normal' && t === lastLevelType) t = 'normal';
+            }
+            levelType = lastLevelType = t;
+            announceLevel();
+        }
+        let bannerTimer = 0;
+        function announceLevel() {
+            const b = document.getElementById('levelBanner');
+            clearTimeout(bannerTimer);
+            b.style.display = 'none';
+            if (levelType === 'normal') return;
+            const bike = levelType === 'bike';
+            b.style.color = bike ? '#ffcc00' : '#ff2e6e';
+            b.style.textShadow = bike ? '0 0 12px #ffcc00, 0 0 34px #ff8800' : '0 0 12px #ff2e6e, 0 0 34px #ff0033';
+            b.innerHTML = (bike ? 'ENEMY BIKE LEVEL' : 'ENEMY CAR LEVEL') + '<small>' + (bike ? 'Riders are charging in! Car power-ups can drop now.' : 'Drivers are on the road! Car power-ups can drop now.') + '</small>';
+            void b.offsetWidth; b.style.animation = 'none'; void b.offsetWidth; b.style.animation = '';
+            b.style.display = 'block';
+            bannerTimer = setTimeout(() => { b.style.display = 'none'; }, 2900);
+        }
         let framesElapsed = 0; let levelCompleted = false; 
         const LEVEL_TIMER_FRAMES = 90 * 60; 
 
@@ -867,6 +915,7 @@
                 
                 if (type === 'goliath') { this.baseHeight = 180; this.height = 180; this.width = 80; this.health = 120 + (currentStage*20); }
                 if (type === 'spider') { this.baseHeight = 60; this.height = 60; this.width = 90; this.health = 30 + (currentStage*5); }
+                if (type === 'ninja') { this.baseHeight = 120; this.height = 120; this.width = 44; this.health = 35 + (currentStage*8); }
                 if (team === 'enemy' && type === 'brawler') this.health = 40 + (currentStage*10);
                 if (team === 'enemy' && type === 'gunner') this.health = 30 + (currentStage*10);
 
@@ -886,7 +935,19 @@
                 this.animTimer = Math.random() * 100;
                 this.isKnockedDown = false; this.knockdownTimer = 0;
                 this.flashTimer = 0;
+                this.vehicle = null; this.ramCD = 0; this.rideDir = 0;
+                this.nState = 'stalk'; this.nTimer = 0; this.jumpCD = 40 + Math.floor(Math.random() * 60); this.leapT = 0; this.hitDone = false;
                 this.initRig();
+            }
+
+            // Turn this enemy into a bike rider / car driver (used by ENEMY BIKE / ENEMY CAR levels)
+            makeVehicle(kind) {
+                this.vehicle = kind;
+                const bike = kind === 'bike';
+                this.baseHeight = this.height = bike ? 88 : 68;
+                this.width = bike ? 96 : 150;
+                this.health += bike ? 10 : 50; this.maxHealth = this.health;
+                this.wheelRot = 0;
             }
 
             /* ============================================================
@@ -1091,6 +1152,7 @@
                     T.hF = { x: Math.cos(aa) * 33, y: Math.sin(aa) * 33 };
                     T.hB = { x: Math.cos(aa) * 23, y: Math.sin(aa) * 23 - 5 };
                     T.lean = Math.min(T.lean, 0.1); T.k = 0.4;
+                    if (tg && !tg.dead) T.head = Math.max(-0.5, Math.min(0.4, -aa * 0.6));   // face looks toward the target
                 }
 
                 // ---- smooth toward target ----
@@ -1202,6 +1264,8 @@
                 this.fc = (this.flashTimer > 0 && this.flashTimer % 4 < 2) ? '#ffffff' : null;
 
                 if (this.team === 'player' && hasCarMode) { this.drawCar(); c.restore(); return; }
+                if (this.vehicle) { this.drawVehicle(); c.restore(); return; }
+                if (this.type === 'ninja') { this.drawNinja(); c.restore(); return; }
 
                 if (this.team === 'ally') c.globalAlpha *= 0.8;
                 if (this.team === 'player' && this.invulnTimer > 0 && Math.floor(this.invulnTimer / 4) % 2 === 0) c.globalAlpha *= 0.45;
@@ -1462,6 +1526,202 @@
                 }
             }
 
+            // ---------- enemy bikes & cars (ENEMY BIKE / ENEMY CAR levels) ----------
+            stepVehicle() {
+                this.wheelRot += this.velocity.x / 15;
+                this.facingRight = this.rideDir ? this.rideDir > 0 : this.facingRight;
+                if (this.ramCD > 0) this.ramCD--;
+                if (!this.isKnockedDown && Math.abs(this.velocity.x) > 3 && quality >= 1 && this.animTimer % 5 === 0 && this.position.y + this.height >= groundY() - 2) {
+                    dust(this.position.x + this.width / 2 - (this.facingRight ? 1 : -1) * this.width * 0.45, groundY(), 1);
+                }
+            }
+
+            drawVehicle() {
+                const bike = this.vehicle === 'bike';
+                const dir = this.facingRight ? 1 : -1, t = this.animTimer, A0 = c.globalAlpha;
+                const cx = this.position.x + this.width / 2, gy = this.position.y + this.height;
+                const flash = !!this.fc, col = this.fc || this.color;
+                const moving = Math.abs(this.velocity.x) > 1, air = Math.abs(this.velocity.y) > 1;
+                drawGlow(col, cx, gy - this.height * 0.45, bike ? 90 : 120, 0.55);
+                c.save();
+                c.translate(cx, gy + (moving && !air && !this.isKnockedDown ? Math.sin(t * 0.8) * 1.1 : 0));
+                c.scale(dir, 1);
+                if (this.isKnockedDown) c.rotate(-0.28);                       // rears up when hit
+                else if (air) c.rotate(rClamp(this.velocity.y * 0.02, -0.2, 0.2));
+                c.lineCap = 'round'; c.lineJoin = 'round';
+
+                if (bike) {
+                    // exhaust flame
+                    if (moving) {
+                        const fl = 8 + Math.random() * 10 + Math.abs(this.velocity.x) * 0.5;
+                        c.fillStyle = '#ff7a1a'; c.beginPath(); c.moveTo(-40, -22); c.lineTo(-40 - fl, -19); c.lineTo(-40, -15); c.fill();
+                    }
+                    // wheels
+                    for (const wx of [-30, 30]) {
+                        c.fillStyle = '#0b0d16'; c.beginPath(); c.arc(wx, -17, 17, 0, Math.PI * 2); c.fill();
+                        c.strokeStyle = flash ? '#ffffff' : col; c.lineWidth = 3; c.beginPath(); c.arc(wx, -17, 16, 0, Math.PI * 2); c.stroke();
+                        c.save(); c.translate(wx, -17); c.rotate(this.wheelRot);
+                        c.strokeStyle = '#8894c4'; c.lineWidth = 2; c.beginPath();
+                        for (let k = 0; k < 4; k++) { c.moveTo(0, 0); c.lineTo(Math.cos(k * 1.5708) * 13, Math.sin(k * 1.5708) * 13); }
+                        c.stroke(); c.restore();
+                        c.fillStyle = '#cfd6ff'; c.beginPath(); c.arc(wx, -17, 3, 0, Math.PI * 2); c.fill();
+                    }
+                    // frame + body
+                    c.strokeStyle = flash ? '#ffffff' : '#1d2240'; c.lineWidth = 6;
+                    c.beginPath(); c.moveTo(-30, -17); c.lineTo(-14, -36); c.lineTo(10, -38); c.lineTo(26, -34); c.lineTo(30, -17); c.stroke();
+                    c.fillStyle = flash ? '#ffffff' : '#2a315c'; c.beginPath(); c.roundRect ? c.roundRect(-14, -34, 24, 16, 4) : c.rect(-14, -34, 24, 16); c.fill();   // engine
+                    c.fillStyle = flash ? '#ffffff' : col; c.beginPath(); c.moveTo(-18, -38); c.quadraticCurveTo(-4, -52, 18, -42); c.lineTo(16, -36); c.lineTo(-18, -34); c.closePath(); c.fill();   // tank
+                    c.fillStyle = '#10142c'; c.beginPath(); c.moveTo(-34, -40); c.lineTo(-14, -42); c.lineTo(-14, -36); c.lineTo(-30, -35); c.closePath(); c.fill();           // seat
+                    c.strokeStyle = '#aab4ff'; c.lineWidth = 3; c.beginPath(); c.moveTo(24, -38); c.lineTo(22, -58); c.lineTo(32, -60); c.stroke();                              // fork + bars
+                    // rider
+                    const lean = moving ? 6 : 0;
+                    c.strokeStyle = col; c.lineWidth = 6;
+                    c.beginPath(); c.moveTo(-14, -42); c.lineTo(4 + lean, -68); c.stroke();                  // torso
+                    c.beginPath(); c.moveTo(4 + lean, -66); c.lineTo(24, -58); c.stroke();                   // arm to bars
+                    c.beginPath(); c.moveTo(-14, -42); c.lineTo(2, -34); c.lineTo(-4, -22); c.stroke();      // leg
+                    c.fillStyle = flash ? '#ffffff' : col; c.beginPath(); c.arc(10 + lean, -76, 9, 0, Math.PI * 2); c.fill();   // helmet
+                    if (!flash) { c.fillStyle = '#10142c'; c.beginPath(); c.ellipse(15 + lean, -76, 5, 3.4, 0, 0, Math.PI * 2); c.fill();
+                                  c.fillStyle = '#ff2040'; c.fillRect(14 + lean, -77, 3.5, 2); }
+                    // headlight
+                    const hb = c.createLinearGradient(36, 0, 200, 0);
+                    hb.addColorStop(0, 'rgba(255,245,170,0.32)'); hb.addColorStop(1, 'rgba(255,245,170,0)');
+                    c.fillStyle = hb; c.beginPath(); c.moveTo(34, -38); c.lineTo(200, -58); c.lineTo(200, -12); c.closePath(); c.fill();
+                    drawGlow('#fff2a0', 34, -38, 18, 1);
+                } else {
+                    // exhaust flame
+                    if (moving) {
+                        const fl = 10 + Math.random() * 12 + Math.abs(this.velocity.x) * 0.6;
+                        c.fillStyle = '#ff7a1a'; c.beginPath(); c.moveTo(-72, -20); c.lineTo(-72 - fl, -17); c.lineTo(-72, -13); c.fill();
+                    }
+                    // body
+                    c.beginPath();
+                    c.moveTo(-72, -12); c.lineTo(-73, -28); c.quadraticCurveTo(-71, -36, -58, -37);
+                    c.lineTo(-32, -39); c.lineTo(-18, -58); c.quadraticCurveTo(-2, -64, 16, -58);
+                    c.lineTo(34, -39); c.lineTo(62, -34); c.quadraticCurveTo(74, -31, 74, -22); c.lineTo(72, -12); c.closePath();
+                    c.fillStyle = flash ? '#ffffff' : col; c.fill();
+                    if (!flash) {
+                        const sh = c.createLinearGradient(0, -64, 0, -12);
+                        sh.addColorStop(0, 'rgba(255,255,255,0.28)'); sh.addColorStop(0.45, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(0,0,0,0.55)');
+                        c.fillStyle = sh; c.fill();
+                        c.fillStyle = '#10142c'; c.fillRect(-72, -15, 146, 4);                              // skirt
+                        c.strokeStyle = '#10142c'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-6, -38); c.lineTo(-6, -14); c.stroke();
+                    }
+                    c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-73, -28); c.quadraticCurveTo(-71, -36, -58, -37); c.lineTo(-32, -39); c.lineTo(-18, -58); c.quadraticCurveTo(-2, -64, 16, -58); c.lineTo(34, -39); c.stroke();
+                    // cabin glass + driver
+                    c.beginPath(); c.moveTo(-28, -40); c.lineTo(-16, -55); c.quadraticCurveTo(-2, -60, 12, -55); c.lineTo(29, -40); c.closePath();
+                    c.fillStyle = flash ? '#ffffff' : 'rgba(20,28,60,0.92)'; c.fill();
+                    if (!flash) {
+                        c.fillStyle = '#05060c'; c.beginPath(); c.arc(4, -48, 7, 0, Math.PI * 2); c.fill();
+                        c.fillStyle = '#ff2040'; c.fillRect(5, -50, 5, 2.2);
+                        c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = 2; c.beginPath(); c.moveTo(14, -55); c.lineTo(22, -43); c.stroke();
+                    }
+                    // hood cannon on gunner cars
+                    if (this.type === 'gunner') {
+                        c.fillStyle = '#10142c'; c.fillRect(40, -46, 26, 6);
+                        c.fillStyle = '#ff0055'; c.fillRect(62, -46, 5, 6);
+                    }
+                    // wheels
+                    for (const wx of [-44, 44]) {
+                        c.fillStyle = '#04020c'; c.beginPath(); c.arc(wx, -16, 20, Math.PI, 0); c.closePath(); c.fill();
+                        c.fillStyle = '#12141d'; c.beginPath(); c.arc(wx, -16, 16, 0, Math.PI * 2); c.fill();
+                        c.strokeStyle = flash ? '#ffffff' : col; c.lineWidth = 2; c.beginPath(); c.arc(wx, -16, 16, 0, Math.PI * 2); c.stroke();
+                        c.fillStyle = '#cfd6ff'; c.beginPath(); c.arc(wx, -16, 9, 0, Math.PI * 2); c.fill();
+                        c.save(); c.translate(wx, -16); c.rotate(this.wheelRot);
+                        c.strokeStyle = '#4a5a8c'; c.lineWidth = 2.4; c.beginPath();
+                        for (let k = 0; k < 5; k++) { c.moveTo(0, 0); c.lineTo(Math.cos(k * 1.2566) * 8.5, Math.sin(k * 1.2566) * 8.5); }
+                        c.stroke(); c.restore();
+                    }
+                    // lights
+                    const hb = c.createLinearGradient(72, 0, 230, 0);
+                    hb.addColorStop(0, 'rgba(255,245,170,0.32)'); hb.addColorStop(1, 'rgba(255,245,170,0)');
+                    c.fillStyle = hb; c.beginPath(); c.moveTo(72, -26); c.lineTo(230, -48); c.lineTo(230, -6); c.closePath(); c.fill();
+                    drawGlow('#fff2a0', 72, -25, 22, 1);
+                    drawGlow('#ff2040', -72, -27, 18, 1); c.fillStyle = '#ff2a4a'; c.fillRect(-75, -31, 4, 8);
+                }
+                c.restore();
+                c.globalAlpha = A0;
+            }
+
+            // ---------- sword ninja (jump-slash attacker) ----------
+            drawNinja() {
+                const dir = this.facingRight ? 1 : -1, t = this.animTimer, A0 = c.globalAlpha;
+                const cx = this.position.x + this.width / 2, gy = this.position.y + this.height;
+                const flash = !!this.fc, st = this.nState;
+                const ink = flash ? '#ffffff' : '#14141f', trim = flash ? '#ffffff' : this.color, red = flash ? '#ffffff' : '#ff2a3a';
+                const vy = this.velocity.y, airborne = st === 'leap' && this.leapT > 1;
+                drawGlow(this.color, cx, gy - this.height * 0.55, 85, 0.45);
+                c.save(); c.translate(cx, gy); c.scale(dir, 1);
+                if (this.isKnockedDown) c.rotate(-0.45);
+                c.lineCap = 'round'; c.lineJoin = 'round';
+
+                // ---- pose ----
+                let cr = 0, lean = 0.12, ba = -0.55, f1, f2, twoHand = false;
+                const ph = t * 0.28, mv = Math.abs(this.velocity.x) > 0.5;
+                if (st === 'windup') {
+                    const pr = 1 - this.nTimer / 16;
+                    cr = 8 + 16 * pr; lean = 0.35; ba = -1.4 - 1.0 * pr; f1 = { x: 15, y: 0 }; f2 = { x: -15, y: 0 }; twoHand = true;
+                } else if (airborne) {
+                    lean = 0.3; ba = -2.4 + rClamp((vy + 12) / 20, 0, 1) * 3.6; f1 = { x: 12, y: -30 }; f2 = { x: -10, y: -22 }; cr = -2; twoHand = true;
+                } else if (st === 'recover') {
+                    cr = 4 + 12 * rClamp(this.nTimer / 34, 0, 1); lean = 0.25; ba = 1.0; f1 = { x: 14, y: 0 }; f2 = { x: -14, y: 0 };
+                } else {
+                    f1 = mv ? { x: Math.sin(ph) * 17, y: -Math.max(0, Math.cos(ph)) * 9 } : { x: 11, y: 0 };
+                    f2 = mv ? { x: Math.sin(ph + Math.PI) * 17, y: -Math.max(0, Math.cos(ph + Math.PI)) * 9 } : { x: -11, y: 0 };
+                    cr = Math.sin(t * 0.1) * 1.2;
+                }
+                const H = { x: 0, y: -58 + cr };
+                const S = { x: H.x + Math.sin(lean) * 38, y: H.y - Math.cos(lean) * 38 };
+                const hd = { x: S.x + Math.sin(lean) * 16, y: S.y - Math.cos(lean) * 16 };
+                const ik = (a, b, l1, l2) => {
+                    const dx = b.x - a.x, dy = b.y - a.y, D = Math.hypot(dx, dy) || 1, ux = dx / D, uy = dy / D;
+                    const d = Math.min(D, l1 + l2 - 0.01), xx = (l1 * l1 - l2 * l2 + d * d) / (2 * d), h = Math.sqrt(Math.max(0, l1 * l1 - xx * xx));
+                    return { k: { x: a.x + ux * xx + uy * h, y: a.y + uy * xx - ux * h }, f: { x: a.x + ux * d, y: a.y + uy * d } };
+                };
+                const limb = (pts, w) => {
+                    c.globalAlpha = A0 * 0.55; c.strokeStyle = trim; c.lineWidth = w + 2.6;
+                    c.beginPath(); c.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i].x, pts[i].y); c.stroke();
+                    c.globalAlpha = A0; c.strokeStyle = ink; c.lineWidth = w;
+                    c.beginPath(); c.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i].x, pts[i].y); c.stroke();
+                };
+
+                // legs
+                const L2 = ik(H, f2, 30, 30), L1 = ik(H, f1, 30, 30);
+                limb([H, L2.k, L2.f], 7); limb([H, L1.k, L1.f], 7);
+                // off hand (behind) + torso
+                const hand = { x: S.x + Math.cos(ba) * 26, y: S.y + Math.sin(ba) * 26 };
+                const oh = twoHand ? { x: hand.x - Math.cos(ba) * 7, y: hand.y - Math.sin(ba) * 7 + 2 } : { x: S.x - 9, y: S.y + 24 };
+                limb([S, { x: (S.x + oh.x) / 2, y: (S.y + oh.y) / 2 + 6 }, oh], 6);
+                limb([H, S], 10);
+                c.strokeStyle = red; c.lineWidth = 4; c.beginPath(); c.moveTo(H.x - 5, H.y + 1); c.lineTo(H.x + 5, H.y - 1); c.stroke();   // sash
+                // head, mask, headband
+                c.fillStyle = trim; c.globalAlpha = A0 * 0.55; c.beginPath(); c.arc(hd.x, hd.y, 12.6, 0, Math.PI * 2); c.fill();
+                c.globalAlpha = A0; c.fillStyle = ink; c.beginPath(); c.arc(hd.x, hd.y, 10, 0, Math.PI * 2); c.fill();
+                c.strokeStyle = red; c.lineWidth = 4; c.beginPath(); c.moveTo(hd.x - 10, hd.y - 4); c.lineTo(hd.x + 10, hd.y - 4); c.stroke();
+                c.lineWidth = 3; c.beginPath(); c.moveTo(hd.x - 9, hd.y - 4);
+                c.quadraticCurveTo(hd.x - 20, hd.y + Math.sin(t * 0.4) * 4, hd.x - 32, hd.y + 4 + Math.sin(t * 0.4 + 1) * 5); c.stroke();
+                c.beginPath(); c.moveTo(hd.x - 9, hd.y - 3);
+                c.quadraticCurveTo(hd.x - 18, hd.y + 8, hd.x - 28, hd.y + 14 + Math.sin(t * 0.4 + 2) * 5); c.stroke();
+                c.fillStyle = (st === 'windup' || airborne) ? '#ff2a3a' : '#ffffff';
+                if (flash) c.fillStyle = '#ffffff';
+                c.beginPath(); c.ellipse(hd.x + 5, hd.y + 1, 4.2, 1.7, 0, 0, Math.PI * 2); c.fill();
+
+                // sword arm + sword
+                limb([S, { x: (S.x + hand.x) / 2, y: (S.y + hand.y) / 2 + 5 }, hand], 6);
+                const ca = Math.cos(ba), sa = Math.sin(ba);
+                if (this.swinging) {   // slash trail
+                    const g = c.createRadialGradient(S.x, S.y, 30, S.x, S.y, 80);
+                    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(235,245,255,0.8)');
+                    c.strokeStyle = g; c.lineWidth = 16; c.beginPath(); c.arc(S.x, S.y, 66, ba - 1.5, ba, false); c.stroke();
+                    c.strokeStyle = trim; c.globalAlpha = A0 * 0.5; c.lineWidth = 3; c.beginPath(); c.arc(S.x, S.y, 78, ba - 1.4, ba, false); c.stroke(); c.globalAlpha = A0;
+                }
+                c.strokeStyle = flash ? '#ffffff' : '#241a12'; c.lineWidth = 5; c.beginPath(); c.moveTo(hand.x - ca * 10, hand.y - sa * 10); c.lineTo(hand.x, hand.y); c.stroke();   // grip
+                c.strokeStyle = flash ? '#ffffff' : '#d9a441'; c.lineWidth = 3; c.beginPath(); c.moveTo(hand.x - sa * 6, hand.y + ca * 6); c.lineTo(hand.x + sa * 6, hand.y - ca * 6); c.stroke();   // guard
+                c.strokeStyle = trim; c.globalAlpha = A0 * 0.6; c.lineWidth = 7; c.beginPath(); c.moveTo(hand.x, hand.y); c.lineTo(hand.x + ca * 66, hand.y + sa * 66); c.stroke(); c.globalAlpha = A0;
+                c.strokeStyle = flash ? '#ffffff' : '#e8f0ff'; c.lineWidth = 3.2; c.beginPath(); c.moveTo(hand.x, hand.y); c.lineTo(hand.x + ca * 66, hand.y + sa * 66); c.stroke();
+                c.restore();
+                c.globalAlpha = A0;
+            }
+
             drawSpider() {
                 const S = this.S; if (!S) return;
                 const col = this.fc || this.color, A0 = c.globalAlpha;
@@ -1482,7 +1742,9 @@
             }
 
             update() {
-                this.stepRig();
+                if (this.vehicle) { this.animTimer += 1; this.stepVehicle(); }
+                else if (this.type === 'ninja') { this.animTimer += 1; }
+                else this.stepRig();
                 this.tickAttack();
                 this.draw(); drawShield(this);
                 if (this.flashTimer > 0) this.flashTimer--;
@@ -1626,6 +1888,7 @@
 
             shootFireball() {
                 if(this.isKnockedDown) return;
+                if(this.isDiving) return;   // a sweep / dive in progress must not be cancelled by a fireball (it reset the sweep hit-box)
                 if(this.team === 'player' && gunOn()) return;
 
                 if(this.fireballCooldown > 0) return; 
@@ -1639,7 +1902,7 @@
                 this.vis = { type: 'fire', t: 0, dur: 18, combo: 0 };
                 
                 // Enemy fireball crouch fix
-                if (this.team === 'enemy') {
+                if (this.team === 'enemy' && !this.vehicle) {
                     this.crouch();
                 }
 
@@ -1677,6 +1940,7 @@
 
                 this.isKnockedDown = true;
                 this.knockdownTimer = 20;
+                if (this.type === 'ninja') { this.nState = 'recover'; this.nTimer = 14; this.leapT = 0; }   // a hit cancels the ninja's leap
                 this.attackBuffer = null;
                 if (this.attackFrames > 0) { this.attackFrames = 0; this.isAttacking = false; this.attackType = null; }
                 this.vis.type = null; this.hitFront = ((sourceX > this.position.x) ? 1 : -1) === (this.facingRight ? 1 : -1);
@@ -1686,9 +1950,14 @@
 
                 if (this.health <= 0) {
                     this.dead = true;
+                    if (this.vehicle) {   // wreck explosion
+                        const ex = this.position.x + this.width / 2, ey = this.position.y + this.height / 2;
+                        createParticles(ex, ey, '#ff7a1a'); createParticles(ex, ey - 10, '#ffee88'); createParticles(ex, ey, '#ffffff');
+                        triggerShake(10);
+                    }
                     if (this.team !== 'player' && this.team !== 'ally') {
-                        score += (this.type==='spider'?5:(this.type==='goliath'?20:10));
-                        if(this.type === 'brawler' || this.type === 'gunner') killsSmall++;
+                        score += (this.type==='spider'?5:(this.type==='goliath'?20:(this.type==='ninja'?12:10)));
+                        if(this.type === 'brawler' || this.type === 'gunner' || this.type === 'ninja') killsSmall++;
                         else if(this.type === 'spider') killsSpider++;
                         else if(this.type === 'goliath') killsBig++;
                         
@@ -1697,7 +1966,8 @@
                         
                         let dropType = null;
                         if (Math.random() < 0.12) dropType = 'shield';
-                        else if (currentStage >= 2 && Math.random() < 0.20) dropType = 'car'; 
+                        else if (levelType !== 'normal' && Math.random() < 0.20) dropType = 'car';   // car power-up ONLY drops in ENEMY BIKE / ENEMY CAR levels
+                        
                         else if (this.type === 'gunner') dropType = 'gun';
                         else if (Math.random() < 0.60) {
                             const types = ['heal', 'damage', 'speed'];
@@ -1856,6 +2126,91 @@
         let enemies = [];
         const allies = [];
 
+        // Enemy bike / car behaviour: drive-by attacks. They race toward their target, ram it when they touch it,
+        // keep going, then U-turn once they are well past. Jump, dash, or hit them to stop the run.
+        function vehicleAI(en) {
+            let targetP = player, best = Math.abs(player.position.x - en.position.x);
+            for (const a of allies) { const d = Math.abs(a.position.x - en.position.x); if (d < best) { best = d; targetP = a; } }
+            const bike = en.vehicle === 'bike';
+            const spd = (bike ? 9 : 5.5) + currentStage * (bike ? 0.35 : 0.25);
+            const dx = (targetP.position.x + targetP.width / 2) - (en.position.x + en.width / 2);
+            if (!en.rideDir) en.rideDir = dx > 0 ? 1 : -1;
+            if ((en.rideDir > 0 && dx < -(bike ? 420 : 340)) || (en.rideDir < 0 && dx > (bike ? 420 : 340))) en.rideDir = dx > 0 ? 1 : -1;   // U-turn
+            en.facingRight = en.rideDir > 0;
+            en.velocity.x += (en.rideDir * spd - en.velocity.x) * 0.1;
+
+            // gunner cars / bikes fire forward when the target is ahead of them
+            if (en.type === 'gunner' && !en.isAttacking && en.fireballCooldown <= 0 && Math.sign(dx) === en.rideDir &&
+                Math.abs(dx) < canvas.width * 0.6 && Math.abs(dx) > 160 && Math.random() < 0.02) {
+                en.shootFireball();
+            }
+
+            // ram damage
+            if (en.ramCD <= 0 && !targetP.isKnockedDown && !targetP.isDashing && !(targetP === player && hasCarMode) &&
+                rectangularCollisionBody(en, targetP)) {
+                en.ramCD = 55;
+                targetP.takeHit((bike ? 12 : 16) + currentStage * 2, en.position.x);
+                triggerShake(8);
+            }
+        }
+        // Sword ninja: stalks the target, crouches (telegraph), then leaps and slashes in mid-air. The jump-slash is its ONLY attack.
+        function ninjaAI(en) {
+            let targetP = player, best = Math.abs(player.position.x - en.position.x);
+            for (const a of allies) { const d = Math.abs(a.position.x - en.position.x); if (d < best) { best = d; targetP = a; } }
+            const dx = (targetP.position.x + targetP.width / 2) - (en.position.x + en.width / 2), adx = Math.abs(dx), dt = dx > 0 ? 1 : -1;
+            const grounded = en.velocity.y === 0 && en.position.y + en.height >= groundY() - 1;
+            en.swinging = false;
+            switch (en.nState) {
+                case 'stalk': {
+                    en.facingRight = dt > 0;
+                    const spd = 3.4 + currentStage * 0.3;
+                    en.velocity.x = adx > 330 ? dt * spd : (adx < 120 ? -dt * spd * 0.7 : dt * spd * 0.3);
+                    if (en.jumpCD > 0) en.jumpCD--;
+                    else if (grounded && adx < 420) { en.nState = 'windup'; en.nTimer = 16; en.velocity.x = 0; }
+                    break;
+                }
+                case 'windup':
+                    en.facingRight = dt > 0; en.velocity.x = 0;
+                    if (--en.nTimer <= 0) {
+                        en.nState = 'leap'; en.leapT = 0; en.hitDone = false;
+                        en.velocity.y = -17; en.velocity.x = Math.max(-11, Math.min(11, dx / 36));
+                        sfxJump();
+                    }
+                    break;
+                case 'leap': {
+                    en.leapT++;
+                    if (en.velocity.y > -4 && en.leapT > 3) {
+                        en.swinging = true;
+                        if (en.leapT > 0 && en.velocity.y > -4 && !en.hitDone && !(en._slashSfx)) { en._slashSfx = true; sfxKick(); }
+                        const ecx = en.position.x + en.width / 2, reach = 95;
+                        const bx = en.facingRight ? ecx : ecx - reach;
+                        const hit = bx < targetP.position.x + targetP.width && bx + reach > targetP.position.x &&
+                                    en.position.y < targetP.position.y + targetP.height && en.position.y + en.height > targetP.position.y;
+                        if (hit && !en.hitDone) {
+                            en.hitDone = true;
+                            if (!(targetP === player && hasCarMode) && !targetP.isKnockedDown && !targetP.isDashing) {
+                                targetP.takeHit(16 + currentStage * 2, en.position.x); triggerShake(8);
+                            }
+                        }
+                    }
+                    if (en.leapT > 5 && grounded) {
+                        en._slashSfx = false; en.nState = 'recover'; en.nTimer = 34; en.velocity.x = 0;
+                        dust(en.position.x + en.width / 2, groundY(), 6);
+                    }
+                    break;
+                }
+                case 'recover':
+                    en._slashSfx = false;
+                    en.facingRight = dt > 0; en.velocity.x *= 0.8;
+                    if (--en.nTimer <= 0) { en.nState = 'stalk'; en.jumpCD = Math.max(35, 110 - currentStage * 6) + Math.floor(Math.random() * 50); }
+                    break;
+            }
+        }
+        function rectangularCollisionBody(a, b) {
+            return a.position.x < b.position.x + b.width && a.position.x + a.width > b.position.x &&
+                   a.position.y < b.position.y + b.height && a.position.y + a.height > b.position.y;
+        }
+
         function spawnEnemy() {
             if (gameState !== 'PLAYING' || levelCompleted) return;
             if (enemies.length >= MAX_ENEMIES) return;
@@ -1865,12 +2220,26 @@
             let goliathChance = 0.35 + (currentStage * 0.02);
             let spiderChance = 0.5 + (currentStage * 0.03);
 
-            if (rand < gunnerChance) { type = 'gunner'; color = '#ff0055'; }
-            else if (rand < goliathChance) { type = 'goliath'; color = '#aa00ff'; }
-            else if (rand < spiderChance) { type = 'spider'; color = '#00ffaa'; }
+            let vehicleKind = null;
+            if (Math.random() < NINJA_CHANCE) { type = 'ninja'; color = '#3aa0ff'; }
+            else if (levelType !== 'normal') {
+                // ENEMY BIKE / ENEMY CAR level: most spawns are riders / drivers, a few goliaths & spiders stay on foot
+                if (rand < 0.10) { type = 'goliath'; color = '#aa00ff'; }
+                else if (rand < 0.20) { type = 'spider'; color = '#00ffaa'; }
+                else {
+                    vehicleKind = levelType;
+                    if (Math.random() < 0.28) { type = 'gunner'; color = '#ff0055'; }
+                }
+            } else {
+                if (rand < gunnerChance) { type = 'gunner'; color = '#ff0055'; }
+                else if (rand < goliathChance) { type = 'goliath'; color = '#aa00ff'; }
+                else if (rand < spiderChance) { type = 'spider'; color = '#00ffaa'; }
+            }
 
             let spawnX = player.position.x + (Math.random() > 0.5 ? canvas.width : -canvas.width);
-            enemies.push(new Sprite({ position: { x: spawnX, y: -100 }, velocity: { x: 0, y: 0 }, color, team: 'enemy', type }));
+            const en = new Sprite({ position: { x: spawnX, y: -100 }, velocity: { x: 0, y: 0 }, color, team: 'enemy', type });
+            if (vehicleKind) { en.makeVehicle(vehicleKind); en.rideDir = spawnX > player.position.x ? -1 : 1; if (type === 'gunner') en.fireballCooldown = 90; }
+            enemies.push(en);
         }
 
         setInterval(spawnEnemy, Math.max(800, 2000 - (currentStage * 150))); 
@@ -2158,6 +2527,7 @@
         function nextLevel() {
             framesElapsed = 0;
             levelCompleted = false;
+            rollLevelType();
             
             player.health = player.maxHealth;
             player.dead = false;
@@ -2259,6 +2629,12 @@
                 }
             }
 
+            // laser gun: body, face and gun always turn toward the enemy being targeted (even while walking)
+            if (gunOn() && player.aimTarget && !player.isDashing && !player.isDiving && !player.isKnockedDown) {
+                const tdx = (player.aimTarget.position.x + player.aimTarget.width / 2) - (player.position.x + player.width / 2);
+                if (Math.abs(tdx) > 12) player.facingRight = tdx > 0;
+            }
+
             if (gunOn() && !player.isKnockedDown) {
                 if (framesElapsed % 15 === 0) { 
                     let validTargets = enemies.filter(e => !e.dead);
@@ -2293,7 +2669,7 @@
                 let mins = Math.floor(secondsLeft / 60);
                 let secs = secondsLeft % 60;
                 
-                setText('levelTimerText', `STAGE ${currentStage} ENDS IN: ${mins}:${secs < 10 ? '0' : ''}${secs}`);
+                setText('levelTimerText', `STAGE ${currentStage}${levelType === 'bike' ? ' \u{1F3CD}' : (levelType === 'car' ? ' \u{1F697}' : '')} ENDS IN: ${mins}:${secs < 10 ? '0' : ''}${secs}`);
                 
                 if (framesLeft <= 0) {
                     framesLeft = 0;
@@ -2491,7 +2867,11 @@
                      createParticles(enemy.position.x, enemy.position.y, '#ff0000');
                 }
 
-                if (!enemy.isKnockedDown) {
+                if (!enemy.isKnockedDown && enemy.vehicle) {
+                    vehicleAI(enemy);
+                } else if (!enemy.isKnockedDown && enemy.type === 'ninja') {
+                    ninjaAI(enemy);
+                } else if (!enemy.isKnockedDown) {
                     let targetP = player; let cDist = Math.abs(player.position.x - enemy.position.x);
                     for(let ally of allies) { let aDist = Math.abs(ally.position.x - enemy.position.x); if(aDist < cDist) { cDist = aDist; targetP = ally; } }
                     
@@ -2590,6 +2970,7 @@
 
         function beginPlaying() {
             framesElapsed = 0; levelCompleted = false;
+            lastLevelType = 'normal'; rollLevelType();
             enemies = []; flyingBats.length = 0; projectiles.length = 0; powerUps.length = 0; allies.length = 0;
             resetInputs();
             startMusic();
