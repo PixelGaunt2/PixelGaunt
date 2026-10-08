@@ -211,6 +211,14 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
             .menu-buttons { display: flex; flex-flow: row wrap; justify-content: center; width: 100%; max-width: 680px; }
             #main-menu .menu-buttons .btn { flex: 1 1 28%; min-width: 150px; max-width: none; margin: 5px; padding: 8px 10px; font-size: 15px !important; }
         }
+
+        /* ===== MAIN MENU: ALWAYS FITS SCREEN, NO SCROLLING ===== */
+        html, body { overscroll-behavior: none; touch-action: manipulation; }
+        #main-menu { position: fixed !important; top: 0; left: 0; right: 0; bottom: 0; width: 100% !important; height: 100vh; height: 100dvh !important; overflow: hidden !important; justify-content: center !important; align-items: center !important; padding: 0 !important; }
+        #main-menu > :first-child, #main-menu > :last-child { margin-top: 0 !important; margin-bottom: 0 !important; }
+        #main-menu-fit { display: flex; flex-direction: column; align-items: center; width: max-content; max-width: 100%; transform-origin: center center; padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); box-sizing: border-box; }
+        #main-menu .menu-buttons { display: flex !important; flex-direction: column; align-items: center; }
+        @media (max-height: 520px) and (orientation: landscape) { #main-menu .menu-buttons { flex-flow: row wrap; justify-content: center; width: 100%; max-width: 680px; } }
         #game-toast { position: fixed; left: 50%; top: 18%; transform: translateX(-50%) translateY(-20px); background: rgba(20,20,20,0.95); color: #FFD700; border: 3px solid #f5c518; border-radius: 12px; padding: 14px 28px; font-size: 22px; font-weight: bold; text-align: center; z-index: 99999; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: 90vw; box-shadow: 0 6px 24px rgba(0,0,0,.6); }
         #game-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     </style>
@@ -227,6 +235,7 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
     </div>
 
     <div id="main-menu" class="menu-screen">
+        <div id="main-menu-fit">
         <div class="logo"><div class="logo-a">BEGGAR</div><div class="logo-b">CATCHER</div><div class="logo-sub">⭐ Bounty Hunter Edition ⭐</div></div>
         <div class="menu-buttons">
         <button id="btn-resume" class="btn" style="display:none; border-color:#00ffcc;">⏩ Resume Game</button>
@@ -235,6 +244,7 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
         <button id="btn-levels" class="btn">🗺️ Levels</button>
         <button id="btn-shop" class="btn">🛒 Upgrades Shop</button>
         </div>
+            </div>
     </div>
 
     <div id="readme-menu" class="menu-screen" style="display:none;">
@@ -480,6 +490,22 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
         }
 
         // --- MENU LOGIC ---
+
+        // Fit main menu to screen (no scrolling) on any device
+        function fitMainMenu() {
+            const menu = document.getElementById('main-menu'), fit = document.getElementById('main-menu-fit');
+            if (!menu || !fit || menu.style.display === 'none') return;
+            fit.style.transform = 'none';
+            const w = menu.clientWidth, h = menu.clientHeight;
+            const sc = Math.min(1, w / fit.offsetWidth, h / fit.offsetHeight);
+            fit.style.transform = sc < 1 ? 'scale(' + sc + ')' : 'none';
+        }
+        if (window.ResizeObserver) new ResizeObserver(fitMainMenu).observe(document.getElementById('main-menu-fit'));
+        window.addEventListener('resize', fitMainMenu);
+        window.addEventListener('orientationchange', () => setTimeout(fitMainMenu, 200));
+        window.addEventListener('load', () => { fitMainMenu(); setTimeout(fitMainMenu, 400); });
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitMainMenu);
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', fitMainMenu);
         let gameState = 'MENU'; 
         function showMenu(menuId) {
             document.querySelectorAll('.menu-screen').forEach(el => el.style.display = 'none');
@@ -490,6 +516,7 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
             } else {
                 const menuEl = document.getElementById(menuId);
                 if(menuEl) menuEl.style.display = 'flex';
+                if(menuId === 'main-menu') { fitMainMenu(); requestAnimationFrame(fitMainMenu); }
                 document.getElementById('stats-bar').style.display = 'block';
                 document.getElementById('ui-layer').style.display = 'none';
                 document.getElementById('mobile-pause-container').style.display = 'none'; // Hide when in menus
