@@ -11,9 +11,9 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Developer Agreement - Pixel Gaunt Studios</title>
-    <meta name="description" content="Requirements for uploading games to PixelGaunt, content rules, the 90% / 10% ad revenue share and the fair-play rules for developers.">
-    <link rel="canonical" href="https://pixelgaunt.com/developer-agreement.html">
+    <title>Community Games - Pixel Gaunt Studios</title>
+    <meta name="description" content="Play free browser games made by the PixelGaunt community - every game is reviewed and approved by PixelGaunt before it appears.">
+    <link rel="canonical" href="https://pixelgaunt.com/community.html">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,16 +23,16 @@
     <link rel="stylesheet" href="style.css?v=20261017">
     <script src="pg-config.js?v=20261017"></script>
 	<!-- Open Graph / Social Media Meta Tags -->
-<meta property="og:title" content="Developer Agreement - Pixel Gaunt Studios">
-<meta property="og:description" content="Requirements for uploading games to PixelGaunt, content rules, the 90% / 10% ad revenue share and the fair-play rules for developers.">
+<meta property="og:title" content="Community Games - Pixel Gaunt Studios">
+<meta property="og:description" content="Play free browser games made by the PixelGaunt community - every game is reviewed and approved by PixelGaunt before it appears.">
 <meta property="og:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
-<meta property="og:url" content="https://pixelgaunt.com/developer-agreement.html">
+<meta property="og:url" content="https://pixelgaunt.com/community.html">
 <meta property="og:type" content="website">
 
 <!-- Twitter Card Tags -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Developer Agreement - Pixel Gaunt Studios">
-<meta name="twitter:description" content="Requirements for uploading games to PixelGaunt, content rules, the 90% / 10% ad revenue share and the fair-play rules for developers.">
+<meta name="twitter:title" content="Community Games - Pixel Gaunt Studios">
+<meta name="twitter:description" content="Play free browser games made by the PixelGaunt community - every game is reviewed and approved by PixelGaunt before it appears.">
 <meta name="twitter:image" content="https://pixelgaunt.com/pixelgaunt%20share%20image.png">
 </head>
 <body class="theme-blue">
@@ -53,7 +53,7 @@
             <div class="nav-menu-links">
                 <a href="index.html">Home</a>
                 <a href="games.html">Games</a>
-                <a href="community.html">Community</a>
+                <a href="community.html" style="color:#fff;">Community</a>
                 <a href="publish.html">Publish</a>
                 <a href="tournaments.html">Tournaments</a>
                 <a href="merch.html">Merch</a>
@@ -73,118 +73,28 @@
     </header>
 
     <main class="container" id="homepage-page" style="padding-top: 40px;">
-        <style>
-            .pg-agree { max-width: 860px; margin: 0 auto; color: #cbd5e1; line-height: 1.7; }
-            .pg-agree h1 { color: #fff; font-size: clamp(1.6rem, 3.5vw, 2.3rem); margin-bottom: 6px; }
-            .pg-agree h2 { color: #fff; font-size: 1.2rem; margin: 30px 0 8px; }
-            .pg-agree p, .pg-agree li { font-size: 0.98rem; }
-            .pg-agree ol, .pg-agree ul { padding-left: 22px; margin: 8px 0; }
-            .pg-agree li { margin: 4px 0; }
-            .pg-agree .pg-key { background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.3); border-radius: 14px; padding: 16px 18px; margin: 18px 0; }
-            .pg-agree .pg-warnbox { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.35); border-radius: 14px; padding: 16px 18px; margin: 18px 0; }
-            .pg-agree table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.93rem; }
-            .pg-agree th, .pg-agree td { border: 1px solid rgba(148,163,184,0.25); padding: 8px 10px; text-align: left; }
-            .pg-agree th { color: #fff; background: rgba(255,255,255,0.04); }
-            .pg-agree .pg-table-wrap { overflow-x: auto; }
-        </style>
-        <article class="pg-agree">
-            <h1>PixelGaunt Developer Agreement</h1>
-            <p class="pg-muted" style="font-size:0.9rem;">Version 2026-10-04 · Applies to everyone who uploads a game to pixelgaunt.com ("PixelGaunt", "we", "us"). You ("Developer") accept it by ticking the agreement box when you submit a game.</p>
-
-            <div class="pg-key">
-                <b>In short:</b> you keep ownership of your game. We test every game by hand before it goes live (within 7 working days).
-                The advertising revenue your games earn on pixelgaunt.com is shared <b>90% to you, 10% to PixelGaunt Studios</b>.
-                Plays from you, your devices or your network do not count, and you must never click ads or fake plays -
-                Google AdSense rules forbid it, and breaking them means losing your earnings.
+        <section class="portfolio-section" id="games-section">
+            <div id="community-shelf">
+                <div class="pg-shelf-head pg-lib-head">
+                    <div>
+                        <h1 class="pixel-font">Community Games</h1>
+                        <p>Games made by our community - reviewed and approved by PixelGaunt before they appear here.</p>
+                    </div>
+                    
+                </div>
+                <div class="game-grid" id="community-grid"></div>
+                <p class="pg-lib-more"><a class="cy-btn cy-btn-primary" href="publish.html"><i class="fas fa-upload" aria-hidden="true"></i> Publish your game</a></p>
+                <div class="pg-bugbox pg-bugbox-sm" id="community-bugbox">
+                    <h3><i class="fas fa-bug" aria-hidden="true"></i> Report a bug or problem</h3>
+                    <p>Found a game that doesn't work, broken content, or something that shouldn't be here? Tell us - our team checks every report.</p>
+                    <label for="bug-game" class="pg-sr">Game (optional)</label>
+                    <input id="bug-game" maxlength="120" placeholder="Game name (optional)">
+                    <label for="bug-text" class="pg-sr">What is wrong?</label>
+                    <textarea id="bug-text" maxlength="1000" rows="3" placeholder="What is wrong? (max 1000 characters)"></textarea>
+                    <div class="pg-bugbox-row"><span id="bug-status" role="status"></span><button type="button" class="pg-btn primary" id="bug-send">Send report</button></div>
+                </div>
             </div>
-
-            <h2>1. Who can upload</h2>
-            <ol>
-                <li>You need a PixelGaunt account (Google login). One person may hold one account.</li>
-                <li>You must be at least 18, or have permission from a parent or guardian who accepts this agreement for you.</li>
-                <li>The details on your account (name and email) must be real, so we can contact and pay you.</li>
-            </ol>
-
-            <h2>2. Game requirements</h2>
-            <ol>
-                <li><b>Format:</b> a browser game made with HTML5 (HTML, CSS, JavaScript). Upload a <b>.zip</b>, a folder, or a single <b>.html</b> file. The game must have an entry page (for example <code>index.html</code>).</li>
-                <li><b>Allowed file types:</b> HTML, CSS, JavaScript, images (PNG, JPG, WEBP, GIF, SVG), audio (MP3, OGG, WAV), JSON, fonts and other normal web game assets. No executable programs (.exe, .apk, .bat and similar).</li>
-                <li><b>Size:</b> up to <b>5 MB</b> per game on the Free plan, up to <b>10 MB</b> per game for subscribers.</li>
-                <li><b>It must work:</b> the game has to load and be playable on a normal desktop browser, and should work on phones where possible. Broken or unfinished games are rejected.</li>
-                <li><b>Runs in a sandbox:</b> games run in an isolated frame. They cannot read PixelGaunt logins or other games' data, and must not try to.</li>
-                <li><b>No ads, trackers or links of your own inside the game</b>, no pop-ups, no redirects, no cryptocurrency mining, no data collection from players, and no code that downloads other programs.</li>
-                <li>A clear title, genre and short description, in good faith (no misleading titles or thumbnails).</li>
-                <li><b>AI-made games are welcome.</b> Games built fully or partly with AI tools (AI-written code, AI art, AI music or sound) are accepted on the same terms as any other game: they must work, follow every rule in this agreement, be tested by you, and you must have the right to use what the AI tool produced under that tool's terms.</li>
-            </ol>
-
-            <h2>3. Content rules</h2>
-            <p>Games must be suitable for a general audience and must not contain:</p>
-            <ul>
-                <li>sexual or pornographic content, or any sexual content involving minors;</li>
-                <li>graphic real-world violence, gore, hate speech, harassment, or content that promotes terrorism or self-harm;</li>
-                <li>illegal content, gambling with real money, or promotion of drugs or weapons;</li>
-                <li>malware, viruses, phishing, or anything harmful to players' devices or accounts;</li>
-                <li>content you do not own or have no licence for: other companies' characters, music, art, logos or code.</li>
-            </ul>
-            <p>These rules also follow Google's publisher policies, because pixelgaunt.com shows Google ads. A game that would put the site's advertising account at risk will not be published.</p>
-
-            <h2>4. Ownership and permission to publish</h2>
-            <ol>
-                <li>You confirm that the game is your own work, or that you have every right needed to publish it, including for all graphics, sounds, music and code inside it.</li>
-                <li>You keep ownership of your game. You give PixelGaunt a non-exclusive, worldwide, free licence to host, show, run and promote the game (including screenshots and its title) on pixelgaunt.com and PixelGaunt's social media, for as long as it is published.</li>
-                <li>You can ask us to remove your game at any time (email below). We remove it within 7 working days. Earnings already earned are still paid.</li>
-                <li>If someone claims your game breaks their rights, we may remove it while it is checked.</li>
-            </ol>
-
-            <h2>5. Submission, review and limits</h2>
-            <ol>
-                <li>Every game is reviewed by a person before it is published. You will get a decision <b>within 7 working days</b>. We can approve or reject a game; if we reject it we tell you why, and you can fix it and submit again.</li>
-                <li>Upload limits:
-                    <div class="pg-table-wrap"><table>
-                        <tr><th>Plan</th><th>Games</th><th>Max size per game</th><th>Price</th></tr>
-                        <tr><td>Free</td><td>1 game in total</td><td>5 MB</td><td>Free</td></tr>
-                        <tr><td>Subscriber - monthly</td><td>10 games per month</td><td>10 MB</td><td>$1.99 (PKR 549.97) per month</td></tr>
-                        <tr><td>Subscriber - yearly</td><td>12 games per month (144 per year)</td><td>10 MB</td><td>$10.99 (PKR 3,037.26) per year</td></tr>
-                    </table></div>
-                </li>
-                <li>Every account can submit at most <b>1 game per day</b>, and PixelGaunt accepts at most <b>3 games per day</b> in total.</li>
-                <li>Subscriptions are paid by bank transfer or mobile wallet to PixelGaunt's official accounts. Your plan becomes active after we confirm your payment. Subscription fees are not refunded once your plan is active.</li>
-                <li>Approval of a game is not a promise that it stays published. We may unpublish a game that breaks this agreement or stops working.</li>
-            </ol>
-
-            <h2>6. Revenue share (90% / 10%)</h2>
-            <ol>
-                <li><b>Where the money comes from:</b> PixelGaunt earns money from advertising (Google AdSense) shown on pixelgaunt.com. There is no other revenue for developers - players never pay for games.</li>
-                <li><b>Your share:</b> of the advertising revenue we calculate for your games, <b>90% is yours and 10% goes to PixelGaunt Studios</b>.</li>
-                <li><b>How your games' revenue is calculated:</b> each month we take the AdSense revenue that Google actually paid to PixelGaunt for that month and divide it between all published community games in proportion to their <b>counted plays</b> (see section 7). Your games' part of that amount is the revenue we share 90% / 10% with you.</li>
-                <li><b>Your dashboard</b> (Creator Studio &gt; Earnings &amp; Plays) shows your counted plays, players, your share of the month's plays, and each month's revenue with your 90% once we have calculated it.</li>
-                <li><b>Payment:</b> earnings are paid after Google has paid PixelGaunt for that month, to the Pakistani bank account or mobile wallet you give us. If an amount is very small we may carry it over to the next month. Taxes on your earnings are your own responsibility.</li>
-                <li>Revenue that Google removes or refuses (for example because of invalid traffic) is not paid, and may be taken back from future earnings.</li>
-            </ol>
-
-            <h2>7. Fair play - plays that count (Google AdSense policy)</h2>
-            <div class="pg-warnbox">
-                <b>Important:</b> Google AdSense does not allow publishers to earn from their own activity or from fake traffic. Because your earnings come from those ads, the same rules apply to you.
-            </div>
-            <ol>
-                <li><b>Your own plays never count.</b> A play is not counted when it comes from your PixelGaunt account, from any computer or phone you have used while logged in to PixelGaunt, or from your internet connection (the same IP address).</li>
-                <li><b>You will not see ads while you play your own game.</b> PixelGaunt does not show ads to a developer on the page of their own game, so you cannot see or accidentally click ads on it.</li>
-                <li>Quick repeats are not counted either: the same device or network playing the same game again within a short time.</li>
-                <li><b>You must never:</b> click ads on pixelgaunt.com, ask or pay anyone (friends, family, groups, "click exchanges") to click ads or play your game to raise your earnings, use bots, scripts, VPNs, emulators or many accounts to create plays, or put anything in your game that tricks players into clicking ads.</li>
-                <li>If we find invalid activity, we may cancel the affected earnings, unpublish your games and close your account. If Google penalises PixelGaunt because of your actions, you lose all unpaid earnings.</li>
-            </ol>
-
-            <h2>8. Privacy</h2>
-            <p>We store your account name and email, your submissions and the files you upload, your payment receipts, and play statistics. To recognise your own plays we store an anonymous device id and a scrambled (one-way hashed) form of IP addresses - never the address itself. Your uploaded game files are kept in PixelGaunt's private Google Drive for review. We do not sell your data.</p>
-
-            <h2>9. Ending this agreement</h2>
-            <p>You can stop at any time by asking us to remove your games. We can end this agreement or remove games if you break it. Sections 4 (rights already given while the game was live), 6 and 7 continue to apply to earnings and activity before the end.</p>
-
-            <h2>10. Changes and contact</h2>
-            <p>We may update this agreement. The version and date are shown at the top; the version you accepted is saved with each submission. Big changes apply to new submissions and we will tell you about them on the website. Questions: <a class="pg-link" href="mailto:pixelgaunt@gmail.com">pixelgaunt@gmail.com</a>.</p>
-
-            <p style="margin-top:30px;"><a class="pg-btn primary" href="publish.html">Back to Publish</a> &nbsp; <a class="pg-link" href="creator-studio.html">Go to Creator Studio</a></p>
-        </article>
+        </section>
     </main>
 
     <div class="modal-overlay" id="login-modal">
@@ -283,6 +193,7 @@
 
     <button id="scrollToTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
 
+    <script>window.PG_COMMUNITY_PAGE = true;</script>
     <script src="script.js?v=20261017" defer></script>
 
     <script type="module" src="firebase-auth.js?v=20261017"></script>

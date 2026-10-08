@@ -20,8 +20,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20261016">
-    <script src="pg-config.js?v=20261016"></script>
+    <link rel="stylesheet" href="style.css?v=20261017">
+    <script src="pg-config.js?v=20261017"></script>
 	<!-- Open Graph / Social Media Meta Tags -->
 <meta property="og:title" content="Pixel Gaunt Studios - Indie Game Developer Portfolio">
 <meta property="og:description" content="Pixel Gaunt Studios is an indie game development studio. Explore our debut release Girl The Driller, browse our past prototypes, and see what's coming next.">
@@ -57,6 +57,7 @@
             <div class="nav-menu-links">
                 <a href="#hero-presentation-section" onclick="goHome()" style="color:#fff;">Home</a>
                 <a href="games.html">Games</a>
+                <a href="community.html">Community</a>
                 <a href="publish.html">Publish</a>
                 <a href="tournaments.html">Tournaments</a>
                 <a href="merch.html">Merch</a>
@@ -118,10 +119,24 @@
                 <h2 class="pixel-font portfolio-section-title">More Games Coming Soon</h2>
                 <p class="portfolio-section-subtitle">New titles are in development. Details drop here first.</p>
             </div>
-            <div class="coming-soon-grid">
-                <div class="coming-soon-card"><i class="fas fa-lock"></i><span>In Development</span></div>
-                <div class="coming-soon-card"><i class="fas fa-hourglass-half"></i><span>Coming Soon</span></div>
-                <div class="coming-soon-card"><i class="fas fa-question"></i><span>Stay Tuned</span></div>
+            <div class="coming-soon-grid pg-soon-two">
+                <a class="coming-soon-card pg-soon-dev" href="in-development.html" aria-label="In development - see all 4 projects">
+                    <span class="pg-soon-q" aria-hidden="true"><img src="project-neon-rogue-protocol.webp" alt="" loading="lazy" onerror="this.remove()"><img src="project-the-hollow-tide.webp" alt="" loading="lazy" onerror="this.remove()"><img src="project-shadow-of-emberfall.webp" alt="" loading="lazy" onerror="this.remove()"><img src="project-sky-forge-rush.webp" alt="" loading="lazy" onerror="this.remove()"><b>?</b></span>
+                    <i class="fas fa-lock" aria-hidden="true"></i><span>In Development</span>
+                    <small>4 new games are being built. Tap to see them all.</small>
+                </a>
+                <div class="coming-soon-card pg-soon-gtd">
+                    <img class="pg-soon-logo" src="girlthedriller-frame-0.png" alt="Girl The Driller logo" loading="lazy">
+                    <span class="pg-soon-badge"><i class="fas fa-hourglass-half" aria-hidden="true"></i> Coming soon · Full release</span>
+                    <h3>Girl The Driller</h3>
+                    <p>Our debut release. Drill through the planet, collect every Energy Orb to unlock the Portal and reach it - highly polished physics action, in 2D and 2.5D.</p>
+                    <ul>
+                        <li><b>Genre</b> Physics action platformer</li>
+                        <li><b>Full release</b> Soon on Steam and Android</li>
+                        <li><b>Play now</b> Free demo in your browser</li>
+                    </ul>
+                    <div class="pg-soon-ctas"><a class="cy-btn cy-btn-primary" href="games.html?play=girl-the-driller"><i class="fas fa-play" aria-hidden="true"></i> Demo 2D</a><a class="cy-btn cy-btn-ghost" href="games.html?play=girl-the-driller-2.5d"><i class="fas fa-play" aria-hidden="true"></i> Demo 2.5D</a></div>
+                </div>
             </div>
         </section>
     </main>
@@ -227,8 +242,8 @@
         // Homepage is a showcase only: game cards must link to the Games page, never launch a game directly.
         window.SHOWCASE_MODE = true;
     </script>
-    <script src="script.js?v=20261016" defer></script>
+    <script src="script.js?v=20261017" defer></script>
 
-    <script type="module" src="firebase-auth.js?v=20261016"></script>
+    <script type="module" src="firebase-auth.js?v=20261017"></script>
 </body>
 </html>

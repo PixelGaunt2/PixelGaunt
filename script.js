@@ -120,17 +120,37 @@ window.pgOpenDonate = function () {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add); else add();
 })();
 
+// Projects in development (home hero, "In development" page). Picture files sit next to index.html.
+window.PG_PROJECTS = [
+    { words: ['NEON', 'ROGUE', 'PROTOCOL'], genre: 'Top-down cyber shooter', img: 'project-neon-rogue-protocol.webp', desc: 'Hack your way through a neon megacity as a rogue android - every district rewrites its rules after midnight.' },
+    { words: ['THE', 'HOLLOW', 'TIDE'], genre: 'Underwater adventure', img: 'project-the-hollow-tide.webp', desc: 'Dive into a drowned kingdom, light the ancient lanterns and outrun the creatures that live in the dark currents.' },
+    { words: ['SHADOW', 'OF', 'EMBERFALL'], genre: 'Dark fantasy action RPG', img: 'project-shadow-of-emberfall.webp', desc: 'A cursed knight, a dying fire and a kingdom of ash. Forge relics from embers and break the endless night.' },
+    { words: ['SKY', 'FORGE', 'RUSH'], genre: 'Airship racing & building', img: 'project-sky-forge-rush.webp', desc: 'Build your own airship from scrap, then race it through floating islands, storms and sky pirates.' }
+];
+
+// ---- "In development" page (in-development.html): every project with its blurred "?" picture ----
+(function pgDevPage() {
+    const run = () => {
+        const box = document.getElementById('pg-dev-list'); if (!box) return;
+        const e5 = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        box.innerHTML = window.PG_PROJECTS.map((p, k) => `<article class="pg-dev-card" style="--d:${k * 90}ms">
+            <div class="pg-dev-img"><img class="cy-blur" src="${e5(p.img)}" alt="" loading="lazy" onerror="this.remove()"><b aria-hidden="true">?</b><small>IMAGE CLASSIFIED</small></div>
+            <div class="pg-dev-body"><span class="pg-dev-st">In development</span>
+                <h2>${e5(p.words.join(' '))}</h2><p class="pg-dev-genre">${e5(p.genre)}</p><p>${e5(p.desc)}</p>
+                <div class="pg-dev-actions"><button type="button" class="cy-btn cy-btn-primary cy-btn-soon" aria-disabled="true"><i class="fas fa-play" aria-hidden="true"></i> Play demo · soon</button>
+                <a class="cy-btn cy-btn-ghost" href="https://discord.gg/DfHFVNMBQF" target="_blank" rel="noopener"><i class="fa-brands fa-discord" aria-hidden="true"></i> Follow</a></div>
+                <p class="pg-dev-note" role="status"></p></div></article>`).join('');
+        box.querySelectorAll('.cy-btn-soon').forEach(b => b.onclick = () => { b.closest('.pg-dev-body').querySelector('.pg-dev-note').textContent = 'The playable demo is coming soon - follow us to play it first!'; });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+})();
+
 // ---- HOME HERO: our debut release + 4 projects in development, rotating every 5 s ----
 // Hovering a game name or picture opens all 5 as animated cards (tap the picture on phones).
 (function pgHeroRotator() { const run = () => {
     const hero = document.getElementById('hero-presentation-section'); if (!hero) return;
     const text = hero.querySelector('.cy-hero-text'), art = hero.querySelector('.cy-hero-art'); if (!text || !art) return;
-    const SOON = [
-        { words: ['NEON', 'ROGUE', 'PROTOCOL'], genre: 'Top-down cyber shooter', img: 'project-neon-rogue-protocol.webp', desc: 'Hack your way through a neon megacity as a rogue android - every district rewrites its rules after midnight.' },
-        { words: ['THE', 'HOLLOW', 'TIDE'], genre: 'Underwater adventure', img: 'project-the-hollow-tide.webp', desc: 'Dive into a drowned kingdom, light the ancient lanterns and outrun the creatures that live in the dark currents.' },
-        { words: ['SHADOW', 'OF', 'EMBERFALL'], genre: 'Dark fantasy action RPG', img: 'project-shadow-of-emberfall.webp', desc: 'A cursed knight, a dying fire and a kingdom of ash. Forge relics from embers and break the endless night.' },
-        { words: ['SKY', 'FORGE', 'RUSH'], genre: 'Airship racing & building', img: 'project-sky-forge-rush.webp', desc: 'Build your own airship from scrap, then race it through floating islands, storms and sky pirates.' }
-    ];
+    const SOON = window.PG_PROJECTS;
     const first = { words: ['GIRL', 'THE', 'DRILLER'], genre: 'Physics action platformer', desc: text.querySelector('.cy-desc') ? text.querySelector('.cy-desc').textContent : '', img: 'Girl%20The%20Driller.webp', real: true };
     const slides = [first].concat(SOON);
     const originalText = text.innerHTML;
@@ -623,6 +643,7 @@ window.pgBlockAdsForOwner = function () {
             card.className = 'game-card';
             card.id = (game.community ? 'cgame-' + game.docId : 'game-' + game.id);
             card.onclick = () => {
+                if (window.PG_COMMUNITY_PAGE && game.community) { window.location.href = 'games.html?play=c-' + encodeURIComponent(game.docId); return; }
                 if (window.SHOWCASE_MODE) {
                     // Homepage is a showcase only - never launch a game directly from here.
                     window.location.href = 'games.html#' + card.id;
@@ -1141,7 +1162,7 @@ window.pgBlockAdsForOwner = function () {
             const shelf = document.getElementById('community-shelf');
             const grid = document.getElementById('community-grid');
             if (!shelf || !grid) return;
-            const isLibrary = !!document.getElementById('game-canvas');
+            const isLibrary = !!document.getElementById('game-canvas') || !!window.PG_COMMUNITY_PAGE;
             if (!communityLoaded) {
                 if (isLibrary) grid.innerHTML = '<div class="pg-empty">Loading community games...</div>';
                 return;
@@ -1372,8 +1393,27 @@ window.pgBlockAdsForOwner = function () {
             });
         }
 
+        // Trending: both Girl The Driller demos always stay; the other 3 places cycle through the rest of
+        // our games every 15 seconds, and all 5 swap places each time.
+        let trendStart = 0, trendTimer = null, trendHover = false;
         function renderFeatured() {
-            paintFeatured(TRENDING.map(t => ({ g: games.find(g => g.id === t.id), label: t.label })).filter(t => t.g));
+            const fixed = TRENDING.filter(t => t.id === 16 || t.id === 17);
+            const firstOthers = TRENDING.filter(t => t.id !== 16 && t.id !== 17).map(t => t.id);
+            const pool = firstOthers.concat(games.filter(g => !g.community && g.id !== 16 && g.id !== 17 && !firstOthers.includes(g.id)).map(g => g.id));
+            const others = [0, 1, 2].map(k => ({ id: pool[(trendStart + k) % pool.length] }));
+            let five = fixed.concat(others);
+            if (trendStart > 0) { for (let i = five.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [five[i], five[j]] = [five[j], five[i]]; } }
+            else five = [fixed[0], fixed[1]].concat(others);
+            paintFeatured(five.map(t => ({ g: games.find(g => g.id === t.id), label: t.label })).filter(t => t.g));
+            const rail = document.getElementById('featured-strip');
+            if (rail && !trendTimer) {
+                rail.addEventListener('mouseenter', () => { trendHover = true; }); rail.addEventListener('mouseleave', () => { trendHover = false; });
+                trendTimer = setInterval(() => {
+                    if (document.hidden || trendHover) return;
+                    rail.classList.add('pg-trend-out');
+                    setTimeout(() => { trendStart = (trendStart + 3) % pool.length; renderFeatured(); rail.classList.remove('pg-trend-out'); }, 400);
+                }, 15000);
+            }
         }
 
         function syncCategoryButtons() {
@@ -1427,7 +1467,7 @@ window.pgBlockAdsForOwner = function () {
             if (!window._pgPlatformPromise) {
                 window._pgPlatformPromise = new Promise((resolve, reject) => {
                     const tag = document.createElement('script');
-                    tag.src = 'platform.js?v=20261016';   // version tag: browsers always load the newest file after an update
+                    tag.src = 'platform.js?v=20261017';   // version tag: browsers always load the newest file after an update
                     tag.async = true;
                     tag.onload = () => resolve(window.PG);
                     tag.onerror = () => { window._pgPlatformPromise = null; reject(new Error('platform.js failed to load')); };
