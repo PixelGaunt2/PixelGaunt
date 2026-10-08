@@ -2,11 +2,12 @@
 <html lang="en" class="loading">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>Iron Tide Rising</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #1a1c23; font-family: 'Courier New', Courier, monospace; user-select: none; }
         
+        html, body { height: 100%; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
         html.loading #ui-layer { visibility: hidden !important; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: rgba(15, 15, 20, 0.95); pointer-events: auto; transition: opacity 0.3s;}
@@ -1397,6 +1398,12 @@
         bindBtn('btn-weap', () => cycleWeapon());
         bindBtn('btn-stab', () => stab());
     // ===================== ADD-ON: DOORS / BUILDINGS / SEASONS / NATURE / VEHICLES / MODES =====================
+function fitWrap(sc, w) {
+    w.style.position = 'absolute'; w.style.left = '50%'; w.style.top = '50%'; w.style.maxWidth = 'none';
+    const W = Math.max(200, Math.min(sc.clientWidth - 12, 900)); w.style.width = W + 'px'; w.style.transform = 'translate(-50%,-50%)';
+    const k = Math.min(1, (sc.clientHeight - 12) / Math.max(1, w.offsetHeight), W / Math.max(1, w.scrollWidth));
+    w.style.transform = 'translate(-50%,-50%) scale(' + k + ')';
+}
 const OPT = { mode: 0, player: 0, season: 0, style: 0 };
 const MODES = ['CLASSIC STAGES', 'SURVIVAL (ENDLESS)', 'FREE ROAM (NO ENEMIES)', 'HARDCORE (2x DAMAGE)'];
 const PLAYERS = [{ n: 'SOLDIER', spd: 1, dmg: 1 }, { n: 'SCOUT (FAST, FRAGILE)', spd: 1.25, dmg: 1.25 }, { n: 'HEAVY (SLOW, TOUGH)', spd: 0.88, dmg: 0.6 }];
@@ -1599,7 +1606,7 @@ const _ss = startStage; startStage = function (n) {
     // fit every menu screen into the window (scale down instead of scrolling)
     const screens = [...document.querySelectorAll('.screen')], wraps = [];
     screens.forEach(sc => { const w = document.createElement('div'); w.style.cssText = 'display:flex;flex-direction:column;align-items:center;transform-origin:center center;'; while (sc.firstChild) w.appendChild(sc.firstChild); sc.appendChild(w); sc.style.justifyContent = 'center'; wraps.push([sc, w]); });
-    function fit() { for (const [sc, w] of wraps) { if (sc.classList.contains('hidden')) continue; w.style.transform = 'none'; const k = Math.min(1, (sc.clientHeight - 12) / w.scrollHeight, (sc.clientWidth - 12) / w.scrollWidth); w.style.transform = 'scale(' + k + ')'; } }
+    function fit() { for (const [sc, w] of wraps) { if (sc.classList.contains('hidden')) continue; fitWrap(sc, w); } }
     window.addEventListener('resize', fit); setInterval(fit, 300); fit(); window.__fitMenus = fit;
     window.addEventListener('wheel', e => { if (gameState !== 'playing') e.preventDefault(); }, { passive: false });
 })();
@@ -1751,10 +1758,10 @@ const kname = c => c.replace(/^Key|^Digit/, '').replace('Arrow', '↑↓←→'.
 // --- screens ---
 const fitList = [];
 function mkScreen(id) { const d = document.createElement('div'); d.id = id; d.className = 'screen hidden'; document.getElementById('ui-layer').appendChild(d); const w = document.createElement('div'); w.style.cssText = 'display:flex;flex-direction:column;align-items:center;transform-origin:center center;max-width:100%'; d.appendChild(w); fitList.push([d, w]); return w; }
-function fitMyScreens() { for (const [sc, w] of fitList) { if (sc.classList.contains('hidden')) continue; w.style.transform = 'none'; const k = Math.min(1, (sc.clientHeight - 12) / w.scrollHeight, (sc.clientWidth - 12) / w.scrollWidth); w.style.transform = 'scale(' + k + ')'; } }
+function fitMyScreens() { for (const [sc, w] of fitList) { if (sc.classList.contains('hidden')) continue; fitWrap(sc, w); } }
 setInterval(fitMyScreens, 300);
 const MYSCR = ['settings-screen', 'guide-screen', 'keys-screen']; let backTarget = 'main-menu';
-const _scr = setScreen; setScreen = function (id) { MYSCR.forEach(i => { const el = document.getElementById(i); if (el) el.classList.add('hidden'); }); _scr(id); };
+const _scr = setScreen; setScreen = function (id) { MYSCR.forEach(i => { const el = document.getElementById(i); if (el) el.classList.add('hidden'); }); _scr(id); try { if (window.__fitMenus) window.__fitMenus(); fitMyScreens(); } catch (e) { } };
 function btn(id, text, cls, fn) { const b = document.createElement('button'); b.id = id; b.className = 'btn ' + cls; b.textContent = text; bindUIBtn(b, fn); return b; }
 const setW = mkScreen('settings-screen'), guideW = mkScreen('guide-screen'), keysW = mkScreen('keys-screen');
 // settings
@@ -1820,6 +1827,36 @@ const _gc3 = genCover; genCover = function (st) {
 (function () {
     try { const s = JSON.parse(localStorage.getItem(SET_KEY) || 'null'); if (s) { Object.assign(OPT, s.o || {}); soundOn = s.snd !== false; musicOn = s.mus !== false; isMuted = !soundOn; if (s.km) Object.assign(KEYMAP, s.km); } } catch (e) { }
     syncExtra();
+})();
+
+// ===== MOBILE AUTO-FIT: touch controls, HUD and display scale to any screen =====
+(function () {
+    const st = document.createElement('style');
+    st.textContent = `html.mob #hud{top:54px!important;bottom:auto!important;left:10px!important;font-size:13px!important;padding:6px 10px!important;transform:scale(var(--hs,1));transform-origin:left top}
+html.mob #hpBarWrap{width:90px!important;height:8px!important}
+html.mob #hud-btns{top:max(8px,env(safe-area-inset-top))!important;left:max(10px,env(safe-area-inset-left))!important;transform:scale(var(--hs,1));transform-origin:left top}
+html.mob .hud-btn{font-size:12px!important;padding:6px 10px!important}
+html.mob .hud-btn small{display:none}
+html.mob #drivePrompt{bottom:auto!important;top:12%!important;font-size:.8rem!important}
+#mc-right{position:absolute;right:max(0px,env(safe-area-inset-right));bottom:max(0px,env(safe-area-inset-bottom));width:260px;height:360px;pointer-events:none;transform-origin:right bottom}`;
+    document.head.appendChild(st);
+    const mc = document.getElementById('mobile-controls'), rg = document.createElement('div'); rg.id = 'mc-right';
+    ['btn-shoot', 'btn-jump', 'btn-sprint', 'btn-bomb', 'btn-dash-l', 'btn-dash-r', 'btn-stab', 'btn-ride'].forEach(id => { const el = document.getElementById(id); if (el) rg.appendChild(el); });
+    mc.appendChild(rg);
+    const jz = document.getElementById('joystick-zone'), js = document.getElementById('joystick-stick'), wb = document.getElementById('btn-weap');
+    function mobFit() {
+        const touch = isMobileUA || isTouchActive; document.documentElement.classList.toggle('mob', touch); if (!touch) return;
+        const w = window.innerWidth, h = window.innerHeight;
+        const s = Math.max(0.5, Math.min(1, h / 560, w / 640)), sj = Math.max(0.7, Math.min(1.1, h / 460, w / 560)), hs = Math.max(0.6, Math.min(1, h / 480, w / 560));
+        rg.style.transform = 'scale(' + s + ')'; document.documentElement.style.setProperty('--hs', hs);
+        wb.style.transformOrigin = 'right top'; wb.style.transform = 'scale(' + Math.max(0.7, s) + ')';
+        jz.style.width = jz.style.height = Math.round(140 * sj) + 'px'; jz.style.left = Math.round(30 * s) + 'px'; jz.style.bottom = Math.round(30 * s) + 'px';
+        js.style.width = js.style.height = Math.round(50 * sj) + 'px';
+    }
+    window.addEventListener('resize', mobFit); window.addEventListener('touchstart', mobFit, { passive: true });
+    window.addEventListener('orientationchange', () => setTimeout(() => window.dispatchEvent(new Event('resize')), 250));
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', () => window.dispatchEvent(new Event('resize')));
+    setInterval(mobFit, 600); mobFit();
 })();
 // everything is built: fit the menus, then reveal the UI (no flash of the old menu)
 try { if (window.__fitMenus) window.__fitMenus(); fitMyScreens(); } catch (e) { }
