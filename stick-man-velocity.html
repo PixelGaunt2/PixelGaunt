@@ -10,6 +10,7 @@
             background-color: #050510; overflow: hidden; color: white;
             font-family: 'Courier New', Courier, monospace; user-select: none;
         }
+        html, body { width: 100%; height: 100%; }
         canvas { display: block; margin: 0 auto; width: 100%; height: 100%; }
         
         #ui {
@@ -307,6 +308,29 @@
         @media (max-height: 600px) {
             .arcade-btn { font-size: 16px; padding: 9px 20px; margin-top: 10px; width: min(280px, 80vw); border-width: 2px; }
         }
+        /* compact HUD for landscape phones (short screens wider than 768px) */
+        @media (max-height: 500px) {
+            #ui { top: 6px; left: 8px; right: 8px; }
+            #playerStageText { font-size: 10px !important; padding: 2px 8px; margin-bottom: 3px; }
+            .health-bar-container { width: 150px; height: 17px; border-width: 2px; margin-bottom: 4px; }
+            #hpText { font-size: 9px; }
+            .hud-timers { width: 150px; padding: 3px 6px; gap: 2px; }
+            .timer-row { font-size: 7px; gap: 4px; }
+            .timer-row > span { width: 56px; }
+            .bar-bg { height: 5px; }
+            #ultTracker { font-size: 7px; padding: 3px 5px; margin-top: 3px; max-width: 150px; line-height: 1.25; }
+            #scoreContainer { padding: 4px 8px; min-width: 90px; }
+            #scoreBoard { font-size: 12px !important; } #coinBoard { font-size: 10px !important; } #orbBoard { font-size: 8px !important; }
+            #levelTimerContainer { top: 6px; width: 190px; height: 18px; }
+            #levelTimerText { font-size: 9px; }
+            #topControls { top: 30px; gap: 6px; }
+            .icon-btn { width: 30px; height: 30px; font-size: 12px; }
+            #mobileUI { bottom: 12px; padding: 0 16px; }
+            .joy-zone { width: 108px; height: 108px; }
+            .action-btn { width: 48px; height: 48px; font-size: 9px; }
+            .action-zone { gap: 7px; }
+            .action-btn.ult-btn { top: -58px; width: 50px; height: 50px; font-size: 12px; }
+        }
     </style>
 </head>
 <body>
@@ -492,6 +516,17 @@
         let blackOrbs = 0; const maxBlackOrbs = 10;
         let hasShield = false; let shieldTimer = 0; let shieldHits = 0; const MAX_SHIELD_TIME = 600;
         
+        // While Car Mode is active every other power-up is suspended (timers freeze); they resume when the car ends.
+        const carQueue = [];     // power-ups collected while driving; they start when the car ends
+        function applyPowerUp(type) {
+            if (type === 'heal') player.health = Math.min(player.maxHealth, player.health + 50);
+            else if (type === 'damage') { hasFireballBoost = true; fireballBoostTimer = MAX_FB_TIME; }
+            else if (type === 'speed') { hasSpeedBoost = true; speedBoostTimer = MAX_SPEED_TIME; }
+            else if (type === 'shield') { hasShield = true; shieldTimer = MAX_SHIELD_TIME; shieldHits = 3; document.getElementById('shieldTimerRow').style.display = 'flex'; }
+            else if (type === 'gun') player.shootFireball();
+        }
+        const gunOn = () => hasGunShock && !hasCarMode, fbOn = () => hasFireballBoost && !hasCarMode,
+              spdOn = () => hasSpeedBoost && !hasCarMode, shieldOn = () => hasShield && !hasCarMode;
         let framesElapsed = 0; let levelCompleted = false; 
         const LEVEL_TIMER_FRAMES = 90 * 60; 
 
@@ -644,31 +679,33 @@
         const projectiles = [];
 
         class ShockLaser {
-            constructor(startX, startY, target) {
+            constructor(startX, startY, target, owner) {
+                this.owner = owner || null;
                 this.startX = startX; this.startY = startY;
-                this.target = target; this.life = 15;
+                this.target = target; this.life = 15; this.maxLife = 15;
                 this.points = [];
-                let segments = 12;
-                let endX = target.position.x + target.width/2;
-                let endY = target.position.y + target.height/2;
-                for(let i=0; i<=segments; i++) {
-                    let t = i / segments;
-                    let curX = this.startX + (endX - this.startX) * t;
-                    let curY = this.startY + (endY - this.startY) * t;
-                    if(i > 0 && i < segments) {
-                        curX += (Math.random() - 0.5) * 50;
-                        curY += (Math.random() - 0.5) * 50;
+                const segments = 12;
+                const endX = target.position.x + target.width / 2;
+                const endY = target.position.y + target.height / 2;
+                for (let i = 0; i <= segments; i++) {
+                    const t = i / segments, env = Math.sin(Math.PI * t);
+                    let curX = startX + (endX - startX) * t;
+                    let curY = startY + (endY - startY) * t;
+                    if (i > 0 && i < segments) {
+                        curX += (Math.random() - 0.5) * 44 * env;
+                        curY += (Math.random() - 0.5) * 44 * env;
                     }
-                    this.points.push({x: curX, y: curY});
+                    this.points.push({ x: curX, y: curY });
                 }
             }
             draw() {
                 c.save(); c.translate(-cameraX, 0);
-                
+                const P = this.points, n = P.length, fade = Math.max(0, this.life / this.maxLife);
+
                 if (this.target && !this.target.dead) {
-                    let tX = this.target.position.x + this.target.width/2;
-                    let tY = this.target.position.y + this.target.height/2;
-                    c.strokeStyle = '#ff0055'; c.lineWidth = 2;
+                    const tX = this.target.position.x + this.target.width / 2;
+                    const tY = this.target.position.y + this.target.height / 2;
+                    c.strokeStyle = '#ff0055'; c.lineWidth = 2; c.globalAlpha = fade;
                     c.beginPath();
                     c.arc(tX, tY, 25, 0, Math.PI * 2);
                     c.moveTo(tX - 35, tY); c.lineTo(tX + 35, tY);
@@ -676,26 +713,80 @@
                     c.stroke();
                 }
 
-                c.beginPath(); 
-                c.moveTo(this.points[0].x, this.points[0].y);
-                for(let i=1; i<this.points.length; i++) {
-                    c.lineTo(this.points[i].x, this.points[i].y);
-                }
+                c.lineCap = 'round'; c.lineJoin = 'round';
+                c.beginPath();
+                c.moveTo(P[0].x, P[0].y);
+                for (let i = 1; i < n; i++) c.lineTo(P[i].x, P[i].y);
+                c.globalAlpha = fade;
                 c.strokeStyle = 'rgba(0,255,255,0.28)'; c.lineWidth = 15; c.stroke();
                 c.strokeStyle = '#00ffff'; c.lineWidth = 5; c.stroke();
-                c.strokeStyle = '#ffffff'; c.lineWidth = 1.6; c.stroke(); c.restore();
-            }
-            update() { 
-                for(let i=1; i<this.points.length-1; i++) {
-                    this.points[i].x += (Math.random() - 0.5) * 15;
-                    this.points[i].y += (Math.random() - 0.5) * 15;
+                c.strokeStyle = '#ffffff'; c.lineWidth = 1.6; c.stroke();
+
+                // glow at the gun muzzle and at the impact point
+                drawGlow('#00ffff', P[0].x, P[0].y, 34, fade);
+                const ex = P[n - 1].x, ey = P[n - 1].y;
+                drawGlow('#ffffff', ex, ey, 44, fade);
+                c.strokeStyle = '#ffffff'; c.lineWidth = 2; c.globalAlpha = fade * 0.9;
+                c.beginPath();
+                for (let k = 0; k < 6; k++) {
+                    const a = k * Math.PI / 3 + this.life * 0.5, r0 = 6, r1 = 14 + (k % 2) * 8;
+                    c.moveTo(ex + Math.cos(a) * r0, ey + Math.sin(a) * r0);
+                    c.lineTo(ex + Math.cos(a) * r1, ey + Math.sin(a) * r1);
                 }
-                if(this.target && !this.target.dead) {
-                    this.points[this.points.length-1].x = this.target.position.x + this.target.width/2;
-                    this.points[this.points.length-1].y = this.target.position.y + this.target.height/2;
-                }
-                this.draw(); this.life--; 
+                c.stroke();
+                c.restore();
             }
+            update() {
+                const P = this.points, n = P.length;
+                if (this.owner && this.owner.muzzle) { P[0].x = this.owner.muzzle.x; P[0].y = this.owner.muzzle.y; }
+                for (let i = 1; i < n - 1; i++) {
+                    const env = Math.sin(Math.PI * i / (n - 1));
+                    P[i].x += (Math.random() - 0.5) * 15 * env;
+                    P[i].y += (Math.random() - 0.5) * 15 * env;
+                }
+                if (this.target && !this.target.dead) {
+                    P[n - 1].x = this.target.position.x + this.target.width / 2;
+                    P[n - 1].y = this.target.position.y + this.target.height / 2;
+                }
+                this.draw(); this.life--;
+            }
+        }
+
+        // Sci-fi laser gun. (gx,gy) = grip point in world space, (ux,uy) = unit aim direction.
+        // Always drawn "right side up" (top of the gun faces the sky). Returns the muzzle position.
+        function drawLaserGun(gx, gy, ux, uy, flash, A0) {
+            let tnx = -uy, tny = ux;
+            if (tny > 0) { tnx = -tnx; tny = -tny; }
+            const K = 1.45;
+            const P = (a, b) => ({ x: gx + (ux * a + tnx * b) * K, y: gy + (uy * a + tny * b) * K });
+            const seg = (p0, p1) => { c.beginPath(); c.moveTo(p0.x, p0.y); c.lineTo(p1.x, p1.y); c.stroke(); };
+            c.save(); c.lineCap = 'round'; c.lineJoin = 'round'; c.globalAlpha = A0;
+            c.strokeStyle = '#ffffff'; c.lineWidth = 9.5 * K; seg(P(3, -2), P(-3, -13));
+            c.strokeStyle = '#3a4070'; c.lineWidth = 7 * K; seg(P(3, -2), P(-3, -13));          // grip
+            c.strokeStyle = '#e6ebff'; c.lineWidth = 14 * K; seg(P(-6, 0), P(20, 0));
+            c.strokeStyle = '#4b57a8'; c.lineWidth = 11 * K; seg(P(-6, 0), P(20, 0));            // body
+            c.strokeStyle = '#a9b4ff'; c.lineWidth = 2.5 * K; seg(P(-4, 3.5), P(19, 3.5));       // top highlight
+            c.strokeStyle = '#ffffff'; c.lineWidth = 7.5 * K; seg(P(20, 0), P(33, 0));
+            c.strokeStyle = '#c4cdff'; c.lineWidth = 5 * K; seg(P(20, 0), P(33, 0));             // barrel
+            c.strokeStyle = '#00e5ff'; c.lineWidth = 2 * K;                                      // coil rings
+            for (const k of [23, 27, 31]) seg(P(k, -4), P(k, 4));
+            const cell = P(8, 0);                                                            // energy cell
+            drawGlow('#00ffff', cell.x, cell.y, 24, 0.9);
+            c.fillStyle = '#b8fdff'; c.beginPath(); c.arc(cell.x, cell.y, 4, 0, Math.PI * 2); c.fill();
+            const mz = P(37, 0);                                                             // muzzle
+            c.fillStyle = '#00ffff'; c.beginPath(); c.arc(mz.x, mz.y, 4.4, 0, Math.PI * 2); c.fill();
+            if (flash > 0) {
+                drawGlow('#00ffff', mz.x, mz.y, 26 + flash * 4, 1);
+                c.fillStyle = '#ffffff'; c.beginPath(); c.arc(mz.x, mz.y, 3 + flash * 0.8, 0, Math.PI * 2); c.fill();
+                c.strokeStyle = '#ffffff'; c.lineWidth = 2; c.beginPath();
+                for (let k = -1; k <= 1; k++) {
+                    const b = P(10 + flash * 2, k * (4 + flash));
+                    c.moveTo(mz.x, mz.y); c.lineTo(b.x, b.y);
+                }
+                c.stroke();
+            }
+            c.restore();
+            return mz;
         }
         const shockLasers = [];
 
@@ -736,6 +827,39 @@
             }
         }
 
+        // Dash visuals: tapered speed streaks, ground streak, expanding shockwave ring, blue-white aura.
+        function drawDashFX(o, x, y, dir, A0) {
+            const prog = 1 - o.dashTimer / 15;               // 0 -> 1 over the dash
+            c.save(); c.lineCap = 'round';
+            drawGlow('#35d0ff', x, y, 125, 0.9);
+            // speed streaks (bright head, fading tail)
+            for (let i = 0; i < 6; i++) {
+                const yy = y - 54 + i * 21 + Math.sin(bgTick * 0.5 + i * 1.7) * 2;
+                const len = 95 + ((i * 41) % 55) + (1 - prog) * 45, off = 16 + (i % 3) * 6;
+                const g = c.createLinearGradient(x - dir * off, 0, x - dir * (off + len), 0);
+                g.addColorStop(0, 'rgba(255,255,255,0.95)'); g.addColorStop(0.35, 'rgba(120,235,255,0.6)'); g.addColorStop(1, 'rgba(53,208,255,0)');
+                c.globalAlpha = A0 * (0.95 - prog * 0.35);
+                c.strokeStyle = g; c.lineWidth = 4.2 - (i % 3) * 1.1;
+                c.beginPath(); c.moveTo(x - dir * off, yy); c.lineTo(x - dir * (off + len), yy); c.stroke();
+            }
+            // glowing streak along the ground
+            const gyy = o.position.y + o.height;
+            if (gyy >= groundY() - 3) {
+                const g2 = c.createLinearGradient(x, 0, x - dir * 230, 0);
+                g2.addColorStop(0, 'rgba(120,235,255,0.7)'); g2.addColorStop(1, 'rgba(53,208,255,0)');
+                c.globalAlpha = A0; c.fillStyle = g2;
+                c.fillRect(dir > 0 ? x - 230 : x, gyy - 3, 230, 4);
+            }
+            // shockwave ring where the dash began
+            if (o.dashOrigin) {
+                const rx = 18 + prog * 95, ry = 6 + prog * 22;
+                c.globalAlpha = A0 * Math.max(0, 1 - prog * 1.15) * 0.85;
+                c.strokeStyle = '#c8fcff'; c.lineWidth = 1 + 3 * (1 - prog);
+                c.beginPath(); c.ellipse(o.dashOrigin.x, o.dashOrigin.y - 4, rx, ry, 0, 0, Math.PI * 2); c.stroke();
+            }
+            c.restore();
+        }
+
         class Sprite {
             constructor({ position, velocity, color, team, type = 'brawler' }) {
                 this.position = position; this.velocity = velocity; this.color = color; this.team = team; this.type = type;
@@ -774,10 +898,11 @@
                 this.vis = { type: null, t: 0, dur: 1, combo: 0 };
                 this.landT = 0; this.wasAir = false; this.gait = Math.random() * 6; this.breath = Math.random() * 6;
                 this.flip = 0; this.trail = []; this.hitFront = true; this.atkA = 0; this.strike = null; this.kickLeg = null;
+                this.gunStep = 0; this.invulnTimer = 0; this.ghosts = []; this.shotFlash = 0; this.muzzle = null; this.wheelRot = 0; this.dashOrigin = null; this.aimTarget = null;
             }
 
             stepRig() {
-                if (this.team === 'player') this.width = hasCarMode ? 120 : 50;
+                if (this.team === 'player') this.width = hasCarMode ? 150 : 50;
                 this.animTimer += 1;
                 const dir = this.facingRight ? 1 : -1;
                 const vx = this.velocity.x, vy = this.velocity.y, speed = Math.abs(vx);
@@ -954,6 +1079,20 @@
                     }
                 }
 
+                // ---- laser gun: two-handed aim toward the nearest enemy ----
+                if (this.team === 'player' && gunOn() && !knocked && !isSweeping && !isDivingAir && !this.isDashing && v.type !== 'punch' && v.type !== 'kick') {
+                    let aa = 0.04;
+                    const tg = this.aimTarget;
+                    if (tg && !tg.dead) {
+                        const shx = this.J ? this.J.Sh.x : this.position.x + this.width / 2;
+                        const shy = this.J ? this.J.Sh.y : this.position.y + 40;
+                        aa = Math.atan2(shy - (tg.position.y + tg.height / 2), ((tg.position.x + tg.width / 2) - shx) * dir);
+                    }
+                    T.hF = { x: Math.cos(aa) * 33, y: Math.sin(aa) * 33 };
+                    T.hB = { x: Math.cos(aa) * 23, y: Math.sin(aa) * 23 - 5 };
+                    T.lean = Math.min(T.lean, 0.1); T.k = 0.4;
+                }
+
                 // ---- smooth toward target ----
                 if (!this.rig) {
                     this.rig = { px: T.px, py: T.py, lean: T.lean, arch: T.arch, head: T.head, rot: T.rot,
@@ -964,6 +1103,11 @@
                 for (const n of ['fF', 'fB', 'hF', 'hB']) { R[n].x += (T[n].x - R[n].x) * k; R[n].y += (T[n].y - R[n].y) * k; }
                 this.strike = strike; this.kickLeg = kickLeg; this.atkA = a;
                 this.buildJoints();
+
+                // ---- dash afterimages ----
+                for (const g of this.ghosts) g.l *= 0.8;
+                while (this.ghosts.length && this.ghosts[0].l < 0.07) this.ghosts.shift();
+                if (this.isDashing && quality >= 1) { this.ghosts.push({ J: this.J, l: 1 }); if (this.ghosts.length > 7) this.ghosts.shift(); }
 
                 // ---- motion trail on the striking limb ----
                 for (const tr of this.trail) tr.l *= 0.78;
@@ -1057,20 +1201,10 @@
                 // hit flash = draw in white (ctx.filter is very slow, esp. on mobile)
                 this.fc = (this.flashTimer > 0 && this.flashTimer % 4 < 2) ? '#ffffff' : null;
 
-                if (this.team === 'player' && hasCarMode) {
-                    drawGlow('#00aaff', this.position.x + 40, this.position.y + 80, 110, 0.9); c.fillStyle = '#00aaff';
-                    c.fillRect(this.position.x - 20, this.position.y + 60, 120, 40);
-                    c.fillStyle = '#fff';
-                    c.fillRect(this.position.x + 10, this.position.y + 30, 60, 30);
-                    c.fillStyle = '#333';
-                    c.beginPath(); c.arc(this.position.x, this.position.y + 100, 15, 0, Math.PI*2); c.fill();
-                    c.beginPath(); c.arc(this.position.x + 80, this.position.y + 100, 15, 0, Math.PI*2); c.fill();
-                    c.fillStyle = this.facingRight ? '#ffcc00' : '#ff0055';
-                    c.fillRect(this.facingRight ? this.position.x + 95 : this.position.x - 25, this.position.y + 70, 10, 10);
-                    c.restore(); return;
-                }
+                if (this.team === 'player' && hasCarMode) { this.drawCar(); c.restore(); return; }
 
-                if (this.team === 'ally') c.globalAlpha *= 0.6;
+                if (this.team === 'ally') c.globalAlpha *= 0.8;
+                if (this.team === 'player' && this.invulnTimer > 0 && Math.floor(this.invulnTimer / 4) % 2 === 0) c.globalAlpha *= 0.45;
                 drawGlow(this.fc || this.color, this.position.x + this.width / 2, this.position.y + this.height * 0.55,
                          this.type === 'goliath' ? 125 : (this.type === 'spider' ? 85 : 95), 0.8);
                 c.lineCap = 'round'; c.lineJoin = 'round';
@@ -1085,17 +1219,11 @@
                 const th = gol ? 1.7 : 1, A0 = c.globalAlpha, t = this.animTimer;
                 const speed = Math.abs(this.velocity.x);
                 const hurt = this.isKnockedDown && this.knockdownTimer >= 6;
-                const stage = pl ? currentStage : 0;
+                const stage = (pl || this.team === 'ally') ? currentStage : 0;
 
-                // dash speed-lines
-                if (this.isDashing) {
-                    c.save(); c.strokeStyle = '#ffffff'; c.lineWidth = 2;
-                    for (let i = 0; i < 4; i++) {
-                        c.globalAlpha = A0 * 0.35; const yy = J.P.y - 30 + i * 22, len = 50 + i * 14;
-                        c.beginPath(); c.moveTo(J.P.x - dir * 24, yy); c.lineTo(J.P.x - dir * (24 + len), yy); c.stroke();
-                    }
-                    c.restore();
-                }
+                // dash FX: afterimages + streaks + ring
+                if (this.ghosts.length) this.drawGhosts(A0);
+                if (this.isDashing) drawDashFX(this, J.P.x, J.P.y, dir, A0);
 
                 // strike trail
                 if (this.trail.length > 1) {
@@ -1200,6 +1328,12 @@
                 // near limbs (bright, in front)
                 drawLimbs(kickB ? legB : legF, strikeB ? armB : armF, 1);
 
+                // laser gun (Gun Shock power-up)
+                if (pl && gunOn() && !hurt) {
+                    const hd = J.dF, ad = this.aimDir(hd.x, hd.y, dir);
+                    this.muzzle = drawLaserGun(hd.x - ad.x * 4, hd.y - ad.y * 4, ad.x, ad.y, this.shotFlash, A0);
+                }
+
                 // gunner blaster
                 if (gun) {
                     const e = J.eF, hd = J.dF; let ux = hd.x - e.x, uy = hd.y - e.y; const l = Math.hypot(ux, uy) || 1; ux /= l; uy /= l;
@@ -1217,6 +1351,115 @@
                     c.fillStyle = '#ffffff'; c.globalAlpha = A0 * 0.9; c.beginPath(); c.arc(tip.x, tip.y, 4.5 * th, 0, Math.PI * 2); c.fill();
                 }
                 c.restore();
+            }
+
+            aimDir(x, y, dir) {
+                const t = this.aimTarget;
+                if (t && !t.dead) {
+                    const dx = t.position.x + t.width / 2 - x, dy = t.position.y + t.height / 2 - y, l = Math.hypot(dx, dy) || 1;
+                    return { x: dx / l, y: dy / l };
+                }
+                return { x: dir, y: -0.04 };
+            }
+
+            drawGhosts(A0) {
+                c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+                c.strokeStyle = '#35e6ff'; c.fillStyle = '#35e6ff';
+                c.globalCompositeOperation = 'lighter';
+                for (const g of this.ghosts) {
+                    const G = g.J; if (!G) continue;
+                    c.globalAlpha = A0 * g.l * 0.5; c.lineWidth = 6.5;
+                    c.beginPath();
+                    c.moveTo(G.hipF.x, G.hipF.y); c.lineTo(G.kF.x, G.kF.y); c.lineTo(G.aF.x, G.aF.y); c.lineTo(G.tF.x, G.tF.y);
+                    c.moveTo(G.hipB.x, G.hipB.y); c.lineTo(G.kB.x, G.kB.y); c.lineTo(G.aB.x, G.aB.y); c.lineTo(G.tB.x, G.tB.y);
+                    c.moveTo(G.Sh.x, G.Sh.y); c.lineTo(G.eF.x, G.eF.y); c.lineTo(G.dF.x, G.dF.y);
+                    c.moveTo(G.Sh.x, G.Sh.y); c.lineTo(G.eB.x, G.eB.y); c.lineTo(G.dB.x, G.dB.y);
+                    c.moveTo(G.P.x, G.P.y); c.lineTo(G.Wp.x, G.Wp.y); c.lineTo(G.Sh.x, G.Sh.y); c.lineTo(G.Nk.x, G.Nk.y);
+                    c.stroke();
+                    c.beginPath(); c.arc(G.H.x, G.H.y, G.r, 0, Math.PI * 2); c.fill();
+                }
+                c.restore();
+            }
+
+            // ---------- player car (Car Mode) ----------
+            drawCar() {
+                const dir = this.facingRight ? 1 : -1, t = this.animTimer, A0 = c.globalAlpha;
+                const cx = this.position.x + this.width / 2, gy = this.position.y + this.height;
+                const vx = this.velocity.x, moving = Math.abs(vx) > 1, air = Math.abs(this.velocity.y) > 1;
+                this.wheelRot += vx * dir / 17;
+                const flash = !!this.fc;
+
+                if (this.isDashing) drawDashFX(this, cx, gy - 30, dir, A0);
+                c.save();
+                c.translate(cx, gy + (moving && !air ? Math.sin(t * 0.7) * 1.1 : 0));
+                c.scale(dir * 1.28, 1.28);
+                if (air) c.rotate(rClamp(this.velocity.y * 0.018, -0.22, 0.22));
+                c.lineCap = 'round'; c.lineJoin = 'round';
+
+                // exhaust flame
+                if (moving) {
+                    const fl = 12 + Math.random() * 12 + Math.abs(vx) * 0.7;
+                    c.fillStyle = '#ff7a1a'; c.beginPath(); c.moveTo(-74, -22); c.lineTo(-74 - fl, -18); c.lineTo(-74, -13); c.fill();
+                    c.fillStyle = '#fff2a0'; c.beginPath(); c.moveTo(-74, -20); c.lineTo(-74 - fl * 0.55, -18); c.lineTo(-74, -15); c.fill();
+                }
+                // rear wing
+                c.strokeStyle = '#1b2240'; c.lineWidth = 4; c.beginPath(); c.moveTo(-62, -36); c.lineTo(-68, -52); c.stroke();
+                c.fillStyle = '#10142c'; c.fillRect(-82, -57, 30, 6);
+                c.fillStyle = '#ff2e9a'; c.fillRect(-82, -57, 30, 2);
+
+                // body
+                const bg = c.createLinearGradient(0, -66, 0, -12);
+                bg.addColorStop(0, '#a6f4ff'); bg.addColorStop(0.35, '#1fa8ff'); bg.addColorStop(1, '#0447b8');
+                c.beginPath();
+                c.moveTo(-72, -12); c.lineTo(-75, -28); c.quadraticCurveTo(-73, -37, -60, -38);
+                c.lineTo(-34, -40); c.lineTo(-20, -58); c.quadraticCurveTo(-4, -66, 16, -58);
+                c.lineTo(36, -40); c.lineTo(66, -34); c.quadraticCurveTo(78, -31, 78, -20); c.lineTo(76, -12); c.closePath();
+                c.fillStyle = flash ? '#ffffff' : bg; c.fill();
+                c.strokeStyle = 'rgba(214,248,255,0.8)'; c.lineWidth = 1.6; c.stroke();
+                if (!flash) {
+                    c.strokeStyle = '#ff2e9a'; c.lineWidth = 3; c.beginPath(); c.moveTo(-70, -25); c.lineTo(72, -25); c.stroke();
+                    c.strokeStyle = 'rgba(0,30,90,0.55)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-6, -38); c.lineTo(-6, -14); c.stroke();
+                    c.fillStyle = '#10142c'; c.fillRect(-72, -15, 150, 4);        // side skirt
+                }
+                // cabin glass + driver
+                c.beginPath(); c.moveTo(-31, -40); c.lineTo(-19, -55); c.quadraticCurveTo(-4, -62, 12, -55); c.lineTo(31, -40); c.closePath();
+                const wg = c.createLinearGradient(0, -62, 0, -40);
+                wg.addColorStop(0, 'rgba(190,250,255,0.95)'); wg.addColorStop(1, 'rgba(25,70,140,0.95)');
+                c.fillStyle = flash ? '#ffffff' : wg; c.fill();
+                if (!flash) {
+                    c.fillStyle = this.color; c.beginPath(); c.arc(3, -50, 6.5, 0, Math.PI * 2); c.fill();
+                    c.fillStyle = '#ffffff'; c.beginPath(); c.arc(6, -51, 1.7, 0, Math.PI * 2); c.fill();
+                    c.strokeStyle = 'rgba(255,255,255,0.4)'; c.lineWidth = 2; c.beginPath(); c.moveTo(14, -56); c.lineTo(24, -44); c.moveTo(-14, -54); c.lineTo(-8, -46); c.stroke();
+                }
+                c.strokeStyle = '#0a1230'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-8, -41); c.lineTo(-6, -60); c.stroke();
+
+                // wheels
+                for (const wx of [-46, 44]) {
+                    c.fillStyle = '#04020c'; c.beginPath(); c.arc(wx, -17, 21, Math.PI, 0); c.closePath(); c.fill();   // arch
+                    c.fillStyle = '#12141d'; c.beginPath(); c.arc(wx, -17, 17, 0, Math.PI * 2); c.fill();             // tyre
+                    c.strokeStyle = '#00e5ff'; c.lineWidth = 1.6; c.beginPath(); c.arc(wx, -17, 17, 0, Math.PI * 2); c.stroke();
+                    c.fillStyle = '#cfe4ff'; c.beginPath(); c.arc(wx, -17, 10, 0, Math.PI * 2); c.fill();             // rim
+                    c.save(); c.translate(wx, -17); c.rotate(this.wheelRot);
+                    c.strokeStyle = '#4a5a8c'; c.lineWidth = 2.6; c.beginPath();
+                    for (let k = 0; k < 5; k++) { c.moveTo(0, 0); c.lineTo(Math.cos(k * 1.2566) * 9, Math.sin(k * 1.2566) * 9); }
+                    c.stroke(); c.restore();
+                    c.fillStyle = '#00e5ff'; c.beginPath(); c.arc(wx, -17, 2.6, 0, Math.PI * 2); c.fill();
+                }
+
+                // lights
+                const hb = c.createLinearGradient(76, 0, 250, 0);
+                hb.addColorStop(0, 'rgba(255,245,170,0.38)'); hb.addColorStop(1, 'rgba(255,245,170,0)');
+                c.fillStyle = hb;
+                c.beginPath(); c.moveTo(76, -26); c.lineTo(250, -50); c.lineTo(250, -4); c.closePath(); c.fill();
+                drawGlow('#fff2a0', 76, -25, 24, 1); c.fillStyle = '#fff9c4'; c.beginPath(); c.ellipse(75, -25, 4.5, 3.2, 0, 0, Math.PI * 2); c.fill();
+                drawGlow('#ff2040', -75, -28, 20, 1); c.fillStyle = '#ff2a4a'; c.fillRect(-77, -32, 4, 9);
+                c.restore();
+
+                // roof-mounted laser gun while Gun Shock is active
+                if (gunOn()) {
+                    const gx = cx + dir * 10, gyy = gy - 80, ad = this.aimDir(gx, gyy, dir);
+                    this.muzzle = drawLaserGun(gx, gyy, ad.x, ad.y, this.shotFlash, A0);
+                }
             }
 
             drawSpider() {
@@ -1264,11 +1507,21 @@
                 if (this.dashCooldown > 0) this.dashCooldown--;
                 if (this.diveCooldown > 0) this.diveCooldown--;
                 if (this.fireballCooldown > 0) this.fireballCooldown--;
+                if (this.shotFlash > 0) this.shotFlash--;
+                if (this.invulnTimer > 0) this.invulnTimer--;
 
                 if (this.isDashing) {
                     this.dashTimer--; this.velocity.x = this.facingRight ? 25 : -25;
                     this.velocity.y = 0;
-                    if (this.dashTimer % 2 === 0) createParticles(this.position.x, this.position.y + this.height/2, '#ffffff');
+                    if (quality >= 1 && this.dashTimer % 2 === 0 && particles.length <= MAX_PARTICLES_BY_Q[quality]) {
+                        const dr = this.facingRight ? 1 : -1;
+                        for (let i = 0; i < 3; i++) {
+                            const p = new Particle(this.position.x + this.width / 2 - dr * 10, this.position.y + this.height * (0.3 + Math.random() * 0.65), i === 0 ? '#ffffff' : '#35d0ff');
+                            p.velocity = { x: -dr * (4 + Math.random() * 7), y: (Math.random() - 0.5) * 1.6 };
+                            p.alpha = 0.9; p.friction = 0.9; particles.push(p);
+                        }
+                        if (this.position.y + this.height >= groundY() - 2) dust(this.position.x + this.width / 2 - dr * 14, this.position.y + this.height, 2);
+                    }
                     if (this.dashTimer <= 0) this.isDashing = false;
                 }
 
@@ -1303,7 +1556,7 @@
                 if (hasCarMode && this.jumps >= 1) return; 
                 if (this.jumps < this.maxJumps) { this.velocity.y = -15; this.jumps++; sfxJump(); } 
             }
-            dash() { if (this.isKnockedDown || this.isDashing || this.dashCooldown > 0) return; this.isDashing = true; this.dashTimer = 15; this.dashCooldown = (this.team==='player'&&hasSpeedBoost)?10:this.maxDashCooldown; sfxJump(); }
+            dash() { if (this.isKnockedDown || this.isDashing || this.dashCooldown > 0) return; this.isDashing = true; this.dashTimer = 15; this.dashOrigin = { x: this.position.x + this.width / 2, y: this.position.y + this.height }; this.dashCooldown = (this.team==='player'&&spdOn())?10:this.maxDashCooldown; sfxJump(); }
             
             sweepAttack() {
                 if (this.isKnockedDown || this.isDiving || this.diveCooldown > 0) return; 
@@ -1373,12 +1626,12 @@
 
             shootFireball() {
                 if(this.isKnockedDown) return;
-                if(this.team === 'player' && hasGunShock) return;
+                if(this.team === 'player' && gunOn()) return;
 
                 if(this.fireballCooldown > 0) return; 
                 // player: fast. Enemy gunners (red): much slower, a bit faster each stage
                 this.fireballCooldown = (this.team === 'player')
-                    ? (hasFireballBoost ? 25 : 45)
+                    ? (fbOn() ? 25 : 45)
                     : Math.max(110, 200 - currentStage * 10);
                 
                 this.attackFrames = 0; this.attackBuffer = null;
@@ -1400,23 +1653,25 @@
                 
                 let speed = this.facingRight ? 8 : -8;
                 if (hasCarMode) speed = this.facingRight ? 12 : -12;
-                if (hasFireballBoost && this.team === 'player') speed = this.facingRight ? 18 : -18;
+                if (fbOn() && this.team === 'player') speed = this.facingRight ? 18 : -18;
                 if (this.team === 'enemy') speed = this.facingRight ? 6.5 : -6.5;
                 
-                const sizeBoost = (this.team === 'player') && hasFireballBoost;
+                const sizeBoost = (this.team === 'player') && fbOn();
                 projectiles.push(new Projectile(this.position.x + (this.facingRight ? this.width : 0), this.position.y + 40, speed, this.color, this.team, sizeBoost));
                 sfxFireball();
             }
 
             takeHit(damage, sourceX) {
                 if (this.isDashing) return;
-                if (this.team === 'player' && hasShield) {
+                if (this.team === 'player' && this.invulnTimer > 0) return;
+                if (this.team === 'player' && shieldOn()) {
                     shieldHits--; sfxHit();
                     createParticles(this.position.x + this.width/2, this.position.y + this.height/2, '#35d0ff');
                     return;
                 }
                 this.health -= damage;
                 this.flashTimer = 8;
+                if (this.team === 'player') this.invulnTimer = 90;     // ~1.5s grace period after being hit
                 createParticles(this.position.x + this.width/2, this.position.y + this.height/2, this.color);
                 sfxHit();
 
@@ -1449,6 +1704,7 @@
                             dropType = types[Math.floor(Math.random() * types.length)];
                         }
                         
+                        if (hasCarMode) dropType = null;   // no power-up drops (incl. bubble shield) during Car Mode
                         if (dropType) powerUps.push(new PowerUp(this.position.x + this.width/2, this.position.y, dropType));
                     }
                 }
@@ -1637,11 +1893,19 @@
                 document.getElementById('btnUlt').classList.remove('ready');
                 triggerShake(35);
                 sfxZap();
-                for(let i=0; i<5; i++) {
-                    let spawnX = player.position.x + (Math.random() * 300 - 150);
+                const cloneCount = Math.min(10, 5 + currentStage);          // more clones every stage
+                for(let i=0; i<cloneCount; i++) {
+                    let spawnX = player.position.x + (i - (cloneCount - 1) / 2) * 75 + (Math.random() * 30 - 15);
                     const clone = new Sprite({ position: { x: spawnX, y: 0 }, velocity: { x: 0, y: 0 }, color: '#00ffff', team: 'ally', type: 'brawler' });
-                    clone.lifeTimer = 900; allies.push(clone); createParticles(spawnX, 50, '#00ffff');
+                    clone.health = clone.maxHealth = 120 + currentStage * 30;   // tougher clones
+                    clone.maxDashCooldown = 40;
+                    const ROLES = ['rusher', 'kicker', 'sweeper', 'gunner', 'flanker', 'roamer'], SPEEDS = [9, 8, 7, 6, 11, 8];
+                    clone.cid = i; clone.role = ROLES[i % 6]; clone.spd = SPEEDS[i % 6]; clone.roleT = 0; clone.wanderDir = i % 2 ? 1 : -1; clone.tgtShift = i;
+                    clone.lifeTimer = 1200 + currentStage * 60;
+                    allies.push(clone); createParticles(spawnX, 50, '#00ffff'); createParticles(spawnX, 90, '#ffffff');
                 }
+                // ultra burst: damages everything on screen
+                for (const en of enemies) if (!en.dead && en.onScreen()) en.takeHit(60 + currentStage * 10, player.position.x);
             }
         }
 
@@ -1714,7 +1978,7 @@
         }
 
         function drawShield(p) {
-            if (!hasShield || p.team !== 'player') return;
+            if (!hasShield || hasCarMode || p.team !== 'player') return;
             if (shieldTimer < 90 && Math.floor(shieldTimer / 6) % 2 === 0) return;
             const x = p.position.x + p.width / 2 - cameraX, y = p.position.y + p.height / 2, r = 100 + Math.sin(bgTick * 0.1) * 3;
             c.save();
@@ -1763,9 +2027,11 @@
             g = s.createLinearGradient(0, gy, 0, H);
             g.addColorStop(0, '#12052e'); g.addColorStop(1, '#030012');
             s.fillStyle = g; s.fillRect(0, gy, W, H - gy);
-            g = s.createLinearGradient(0, gy, 0, H);
-            g.addColorStop(0, 'rgba(255,90,60,0.6)'); g.addColorStop(1, 'rgba(255,40,120,0)');
-            s.fillStyle = g; s.fillRect(sx - 180, gy, 360, H - gy);
+            s.save(); s.translate(sx, gy); s.scale(1, (H - gy) / 240);      // soft glow, no hard edges
+            g = s.createRadialGradient(0, 0, 0, 0, 0, 240);
+            g.addColorStop(0, 'rgba(255,110,70,0.55)'); g.addColorStop(0.5, 'rgba(255,60,120,0.2)'); g.addColorStop(1, 'rgba(255,40,120,0)');
+            s.fillStyle = g; s.fillRect(-250, 0, 500, 240);
+            s.restore();
             s.save(); s.shadowBlur = 20; s.shadowColor = '#00e5ff'; s.fillStyle = '#00e5ff'; s.fillRect(0, gy, W, 3); s.restore();   // baked once, not every frame
 
             const mt = (amp, fill, rim, f1, f2) => {
@@ -1821,12 +2087,24 @@
             c.restore();
         }
 
+        let glitterSprite = null;
         function drawWaterOverlay() {
-            const W = canvas.width, H = canvas.height;
-            for (let y = groundY() + 6, i = 0; y < H; i++) {
-                const h = 2 + i * 0.9, wob = Math.sin(bgTick * 0.04 + i * 1.3);
-                c.fillStyle = i % 3 === 0 ? 'rgba(255,40,150,0.35)' : 'rgba(6,2,28,0.7)';
+            const W = canvas.width, H = canvas.height, gy = groundY(), sx = W / 2;
+            if (!glitterSprite) {
+                glitterSprite = document.createElement('canvas'); glitterSprite.width = 128; glitterSprite.height = 2;
+                const gx = glitterSprite.getContext('2d'), gg = gx.createLinearGradient(0, 0, 128, 0);
+                gg.addColorStop(0, 'rgba(255,150,90,0)'); gg.addColorStop(0.5, 'rgba(255,190,120,1)'); gg.addColorStop(1, 'rgba(255,150,90,0)');
+                gx.fillStyle = gg; gx.fillRect(0, 0, 128, 2);
+            }
+            for (let y = gy + 6, i = 0; y < H; i++) {
+                const h = 2 + i * 0.9, wob = Math.sin(bgTick * 0.04 + i * 1.3), prog = Math.min(1, (y - gy) / Math.max(1, H - gy));
+                c.fillStyle = i % 3 === 0 ? 'rgba(255,40,150,0.28)' : 'rgba(6,2,28,0.55)';
                 c.fillRect(wob * 10 - 10, y, W + 20, h);
+                // shimmering sun glitter, wider and softer toward the viewer
+                const half = 55 + prog * 150 + Math.sin(i * 2.3) * 14, off = Math.sin(bgTick * 0.05 + i * 2.1) * 16 + wob * 8;
+                c.globalAlpha = (0.62 - prog * 0.25) * (0.55 + 0.45 * Math.sin(bgTick * 0.09 + i * 1.7));
+                c.drawImage(glitterSprite, sx - half + off, y, half * 2, h);
+                c.globalAlpha = 1;
                 y += h + 4 + i * 1.2;
             }
         }
@@ -1887,6 +2165,7 @@
             player.position.y = 0;
             
             // Auto Next Level Bug Fix: Clean up power-ups perfectly
+            carQueue.length = 0;
             hasFireballBoost = false; fireballBoostTimer = 0;
             hasSpeedBoost = false; speedBoostTimer = 0;
             hasCarMode = false; carModeTimer = 0;
@@ -1946,20 +2225,41 @@
             cameraX += (targetCameraX - cameraX) * 0.1;
 
             let currentSpeed = 7;
-            if (hasSpeedBoost) currentSpeed = 12;
+            if (spdOn()) currentSpeed = 12;
             if (hasCarMode) currentSpeed = 18;
 
             if (keys.a.pressed && player.position.x > cameraX - canvas.width/2 + 50 && !player.isKnockedDown) { player.velocity.x = -currentSpeed; }
             else if (keys.d.pressed && !player.isKnockedDown) { player.velocity.x = currentSpeed; }
             else if (!player.isDashing && !player.isDiving && !player.isKnockedDown) { player.velocity.x = 0; }
 
+            if (player.gunStep > 0) {            // gun lunge: advance toward the target while shooting
+                player.gunStep--;
+                const tg = player.aimTarget;
+                if (gunOn() && tg && !tg.dead && !player.isDashing && !player.isDiving && !player.isKnockedDown && !keys.a.pressed && !keys.d.pressed) {
+                    const toward = (tg.position.x + tg.width / 2) > (player.position.x + player.width / 2);
+                    const gap = Math.abs((tg.position.x + tg.width / 2) - (player.position.x + player.width / 2));
+                    player.facingRight = toward;
+                    if (gap > 130) player.velocity.x = toward ? 6 : -6;
+                }
+            }
             if (keys.s.pressed) player.crouch();
             
-            if (keys.fire.pressed && !hasGunShock) { player.shootFireball(); }
+            if (keys.fire.pressed && !gunOn()) { player.shootFireball(); }
             
             checkUltimateTrigger(); 
 
-            if (hasGunShock && !player.isKnockedDown) {
+            player.aimTarget = null;
+            if (gunOn()) {
+                let best = Infinity;
+                const pcx = player.position.x + player.width / 2, pcy = player.position.y + player.height / 2;
+                for (const en of enemies) {
+                    if (en.dead) continue;
+                    const d = Math.hypot(en.position.x + en.width / 2 - pcx, en.position.y + en.height / 2 - pcy);
+                    if (d < best && d < canvas.width) { best = d; player.aimTarget = en; }
+                }
+            }
+
+            if (gunOn() && !player.isKnockedDown) {
                 if (framesElapsed % 15 === 0) { 
                     let validTargets = enemies.filter(e => !e.dead);
                     validTargets.sort((a,b) => {
@@ -1971,9 +2271,11 @@
                     let targets = validTargets.slice(0, 2);
                     for (let target of targets) {
                         target.takeHit(40, player.position.x);
-                        shockLasers.push(new ShockLaser(player.position.x + player.width/2, player.position.y + 40, target));
+                        const mz = player.muzzle || { x: player.position.x + player.width / 2, y: player.position.y + 40 };
+                        shockLasers.push(new ShockLaser(mz.x, mz.y, target, player));
                     }
                     if(targets.length > 0) {
+                        player.shotFlash = 8; player.gunStep = 10;
                         sfxShock();
                         triggerShake(4);
                     }
@@ -1999,11 +2301,11 @@
                 }
             }
 
-            if (hasFireballBoost && --fireballBoostTimer <= 0) hasFireballBoost = false;
-            if (hasSpeedBoost && --speedBoostTimer <= 0) hasSpeedBoost = false;
-            if (hasCarMode && --carModeTimer <= 0) { hasCarMode = false; document.getElementById('carTimerRow').style.display = 'none'; }
-            if (hasGunShock && --gunShockTimer <= 0) { hasGunShock = false; document.getElementById('shockTimerRow').style.display = 'none'; }
-            if (hasShield && (--shieldTimer <= 0 || shieldHits <= 0)) { hasShield = false; shieldTimer = 0; document.getElementById('shieldTimerRow').style.display = 'none'; }
+            if (!hasCarMode && hasFireballBoost && --fireballBoostTimer <= 0) hasFireballBoost = false;
+            if (!hasCarMode && hasSpeedBoost && --speedBoostTimer <= 0) hasSpeedBoost = false;
+            if (hasCarMode && --carModeTimer <= 0) { hasCarMode = false; document.getElementById('carTimerRow').style.display = 'none'; while (carQueue.length) applyPowerUp(carQueue.shift()); }
+            if (!hasCarMode && hasGunShock && --gunShockTimer <= 0) { hasGunShock = false; document.getElementById('shockTimerRow').style.display = 'none'; }
+            if (!hasCarMode && hasShield && (--shieldTimer <= 0 || shieldHits <= 0)) { hasShield = false; shieldTimer = 0; document.getElementById('shieldTimerRow').style.display = 'none'; }
             
             setWidth('dashBar', (player.maxDashCooldown - player.dashCooldown) / player.maxDashCooldown * 100);
             setWidth('diveBar', (player.maxDiveCooldown - player.diveCooldown) / player.maxDiveCooldown * 100);
@@ -2038,12 +2340,8 @@
             for (let i = powerUps.length - 1; i >= 0; i--) {
                 const pUp = powerUps[i]; pUp.update();
                 let dist = Math.hypot((pUp.x - (player.position.x + player.width/2)), (pUp.y - (player.position.y + player.height/2)));
-                if (dist < pUp.radius + player.height/2) {
-                    if (pUp.type === 'heal') player.health = Math.min(player.maxHealth, player.health + 50);
-                    else if (pUp.type === 'damage') { hasFireballBoost = true; fireballBoostTimer = MAX_FB_TIME; }
-                    else if (pUp.type === 'speed') { hasSpeedBoost = true; speedBoostTimer = MAX_SPEED_TIME; }
-                    else if (pUp.type === 'shield') { hasShield = true; shieldTimer = MAX_SHIELD_TIME; shieldHits = 3; document.getElementById('shieldTimerRow').style.display = 'flex'; }
-                    else if (pUp.type === 'gun') player.shootFireball();
+                if (dist < pUp.radius + player.height/2 && true) {   // the car can collect every orb; other power-ups are held back until Car Mode ends (see carQueue)
+                    if (pUp.type !== 'car' && pUp.type !== 'blackorb') { if (hasCarMode) carQueue.push(pUp.type); else applyPowerUp(pUp.type); }
                     else if (pUp.type === 'car') { 
                         hasCarMode = true; carModeTimer = MAX_CAR_TIME; 
                         document.getElementById('carTimerRow').style.display = 'flex';
@@ -2075,7 +2373,7 @@
                     for (let e of enemies) {
                         if (!e.dead && !e.isKnockedDown) {
                             let dist = Math.hypot(proj.x - (e.position.x + e.width/2), proj.y - (e.position.y + e.height/2));
-                            if (dist < proj.radius + e.width/2) { e.takeHit(hasFireballBoost ? 50+(currentStage*5) : 25+(currentStage*5), proj.x); proj.active = false; triggerShake(); hitSomething = true; break; }
+                            if (dist < proj.radius + e.width/2) { e.takeHit(fbOn() ? 50+(currentStage*5) : 25+(currentStage*5), proj.x); proj.active = false; triggerShake(); hitSomething = true; break; }
                         }
                     }
                     if(!hitSomething) {
@@ -2084,7 +2382,7 @@
                                 let distX = Math.abs(proj.x - bat.cx);
                                 let distY = Math.abs(proj.y - bat.cy);
                                 if (distX < 45 && distY < 55) { 
-                                    bat.takeHit(hasFireballBoost ? 60 : 30, proj.x); 
+                                    bat.takeHit(fbOn() ? 60 : 30, proj.x); 
                                     proj.active = false; 
                                 }
                             }
@@ -2096,20 +2394,62 @@
             for (let i = allies.length - 1; i >= 0; i--) {
                 const ally = allies[i]; ally.update(); ally.lifeTimer--;
                 if(ally.lifeTimer <= 0 || ally.dead) { createParticles(ally.position.x, ally.position.y, '#00ffff'); allies.splice(i, 1); continue; }
-                let target = null; let minDist = 1500;
-                for(let e of enemies) { if(!e.dead) { let dist = Math.abs(e.position.x - ally.position.x); if(dist < minDist) { minDist = dist; target = e; } } }
-                if(target) {
-                    ally.facingRight = target.position.x > ally.position.x;
-                    if(minDist > 70 && !ally.isKnockedDown) {
-                        ally.velocity.x = ally.facingRight ? 6 : -6;
-                    } else { 
-                        ally.velocity.x = 0; 
-                        if(!ally.isAttacking && Math.random()<0.08) ally.attack(Math.random()<0.5 ? 'punch':'kick'); 
+                // ---- every clone has its own role, target and routine ----
+                if (!ally.isKnockedDown && !ally.isDashing && !ally.isDiving) {
+                    if (--ally.roleT <= 0) { ally.roleT = 40 + Math.floor(Math.random() * 50); ally.wanderDir = Math.random() < 0.5 ? -1 : 1; ally.tgtShift = Math.floor(Math.random() * 4); }
+                    const acx = ally.position.x + ally.width / 2;
+                    const alive = enemies.filter(en => !en.dead && Math.abs(en.position.x - ally.position.x) < 1500);
+                    alive.sort((p, q) => Math.abs(p.position.x - ally.position.x) - Math.abs(q.position.x - ally.position.x));
+                    const target = alive.length ? alive[(ally.cid + ally.tgtShift) % Math.min(alive.length, 3)] : null;   // different clones pick different enemies
+                    const grounded = ally.velocity.y === 0;
+                    if (target) {
+                        const tx = target.position.x + target.width / 2, dx = tx - acx, dist = Math.abs(dx), toward = dx > 0 ? 1 : -1;
+                        const face = () => { ally.facingRight = dx > 0; };
+                        const chase = (stop, spd) => { if (dist > stop) ally.velocity.x = toward * spd; else ally.velocity.x = 0; };
+                        const strike = (p, kind) => { if (!ally.isAttacking && Math.random() < p) { face(); ally.attack(kind); } };
+                        switch (ally.role) {
+                            case 'rusher':      // straight in, punch combos
+                                face(); chase(60, ally.spd); if (dist <= 90) strike(0.3, 'punch'); break;
+                            case 'kicker':      // kicks, leaps in for flying kicks
+                                face(); chase(95, ally.spd);
+                                if (grounded && dist < 240 && dist > 110 && Math.random() < 0.03) ally.jump();
+                                if (dist <= 130 || !grounded) strike(0.25, 'kick'); break;
+                            case 'sweeper':     // low sweeps / dive attacks mixed with punches
+                                face(); chase(105, ally.spd);
+                                if (dist < 140 && ally.diveCooldown <= 0 && Math.random() < 0.08) { face(); ally.doSweepOrDive(); }
+                                else if (dist <= 100) strike(0.15, 'punch'); break;
+                            case 'gunner':      // keeps its distance and throws fireballs
+                                face();
+                                if (dist < 200) ally.velocity.x = -toward * ally.spd; else if (dist > 340) ally.velocity.x = toward * ally.spd; else ally.velocity.x = 0;
+                                if (Math.random() < 0.05) { face(); ally.shootFireball(); } break;
+                            case 'flanker': {   // dashes around to hit from the far side
+                                const side = ally.cid % 2 ? 1 : -1, goal = tx + side * 150, gd = goal - acx;
+                                if (Math.abs(gd) > 40 && dist > 90) {
+                                    ally.velocity.x = Math.sign(gd) * ally.spd; ally.facingRight = gd > 0;
+                                    if (ally.dashCooldown <= 0 && Math.abs(gd) > 220 && Math.random() < 0.08) ally.dash();
+                                } else { ally.velocity.x = 0; face(); strike(0.3, Math.random() < 0.5 ? 'kick' : 'punch'); }
+                                break; }
+                            default: {          // hit-and-run
+                                face(); const wave = Math.sin(framesElapsed * 0.06 + ally.cid * 1.7);
+                                if (wave > 0) { chase(70, ally.spd); if (dist <= 100) strike(0.25, Math.random() < 0.5 ? 'kick' : 'punch'); }
+                                else ally.velocity.x = -toward * ally.spd * 0.8;
+                                if (grounded && Math.random() < 0.01) ally.jump(); }
+                        }
+                    } else {                      // nothing to fight: each clone wanders its own way
+                        const off = acx - (player.position.x + player.width / 2);
+                        if (off > 500) ally.wanderDir = -1; else if (off < -500) ally.wanderDir = 1;
+                        ally.velocity.x = ally.wanderDir * (3 + (ally.cid % 3) * 1.5);
+                        ally.facingRight = ally.wanderDir > 0;
+                        if (grounded && Math.random() < 0.01) ally.jump();
+                        if (!ally.isAttacking && Math.random() < 0.03) ally.attack(Math.random() < 0.5 ? 'punch' : 'kick');
+                        if (ally.dashCooldown <= 0 && Math.random() < 0.01) ally.dash();
                     }
-                } else { ally.velocity.x = 0; }
+                    // keep clones from stacking on top of each other
+                    for (const o of allies) { if (o === ally) continue; const sx = (ally.position.x - o.position.x); if (Math.abs(sx) < 40) ally.velocity.x += (sx >= 0 ? 1 : -1) * 2.5; }
+                }
                 for (let e of enemies) {
                     if (ally.isAttacking && !e.isKnockedDown && rectangularCollision({ r1: ally, r2: e })) {
-                        ally.isAttacking = false; e.takeHit(ally.attackType === 'kick' ? 20 : 10, ally.position.x);
+                        ally.isAttacking = false; e.takeHit((ally.attackType === 'kick' ? 28 : 18) + currentStage * 6, ally.position.x);
                     }
                 }
             }
@@ -2187,7 +2527,7 @@
                     if (player.attackType === 'kick' && player.vis && player.vis.type === 'kick') dmg *= ({ 0: 1, 1: 0.9, 2: 1.15, 3: 1.4, 4: 1.25, 5: 0.85, 6: 1.5, 7: 1.1 })[player.vis.combo] || 1;
                     if(player.attackType === 'sweep' || player.attackType === 'dive') dmg = 35;
                     dmg += (currentStage * 5); 
-                    if (hasSpeedBoost) dmg *= 1.5;
+                    if (spdOn()) dmg *= 1.5;
                     
                     if(!enemy.flashTimer || enemy.flashTimer <= 0) {
                         enemy.takeHit(dmg, player.position.x); triggerShake();
