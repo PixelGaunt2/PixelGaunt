@@ -10,39 +10,36 @@
         body {
             margin: 0; overflow: hidden;
             background: linear-gradient(-45deg,#0a1470,#1b2fb0,#0d1f8f,#2a1b9a);
-            background-size: 400% 400%;
-            animation: gradientBG 20s ease infinite;
+            background-size: 100% 100%;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            touch-action: none; user-select: none;
-            transition: background 2s ease;
-        }
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            touch-action: none; user-select: none; -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
 
         /* --- SPACE SCENE (reference look) --- */
         #space-bg{position:fixed;top:0;bottom:0;left:-6%;width:112%;z-index:0;overflow:hidden;pointer-events:none}
-        .star{position:absolute;border-radius:50%;background:#fff;animation:tw 3s ease-in-out infinite}
-        @keyframes tw{50%{opacity:.2}}
+        .star{position:absolute;border-radius:50%;background:#fff;animation:tw 3s ease-in-out infinite;will-change:opacity}
+        @keyframes tw{50%{opacity:.25}}
         .sp{position:absolute;width:26px;height:26px;background:#ffe066;clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);animation:tw 2.4s infinite}
         #planet{position:absolute;right:9%;top:3%;width:15vmin;height:15vmin;border-radius:50%;background:radial-gradient(circle at 35% 30%,#7a6cff,#3b2fb8 60%,#1d1a7a);box-shadow:0 0 30px rgba(90,120,255,.5)}
         #planet::after{content:'';position:absolute;left:-45%;top:35%;width:190%;height:30%;border:.9vmin solid rgba(80,170,255,.85);border-radius:50%;transform:rotate(-18deg);box-shadow:0 0 14px #3aa0ff}
         #moon{position:absolute;left:46%;top:9%;width:6vmin;height:6vmin;border-radius:50%;background:radial-gradient(circle at 35% 30%,#b06cff,#6a2fc0)}
-        .fi{position:absolute;height:16vmin;animation:fl 7s ease-in-out infinite;filter:drop-shadow(0 0 12px #2ad0ff)}
+        .fi{position:absolute;height:16vmin;animation:fl 7s ease-in-out infinite;will-change:transform}
         .fi::before{content:'';position:absolute;inset:0 0 auto 0;height:34%;background:linear-gradient(#58c46a,#2e8f5a);clip-path:polygon(0 30%,10% 0,90% 0,100% 30%,100% 100%,0 100%)}
         .fi::after{content:'';position:absolute;inset:30% 0 0 0;background:linear-gradient(#4a3fc0,#1f2a8a);clip-path:polygon(0 0,100% 0,62% 100%,38% 86%)}
-        @keyframes fl{50%{transform:translateY(-14px)}}
+        @keyframes fl{50%{transform:translate3d(0,-14px,0)}}
         body.m3d .fi{display:none}
         #platform-2d{display:none;position:fixed;left:50%;top:54%;width:min(94vw,1150px);height:min(62vh,540px);transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse at 50% 30%,#d2b4ff,#a67cf0 60%,#8660d8);box-shadow:0 24px 0 #5a3aa8,0 30px 70px rgba(60,170,255,.55);z-index:0;pointer-events:none}
-        #platform-2d::after{content:'';position:absolute;left:14%;right:14%;top:100%;margin-top:24px;height:14vh;background:linear-gradient(#3b34b8,#1b2c9a);clip-path:polygon(0 0,100% 0,62% 100%,38% 100%);filter:drop-shadow(0 0 10px #35d4ff)}
+        #platform-2d::after{content:'';position:absolute;left:14%;right:14%;top:100%;margin-top:24px;height:14vh;background:linear-gradient(#3b34b8,#1b2c9a);clip-path:polygon(0 0,100% 0,62% 100%,38% 100%);}
         .peg-container{background:none}
         .peg{background:linear-gradient(90deg,#e8a860,#c47c36 55%,#8f5522)}
         .ring{border:0;height:30px;border-radius:50%;background-image:radial-gradient(ellipse at 50% 18%,rgba(255,255,255,.75),rgba(255,255,255,0) 55%),linear-gradient(rgba(255,255,255,.2),rgba(0,0,0,.28));box-shadow:0 5px 7px rgba(0,0,0,.35),inset 0 -5px 7px rgba(0,0,0,.25)}
         .ring::after{content:'';position:absolute;left:36%;right:36%;top:20%;height:36%;border-radius:50%;background:#e0a15a;box-shadow:inset 0 3px 3px rgba(0,0,0,.5)}
         .ring.selected{box-shadow:0 12px 16px rgba(0,0,0,.45),0 0 18px rgba(255,255,255,.8),inset 0 -5px 7px rgba(0,0,0,.25)}
+        .ring.drop{animation:dropIn .14s ease-out}
+        @keyframes dropIn{from{transform:translateY(-60px)}to{transform:none}}
+        .peg-container:has(.ring.selected){background:rgba(255,255,255,.15);box-shadow:0 0 0 2px rgba(255,255,255,.5)}
         /* --- 3D CANVAS --- */
         #game-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 1; cursor: grab; }
         #game-canvas:active { cursor: grabbing; }
@@ -57,7 +54,7 @@
         .peg-container {
             position: relative; width: 60px; height: 160px; zoom: var(--peg-zoom, 1);
             display: flex; justify-content: center; align-items: flex-end;
-            cursor: pointer; background: rgba(255, 255, 255, 0.05); border-radius: 10px;
+            cursor: pointer; background: rgba(255, 255, 255, 0.05); border-radius: 10px; touch-action: manipulation;
         }
         .peg {
             width: 14px; height: 140px; background: #cd853f; border-radius: 7px 7px 0 0; 
@@ -71,8 +68,9 @@
         .ring {
             position: absolute; width: 100%; height: 28px; border-radius: 14px; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 4px 6px rgba(255,255,255,0.4);
-            border: 2px solid rgba(0,0,0,0.2); transition: bottom 0.2s ease-out, transform 0.2s ease-out;
-            z-index: 3; box-sizing: border-box;
+            border: 2px solid rgba(0,0,0,0.2);
+            transition: transform 0.1s ease-out, opacity 0.2s ease-out;
+            z-index: 3; box-sizing: border-box; will-change: transform;
         }
         .ring.selected {
             transform: translateY(-50px); box-shadow: 0 10px 15px rgba(0,0,0,0.5), inset 0 4px 6px rgba(255,255,255,0.6); z-index: 4;
@@ -95,7 +93,7 @@
             background: #ffffff; border: 3px solid #333; border-radius: 30px;
             padding: 12px 25px; font-size: 18px; font-weight: 900; color: #333;
             box-shadow: 0 6px 0px #333; cursor: pointer; text-transform: uppercase;
-            transition: all 0.1s; text-align: center; display: inline-block; width: 200px;
+            transition: transform 0.06s, box-shadow 0.06s; text-align: center; display: inline-block; width: 200px; touch-action: manipulation;
         }
         .btn:active { transform: translateY(6px); box-shadow: 0 0px 0px #333; }
         .btn-icon { padding: 10px 15px; font-size: 22px; border-radius: 50%; width: auto; }
@@ -104,7 +102,7 @@
         .hud-top .btn:active { transform: translateY(4px); box-shadow: 0 0px 0px #333; }
 
         .screen {
-            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.4);
         }
         .title { font-size: 50px; color: #fff; text-shadow: 3px 3px 0 #333, -1px -1px 0 #333, 1px -1px 0 #333, -1px 1px 0 #333, 1px 1px 0 #333; margin-bottom: 10px; text-align: center; line-height: 1.1; }
         
@@ -154,7 +152,7 @@
             flex-direction: column; justify-content: center; align-items: center; text-align: center;
             padding: 20px; box-sizing: border-box;
         }
-        @media screen and (orientation: portrait) {
+        @media screen and (orientation: portrait) and (pointer: coarse) {
             #orientation-warning { display: flex !important; }
         }
 
@@ -272,7 +270,7 @@
         <div id="dog-status-container" style="position: absolute; bottom: 20px; left: 20px; display: flex; align-items: center; gap: 10px; pointer-events: auto;">
             <div id="dog-graphic" style="font-size: 35px; text-shadow: 2px 2px 0 #333;">💎</div>
             <div style="width: 120px; height: 18px; background: #333; border: 3px solid #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 0 #333;">
-                <div id="dog-status-bar" style="width: 0%; height: 100%; background: #4CAF50; transition: width 0.4s ease-out;"></div>
+                <div id="dog-status-bar" style="width: 0%; height: 100%; background: #4CAF50; transition: width 0.2s ease-out;"></div>
             </div>
         </div>
     </div>
@@ -308,7 +306,7 @@
         // --- GAME AUDIO (HTML5 Audio: provided .wav sound effects + .mp3 background music) ---
         const GameAudio = (function () {
             const MUSIC_FILE = 'The_Silver_Path.mp3';
-            const POOL_SIZE = 3;            // max simultaneous copies per sound (reused, never grows)
+            const POOL_SIZE = 4;            // max simultaneous copies per sound (reused, never grows)
             const pools = {};
             let muted = false, music = null, musicWanted = false;
             function pool(name) {
@@ -335,7 +333,12 @@
                 if (!musicWanted || muted) return;
                 try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
             }
+            let preloaded = false;
             function unlock() {
+                if (!preloaded) {
+                    preloaded = true;
+                    try { Object.keys(SOUND_MAP).forEach(function (k) { const n = SOUND_MAP[k][0], p = pool(n); if (!p.list[0]) { const a = new Audio(n + '.wav'); a.preload = 'auto'; p.list[0] = a; } }); } catch (e) {}
+                }
                 if (musicWanted) tryPlayMusic();
             }
             ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
@@ -377,13 +380,15 @@
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
         let cameraAngle = 0; let baseRadius = 35;
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true, alpha: true });
+        const isMobile = window.matchMedia('(pointer: coarse)').matches || Math.min(window.innerWidth, window.innerHeight) < 600;
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: window.devicePixelRatio < 2, alpha: true, powerPreference: 'high-performance' });
+        let pixelRatio = Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2);
+        renderer.setPixelRatio(pixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
         scene.fog = new THREE.FogExp2(0x0d1a80, 0.005);
         const hemiLight = new THREE.HemisphereLight(0xffffff, 0x555555, 0.9); hemiLight.position.set(0, 20, 0); scene.add(hemiLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); dirLight.position.set(5, 20, 10); dirLight.castShadow = true; const sc = dirLight.shadow.camera; sc.left = sc.bottom = -22; sc.right = sc.top = 22; sc.far = 80; dirLight.shadow.mapSize.set(2048, 2048); dirLight.target.position.set(0, 0, -4); scene.add(dirLight.target); scene.add(dirLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0); dirLight.position.set(5, 20, 10); dirLight.castShadow = true; const sc = dirLight.shadow.camera; sc.left = sc.bottom = -22; sc.right = sc.top = 22; sc.far = 80; dirLight.shadow.mapSize.set(isMobile ? 1024 : 2048, isMobile ? 1024 : 2048); dirLight.target.position.set(0, 0, -4); scene.add(dirLight.target); scene.add(dirLight);
         const environmentGroup = new THREE.Group(); scene.add(environmentGroup);
         const rewardObjectGroup = new THREE.Group(); scene.add(rewardObjectGroup);
         let pegMeshes = []; let ringObjects = []; let activeParticles = [];
@@ -396,7 +401,7 @@
             context.fillStyle = gradient; context.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(canvasObj);
         }
         const particlesGeo = new THREE.BufferGeometry();
-        const particlesCount = 300; const posArray = new Float32Array(particlesCount * 3);
+        const particlesCount = isMobile ? 110 : 220; const posArray = new Float32Array(particlesCount * 3);
         for(let i=0; i<particlesCount*3; i++) posArray[i] = (Math.random() - 0.5) * 60;
         particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
         const particlesMat = new THREE.PointsMaterial({ size: 1.2, map: createCircleTexture(), color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false });
@@ -409,9 +414,15 @@
         const cEdges = new THREE.LineSegments(new THREE.EdgesGeometry(crystal.geometry), new THREE.LineBasicMaterial({ color: 0x35d4ff })); cEdges.rotation.x = Math.PI; cEdges.position.y = -6.2;
         platform.add(discTop, discRim, crystal, cEdges); scene.add(platform);
         platform.position.set(0, -0.2, -4); platform.receiveShadow = true; scene.add(platform);
-        const pegGeo = new THREE.CylinderGeometry(0.5, 0.5, 7, 20); const pegMat = new THREE.MeshStandardMaterial({ color: 0xd08a45, roughness: 0.55 });
+        const pegGeo = new THREE.CylinderGeometry(0.5, 0.5, 7, 14); const pegMat = new THREE.MeshStandardMaterial({ color: 0xd08a45, roughness: 0.55 });
         const capGeo = new THREE.SphereGeometry(0.5, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2); const baseGeo = new THREE.CylinderGeometry(0.85, 0.95, 0.5, 20);
-        const ringGeo = new THREE.TorusGeometry(1.05, 0.52, 16, 36);
+        const ringGeo = new THREE.TorusGeometry(1.05, 0.52, 12, 28);
+        const ringMatCache = {};
+        function getRingMat(id) {
+            if (!ringMatCache[id]) ringMatCache[id] = new THREE.MeshPhysicalMaterial({ color: colors3D[id], roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.08 });
+            return ringMatCache[id];
+        }
+        const pGeo = new THREE.IcosahedronGeometry(0.3, 0); const pMatCache = {};
 
         // 2D Specific Globals
         let ringElements = []; 
@@ -501,7 +512,7 @@
             ringElements = [];
             for (let i = 0; i < currentLogic.length; i++) {
                 const pegContainer = document.createElement('div');
-                pegContainer.className = 'peg-container'; pegContainer.onclick = () => handleClick2D(i);
+                pegContainer.className = 'peg-container'; pegContainer.onpointerdown = (e) => { e.preventDefault(); handleClick2D(i); };
                 const peg = document.createElement('div'); peg.className = 'peg';
                 const pegBase = document.createElement('div'); pegBase.className = 'peg-base';
                 pegContainer.appendChild(peg); pegContainer.appendChild(pegBase);
@@ -567,6 +578,7 @@
             rMesh.classList.remove('selected');
             document.getElementById('game-board').children[to].appendChild(rMesh);
             rMesh.style.bottom = ((currentLogic[to].length - 1) * 26 + 10) + 'px';
+            rMesh.classList.remove('drop'); void rMesh.offsetWidth; rMesh.classList.add('drop');
             playSound('pop'); updateDogStatus(); checkWinCondition2D();
         }
 
@@ -587,61 +599,20 @@
                             setTimeout(() => {
                                 r.style.transform = 'translateY(-1000px)'; r.style.opacity = '0';
                                 playSound('coin'); totalCoins += 5; updateCoinsHUD();
-                            }, ringDelay + (index * 150));
+                            }, ringDelay + (index * 60));
                         });
-                        ringDelay += 200;
+                        ringDelay += 80;
                     });
                     setTimeout(() => {
                         document.getElementById('win-message').style.display = 'block';
                         document.getElementById('next-btn-container').style.display = 'block';
-                    }, ringDelay + 200);
-                }, 500);
+                    }, ringDelay + 120);
+                }, 250);
             }
         }
 
         // --- 7. 3D RENDERER & INTERACTION ---
-        function generateRandomBiome() {
-            while(environmentGroup.children.length > 0) { environmentGroup.remove(environmentGroup.children[0]); }
-            const biomes = ['forest', 'desert', 'water', 'ice', 'city'];
-            const b = biomes[Math.floor(Math.random() * biomes.length)];
-            let groundColor = 0x1f3b1f; 
-            if(b === 'desert') groundColor = 0x4a3424; if(b === 'water') groundColor = 0x1a4568;  
-            if(b === 'ice') groundColor = 0x3d4b5c; if(b === 'city') groundColor = 0x2b2b2b;   
-            const groundMat = new THREE.MeshStandardMaterial({ color: groundColor, roughness: 0.9, transparent: b === 'water', opacity: b === 'water' ? 0.9 : 1 });
-            const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), groundMat);
-            ground.rotation.x = -Math.PI / 2; ground.position.y = -3.5; ground.receiveShadow = true; environmentGroup.add(ground);
-
-            if(b === 'forest') {
-                const trunkGeo = new THREE.CylinderGeometry(0.5, 0.7, 3, 5); const leafGeo = new THREE.ConeGeometry(2.5, 6, 5);
-                const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x4a2e15, roughness: 1 }); const treeLeafMat = new THREE.MeshStandardMaterial({ color: 0x1a471a, roughness: 0.9 });
-                for(let i=0; i<20; i++) {
-                    const tree = new THREE.Group();
-                    const trunk = new THREE.Mesh(trunkGeo, treeTrunkMat); trunk.position.y = 1.5; 
-                    const leaves = new THREE.Mesh(leafGeo, treeLeafMat); leaves.position.y = 5; 
-                    tree.add(trunk, leaves); tree.position.set((Math.random()-0.5)*80, -3.5, -15 - Math.random()*40); environmentGroup.add(tree);
-                }
-            } else if(b === 'desert') {
-                const cactusGeo = new THREE.CylinderGeometry(0.5, 0.5, 5, 5); const cactusMat = new THREE.MeshStandardMaterial({color: 0x1c4a2d, roughness: 1});
-                for(let i=0; i<15; i++) {
-                    const cactus = new THREE.Mesh(cactusGeo, cactusMat); cactus.position.set((Math.random()-0.5)*80, -1, -15 - Math.random()*40); environmentGroup.add(cactus);
-                }
-            } else if(b === 'water') {
-                const islandGeo = new THREE.CylinderGeometry(4, 5, 1, 8); const islandMat = new THREE.MeshStandardMaterial({color: 0x1f3b1f});
-                for(let i=0; i<10; i++) {
-                    const island = new THREE.Mesh(islandGeo, islandMat); island.position.set((Math.random()-0.5)*80, -3, -15 - Math.random()*40); environmentGroup.add(island);
-                }
-            } else if(b === 'ice') {
-                const icebergGeo = new THREE.ConeGeometry(4, 15, 5); const icebergMat = new THREE.MeshStandardMaterial({color: 0x8a9ba8});
-                for(let i=0; i<15; i++) {
-                    const iceberg = new THREE.Mesh(icebergGeo, icebergMat); iceberg.position.set((Math.random()-0.5)*80, -2, -15 - Math.random()*40); iceberg.rotation.z = (Math.random()-0.5)*0.2; environmentGroup.add(iceberg);
-                }
-            } else if(b === 'city') {
-                const buildGeo = new THREE.BoxGeometry(5, 15, 5); const buildMat = new THREE.MeshStandardMaterial({color: 0x3d3d3d});
-                for(let i=0; i<20; i++) {
-                    const bld = new THREE.Mesh(buildGeo, buildMat); bld.scale.y = 0.5 + Math.random()*2; bld.position.set((Math.random()-0.5)*80, bld.scale.y*7.5 - 3.5, -20 - Math.random()*40); environmentGroup.add(bld);
-                }
-            }
-        }
+        let generateRandomBiome;
 
         function adjustCameraForMobile() {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -692,8 +663,7 @@
                 ringObjects[i] = [];
                 for (let j = 0; j < currentLogic[i].length; j++) {
                     const colorId = currentLogic[i][j];
-                    const rMat = new THREE.MeshPhysicalMaterial({ color: colors3D[colorId], roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.08 });
-                    const ring = new THREE.Mesh(ringGeo, rMat);
+                    const ring = new THREE.Mesh(ringGeo, getRingMat(colorId));
                     ring.position.set(peg.position.x, 1.3 + (j * 1.15), peg.position.z);
                     ring.rotation.x = Math.PI / 2; ring.scale.z = 0.9; ring.castShadow = true;
                     ring.userData = { targetPos: ring.position.clone(), colorId: colorId };
@@ -723,7 +693,7 @@
         window.addEventListener('pointerup', (event) => {
             if (gameMode !== '3D' || !isDragging) return;
             isDragging = false;
-            if (dragDistance < 20 && gameState === 'playing') { 
+            if (dragDistance < 12 && gameState === 'playing') { 
                 mouse.x = (event.clientX / window.innerWidth) * 2 - 1; mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
                 raycaster.setFromCamera(mouse, camera);
                 const intersects = raycaster.intersectObjects(pegMeshes);
@@ -758,8 +728,9 @@
         }
 
         function spawnParticles(position, colorHex) {
-            const geo = new THREE.IcosahedronGeometry(0.3, 0); const mat = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.5, roughness: 0.2 });
-            for(let i=0; i<15; i++) {
+            const geo = pGeo; const mat = pMatCache[colorHex] || (pMatCache[colorHex] = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.5, roughness: 0.2 }));
+            const n = isMobile ? 7 : 12;
+            for(let i=0; i<n; i++) {
                 const p = new THREE.Mesh(geo, mat); p.position.copy(position);
                 p.userData = { velocity: new THREE.Vector3((Math.random()-0.5)*0.8, Math.random()*0.8, (Math.random()-0.5)*0.8), life: 1.0 };
                 p.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0); scene.add(p); activeParticles.push(p);
@@ -784,13 +755,13 @@
                                 r.userData.targetPos.y += 25; 
                                 spawnParticles(r.position, colors3D[stack[0].userData.colorId]); playSound('coin');
                                 totalCoins += 5; updateCoinsHUD();
-                            }, ringDelay + (index * 150));
+                            }, ringDelay + (index * 60));
                         });
-                        ringDelay += 200;
+                        ringDelay += 80;
                     });
                     let scale = 0;
                     function popUp() {
-                        scale += 0.08;
+                        scale += 0.14;
                         if(scale <= 1) {
                             const s = scale + Math.sin(scale*Math.PI)*0.2; rewardObjectGroup.scale.set(s,s,s); requestAnimationFrame(popUp);
                         } else {
@@ -798,8 +769,8 @@
                             document.getElementById('win-message').style.display = 'block'; document.getElementById('next-btn-container').style.display = 'block';
                         }
                     }
-                    setTimeout(popUp, ringDelay + 200);
-                }, 500);
+                    setTimeout(popUp, ringDelay + 120);
+                }, 250);
             }
         }
 
@@ -845,14 +816,28 @@
         }
         
         window.toggleMusic = function() { isMusicOn = !isMusicOn; GameAudio.setMuted(!isMusicOn); document.getElementById('btn-music').innerText = isMusicOn ? '🔊' : '🔇'; }
-        window.addEventListener('resize', () => { adjustCameraForMobile(); renderer.setSize(window.innerWidth, window.innerHeight); if (gameMode === '2D') fit2DBoard(); });
+        let resizeQueued = false;
+        window.addEventListener('resize', () => { if (resizeQueued) return; resizeQueued = true; requestAnimationFrame(() => { resizeQueued = false; adjustCameraForMobile(); renderer.setSize(window.innerWidth, window.innerHeight); if (gameMode === '2D') fit2DBoard(); }); });
+        document.addEventListener('visibilitychange', () => { if (document.hidden && gameState === 'playing') togglePause(); });
 
         // --- 9. RENDER LOOP (3D) ---
-        function animate() {
+        const canvas3D = document.getElementById('game-canvas');
+        let lastT = performance.now(), slowAcc = 0, slowFrames = 0, lastBgX = null;
+        function animate(now) {
             requestAnimationFrame(animate);
-            if(gameMode !== '3D' || document.getElementById('game-canvas').style.display === 'none') return; // Performance Saver
-            
-            const time = Date.now() * 0.001;
+            const dt = Math.min(0.05, ((now || performance.now()) - lastT) / 1000); lastT = now || performance.now();
+            if(gameMode !== '3D' || canvas3D.style.display === 'none' || gameState === 'paused') { slowAcc = 0; slowFrames = 0; return; } // Performance Saver
+            // adaptive quality: if the device can't hold ~35fps, lower resolution, then shadows
+            slowAcc += dt; slowFrames++;
+            if (slowFrames >= 90) {
+                if (slowAcc / slowFrames > 0.03) {
+                    if (pixelRatio > 1) { pixelRatio = Math.max(1, pixelRatio - 0.25); renderer.setPixelRatio(pixelRatio); renderer.setSize(window.innerWidth, window.innerHeight); }
+                    else if (dirLight.castShadow) { dirLight.castShadow = false; }
+                }
+                slowAcc = 0; slowFrames = 0;
+            }
+            const time = now ? now * 0.001 : Date.now() * 0.001;
+            const k = 1 - Math.exp(-dt * 24);
             const positions = bgParticles.geometry.attributes.position.array;
             for(let i=0; i<particlesCount; i++) {
                 let i3 = i * 3;
@@ -869,18 +854,18 @@
             bgParticles.geometry.attributes.position.needsUpdate = true;
             if(currentTheme.behavior === 'dust' || currentTheme.behavior === 'float') bgParticles.rotation.y += 0.001;
 
-            environmentGroup.children.forEach(g => { g.position.y = g.userData.y0 + Math.sin(time + g.userData.ph) * 0.8; g.rotation.y += 0.002; });
-            spaceBg.style.transform = 'translateX(' + (-cameraAngle * 60) + 'px)';
+            environmentGroup.children.forEach(g => { g.position.y = g.userData.y0 + Math.sin(time + g.userData.ph) * 0.8; g.rotation.y += 0.12 * dt; });
+            const bgX = Math.round(-cameraAngle * 60); if (bgX !== lastBgX) { lastBgX = bgX; spaceBg.style.transform = 'translate3d(' + bgX + 'px,0,0)'; }
             for (let stack of ringObjects) { for (let r of stack) {
                 const u = r.userData; let tgt = u.targetPos;
-                if (u.path && u.path.length) { tgt = u.path[0]; if (r.position.distanceTo(tgt) < 0.4) u.path.shift(); }
-                r.position.lerp(tgt, 0.2);
+                if (u.path && u.path.length) { tgt = u.path[0]; if (r.position.distanceTo(tgt) < 0.9) u.path.shift(); }
+                r.position.lerp(tgt, k);
             } }
             
             for(let i = activeParticles.length - 1; i >= 0; i--) {
                 let p = activeParticles[i]; p.position.add(p.userData.velocity); 
-                p.rotation.x += 0.1; p.rotation.y += 0.1; 
-                p.userData.velocity.y -= 0.02; p.userData.life -= 0.02; p.scale.setScalar(p.userData.life); 
+                p.rotation.x += 0.12; p.rotation.y += 0.12; 
+                p.userData.velocity.y -= 0.025; p.userData.life -= 0.035; p.scale.setScalar(p.userData.life); 
                 if(p.userData.life <= 0) { scene.remove(p); activeParticles.splice(i, 1); }
             }
             
@@ -935,7 +920,7 @@
         // Initialize defaults
         applyTheme(themes[0]); 
         updateCoinsHUD();
-        animate();
+        requestAnimationFrame(animate);
     </script>
 </body>
 </html>
