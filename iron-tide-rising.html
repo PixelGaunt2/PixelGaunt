@@ -246,7 +246,7 @@
         //  Visual + combat overhaul: wet neon city, voxel bots, tracer firefights
         // =====================================================================
         function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-        const rand = mulberry32(0x1A2B3C);          // fixed seed -> the arena is identical every run
+        let rand = mulberry32(0x1A2B3C);          // fixed seed -> the arena is identical every run
 
         const ARENA_X = 37.5, ARENA_Z = 240;        // playable limits for player + bots
         const FACE_X = 41, FACE_Z = 250;            // inner faces of the tower walls
@@ -363,6 +363,8 @@
         const environmentGroup = new THREE.Group(); scene.add(environmentGroup);
         const colliders = [];
         const raycastTargets = [];
+        const envCols = [], envRay = [];
+        let HK = 1, BRIDGES = [-170, -45, 85], palHexA = 0xff2a2a, palHexB = 0x2a9bff, neonPal = { a: [1, 0.16, 0.16], b: [0.16, 0.62, 1] };
 
         // --- INSTANCED NEON / DETAIL POOLS (one draw call each) + GLOW POINTS ---
         const _dummy = new THREE.Object3D();
@@ -386,7 +388,7 @@
         }
         function streak(x, z, w, l, color, op) {   // fake wet-road reflection
             const m = new THREE.Mesh(new THREE.PlaneGeometry(w, l), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false, blending: THREE.AdditiveBlending }));
-            m.rotation.x = -Math.PI / 2; m.position.set(x, 0.09, z); scene.add(m);
+            m.rotation.x = -Math.PI / 2; m.position.set(x, 0.09, z); environmentGroup.add(m);
         }
 
         // --- ARENA CONSTRUCTION ---
@@ -399,7 +401,7 @@
         function addTower(cx, cz, w, d, h, solid) {
             const mesh = new THREE.Mesh(boxGeo(w, h, d, 24), towerMats[(rand() * towerMats.length) | 0]);
             mesh.position.set(cx, h / 2, cz); environmentGroup.add(mesh); mesh.updateMatrixWorld(true);
-            if (solid) { colliders.push(new THREE.Box3().setFromObject(mesh)); raycastTargets.push(mesh); }
+            if (solid) { const bx = new THREE.Box3().setFromObject(mesh); colliders.push(bx); raycastTargets.push(mesh); envCols.push(bx); envRay.push(mesh); }
             if (rand() < 0.7) {   // stepped roof block for a broken skyline
                 const rw = w * (0.4 + rand() * 0.3), rd = d * (0.4 + rand() * 0.3), rh = 6 + rand() * 14;
                 const r = new THREE.Mesh(boxGeo(rw, rh, rd, 24), towerMats[(rand() * towerMats.length) | 0]);
@@ -439,7 +441,7 @@
         function addBeam(x, z, side, colorHex, op) {
             const lampY = 52, pivot = new THREE.Group(); pivot.position.set(x, lampY, z); pivot.rotation.z = -side * 0.28;
             const cone = new THREE.Mesh(new THREE.ConeGeometry(13, 52, 20, 1, true), new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-            cone.position.y = -26; pivot.add(cone); scene.add(pivot);
+            cone.position.y = -26; pivot.add(cone); environmentGroup.add(pivot);
             neonWhite.add(x, lampY, z, 3, 0.8, 3); glow(x, lampY - 0.5, z, 'white', 1.6);
         }
         function addBridge(zb) {
@@ -449,7 +451,7 @@
                 for (let x = -58; x <= 58; x += 6) glow(x, y - 3.0, zz, 'red', 0.9);
                 for (let x = -40; x <= 40; x += 10) ribs.add(x, y + 2.4, zz, 0.7, 2.2, 0.7);
                 ribs.add(0, y + 3.5, zz, 120, 0.5, 0.5);
-                streak(0, zz * 1 + 0, 80, 1.1, 0xff2a2a, 0.22);
+                streak(0, zz * 1 + 0, 80, 1.1, palHexA, 0.22);
             }
             for (let x = -50; x <= 50; x += 12.5) ribs.add(x, y - 2.6, zb, 1.6, 1.8, 13);   // cross beams
         }
@@ -464,7 +466,7 @@
             for (const side of [-1, 1]) {
                 let z = -FACE_Z;
                 while (z < FACE_Z - 8) {
-                    let w = 22 + rand() * 12; const d = 26 + rand() * 14, h = 50 + rand() * 70;
+                    let w = 22 + rand() * 12; const d = 26 + rand() * 14, h = (50 + rand() * 70) * HK;
                     if (z + w > FACE_Z) w = FACE_Z - z; const zc = z + w / 2;
                     const cx = side * (FACE_X + d / 2);
                     addTower(cx, zc, w, d, h, true); decorateSide(cx, zc, w, d, h, side, 3 + ((rand() * 2) | 0), 4.5);
@@ -473,20 +475,20 @@
             }
             // end walls
             for (const zs of [-1, 1]) for (const cx of [-52, 0, 52]) {
-                const w = 54, d = 30, h = 70 + rand() * 60, cz = zs * (FACE_Z + d / 2);
+                const w = 54, d = 30, h = (70 + rand() * 60) * HK, cz = zs * (FACE_Z + d / 2);
                 addTower(cx, cz, w, d, h, true); decorateEnd(cx, cz, w, d, h, zs);
             }
             // distant rows for depth
             for (const side of [-1, 1]) {
-                for (let z = -270; z < 270; z += 38 + rand() * 18) { const w = 26 + rand() * 20, d = 30 + rand() * 20, h = 100 + rand() * 120, cx = side * (82 + rand() * 40); addTower(cx, z, w, d, h, false); decorateSide(cx, z, w, d, h, side, 2, 7); }
-                for (let z = -270; z < 270; z += 60 + rand() * 30) { const w = 30 + rand() * 24, d = 34 + rand() * 20, h = 150 + rand() * 150, cx = side * (160 + rand() * 50); addTower(cx, z, w, d, h, false); decorateSide(cx, z, w, d, h, side, 2, 9); }
+                for (let z = -270; z < 270; z += 38 + rand() * 18) { const w = 26 + rand() * 20, d = 30 + rand() * 20, h = (100 + rand() * 120) * HK, cx = side * (82 + rand() * 40); addTower(cx, z, w, d, h, false); decorateSide(cx, z, w, d, h, side, 2, 7); }
+                for (let z = -270; z < 270; z += 60 + rand() * 30) { const w = 30 + rand() * 24, d = 34 + rand() * 20, h = (150 + rand() * 150) * HK, cx = side * (160 + rand() * 50); addTower(cx, z, w, d, h, false); decorateSide(cx, z, w, d, h, side, 2, 9); }
             }
-            for (const zs of [-1, 1]) for (let x = -150; x <= 150; x += 60 + rand() * 20) { const w = 40, d = 40, h = 130 + rand() * 120, cz = zs * (310 + rand() * 40); addTower(x, cz, w, d, h, false); decorateEnd(x, cz, w, d, h, zs); }
+            for (const zs of [-1, 1]) for (let x = -150; x <= 150; x += 60 + rand() * 20) { const w = 40, d = 40, h = (130 + rand() * 120) * HK, cz = zs * (310 + rand() * 40); addTower(x, cz, w, d, h, false); decorateEnd(x, cz, w, d, h, zs); }
 
-            for (const zb of [-170, -45, 85]) addBridge(zb);
-            [[-200, -1], [-135, 1], [-70, -1], [-5, 1], [65, -1], [130, 1], [190, -1]].forEach(([z, s]) => addBeam(s * (FACE_X - 1.6), z, s, s < 0 ? 0x3a7bff : 0x5a8bff, 0.075));
+            for (const zb of BRIDGES) addBridge(zb);
+            [[-200, -1], [-135, 1], [-70, -1], [-5, 1], [65, -1], [130, 1], [190, -1]].forEach(([z, s]) => addBeam(s * (FACE_X - 1.6), z, s, s < 0 ? palHexB : palHexA, 0.075));
             // wet-road neon reflections
-            for (let z = -230; z <= 230; z += 46) { streak(-30, z, 1.2, 26, 0x2a9bff, 0.16); streak(30, z + 16, 1.2, 26, 0xff2a2a, 0.16); }
+            for (let z = -230; z <= 230; z += 46) { streak(-30, z, 1.2, 26, palHexB, 0.16); streak(30, z + 16, 1.2, 26, palHexA, 0.16); }
 
             // cover: green dumpsters, black containers, teal freight boxes
             const placed = [];
@@ -557,6 +559,27 @@
             groundMat.color.setHex(s.gr); groundMat.emissive.setHex(s.ge); groundMat.emissiveIntensity = 0.3;
             wMat.color.setHex(s.wc); wMat.size = s.ws * renderer.getPixelRatio();
         }
+        // each stage gets a brand-new city: seeded layout, tower heights, bridges and a season neon palette
+        const NEON_PAL = [
+            { a: [1, 0.4, 0.72], b: [0.3, 1, 0.6] }, { a: [1, 0.6, 0.1], b: [1, 0.9, 0.2] }, { a: [1, 0.3, 0.1], b: [0.7, 0.3, 1] }, { a: [0.65, 0.92, 1], b: [0.3, 0.5, 1] },
+            { a: [0.2, 0.9, 0.9], b: [0.2, 0.4, 1] }, { a: [1, 0.5, 0.1], b: [1, 0.8, 0.3] }, { a: [1, 0.15, 0.05], b: [1, 0.5, 0] }, { a: [0.3, 1, 0.6], b: [0.6, 0.3, 1] }
+        ];
+        const palHex = c => (Math.round(c[0] * 255) << 16) | (Math.round(c[1] * 255) << 8) | Math.round(c[2] * 255);
+        function rebuildArena(st) {
+            const pal = NEON_PAL[(st - 1) % NEON_PAL.length], r0 = mulberry32(st * 31 + 5);
+            neonPal = pal; GLOWC.red = pal.a; GLOWC.blue = pal.b; palHexA = palHex(pal.a); palHexB = palHex(pal.b);
+            blueFill.color.setRGB(pal.b[0], pal.b[1], pal.b[2]); redFill.color.setRGB(pal.a[0], pal.a[1], pal.a[2]);
+            rand = mulberry32(st * 7717 + 0x1A2B3C); HK = 0.6 + r0() * 0.9;
+            const zs = [-200, -170, -130, -90, -45, -10, 30, 85, 130], nb = 2 + ((r0() * 3) | 0); BRIDGES = [];
+            while (BRIDGES.length < nb) { const z = zs[(r0() * zs.length) | 0]; if (!BRIDGES.includes(z)) BRIDGES.push(z); }
+            environmentGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+            while (environmentGroup.children.length) environmentGroup.remove(environmentGroup.children[0]);
+            for (const b of envCols) { const i = colliders.indexOf(b); if (i >= 0) colliders.splice(i, 1); } envCols.length = 0;
+            for (const m of envRay) { const i = raycastTargets.indexOf(m); if (i >= 0) raycastTargets.splice(i, 1); } envRay.length = 0;
+            glowP.length = 0; glowC.length = 0; [neonRed, neonBlue, neonWhite, neonAmber, ribs, slots].forEach(q => { q.mesh.count = 0; });
+            if (glowPts) { scene.remove(glowPts); glowPts.geometry.dispose(); }
+            buildArena();
+        }
         const smallMat = new THREE.MeshStandardMaterial({ color: 0xd08a1e, map: crateTex, roughness: 0.6, emissive: 0x4a2a05, emissiveIntensity: 0.7 });
         const coverRecs = [];
         function addCrate2(x, z, w, d, h, kind, small) {
@@ -589,7 +612,8 @@
         function updStage() { document.getElementById('stageTxt').innerText = stage + ' · ' + SEASONS[(stage - 1) % SEASONS.length].n + ' (' + stageKills + '/' + stageGoal + ')'; }
         function startStage(n) {
             stage = n; stageKills = 0; stageGoal = 10 + n * 5; stageTrans = 0; const s = SEASONS[(n - 1) % SEASONS.length];
-            applySeason(s); genCover(n); clearScene(); updStage(); startPuzzle(n);
+            rebuildArena(n); applySeason(s); genCover(n); clearScene(); updStage(); startPuzzle(n);
+            camera.position.set(0, playerHeight, 10); playerY = playerHeight; velocity.set(0, 0, 0);
             for (let i = 0; i < Math.min(30, 12 + n * 2); i++) spawnBot();
             showBanner('STAGE ' + n + ' — ' + s.n, 2200);
         }
@@ -1022,13 +1046,14 @@
         }
         function spawnBot() {
             if (gameState !== 'playing' && gameState !== 'menu') return;
-            const typeRoll = Math.random();
+            // roster changes with the stage: early stages = grunts + season enemies, later stages unlock shooters, strafers and tanks (tank swarm every 5th stage)
+            const typeRoll = Math.random(), tankP = stage % 5 === 0 ? 0.25 : stage >= 3 ? Math.min(0.2, 0.03 + 0.02 * stage) : 0, shootP = stage >= 2 ? Math.min(0.25, 0.06 + 0.02 * stage) : 0, strafeP = stage >= 2 ? 0.15 : 0.05, runP = 0.2;
             let type = 'normal', speed = 6, maxHp = 75, scale = 1;
-            if (typeRoll > 0.9) { type = 'tank'; speed = 3; maxHp = 500; }
-            else if (typeRoll > 0.75) { type = 'shooter'; speed = 5; maxHp = 50; }
-            else if (typeRoll > 0.6) { type = 'strafer'; speed = 8; maxHp = 75; }
-            else if (typeRoll > 0.4) { type = 'runner'; speed = 12; maxHp = 30; scale = 0.85; }
-            if (Math.random() < Math.min(0.75, 0.35 + stage * 0.04)) {
+            if (typeRoll < tankP) { type = 'tank'; speed = 3; maxHp = 500; }
+            else if (typeRoll < tankP + shootP) { type = 'shooter'; speed = 5; maxHp = 50; }
+            else if (typeRoll < tankP + shootP + strafeP) { type = 'strafer'; speed = 8; maxHp = 75; }
+            else if (typeRoll < tankP + shootP + strafeP + runP) { type = 'runner'; speed = 12; maxHp = 30; scale = 0.85; }
+            if (type !== 'tank' && Math.random() < Math.min(0.75, 0.35 + stage * 0.04)) {
                 const pool = stage > SEASONS.length ? ['dog', 'ninja', 'zombie', 'girl'] : SEASONS[(stage - 1) % SEASONS.length].pool; type = pool[(Math.random() * pool.length) | 0];
                 ({ dog: () => { speed = 17; maxHp = 40; scale = 1; }, ninja: () => { speed = 13; maxHp = 55; scale = 0.95; }, zombie: () => { speed = 5; maxHp = 140; scale = 1.05; }, girl: () => { speed = 10; maxHp = 60; scale = 0.95; } })[type]();
             }
@@ -1101,8 +1126,8 @@
         function animate() {
             requestAnimationFrame(animate); const delta = Math.min(clock.getDelta(), 0.1), now = clock.elapsedTime;
             // neon shimmer
-            neonRed.mesh.material.color.setRGB(1, 0.16 + 0.04 * Math.sin(now * 2.3), 0.16);
-            neonBlue.mesh.material.color.setRGB(0.16, 0.62 + 0.05 * Math.sin(now * 1.7 + 1), 1);
+            neonRed.mesh.material.color.setRGB(neonPal.a[0], neonPal.a[1] * (1 + 0.12 * Math.sin(now * 2.3)), neonPal.a[2]);
+            neonBlue.mesh.material.color.setRGB(neonPal.b[0], neonPal.b[1] * (1 + 0.08 * Math.sin(now * 1.7 + 1)), neonPal.b[2]);
             glowMat.opacity = 0.8 + 0.08 * Math.sin(now * 2);
             moon.position.set(camera.position.x + 30, 90, camera.position.z + 40); moon.target.position.set(camera.position.x, 0, camera.position.z);
 
