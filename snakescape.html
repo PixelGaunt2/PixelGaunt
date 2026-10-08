@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>SnakeScape</title>
     <style>
         :root {
@@ -32,7 +32,7 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: 100vh; height: 100dvh;
             width: 100vw;
             touch-action: none;
         }
@@ -173,6 +173,17 @@ button.accent{background:linear-gradient(180deg,#ff6aa2,#e0215f)}button.accent:h
 #score-display{color:#7fd1ff}#coins-display{color:#ffd32a}#combo-display{color:#ff9ff3}
 .header-btns{flex-shrink:0;gap:12px}.header-btns button{white-space:nowrap}
 .lives{max-width:46vw;line-height:1.15;font-size:1.05rem;filter:drop-shadow(0 0 5px #ff2d55)}
+
+html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+canvas{touch-action:none}#bg-canvas{pointer-events:none}
+header{padding-top:max(8px,env(safe-area-inset-top));padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+.modal-overlay{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:rgba(0,0,0,.7)}
+#menu-modal{background:rgba(0,0,0,.3)!important}
+#menu-modal h1{font-size:clamp(2.4rem,11vw,4rem)!important}
+.stats{font-size:1rem}
+@media (max-width:650px){header{padding:4px 8px;flex-wrap:nowrap;justify-content:space-between}.stats{font-size:.74rem;gap:2px 8px}.lbl{display:none}header button{padding:8px 10px;min-width:40px;min-height:40px}.lives{font-size:.8rem;max-width:none}}
+@media (max-height:480px){header{padding-top:2px;padding-bottom:2px}.stats{font-size:.7rem}}
+@media (hover:none){button:hover{background:linear-gradient(180deg,#5a63ff,#2f33c4);box-shadow:0 4px 6px rgba(0,0,0,.1)}button.accent:hover{background:linear-gradient(180deg,#ff6aa2,#e0215f)}}
 </style>
 </head>
 <body id="body">
@@ -188,12 +199,14 @@ button.accent{background:linear-gradient(180deg,#ff6aa2,#e0215f)}button.accent:h
             <div class="lives" id="lives-display">❤️❤️❤️</div>
         </div>
         <div class="btn-group header-btns">
-            <button class="accent" onclick="game.pause()">⏸ Pause</button>
-            <button id="sound-btn" onclick="audio.toggleSound()">Sound: ON</button>
+            <button class="accent" onclick="game.pause()">⏸<span class="lbl"> Pause</span></button>
+            <button id="fs-btn" onclick="toggleFullscreen()">⛶</button>
+            <button id="sound-btn" onclick="audio.toggleSound()">🔊</button>
         </div>
     </header>
 
     <div id="game-container">
+        <canvas id="bg-canvas"></canvas>
         <canvas id="game-canvas"></canvas>
         
         <div id="menu-modal" class="modal-overlay active" style="background: rgba(0,0,0,0.3); backdrop-filter: none;">
@@ -253,12 +266,6 @@ button.accent{background:linear-gradient(180deg,#ff6aa2,#e0215f)}button.accent:h
         </div>
     </div>
 
-    <footer class="game-ui">
-        <div class="btn-group" style="margin:0 auto;">
-            <button onclick="toggleFullscreen()">Fullscreen</button>
-        </div>
-    </footer>
-
 <script>
 // --- GAME AUDIO (HTML5 Audio: provided .wav sound effects + .mp3 background music) ---
 const GameAudio = (function () {
@@ -270,8 +277,10 @@ const GameAudio = (function () {
         if (!pools[name]) { pools[name] = { list: [], i: 0 }; }
         return pools[name];
     }
+    const last = {};
     function sfx(name, vol) {
         if (muted) return;
+        const now = performance.now(); if (now - (last[name] || 0) < 40) return; last[name] = now;
         try {
             const p = pool(name);
             let a = p.list[p.i];
@@ -291,7 +300,10 @@ const GameAudio = (function () {
         try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
     }
     function unlock() {
-        if (musicWanted) tryPlayMusic();
+        ['hover','dash','object_hit','collect_base','coin','powerup_unlock','win_fanfare','player_death'].forEach(function (n) {
+            const p = pool(n); if (!p.list[0]) { const a = new Audio(n + '.wav'); a.preload = 'auto'; p.list[0] = a; }
+        });
+        if (musicWanted && (!music || music.paused)) tryPlayMusic();
     }
     ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
         window.addEventListener(ev, unlock, { passive: true });
@@ -311,7 +323,7 @@ const audio = {
     init() {}, // HTML5 Audio needs no setup; music is unlocked by the first user interaction
     toggleSound() {
         this.enabled = !this.enabled; GameAudio.setMuted(!this.enabled);
-        document.getElementById('sound-btn').innerText = `Sound: ${this.enabled ? 'ON' : 'OFF'}`;
+        document.getElementById('sound-btn').innerText = this.enabled ? '🔊' : '🔇';
     },
     play(name, vol) { if (this.enabled) GameAudio.sfx(name, vol); },
     playMove() { this.play('hover', 0.3); },
@@ -429,115 +441,77 @@ class LevelGenerator {
             }
         }
         
-        cells.sort(() => Math.random() - 0.5);
-
-        let snakes = [];
+        for (let i = cells.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const t = cells[i]; cells[i] = cells[j]; cells[j] = t; }
+        const snakes = [];
         let snakeId = 0;
-        
-        // Difficulty Increased: Now spawns significantly more snakes (65% density)
-        let maxSnakes = Math.floor((rows * cols) * 0.65);
+        const maxSnakes = Math.floor((rows * cols) * 0.65);
+        const occ = new Int16Array(rows * cols).fill(-1);   // cell -> snake id
+        const cover = new Array(rows * cols);               // cell -> ids whose escape ray crosses it
+        const adj = new Map();                              // dependency graph (kept acyclic)
+        const rays = new Map();
+        const DL = Object.values(DIRS);
 
-        let dag = new DependencyGraph();
-        let escapePathsMap = new Map(); 
-
-        for (let head of cells) {
+        for (const head of cells) {
             if (snakes.length >= maxSnakes) break;
-            if (grid[head.r][head.c] !== 1) continue; 
-            
-            let dirs = Object.values(DIRS).sort(() => Math.random() - 0.5);
-            for (let dir of dirs) {
-                let nextR = head.r - dir.r, nextC = head.c - dir.c;
-                
-                if (nextR >= 0 && nextR < rows && nextC >= 0 && nextC < cols && grid[nextR][nextC] === 1) {
-                    
-                    let proposedBody = [{r: head.r, c: head.c}, {r: nextR, c: nextC}];
-                    grid[head.r][head.c] = 2; grid[nextR][nextC] = 2;
-                    
-                    let targetLen = Math.random() < 0.35 ? 2 : (Math.random() < 0.65 ? 3 : (Math.random() < 0.90 ? 4 : 5));
-                    let currR = nextR, currC = nextC;
-                    
-                    while (proposedBody.length < targetLen) {
-                        let possibleMoves = [];
-                        for (let d of Object.values(DIRS)) {
-                            let tr = currR + d.r, tc = currC + d.c;
-                            if (tr >= 0 && tr < rows && tc >= 0 && tc < cols && grid[tr][tc] === 1) {
-                                possibleMoves.push({r: tr, c: tc});
-                            }
-                        }
-                        if (possibleMoves.length > 0) {
-                            let pick = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-                            proposedBody.push(pick);
-                            grid[pick.r][pick.c] = 2;
-                            currR = pick.r; currC = pick.c;
-                        } else {
-                            break;
-                        }
+            if (grid[head.r][head.c] !== 1) continue;
+            const dirs = DL.slice();
+            for (let i = 3; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const t = dirs[i]; dirs[i] = dirs[j]; dirs[j] = t; }
+            for (const dir of dirs) {
+                const nextR = head.r - dir.r, nextC = head.c - dir.c;
+                if (nextR < 0 || nextR >= rows || nextC < 0 || nextC >= cols || grid[nextR][nextC] !== 1) continue;
+                const body = [{r: head.r, c: head.c}, {r: nextR, c: nextC}];
+                grid[head.r][head.c] = 2; grid[nextR][nextC] = 2;
+                const targetLen = Math.random() < 0.35 ? 2 : (Math.random() < 0.65 ? 3 : (Math.random() < 0.90 ? 4 : 5));
+                let cr = nextR, cc = nextC;
+                while (body.length < targetLen) {
+                    const mv = [];
+                    for (const d of DL) {
+                        const tr = cr + d.r, tc = cc + d.c;
+                        if (tr >= 0 && tr < rows && tc >= 0 && tc < cols && grid[tr][tc] === 1) mv.push({r: tr, c: tc});
                     }
+                    if (!mv.length) break;
+                    const pick = mv[(Math.random() * mv.length) | 0];
+                    body.push(pick); grid[pick.r][pick.c] = 2; cr = pick.r; cc = pick.c;
+                }
+                for (const g of body) grid[g.r][g.c] = 1;
 
-                    for (let seg of proposedBody) grid[seg.r][seg.c] = 1;
+                const ray = [];
+                for (let er = head.r + dir.r, ec = head.c + dir.c; er >= 0 && er < rows && ec >= 0 && ec < cols; er += dir.r, ec += dir.c) ray.push(er * cols + ec);
+                const outs = new Set(), ins = new Set();
+                for (const idx of ray) if (occ[idx] >= 0) outs.add(occ[idx]);
+                for (const g of body) { const cv = cover[g.r * cols + g.c]; if (cv) for (const e of cv) ins.add(e); }
 
-                    let proposedEscape = new Set();
-                    let er = head.r + dir.r, ec = head.c + dir.c;
-                    
-                    while (er >= 0 && er < rows && ec >= 0 && ec < cols) {
-                        proposedEscape.add(`${er},${ec}`);
-                        er += dir.r; ec += dir.c;
-                    }
-
-                    let newEdges = [];
-                    for (let E of snakes) {
-                        let hitsE = false;
-                        for (let seg of E.segments) {
-                            if (proposedEscape.has(`${seg.r},${seg.c}`)) { hitsE = true; break; }
-                        }
-                        if (hitsE) newEdges.push({from: snakeId, to: E.id});
-
-                        let ePath = escapePathsMap.get(E.id);
-                        let eHitsN = false;
-                        for (let seg of proposedBody) {
-                            if (ePath.has(`${seg.r},${seg.c}`)) { eHitsN = true; break; }
-                        }
-                        if (eHitsN) newEdges.push({from: E.id, to: snakeId});
-                    }
-
-                    let tempDag = dag.clone();
-                    tempDag.addNode(snakeId);
-                    for (let edge of newEdges) tempDag.addEdge(edge.from, edge.to);
-
-                    if (!tempDag.hasCycle()) {
-                        dag = tempDag;
-                        for (let seg of proposedBody) grid[seg.r][seg.c] = 2;
-                        escapePathsMap.set(snakeId, proposedEscape);
-                        
-                        let randColor = MULTI_COLORS[Math.floor(Math.random() * MULTI_COLORS.length)];
-                        snakes.push({
-                            id: snakeId++, 
-                            segments: proposedBody, 
-                            dir: dir, color: randColor, isHappy: false,
-                            bumpOffset: 0, isBumping: false, bumpTime: 0
-                        });
-                        break; 
+                let cyc = false;
+                for (const o of outs) if (ins.has(o)) { cyc = true; break; }
+                if (!cyc && outs.size && ins.size) {
+                    const seen = new Set(), st = Array.from(outs);
+                    while (st.length) {
+                        const u = st.pop(); if (seen.has(u)) continue; seen.add(u);
+                        if (ins.has(u)) { cyc = true; break; }
+                        const ad = adj.get(u); if (ad) for (const v of ad) if (!seen.has(v)) st.push(v);
                     }
                 }
+                if (cyc) continue;
+
+                const id = snakeId++;
+                adj.set(id, outs);
+                for (const e of ins) adj.get(e).add(id);
+                for (const g of body) { grid[g.r][g.c] = 2; occ[g.r * cols + g.c] = id; }
+                for (const idx of ray) (cover[idx] || (cover[idx] = [])).push(id);
+                rays.set(id, ray);
+                snakes.push({id, segments: body, dir, color: MULTI_COLORS[(Math.random() * MULTI_COLORS.length) | 0],
+                    isHappy: false, bumpOffset: 0, isBumping: false, bumpTime: 0});
+                break;
             }
         }
-        
-        let items = [];
-        for (let [sId, pathSet] of escapePathsMap.entries()) {
-            let pathArr = Array.from(pathSet).map(str => {
-                let [r, c] = str.split(',').map(Number);
-                return {r, c};
-            });
-            
-            pathArr.forEach(pos => {
-                if (Math.random() < 0.30) {
-                    let typeRand = Math.random();
-                    let type = typeRand < 0.4 ? 'coin' : (typeRand < 0.7 ? 'burger' : 'ice_cream');
-                    if (!items.some(i => i.r === pos.r && i.c === pos.c)) {
-                        items.push({r: pos.r, c: pos.c, type: type});
-                    }
-                }
-            });
+
+        const items = [], taken = new Set();
+        for (const [, ray] of rays) for (const idx of ray) {
+            if (Math.random() < 0.30 && !taken.has(idx)) {
+                taken.add(idx);
+                const tr = Math.random();
+                items.push({r: (idx / cols) | 0, c: idx % cols, type: tr < 0.4 ? 'coin' : (tr < 0.7 ? 'burger' : 'ice_cream')});
+            }
         }
 
         return { rows, cols, snakes, items };
@@ -549,7 +523,7 @@ const game = {
     level: parseInt(localStorage.getItem('snakeScape_level')) || 1,
     score: parseInt(localStorage.getItem('snakeScape_score')) || 0,
     totalCoins: parseInt(localStorage.getItem('snakeScape_coins')) || 0,
-    moves: 0, lives: 3, combo: 0, snakes: [], items: [], history: [], mice: [], floatingTexts: [],
+    moves: 0, lives: 3, combo: 0, snakes: [], items: [], mice: [], floatingTexts: [],
     rows: 0, cols: 0, tileSize: 0, offsetX: 0, offsetY: 0,
     
     canvas: document.getElementById('game-canvas'),
@@ -559,16 +533,30 @@ const game = {
     lastTime: 0, textTimer: 3.0, activeHelpMouseId: null, hintSnake: null,
 
     init() {
+        this.bg = document.getElementById('bg-canvas'); this.bgx = this.bg.getContext('2d');
+        this.layer = document.createElement('canvas'); this.lx = this.layer.getContext('2d');
+        this.scale = Math.min(window.devicePixelRatio || 1, 2); this.W = this.H = 0; this.wn = 0;
+        this.layerDirty = true; this.dirtyFrame = true; this.saveDirty = false;
+        this.makeSprites();
+        if (!document.fullscreenEnabled) document.getElementById('fs-btn').style.display = 'none';
         this.updateContinueBtn();
         this.resize();
-        window.addEventListener('resize', () => this.resize());
+        if (window.ResizeObserver) new ResizeObserver(() => this.resize()).observe(document.getElementById('game-container'));
+        else window.addEventListener('resize', () => this.resize());
+        document.addEventListener('visibilitychange', () => { if (document.hidden) { this.persist(); this.pause(); } });
+        window.addEventListener('pagehide', () => this.persist());
+        window.addEventListener('keydown', e => {
+            if (e.repeat) return;
+            if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') { if (this.state === 'PLAYING') this.pause(); else if (this.state === 'PAUSED') this.resume(); }
+            else if (e.key === 'm' || e.key === 'M') audio.toggleSound();
+        });
         this.setupInputs();
         requestAnimationFrame((t) => this.loop(t));
     },
 
     createMenuSnake() {
-        let targetX = this.canvas.width * (0.3 + Math.random() * 0.4);
-        let y = this.canvas.height * (0.2 + Math.random() * 0.6);
+        let targetX = this.W * (0.3 + Math.random() * 0.4);
+        let y = this.H * (0.2 + Math.random() * 0.6);
         return {
             x: -200 - Math.random() * 400,
             y: y,
@@ -632,6 +620,7 @@ const game = {
         this.moves = 0; 
         this.lives = 3; this.combo = 0;
         this.history = []; this.exitingSnakes = []; this.particles = []; this.mice = []; this.floatingTexts = [];
+        this.layerDirty = true;
         this.textTimer = 3.0; this.activeHelpMouseId = null;
         this.hintSnake = null;
         
@@ -645,24 +634,63 @@ const game = {
 
         this.resize();
         this.updateUI();
-        localStorage.setItem('snakeScape_level', this.level);
+        this.persist();
     },
 
     resize() {
-        let container = document.getElementById('game-container');
-        this.canvas.width = container.clientWidth;
-        this.canvas.height = container.clientHeight;
-        
+        const ct = document.getElementById('game-container'), W = ct.clientWidth, H = ct.clientHeight;
+        if (!W || !H) return;
+        this.W = W; this.H = H;
+        [this.canvas, this.bg, this.layer].forEach(cv => { cv.width = Math.round(W * this.scale); cv.height = Math.round(H * this.scale); });
         if (this.state === 'PLAYING' || this.state === 'PAUSED') {
-            const padding = 6; 
-            this.tileSize = Math.min(this.canvas.width / (this.cols + padding), this.canvas.height / (this.rows + padding)); 
-            this.offsetX = (this.canvas.width - this.cols * this.tileSize) / 2;
-            this.offsetY = (this.canvas.height - this.rows * this.tileSize) / 2;
-        } else {
-            if (!this.menuSnakes) {
-                this.menuSnakes = Array(3).fill(0).map(() => this.createMenuSnake());
-            }
+            const padding = 6;
+            this.tileSize = Math.min(W / (this.cols + padding), H / (this.rows + padding));
+            this.offsetX = (W - this.cols * this.tileSize) / 2;
+            this.offsetY = (H - this.rows * this.tileSize) / 2;
+        } else if (!this.menuSnakes) {
+            this.menuSnakes = Array(3).fill(0).map(() => this.createMenuSnake());
         }
+        this.layerDirty = true; this.dirtyFrame = true;
+        this.drawStatic();
+    },
+
+    drawStatic() {
+        const real = this.ctx, c = this.bgx; this.ctx = c;
+        c.setTransform(this.scale, 0, 0, this.scale, 0, 0); c.clearRect(0, 0, this.W, this.H);
+        this.drawBackdrop(0);
+        if (this.state === 'PLAYING' || this.state === 'PAUSED') {
+            const ox = this.offsetX, oy = this.offsetY, ts = this.tileSize;
+            c.strokeStyle = 'rgba(120,160,255,0.10)'; c.lineWidth = 1; c.beginPath();
+            for (let r = 0; r <= this.rows; r++) { c.moveTo(ox, oy + r * ts); c.lineTo(ox + this.cols * ts, oy + r * ts); }
+            for (let k = 0; k <= this.cols; k++) { c.moveTo(ox + k * ts, oy); c.lineTo(ox + k * ts, oy + this.rows * ts); }
+            c.stroke();
+        }
+        this.ctx = real;
+    },
+
+    makeSprites() {
+        const mk = fn => { const cv = document.createElement('canvas'); cv.width = cv.height = 256; fn(cv.getContext('2d')); return cv; };
+        this.sprCandy = mk(x => this.rawCandy(x, 128, 128, 128, 0));
+        this.sprItem = {};
+        ['coin', 'burger', 'ice_cream'].forEach(t => this.sprItem[t] = mk(x => this.rawItem(x, 128, 128, 128, t)));
+    },
+
+    persist() {
+        if (this.state === 'MENU') return;
+        try { localStorage.setItem('snakeScape_level', this.level); localStorage.setItem('snakeScape_score', this.score); localStorage.setItem('snakeScape_coins', this.totalCoins); } catch (e) {}
+        this.saveDirty = false;
+    },
+
+    pick(px, py, tol) {
+        const ts = this.tileSize, gx = px / ts, gy = py / ts, c0 = Math.floor(gx), r0 = Math.floor(gy);
+        let best = null, bd = 9;
+        for (const s of this.snakes) for (const g of s.segments) {
+            const dr = r0 - g.r, dc = c0 - g.c;
+            if (dr < -1 || dr > 1 || dc < -1 || dc > 1) continue;
+            const d = Math.hypot(gx - (g.c + 0.5), gy - (g.r + 0.5));
+            if (((dr === 0 && dc === 0) || d <= tol) && d < bd) { bd = d; best = s; }
+        }
+        return best;
     },
 
     updateUI() {
@@ -741,27 +769,23 @@ const game = {
         };
 
         const clickHandler = (evt) => {
-            if (this.state !== 'PLAYING' || evt.button === 2) return;
+            if (this.state !== 'PLAYING' || evt.button > 0 || this.lives <= 0) return;
             let pos = getGridPos(evt);
             let c = Math.floor(pos.x / this.tileSize), r = Math.floor(pos.y / this.tileSize);
-            let clickedSnake = this.snakes.find(s => s.segments.some(seg => seg.r === r && seg.c === c));
+            let clickedSnake = this.pick(pos.x, pos.y, evt.pointerType === 'mouse' ? 0 : 0.85);
             
             if (clickedSnake) {
+                if (clickedSnake.isBumping) return;
                 if (this.canSnakeEscape(clickedSnake)) {
-                    this.history.push({
-                        snakes: JSON.stringify(this.snakes), 
-                        mice: JSON.stringify(this.mice),
-                        items: JSON.stringify(this.items)
-                    });
                     audio.playSlide(); this.moves++; this.updateUI();
                     this.exitingSnakes.push(clickedSnake);
                     this.combo++; this.score += 25 * this.combo;
                     if (this.combo >= 2) { let h = clickedSnake.segments[0];
                         this.floatingTexts.push({ x: this.offsetX + (h.c + 0.5) * this.tileSize, y: this.offsetY + h.r * this.tileSize, text: `COMBO x${this.combo}`, life: 1.0, color: '#ff9ff3' }); }
-                    this.snakes = this.snakes.filter(s => s.id !== clickedSnake.id);
+                    this.snakes = this.snakes.filter(s => s.id !== clickedSnake.id); this.layerDirty = true;
                 } else {
                     audio.playBlocked(); 
-                    clickedSnake.isBumping = true;
+                    clickedSnake.isBumping = true; this.layerDirty = true; if (navigator.vibrate) navigator.vibrate(18);
                     clickedSnake.bumpTime = 0; this.combo = 0;
                     this.lives--; this.updateUI();
                     
@@ -769,14 +793,18 @@ const game = {
                         setTimeout(() => {
                             GameAudio.stopMusic(); audio.playGameOver(); 
                             document.getElementById('gameover-modal').classList.add('active'); 
-                        }, 300);
+                        }, 150);
                     }
                 }
             }
         };
 
-        this.canvas.addEventListener('mousedown', clickHandler);
-        this.canvas.addEventListener('touchstart', clickHandler, {passive: true});
+        this.canvas.addEventListener('pointerdown', clickHandler);
+        this.canvas.addEventListener('contextmenu', e => e.preventDefault());
+        this.canvas.addEventListener('pointermove', e => {
+            if (e.pointerType !== 'mouse' || this.state !== 'PLAYING') return;
+            const p = getGridPos(e); this.canvas.style.cursor = this.pick(p.x, p.y, 0) ? 'pointer' : 'default';
+        });
     },
 
     createParticles(x, y, color) {
@@ -788,9 +816,14 @@ const game = {
     loop(timestamp) {
         let dt = (timestamp - this.lastTime) / 1000;
         this.lastTime = timestamp;
-        if(dt > 0.1) dt = 0.1;
+        if (dt > 0.1) dt = 0.1;
+        const t0 = performance.now();
         this.update(dt);
         this.draw();
+        if (this.state === 'PLAYING' && this.scale > 1) {   // auto-lower render resolution on slow devices
+            this.work = (this.work || 0) * 0.95 + (performance.now() - t0) * 0.05;
+            if (++this.wn > 120 && this.work > 10) { this.scale = Math.max(1, this.scale - 0.5); this.wn = 0; this.work = 0; this.resize(); }
+        }
         requestAnimationFrame((t) => this.loop(t));
     },
 
@@ -800,7 +833,7 @@ const game = {
             if (this.menuSnakes) {
                 this.menuSnakes.forEach(ms => {
                     ms.x += dt * ms.speed;
-                    if (ms.x > this.canvas.width + 300) {
+                    if (ms.x > this.W + 300) {
                         Object.assign(ms, this.createMenuSnake());
                     }
                     if (!ms.eaten && ms.x >= ms.targetX) {
@@ -810,13 +843,14 @@ const game = {
                 });
             }
             for (let i = this.particles.length - 1; i >= 0; i--) {
-                let p = this.particles[i]; p.x += p.vx; p.y += p.vy; p.life -= dt * 2.5;
+                let p = this.particles[i]; p.x += p.vx * dt * 60; p.y += p.vy * dt * 60; p.life -= dt * 2.5;
                 if (p.life <= 0) this.particles.splice(i, 1);
             }
             return;
         }
 
         this.textTimer += dt;
+        if (this.saveDirty && (this.saveT = (this.saveT || 0) + dt) > 2) { this.saveT = 0; this.persist(); }
         if (this.textTimer >= 3.0) {
             this.textTimer = 0;
             this.activeHelpMouseId = this.mice.length > 0 ? this.mice[Math.floor(Math.random() * this.mice.length)].id : null;
@@ -834,7 +868,7 @@ const game = {
                 s.bumpTime += dt * 15;
                 s.bumpOffset = Math.sin(s.bumpTime) * 0.35;
                 if (s.bumpTime >= Math.PI) {
-                    s.isBumping = false;
+                    s.isBumping = false; this.layerDirty = true;
                     s.bumpOffset = 0;
                     s.bumpTime = 0;
                 }
@@ -843,7 +877,7 @@ const game = {
 
         for (let i = this.exitingSnakes.length - 1; i >= 0; i--) {
             let s = this.exitingSnakes[i];
-            s.visualOffset += dt * 28; 
+            s.visualOffset += dt * 42; 
             
             let headC = s.segments[0].c + s.dir.c * s.visualOffset;
             let headR = s.segments[0].r + s.dir.r * s.visualOffset;
@@ -883,8 +917,7 @@ const game = {
                     this.items.splice(j, 1);
                     this.updateUI();
                     
-                    localStorage.setItem('snakeScape_score', this.score);
-                    localStorage.setItem('snakeScape_coins', this.totalCoins);
+                    this.saveDirty = true;
                 }
             }
 
@@ -918,7 +951,7 @@ const game = {
                     this.mice = []; 
                     audio.playVictory();
                     if (this.level < 100) {
-                        setTimeout(() => { if (this.state !== 'MENU' && this.snakes.length === 0) this.nextLevel(); }, 900);
+                        setTimeout(() => { if (this.state !== 'MENU' && this.snakes.length === 0) this.nextLevel(); }, 450);
                     } else {
                         document.getElementById('victory-stars').innerText = '★'.repeat(this.calculateStars()) + '☆'.repeat(3-this.calculateStars());
                         document.getElementById('victory-stats').innerText = `Moves: ${this.moves} | Lives Left: ${this.lives}`;
@@ -929,7 +962,7 @@ const game = {
         }
 
         for (let i = this.particles.length - 1; i >= 0; i--) {
-            let p = this.particles[i]; p.x += p.vx; p.y += p.vy; p.life -= dt * 2.5;
+            let p = this.particles[i]; p.x += p.vx * dt * 60; p.y += p.vy * dt * 60; p.life -= dt * 2.5;
             if (p.life <= 0) this.particles.splice(i, 1);
         }
     },
@@ -967,7 +1000,7 @@ const game = {
     },
 
     drawBackdrop(t) {
-        const c = this.ctx, W = this.canvas.width, H = this.canvas.height, m = Math.min(W, H);
+        const c = this.ctx, W = this.W, H = this.H, m = Math.min(W, H);
         c.save(); c.strokeStyle = 'rgba(80,120,255,0.08)'; c.lineWidth = 1;
         const g = Math.max(28, m / 16); c.beginPath();
         for (let x = 0; x < W; x += g) { c.moveTo(x, 0); c.lineTo(x, H); }
@@ -980,6 +1013,10 @@ const game = {
     },
 
     drawCandy(c, x, y, s, t) {
+        c.save(); c.translate(x, y); c.rotate(Math.sin(t / 300) * 0.08); c.drawImage(this.sprCandy, -s, -s, 2 * s, 2 * s); c.restore();
+    },
+
+    rawCandy(c, x, y, s, t) {
         c.save(); c.translate(x, y); c.rotate(Math.sin(t / 300) * 0.08);
         c.strokeStyle = '#f3ecff'; c.lineWidth = s * 0.07; c.lineCap = 'round';
         c.beginPath(); c.moveTo(0, s * 0.12); c.lineTo(0, s * 0.62); c.stroke();
@@ -994,7 +1031,9 @@ const game = {
         c.restore();
     },
 
-    drawItem(c, x, y, s, type) {
+    drawItem(c, x, y, s, type) { c.drawImage(this.sprItem[type], x - s, y - s, 2 * s, 2 * s); },
+
+    rawItem(c, x, y, s, type) {
         c.save(); c.translate(x, y); c.shadowColor = '#ffd21f'; c.shadowBlur = s * 0.3; c.lineWidth = s * 0.04; c.strokeStyle = '#b8860b';
         let g = c.createLinearGradient(0, -s * 0.3, 0, s * 0.3); g.addColorStop(0, '#fff2a0'); g.addColorStop(1, '#f5a800'); c.fillStyle = g;
         if (type === 'coin') {
@@ -1022,9 +1061,11 @@ const game = {
     },
 
     draw() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        if (this.state === 'PAUSED' && !this.dirtyFrame) return;
+        this.dirtyFrame = false;
+        this.ctx.setTransform(this.scale, 0, 0, this.scale, 0, 0);
+        this.ctx.clearRect(0, 0, this.W, this.H);
         let timeNow = Date.now();
-        this.drawBackdrop(timeNow);
 
         if (this.state === 'MENU') {
             if (this.menuSnakes) {
@@ -1053,8 +1094,6 @@ const game = {
         }
 
         this.ctx.strokeStyle = 'rgba(120,160,255,0.10)'; this.ctx.lineWidth = 1;
-        for(let r=0; r<=this.rows; r++) { this.ctx.beginPath(); this.ctx.moveTo(this.offsetX, this.offsetY + r*this.tileSize); this.ctx.lineTo(this.offsetX + this.cols*this.tileSize, this.offsetY + r*this.tileSize); this.ctx.stroke(); }
-        for(let c=0; c<=this.cols; c++) { this.ctx.beginPath(); this.ctx.moveTo(this.offsetX + c*this.tileSize, this.offsetY); this.ctx.lineTo(this.offsetX + c*this.tileSize, this.offsetY + this.rows*this.tileSize); this.ctx.stroke(); }
 
         this.mice.forEach(m => this.drawCandy(this.ctx, this.offsetX + (m.c + 0.5) * this.tileSize, this.offsetY + (m.r + 0.5) * this.tileSize, this.tileSize * 1.2, timeNow + m.randomOffset * 50));
         
@@ -1107,7 +1146,7 @@ const game = {
             let displayColor = (this.hintSnake === s.id) ? '#ffffff' : s.color;
             const tracePath = (dx, dy) => { this.ctx.beginPath(); pts.forEach((p, i) => i===0 ? this.ctx.moveTo(p.x+dx, p.y+dy) : this.ctx.lineTo(p.x+dx, p.y+dy)); this.ctx.stroke(); };
             this.ctx.save();
-            this.ctx.shadowColor = displayColor; this.ctx.shadowBlur = this.tileSize * 0.4;
+            this.ctx.globalAlpha = 0.2; this.ctx.strokeStyle = displayColor; this.ctx.lineWidth = this.tileSize * 1.0; tracePath(0, 0); this.ctx.globalAlpha = 1;
             this.ctx.strokeStyle = 'rgba(0,0,0,0.35)'; this.ctx.lineWidth = this.tileSize * 0.78; tracePath(0, 0);
             this.ctx.shadowBlur = 0; this.ctx.strokeStyle = displayColor; this.ctx.lineWidth = this.tileSize * 0.68; tracePath(0, 0);
             this.ctx.strokeStyle = 'rgba(255,255,255,0.38)'; this.ctx.lineWidth = this.tileSize * 0.16; tracePath(-this.tileSize * 0.14, -this.tileSize * 0.14);
@@ -1134,7 +1173,16 @@ const game = {
             }
         };
 
-        this.snakes.forEach(s => drawDynamicSnake(s, false));
+        if (this.layerDirty) {
+            const real = this.ctx; this.ctx = this.lx;
+            this.lx.setTransform(this.scale, 0, 0, this.scale, 0, 0); this.lx.clearRect(0, 0, this.W, this.H);
+            this.lx.lineCap = 'round'; this.lx.lineJoin = 'round';
+            this.snakes.forEach(s => { if (!s.isBumping) drawDynamicSnake(s, false); });
+            this.ctx = real; this.layerDirty = false;
+        }
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0); this.ctx.drawImage(this.layer, 0, 0);
+        this.ctx.setTransform(this.scale, 0, 0, this.scale, 0, 0);
+        this.snakes.forEach(s => { if (s.isBumping) drawDynamicSnake(s, false); });
         this.exitingSnakes.forEach(s => drawDynamicSnake(s, true));
 
         this.particles.forEach(p => {
