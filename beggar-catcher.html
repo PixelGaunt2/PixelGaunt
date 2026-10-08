@@ -195,9 +195,13 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
 #mission-title{font-family:'Lilita One','Fredoka',sans-serif;font-weight:400;letter-spacing:.5px;font-size:18px}
 #interaction-prompt{font-family:'Lilita One','Fredoka',sans-serif;font-weight:400;font-size:22px;letter-spacing:.5px;-webkit-text-stroke:1px rgba(0,0,0,.6);paint-order:stroke fill}
 @media (max-width:1024px),(max-height:700px){.menu-title{font-size:32px;margin-bottom:12px}.btn{font-size:18px;min-width:220px;padding:10px 22px;margin:6px}#btn-play{font-size:22px}.level-btn{font-size:16px;padding:12px 6px}.shop-item h3{font-size:19px}.shop-item p{font-size:14px}.readme-box{font-size:14px}.logo{margin-bottom:14px}}
-</style>
+
+        #game-toast { position: fixed; left: 50%; top: 18%; transform: translateX(-50%) translateY(-20px); background: rgba(20,20,20,0.95); color: #FFD700; border: 3px solid #f5c518; border-radius: 12px; padding: 14px 28px; font-size: 22px; font-weight: bold; text-align: center; z-index: 99999; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: 90vw; box-shadow: 0 6px 24px rgba(0,0,0,.6); }
+        #game-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
 </head>
 <body>
+    <div id="game-toast"></div>
     <div id="game-container"></div>
     <div id="combat-flash"></div>
     
@@ -496,10 +500,17 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
             document.getElementById('buy-trolley').innerText = saveData.upgrades.trolley ? "Owned" : "Buy"; document.getElementById('buy-trolley').disabled = saveData.upgrades.trolley;
         }
 
+        let _toastTimer = null;
+        function showToast(msg, ms) {
+            const t = document.getElementById('game-toast'); if(!t) return;
+            t.innerText = msg; t.classList.add('show');
+            clearTimeout(_toastTimer); _toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2000);
+        }
+
         function buyUpgrade(item, price) {
             if(saveData.coins >= price && !saveData.upgrades[item]) {
                 saveData.coins -= price; saveData.upgrades[item] = true; saveGameData(); applyUpgradesToPlayer(); SoundManager.playBuy();
-            } else if(saveData.coins < price) alert("Not enough coins!");
+            } else if(saveData.coins < price) showToast("Not enough coins!");
         }
 
         // --- 2. SETUP ENGINE ---
@@ -895,7 +906,7 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
             document.getElementById('complete-menu').style.display = 'flex'; document.getElementById('ui-layer').style.display = 'none';
 
             document.getElementById('btn-next').onclick = () => {
-                if(saveData.currentLevel < LEVEL_DATA.length) startLevel(saveData.currentLevel + 1); else alert("Congratulations! You beat the game!");
+                if(saveData.currentLevel < LEVEL_DATA.length) startLevel(saveData.currentLevel + 1); else showToast("Congratulations! You beat the game!", 3000);
             };
         }
 
@@ -931,7 +942,7 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
             else document.getElementById('weapon-display').innerText = `Weapon: ${player.weapon.name}`;
             
             document.getElementById('vehicle-display').innerText = player.hasSkateboard ? "Vehicle: Skateboard" : "Vehicle: None";
-            if(player.hp <= 0) { SoundManager.playDeath(); alert("Wasted!"); quitToMenu(); }
+            if(player.hp <= 0) { SoundManager.playDeath(); showToast("Wasted!", 2500); quitToMenu(); }
         }
 
         // --- 5. CONTROLS ---
