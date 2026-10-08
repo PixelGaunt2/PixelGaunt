@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="loading">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +7,7 @@
     <style>
         body { margin: 0; overflow: hidden; background-color: #1a1c23; font-family: 'Courier New', Courier, monospace; user-select: none; }
         
+        html.loading #ui-layer { visibility: hidden !important; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: rgba(15, 15, 20, 0.95); pointer-events: auto; transition: opacity 0.3s;}
         .hidden { display: none !important; }
@@ -177,7 +178,7 @@
 
         // Universal UI click and touch binder
         function bindUIBtn(id, action) {
-            const btn = document.getElementById(id);
+            const btn = (typeof id === 'string') ? document.getElementById(id) : id;
             if(!btn) return;
             btn.addEventListener('click', (e) => { 
                 if(!e.defaultPrevented) action(); 
@@ -248,7 +249,7 @@
         function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
         let rand = mulberry32(0x1A2B3C);          // fixed seed -> the arena is identical every run
 
-        const ARENA_X = 37.5, ARENA_Z = 240;        // playable limits for player + bots
+        const OPENW = true; const ARENA_X = OPENW ? 190 : 37.5, ARENA_Z = 240;        // playable limits for player + bots
         const FACE_X = 41, FACE_Z = 250;            // inner faces of the tower walls
         const IS_SMALL = isMobileUA || Math.min(window.innerWidth, window.innerHeight) < 600;
         let pixelLook = true;
@@ -465,7 +466,7 @@
             // first row: solid walls that frame the arena
             for (const side of [-1, 1]) {
                 let z = -FACE_Z;
-                while (z < FACE_Z - 8) {
+                while (!OPENW && z < FACE_Z - 8) {
                     let w = 22 + rand() * 12; const d = 26 + rand() * 14, h = (50 + rand() * 70) * HK;
                     if (z + w > FACE_Z) w = FACE_Z - z; const zc = z + w / 2;
                     const cx = side * (FACE_X + d / 2);
@@ -474,14 +475,14 @@
                 }
             }
             // end walls
-            for (const zs of [-1, 1]) for (const cx of [-52, 0, 52]) {
+            for (const zs of [-1, 1]) for (const cx of (OPENW ? [-156, -104, -52, 0, 52, 104, 156] : [-52, 0, 52])) {
                 const w = 54, d = 30, h = (70 + rand() * 60) * HK, cz = zs * (FACE_Z + d / 2);
                 addTower(cx, cz, w, d, h, true); decorateEnd(cx, cz, w, d, h, zs);
             }
             // distant rows for depth
             for (const side of [-1, 1]) {
-                for (let z = -270; z < 270; z += 38 + rand() * 18) { const w = 26 + rand() * 20, d = 30 + rand() * 20, h = (100 + rand() * 120) * HK, cx = side * (82 + rand() * 40); addTower(cx, z, w, d, h, false); decorateSide(cx, z, w, d, h, side, 2, 7); }
-                for (let z = -270; z < 270; z += 60 + rand() * 30) { const w = 30 + rand() * 24, d = 34 + rand() * 20, h = (150 + rand() * 150) * HK, cx = side * (160 + rand() * 50); addTower(cx, z, w, d, h, false); decorateSide(cx, z, w, d, h, side, 2, 9); }
+                for (let z = -270; z < 270; z += 38 + rand() * 18) { const w = 26 + rand() * 20, d = 30 + rand() * 20, h = (100 + rand() * 120) * HK, cx = side * (ARENA_X + 50 + rand() * 40); addTower(cx, z, w, d, h, false); decorateSide(cx, z, w, d, h, side, 2, 7); }
+                for (let z = -270; z < 270; z += 60 + rand() * 30) { const w = 30 + rand() * 24, d = 34 + rand() * 20, h = (150 + rand() * 150) * HK, cx = side * (ARENA_X + 140 + rand() * 50); addTower(cx, z, w, d, h, false); decorateSide(cx, z, w, d, h, side, 2, 9); }
             }
             for (const zs of [-1, 1]) for (let x = -150; x <= 150; x += 60 + rand() * 20) { const w = 40, d = 40, h = (130 + rand() * 120) * HK, cz = zs * (310 + rand() * 40); addTower(x, cz, w, d, h, false); decorateEnd(x, cz, w, d, h, zs); }
 
@@ -642,10 +643,11 @@
             for (let k = 0; k < n; k++) {
                 let spot = null;
                 for (let t = 0; t < 120 && !spot; t++) {
-                    const x = (r() - 0.5) * 62, z = -95 + r() * 110;
+                    const x = (r() - 0.5) * 160, z = -190 + r() * 205;
                     if (Math.hypot(x, z - 10) < 14 || used.some(u => Math.hypot(u.x - x, u.z - z) < 14)) continue;
                     const bx = new THREE.Box3(new THREE.Vector3(x - margin, 0, z - margin), new THREE.Vector3(x + margin, 9, z + margin));
                     if (colliders.some(c => c.intersectsBox(bx))) continue;
+                    if ((window.__houseRects || []).some(h => x > h[0] - 6 && x < h[2] + 6 && z > h[1] - 6 && z < h[3] + 6)) continue;
                     spot = { x, z };
                 }
                 if (!spot) spot = { x: (k - n / 2) * 12, z: -20 - k * 6 };
@@ -893,9 +895,9 @@
 
         function setWeapon(w) {
             currentWeapon = w; refreshWep();
-            ui.wepTxt.innerText = ['RIFLE (SMART)', 'BAZOOKA', 'KNIFE'][w]; ui.wepTxt.style.color = ['#00ffcc', '#ff5500', '#ffd84a'][w];
+            ui.wepTxt.innerText = ['RIFLE (SMART)', 'BAZOOKA', 'KNIFE', 'MACHINE GUN'][w]; ui.wepTxt.style.color = ['#00ffcc', '#ff5500', '#ffd84a', '#ffee55'][w];
         }
-        function refreshWep() { rifleGroup.visible = currentWeapon === 0 && swingT <= 0; bazookaGroup.visible = currentWeapon === 1 && swingT <= 0; knifeGroup.visible = currentWeapon === 2 || swingT > 0; }
+        function refreshWep() { rifleGroup.visible = (currentWeapon === 0 || currentWeapon === 3) && swingT <= 0; bazookaGroup.visible = currentWeapon === 1 && swingT <= 0; knifeGroup.visible = currentWeapon === 2 || swingT > 0; }
         function stab() {
             if (knifeCd > 0 || gameState !== 'playing') return; knifeCd = 0.4; swingT = 0.28; refreshWep(); playSound('shoot');
             camera.getWorldDirection(_v2); _v2.y = 0; _v2.normalize();
@@ -995,7 +997,7 @@
         function executeShooting() {
             let gpShoot = false; if (navigator.getGamepads) { const gp = navigator.getGamepads()[0]; if (gp && gp.connected && gp.buttons[7] && gp.buttons[7].pressed) gpShoot = true; }
             if (!(isMouseDown || gpShoot) || gameState !== 'playing') return;
-            if (currentWeapon === 0 && rifleCooldown <= 0) fireRifle(); else if (currentWeapon === 1 && bazookaCooldown <= 0) fireBazooka(); else if (currentWeapon === 2) stab();
+            if (currentWeapon === 0 && rifleCooldown <= 0) fireRifle(); else if (currentWeapon === 1 && bazookaCooldown <= 0) fireBazooka(); else if (currentWeapon === 3 && rifleCooldown <= 0) fireRifle(); else if (currentWeapon === 2) stab();
         }
 
         function applyDamage(botGroup, amount) {
@@ -1153,7 +1155,7 @@
                 }
                 // --- movement: flat (yaw-only) walking, independent jump physics, wall sliding ---
                 direction.z = Number(moveForward || gpF) - Number(moveBackward || gpB); direction.x = Number(moveRight || gpR) - Number(moveLeft || gpL); direction.normalize();
-                const moving = direction.lengthSq() > 0, spd = isSprinting ? 18 : 11, k = 1 - Math.exp(-12 * delta);
+                const moving = direction.lengthSq() > 0, spd = (isSprinting ? 18 : 11) * (window.__spdMul || 1), k = 1 - Math.exp(-12 * delta);
                 velocity.x += (direction.x * spd - velocity.x) * k; velocity.z += (-direction.z * spd - velocity.z) * k;
                 velocity.y -= 9.8 * 12.0 * delta;
                 euler.setFromQuaternion(camera.quaternion); const sY = Math.sin(euler.y), cY = Math.cos(euler.y);
@@ -1392,8 +1394,437 @@
             btnSprint.style.backgroundColor = isSprinting ? 'rgba(0, 255, 0, 0.5)' : 'rgba(0, 0, 0, 0.4)';
         });
 
-        bindBtn('btn-weap', () => setWeapon((currentWeapon + 1) % 3));
+        bindBtn('btn-weap', () => cycleWeapon());
         bindBtn('btn-stab', () => stab());
+    // ===================== ADD-ON: DOORS / BUILDINGS / SEASONS / NATURE / VEHICLES / MODES =====================
+const OPT = { mode: 0, player: 0, season: 0, style: 0 };
+const MODES = ['CLASSIC STAGES', 'SURVIVAL (ENDLESS)', 'FREE ROAM (NO ENEMIES)', 'HARDCORE (2x DAMAGE)'];
+const PLAYERS = [{ n: 'SOLDIER', spd: 1, dmg: 1 }, { n: 'SCOUT (FAST, FRAGILE)', spd: 1.25, dmg: 1.25 }, { n: 'HEAVY (SLOW, TOUGH)', spd: 0.88, dmg: 0.6 }];
+const SEASON_OPT = ['AUTO (EACH STAGE)', 'SPRING', 'SUMMER', 'AUTUMN', 'WINTER'];
+function mkStyleTex(base, line, vert, lit) {
+    return canvasTex(64, 64, (g, w, h) => {
+        g.fillStyle = base; g.fillRect(0, 0, w, h);
+        for (let i = 0; i < 260; i++) { g.fillStyle = 'rgba(0,0,0,' + (0.05 + Math.random() * 0.15) + ')'; g.fillRect((Math.random() * w) | 0, (Math.random() * h) | 0, 2, 2); }
+        g.fillStyle = line; for (let k = 0; k < 64; k += 4) { if (vert) g.fillRect(k, 0, 1, h); else g.fillRect(0, k, w, 1); }
+        for (const [x, y] of [[8, 8], [40, 8], [8, 38], [40, 38]]) { g.fillStyle = '#0c1018'; g.fillRect(x - 1, y - 1, 18, 20); g.fillStyle = Math.random() < lit ? '#ffd98a' : '#26344a'; g.fillRect(x, y, 16, 18); g.fillStyle = '#0c1018'; g.fillRect(x + 7, y, 2, 18); }
+    }, false);
+}
+const STYLES = [
+    { n: 'NEON TOWERS', tex: null, hk: 1, neon: true, roof: false, wall: 0x2a3550, rc: 0x14182a },
+    { n: 'BRICK CITY', tex: mkStyleTex('#a0503a', 'rgba(230,200,180,.35)', false, 0.6), hk: 0.7, neon: false, roof: true, wall: 0xa4553c, rc: 0x4a2a24 },
+    { n: 'VILLAGE HOUSES', tex: mkStyleTex('#e6d9b8', 'rgba(120,90,50,.18)', false, 0.5), hk: 0.38, neon: false, roof: true, wall: 0xe8dcc0, rc: 0x7a3326 },
+    { n: 'INDUSTRIAL', tex: mkStyleTex('#6c737c', 'rgba(20,24,30,.45)', true, 0.3), hk: 0.55, neon: false, roof: false, wall: 0x7a8088, rc: 0x30343a }
+];
+STYLES.forEach(s => { if (s.tex) s.tex.repeat.set(4, 4); });
+const STY = () => STYLES[OPT.style], PLR = () => PLAYERS[OPT.player];
+let riding = null;
+window.__spdMul = 1;
+
+// --- style hooks: building height, texture, neon on/off, pitched roofs ---
+const _ba = buildArena; buildArena = function () { HK *= STY().hk; _ba(); };
+const roofGeo = new THREE.ConeGeometry(0.7071, 1, 4); roofGeo.rotateY(Math.PI / 4);
+const roofMat = new THREE.MeshStandardMaterial({ color: 0x6a2a22, roughness: 0.8 });
+const _at = addTower; addTower = function (cx, cz, w, d, h, solid) {
+    const m = _at(cx, cz, w, d, h, solid);
+    if (STY().roof) { const rh = Math.min(w, d) * 0.45, r = new THREE.Mesh(roofGeo, roofMat); r.scale.set(w * 1.06, rh, d * 1.06); r.position.set(cx, h + rh / 2, cz); environmentGroup.add(r); }
+    return m;
+};
+const _as = applySeason; applySeason = function (s) { _as(OPT.season ? SEASONS[OPT.season - 1] : s); };
+const _tpd = takePlayerDamage; takePlayerDamage = function (a) { _tpd(OPT.mode === 2 ? 0 : a * PLR().dmg * (OPT.mode === 3 ? 2 : 1)); };
+const _sb = spawnBot; spawnBot = function () { if (OPT.mode !== 2) _sb(); };
+const _us = updStage; updStage = function () { _us(); const el = document.getElementById('stageTxt'); el.innerText = OPT.mode === 2 ? 'FREE ROAM · ' + wS.n : el.innerText.replace(SEASONS[(stage - 1) % SEASONS.length].n, wS.n); };
+
+// --- extras: houses with doors, trees, grass, cars, bikes ---
+const extraGroup = new THREE.Group(); scene.add(extraGroup);
+const houseRecs = [], doors = [], medkits = [], vehicles = [], treeCols = [];
+function mbox(parent, mat, sx, sy, sz, x, y, z) { const m = new THREE.Mesh(sharedBoxGeo, mat); m.scale.set(sx, sy, sz); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; }
+function addSolid(mesh, box) { colliders.push(box); raycastTargets.push(mesh); houseRecs.push({ mesh, box }); }
+function clearCoverRect(x0, z0, x1, z1) {
+    const r = new THREE.Box3(new THREE.Vector3(x0, -1, z0), new THREE.Vector3(x1, 40, z1));
+    for (const c of coverRecs.slice()) if (c.box.intersectsBox(r)) { environmentGroup.remove(c.body); colliders.splice(colliders.indexOf(c.box), 1); const i = raycastTargets.indexOf(c.body); if (i >= 0) raycastTargets.splice(i, 1); coverRecs.splice(coverRecs.indexOf(c), 1); }
+}
+function clearExtras() {
+    if (riding) { riding = null; window.__spdMul = PLR().spd; rideGroup.visible = false; }
+    for (const r of houseRecs) { const i = colliders.indexOf(r.box); if (i >= 0) colliders.splice(i, 1); const j = raycastTargets.indexOf(r.mesh); if (j >= 0) raycastTargets.splice(j, 1); }
+    for (const b of treeCols) { const i = colliders.indexOf(b); if (i >= 0) colliders.splice(i, 1); }
+    for (const v of vehicles) { const i = colliders.indexOf(v.box); if (i >= 0) colliders.splice(i, 1); }
+    window.__houseRects = []; houseRecs.length = doors.length = medkits.length = vehicles.length = treeCols.length = 0;
+    while (extraGroup.children.length) extraGroup.remove(extraGroup.children[0]);
+}
+function makeHouse(cx, cz, w, d, start) {
+    clearCoverRect(cx - w / 2 - 4, cz - d / 2 - 8, cx + w / 2 + 4, cz + d / 2 + 4);
+    (window.__houseRects = window.__houseRects || []).push([cx - w / 2, cz - d / 2, cx + w / 2, cz + d / 2]); const S = STY(), t = 0.9, h = 9, dw = 5.4, dh = 7.2, x0 = cx - w / 2, x1 = cx + w / 2, z0 = cz - d / 2, z1 = cz + d / 2, lw = (w - dw) / 2;
+    const wm = new THREE.MeshStandardMaterial({ color: S.wall, roughness: 0.8, emissive: S.wall, emissiveIntensity: 0.12 }), rm = new THREE.MeshStandardMaterial({ color: S.rc, roughness: 0.8 });
+    const wall = (x, y, z, sx, sy, sz, m) => { const me = mbox(extraGroup, m || wm, sx, sy, sz, x, y, z); me.receiveShadow = true; addSolid(me, new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, y, z), new THREE.Vector3(sx, sy, sz))); };
+    wall(cx, h / 2, z1, w, h, t); wall(x0, h / 2, cz, t, h, d); wall(x1, h / 2, cz, t, h, d);
+    wall(x0 + lw / 2, h / 2, z0, lw, h, t); wall(x1 - lw / 2, h / 2, z0, lw, h, t); wall(cx, (dh + h) / 2, z0, dw + 0.2, h - dh, t);
+    wall(cx, h + 0.5, cz, w + 1.4, 1, d + 1.4, rm);
+    mbox(extraGroup, new THREE.MeshStandardMaterial({ color: 0x6a4a30, roughness: 0.9, emissive: 0x2a1a0c, emissiveIntensity: 0.5 }), w - 1, 0.12, d - 1, cx, 0.14, cz);
+    const dm = new THREE.MeshStandardMaterial({ color: 0x3a2a1c, roughness: 0.6, metalness: 0.3, emissive: 0xff8a1e, emissiveIntensity: 0.12 });
+    const dmesh = mbox(extraGroup, dm, dw, dh, 0.5, cx, dh / 2, z0), dbox = new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(cx, dh / 2, z0), new THREE.Vector3(dw, dh, 0.8));
+    colliders.push(dbox); raycastTargets.push(dmesh); houseRecs.push({ mesh: dmesh, box: dbox });
+    mbox(extraGroup, new THREE.MeshBasicMaterial({ color: 0xffe6b0 }), 0.5, 0.5, 0.5, dmesh.position.x + dw * 0.35, 3.6, z0 - 0.35);   // door handle
+    mbox(extraGroup, new THREE.MeshBasicMaterial({ color: 0xffe6b0 }), w * 0.5, 0.25, 1, cx, h - 0.2, cz);                                  // ceiling lamp
+    const lamp = new THREE.PointLight(0xffd9a0, 1.1, 36, 2); lamp.position.set(cx, h - 1.5, cz); extraGroup.add(lamp);
+    const fm = new THREE.MeshStandardMaterial({ color: 0x4a5a78, roughness: 0.7, emissive: 0x141c2c, emissiveIntensity: 0.5 });
+    const furn = (x, y, z, sx, sy, sz, m) => { const me = mbox(extraGroup, m || fm, sx, sy, sz, x, y, z); addSolid(me, new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, y, z), new THREE.Vector3(sx, sy, sz))); };
+    furn(cx - w * 0.25, 0.8, z1 - 2, 4.5, 1.6, 1.8); furn(cx + w * 0.25, 1.3, z1 - 1.5, 3, 2.6, 1.2); furn(cx - w * 0.28, 0.7, cz + 1, 2.4, 1.4, 2.4);
+    doors.push({ mesh: dmesh, box: dbox, x: cx, z: z0, h: dh, t: 0, c: new THREE.Vector3(cx, dh / 2, z0), s: new THREE.Vector3(dw, dh, 0.8) });
+    if (!start) { const mk = mbox(extraGroup, new THREE.MeshStandardMaterial({ color: 0x2dff7a, emissive: 0x2dff7a, emissiveIntensity: 0.6 }), 1.6, 1.1, 1.1, cx + w * 0.25, 0.75, cz - 1); mbox(mk, new THREE.MeshBasicMaterial({ color: 0xffffff }), 0.5, 0.3, 1.1, 0, 0.45, 0); medkits.push({ mesh: mk, used: false }); }
+}
+const SEASON_COL = {
+    SPRING: { leaf: [0x5ade6a, 0xff9ad0, 0x7af08a], grass: 0x5ade6a }, SUMMER: { leaf: [0x1f8a30, 0x2fa040, 0x3aa84a], grass: 0x2f9a3c },
+    AUTUMN: { leaf: [0xe8741a, 0xd8a020, 0xb83a1a], grass: 0xb08a2a }, WINTER: { leaf: [0xf2f6ff, 0xd0e0f8, 0xe8f0ff], grass: 0xeaf2ff },
+    MONSOON: { leaf: [0x1f7a60, 0x2a8a70], grass: 0x2f7a5a }, DROUGHT: { leaf: [0x8a7a3a, 0x6a5a2a], grass: 0xb09a50 },
+    EMBERFALL: { leaf: [0x5a1a10, 0x8a2a14], grass: 0x4a342c }, AURORA: { leaf: [0x4affc0, 0x7a6aff], grass: 0x58ffc8 }
+};
+function makeNature(r) {
+    const sc = SEASON_COL[wS.n] || SEASON_COL.SUMMER, TN = IS_SMALL ? 50 : 110, GN = IS_SMALL ? 90 : 180, TUF = IS_SMALL ? 300 : 600;
+    const tr = new THREE.InstancedMesh(sharedBoxGeo, new THREE.MeshStandardMaterial({ color: 0x5a3a22, roughness: 0.9 }), TN);
+    const fl = new THREE.InstancedMesh(sharedBoxGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, emissive: 0x223322, emissiveIntensity: 0.35 }), TN * 2);
+    const d = new THREE.Object3D(), col = new THREE.Color(); let n = 0;
+    const tryTree = (x, z) => {
+        if (n >= TN || Math.abs(x) > ARENA_X - 1.5 || Math.abs(z) > ARENA_Z - 5 || (Math.abs(x) < 16 && z > -8 && z < 32)) return;
+        _botBox.setFromCenterAndSize(_v2.set(x, 4, z), _v3.set(6, 8, 6)); if (colliders.some(c => c.intersectsBox(_botBox))) return;
+        const th = 4.5 + r() * 2.5, c = sc.leaf[(r() * sc.leaf.length) | 0];
+        d.rotation.set(0, 0, 0); d.scale.set(1.5, th, 1.5); d.position.set(x, th / 2, z); d.updateMatrix(); tr.setMatrixAt(n, d.matrix);
+        d.scale.set(5 + r() * 1.5, 3.4, 5 + r() * 1.5); d.position.set(x, th + 1.5, z); d.updateMatrix(); fl.setMatrixAt(n * 2, d.matrix); fl.setColorAt(n * 2, col.setHex(c));
+        d.scale.set(3.2, 2.6, 3.2); d.position.set(x, th + 4, z); d.updateMatrix(); fl.setMatrixAt(n * 2 + 1, d.matrix); fl.setColorAt(n * 2 + 1, col.setHex(c));
+        const b = new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, th / 2, z), new THREE.Vector3(1.8, th, 1.8)); colliders.push(b); treeCols.push(b); n++;
+    };
+    for (let z = -230; z <= 230 && n < TN / 2; z += 24) { tryTree(-ARENA_X + 3.5, z + r() * 6); tryTree(ARENA_X - 3.5, z + r() * 6); }
+    for (let k = 0; k < 400 && n < TN; k++) tryTree((r() * 2 - 1) * (ARENA_X - 3), (r() * 2 - 1) * (ARENA_Z - 8));
+    tr.count = n; fl.count = n * 2; tr.instanceMatrix.needsUpdate = fl.instanceMatrix.needsUpdate = true; if (fl.instanceColor) fl.instanceColor.needsUpdate = true;
+    tr.frustumCulled = fl.frustumCulled = false; extraGroup.add(tr, fl);
+    const gm = new THREE.MeshStandardMaterial({ color: sc.grass, roughness: 0.95, emissive: sc.grass, emissiveIntensity: 0.28 });
+    const gp = new THREE.InstancedMesh(sharedBoxGeo, gm, GN), tf = new THREE.InstancedMesh(sharedBoxGeo, gm, TUF);
+    for (let i = 0; i < GN; i++) { const w = 3 + r() * 7, dd = 3 + r() * 7; d.scale.set(w, 0.1, dd); d.position.set((r() * 2 - 1) * (ARENA_X - 2), 0.1, (r() * 2 - 1) * (ARENA_Z - 4)); d.updateMatrix(); gp.setMatrixAt(i, d.matrix); }
+    for (let i = 0; i < TUF; i++) { const hh = 0.5 + r() * 0.9; d.scale.set(0.22, hh, 0.22); d.position.set((r() * 2 - 1) * (ARENA_X - 1), hh / 2, (r() * 2 - 1) * (ARENA_Z - 2)); d.rotation.set(0, r() * 3, 0); d.updateMatrix(); tf.setMatrixAt(i, d.matrix); }
+    gp.frustumCulled = tf.frustumCulled = false; extraGroup.add(gp, tf);
+}
+const tireMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: 0.9 }), glassMat = new THREE.MeshStandardMaterial({ color: 0x0a1220, emissive: 0x203a5a, emissiveIntensity: 0.6, roughness: 0.2 });
+const wheelGeo = new THREE.CylinderGeometry(1, 1, 0.6, 10); wheelGeo.rotateZ(Math.PI / 2);
+const headMat = new THREE.MeshBasicMaterial({ color: 0xfff2c0 }), tailMat = new THREE.MeshBasicMaterial({ color: 0xff2a2a });
+function mkCar(c) {
+    const g = new THREE.Group(), bm = new THREE.MeshStandardMaterial({ color: c, roughness: 0.4, metalness: 0.5, emissive: c, emissiveIntensity: 0.14 });
+    mbox(g, bm, 4, 1.4, 9, 0, 1.7, 0); mbox(g, bm, 3.4, 1.2, 4.6, 0, 3, 0.6); mbox(g, glassMat, 3.5, 0.8, 4.7, 0, 3.05, 0.6);
+    for (const x of [-2, 2]) for (const z of [-2.9, 2.9]) { const w = new THREE.Mesh(wheelGeo, tireMat); w.scale.set(1, 0.95, 0.95); w.position.set(x, 0.95, z); g.add(w); }
+    for (const x of [-1.3, 1.3]) { mbox(g, headMat, 1, 0.5, 0.15, x, 1.9, -4.55); mbox(g, tailMat, 1, 0.5, 0.15, x, 1.9, 4.55); }
+    return g;
+}
+function mkBike(c) {
+    const g = new THREE.Group(), bm = new THREE.MeshStandardMaterial({ color: c, roughness: 0.4, metalness: 0.6, emissive: c, emissiveIntensity: 0.2 });
+    for (const z of [-1.7, 1.7]) { const w = new THREE.Mesh(wheelGeo, tireMat); w.scale.set(0.5, 1, 1); w.position.set(0, 1, z); g.add(w); }
+    mbox(g, bm, 0.35, 0.4, 3.2, 0, 1.9, 0); mbox(g, bm, 0.7, 0.6, 1.1, 0, 2.3, -0.5); mbox(g, tireMat, 0.6, 0.3, 1.2, 0, 2.55, 0.7);
+    mbox(g, bm, 0.2, 1.6, 0.2, 0, 1.8, -1.7); mbox(g, tireMat, 1.8, 0.2, 0.2, 0, 2.7, -1.7); mbox(g, headMat, 0.4, 0.4, 0.2, 0, 2.3, -2.1);
+    return g;
+}
+function makeVehicles(r) {
+    const CC = [0xe02a2a, 0x2a6aff, 0xf0c020, 0x20c080, 0xe0e0f0, 0xa040e0], n = [IS_SMALL ? 6 : 11, IS_SMALL ? 5 : 8];
+    for (let k = 0; k < 2; k++) for (let i = 0, tries = 0; i < n[k] && tries++ < 300;) {
+        const rot = r() < 0.5 ? 0 : 1, bw = k ? 1.8 : 4.4, bd = k ? 4 : 9.4, w = rot ? bd : bw, dd = rot ? bw : bd, x = (r() * 2 - 1) * (ARENA_X - 6), z = -225 + r() * 250;
+        if (Math.hypot(x, z - 10) < 14) continue;
+        _botBox.setFromCenterAndSize(_v2.set(x, 2, z), _v3.set(w + 5, 4, dd + 5)); if (colliders.some(c => c.intersectsBox(_botBox))) continue;
+        const g = k ? mkBike(CC[(r() * 6) | 0]) : mkCar(CC[(r() * 6) | 0]); g.position.set(x, 0, z); g.rotation.y = rot * Math.PI / 2; extraGroup.add(g);
+        const box = new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, k ? 1.5 : 1.9, z), new THREE.Vector3(w, k ? 3 : 3.8, dd)); colliders.push(box);
+        vehicles.push({ k, g, box, mul: k ? 1.75 : 2.3, dmg: k ? 35 : 70 }); i++;
+    }
+}
+// riding: press E (or RIDE button) next to a car / bike; ram bots for damage
+const rideGroup = new THREE.Group(); camera.add(rideGroup); rideGroup.visible = false;
+const carDash = new THREE.Group(); mbox(carDash, new THREE.MeshStandardMaterial({ color: 0x15181f, roughness: 0.5 }), 7, 0.9, 2, 0, -2.5, -4); mbox(carDash, new THREE.MeshBasicMaterial({ color: 0x00ccff }), 1.6, 0.12, 0.1, 0, -2.0, -3.4);
+const bikeBar = new THREE.Group(); mbox(bikeBar, tireMat, 3, 0.3, 0.3, 0, -1.5, -2.6); mbox(bikeBar, tireMat, 0.4, 0.5, 0.4, -1.4, -1.4, -2.6); mbox(bikeBar, tireMat, 0.4, 0.5, 0.4, 1.4, -1.4, -2.6);
+rideGroup.add(carDash, bikeBar);
+function toggleRide() {
+    if (gameState !== 'playing') return; const p = camera.position;
+    if (riding) {
+        const y = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ').y, v = riding, rot = Math.abs(Math.round(y / (Math.PI / 2))) % 2;
+        const px = Math.max(-ARENA_X + 4, Math.min(ARENA_X - 4, p.x + Math.cos(y) * 6)), pz = p.z - Math.sin(y) * 6;
+        v.g.position.set(px, 0, pz); v.g.rotation.y = rot * Math.PI / 2; v.g.visible = true;
+        const bw = v.k ? 1.8 : 4.4, bd = v.k ? 4 : 9.4; v.box.setFromCenterAndSize(new THREE.Vector3(px, v.k ? 1.5 : 1.9, pz), new THREE.Vector3(rot ? bd : bw, v.k ? 3 : 3.8, rot ? bw : bd));
+        riding = null; rideGroup.visible = false; window.__spdMul = PLR().spd; showBanner('ON FOOT', 900); return;
+    }
+    let best = null, bd = 12; for (const v of vehicles) { const dd = Math.hypot(v.g.position.x - p.x, v.g.position.z - p.z); if (dd < bd) { bd = dd; best = v; } }
+    if (!best) { showBanner('NO VEHICLE NEARBY', 800); return; }
+    riding = best; best.g.visible = false; best.box.makeEmpty(); rideGroup.visible = true; carDash.visible = !best.k; bikeBar.visible = !!best.k;
+    window.__spdMul = PLR().spd * best.mul; showBanner(best.k ? 'RIDING BIKE — E TO GET OFF' : 'DRIVING CAR — E TO GET OFF', 1400);
+}
+document.addEventListener('keydown', e => { if (e.code === 'KeyE') toggleRide(); });
+const rideBtn = document.createElement('div'); rideBtn.id = 'btn-ride'; rideBtn.className = 'mc-btn'; rideBtn.textContent = 'RIDE'; rideBtn.style.cssText = 'bottom:290px;right:40px;width:50px;height:50px;border-color:#ff66ff;color:#ff66ff';
+document.getElementById('mobile-controls').appendChild(rideBtn); bindBtn('btn-ride', () => toggleRide());
+
+const _sp = spawnPoint; spawnPoint = function (out) {
+    for (let k = 0; k < 25; k++) { _sp(out); if (!(window.__houseRects || []).some(h => out.x > h[0] - 3 && out.x < h[2] + 3 && out.z > h[1] - 3 && out.z < h[3] + 3)) return out; }
+    return out.set(0, 0, camera.position.z > 0 ? -200 : 200);
+};
+function applyStyleLook() { const s = STY(); towerMats.forEach(m => { m.map = s.tex || towerTex; m.needsUpdate = true; }); [neonRed, neonBlue, neonWhite, neonAmber].forEach(q => { q.mesh.visible = s.neon; }); if (glowPts) glowPts.visible = s.neon; }
+// --- genCover hook: every stage gets doors/houses, trees, grass, vehicles after the cover is placed ---
+const _gc = genCover; genCover = function (st) {
+    _gc(st); clearExtras(); const r = mulberry32(st * 4241 + 77);
+    try { makeHouse(0, 10, 20, 20, true); [[-23, -70], [24, -140], [-22, -205]].forEach(([x, z]) => makeHouse(x, z, 16, 14, false)); } catch (e) { console.error('houses', e); }
+    try { makeNature(r); } catch (e) { console.error('nature', e); }
+    try { makeVehicles(r); } catch (e) { console.error('vehicles', e); }
+    applyStyleLook();
+};
+const _ss = startStage; startStage = function (n) {
+    window.__spdMul = PLR().spd; _ss(n);
+    if (OPT.mode === 1 || OPT.mode === 2) { clearPuzzle(); stageGoal = 1e6; if (OPT.mode === 2) clearScene(); updStage(); }
+    showBanner(OPT.mode === 2 ? 'FREE ROAM — ' + wS.n : 'STAGE ' + n + ' — ' + wS.n, 2200);
+};
+(function tick() {
+    requestAnimationFrame(tick); if (gameState !== 'playing') return; const p = camera.position, now = performance.now() / 1000;
+    for (const d of doors) {
+        const near = Math.hypot(p.x - d.x, p.z - d.z) < 7.5 ? 1 : 0; d.t += (near - d.t) * 0.12; d.mesh.position.y = d.h / 2 + d.t * d.h * 1.05;
+        if (d.t > 0.55) d.box.makeEmpty(); else d.box.setFromCenterAndSize(d.c, d.s);
+    }
+    for (const m of medkits) { if (m.used) continue; m.mesh.rotation.y += 0.03; if (Math.hypot(m.mesh.position.x - p.x, m.mesh.position.z - p.z) < 3 && hp < 100) { m.used = true; m.mesh.visible = false; hp = Math.min(100, hp + 40); updateHpUI(); showBanner('+40 HP', 900); } }
+    if (riding && velocity.lengthSq() > 120) for (const b of arrays.bots) { if (Math.hypot(b.group.position.x - p.x, b.group.position.z - p.z) < 5 && !(b._ram > now)) { b._ram = now + 0.5; applyDamage(b.group, riding.dmg); } }
+})();
+// --- menu: choose ONE option in each row (tap to select), no scrolling ---
+(function () {
+    const st = document.createElement('style');
+    st.textContent = '.chip{background:rgba(5,10,28,.6);border:2px solid #00ccff;color:#00ccff;font-family:inherit;font-weight:bold;font-size:.8rem;padding:6px 10px;margin:3px;cursor:pointer;text-transform:uppercase;border-radius:4px}.chip.sel{background:#00ff66;border-color:#00ff66;color:#000;box-shadow:0 0 10px #00ff66}.optrow{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;max-width:760px;margin:2px 0}.optlbl{color:#fff;font-weight:bold;font-size:.8rem;letter-spacing:.1em;width:100%;text-align:center;margin-top:4px}.screen{overflow:hidden!important}';
+    document.head.appendChild(st);
+    const pb = document.getElementById('btn-play-now'), host = document.createElement('div'); host.style.cssText = 'display:flex;flex-direction:column;align-items:center;margin-bottom:6px';
+    [['mode', 'MODE', MODES], ['player', 'PLAYER', PLAYERS.map(x => x.n)], ['season', 'SEASON', SEASON_OPT], ['style', 'BUILDINGS', STYLES.map(x => x.n)]].forEach(([key, label, list]) => {
+        const lb = document.createElement('div'); lb.className = 'optlbl'; lb.textContent = label; host.appendChild(lb);
+        const row = document.createElement('div'); row.className = 'optrow'; host.appendChild(row); const chips = [];
+        list.forEach((name, idx) => {
+            const b = document.createElement('button'); b.id = 'opt-' + key + '-' + idx; b.className = 'chip'; b.textContent = name; row.appendChild(b); chips.push(b);
+            bindUIBtn(b, () => { OPT[key] = idx; chips.forEach((c, k) => c.classList.toggle('sel', k === idx)); try { if (key === 'season') applySeason(SEASONS[0]); if (key === 'style') applyStyleLook(); } catch (e) { } });
+        });
+        chips[OPT[key]].classList.add('sel');
+    });
+    pb.parentNode.insertBefore(host, pb);
+    // fit every menu screen into the window (scale down instead of scrolling)
+    const screens = [...document.querySelectorAll('.screen')], wraps = [];
+    screens.forEach(sc => { const w = document.createElement('div'); w.style.cssText = 'display:flex;flex-direction:column;align-items:center;transform-origin:center center;'; while (sc.firstChild) w.appendChild(sc.firstChild); sc.appendChild(w); sc.style.justifyContent = 'center'; wraps.push([sc, w]); });
+    function fit() { for (const [sc, w] of wraps) { if (sc.classList.contains('hidden')) continue; w.style.transform = 'none'; const k = Math.min(1, (sc.clientHeight - 12) / w.scrollHeight, (sc.clientWidth - 12) / w.scrollWidth); w.style.transform = 'scale(' + k + ')'; } }
+    window.addEventListener('resize', fit); setInterval(fit, 300); fit(); window.__fitMenus = fit;
+    window.addEventListener('wheel', e => { if (gameState !== 'playing') e.preventDefault(); }, { passive: false });
+})();
+    // ===================== ADD-ON: 10 OPEN-WORLD LEVELS =====================
+const LEVEL_NAMES = ['DOWNTOWN', 'HARBOR DISTRICT', 'SUBURBS', 'FACTORY ZONE', 'OLD TOWN', 'HIGHLANDS', 'NEON STRIP', 'FROZEN QUARTER', 'DESERT OUTPOST', 'FINAL STRONGHOLD'];
+let levelTimer = 0, timedLevel = false; OPT.rand = true;
+function openFree(x, z, w, d) { _botBox.setFromCenterAndSize(_v2.set(x, 5, z), _v3.set(w + 8, 10, d + 8)); return !colliders.some(c => c.intersectsBox(_botBox)); }
+function makeOpenWorld(st) {
+    const r = mulberry32(st * 6007 + 11), S = STY(), hm = Math.max(0.5, S.hk), N = Math.round((34 + st * 3) * (IS_SMALL ? 0.6 : 1));
+    const band = new THREE.MeshBasicMaterial({ color: palHexA }), tank = new THREE.MeshStandardMaterial({ color: 0x8a96a8, roughness: 0.6, metalness: 0.4 });
+    const solid = (mesh, x, y, z, sx, sy, sz) => addSolid(mesh, new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, y, z), new THREE.Vector3(sx, sy, sz)));
+    const roof = (x, y, z, w, d, rh) => { const m = new THREE.Mesh(roofGeo, roofMat); m.scale.set(w * 1.08, rh, d * 1.08); m.position.set(x, y + rh / 2, z); extraGroup.add(m); };
+    for (let i = 0, tries = 0; i < N && tries++ < N * 10;) {
+        const roll = r(), x = (r() * 2 - 1) * (ARENA_X - 14), z = (r() * 2 - 1) * (ARENA_Z - 16);
+        if (Math.abs(x) < 26 || Math.hypot(x, z - 10) < 40) continue;
+        const mat = towerMats[(r() * 4) | 0];
+        if (roll < 0.45) {
+            const w = 14 + r() * 14, d = 14 + r() * 14, h = (28 + r() * 60) * hm; if (!openFree(x, z, w, d)) continue;
+            const m = new THREE.Mesh(boxGeo(w, h, d, 24), mat); m.position.set(x, h / 2, z); extraGroup.add(m); solid(m, x, h / 2, z, w, h, d);
+            if (S.roof) roof(x, h, z, w, d, Math.min(w, d) * 0.4); if (S.neon) mbox(extraGroup, band, w + 0.3, 0.6, d + 0.3, x, h * 0.6, z);
+        } else if (roll < 0.7) {
+            const w = 28 + r() * 14, d = 16 + r() * 8, h = 9 + r() * 5; if (!openFree(x, z, w, d)) continue;
+            const m = new THREE.Mesh(boxGeo(w, h, d, 24), mat); m.position.set(x, h / 2, z); extraGroup.add(m); solid(m, x, h / 2, z, w, h, d);
+            mbox(extraGroup, tireMat, w + 1, 0.8, d + 1, x, h + 0.4, z);
+        } else if (roll < 0.88) {
+            const w = 9 + r() * 4, d = 9 + r() * 4, h = 6 + r() * 3; if (!openFree(x, z, w, d)) continue;
+            const m = new THREE.Mesh(boxGeo(w, h, d, 24), mat); m.position.set(x, h / 2, z); extraGroup.add(m); solid(m, x, h / 2, z, w, h, d); roof(x, h, z, w, d, 5);
+        } else {
+            if (!openFree(x, z, 7, 7)) continue;
+            for (const [a, b] of [[-2.4, -2.4], [2.4, -2.4], [-2.4, 2.4], [2.4, 2.4]]) mbox(extraGroup, tireMat, 0.8, 10, 0.8, x + a, 5, z + b);
+            const t = new THREE.Mesh(new THREE.CylinderGeometry(3.6, 3.6, 5, 10), tank); t.position.set(x, 12.5, z); extraGroup.add(t); roof(x, 15, z, 7, 7, 3);
+            solid(t, x, 8, z, 7, 16, 7);
+        }
+        i++;
+    }
+    for (let k = 0, tries = 0; k < 2 && tries++ < 80;) { const x = (r() * 2 - 1) * (ARENA_X - 30), z = (r() * 2 - 1) * (ARENA_Z - 30); if (Math.abs(x) < 20 || Math.hypot(x, z - 10) < 50 || !openFree(x, z, 16, 14)) continue; makeHouse(x, z, 16, 14, false); k++; }
+    const kinds = ['green', 'black', 'teal'];
+    for (let k = 0, tries = 0; k < (IS_SMALL ? 20 : 45) && tries++ < 200;) { const x = (r() * 2 - 1) * (ARENA_X - 6), z = (r() * 2 - 1) * (ARENA_Z - 10), small = r() < 0.4, w = small ? 3 + r() * 2 : 6 + r() * 6, d = small ? 3 + r() * 2 : 5 + r() * 4; if (Math.hypot(x, z - 10) < 30 || !openFree(x, z, w, d)) continue; addCrate2(x, z, w, d, small ? 1.8 + r() * 1.4 : 5 + r() * 2, kinds[(r() * 3) | 0], small); k++; }
+    for (const s of [-1, 1]) { const m = new THREE.Mesh(boxGeo(24, 140, ARENA_Z * 2 + 120, 24), towerMats[0]); m.position.set(s * (ARENA_X + 16), 70, 0); extraGroup.add(m); }
+}
+const _gc2 = genCover; genCover = function (st) { _gc2(st); try { makeOpenWorld(st); } catch (e) { console.error('openworld', e); } };
+const _ss2 = startStage; startStage = function (n) {
+    if (OPT.rand) OPT.style = (n * 3 + (n >> 1)) % 4;
+    const rr = mulberry32(n * 991 + 3), all = ['dog', 'girl', 'ninja', 'zombie'], pool = all.filter(() => rr() < 0.55); if (!pool.length) pool.push(all[(rr() * 4) | 0]);
+    SEASONS[(n - 1) % SEASONS.length].pool = pool;
+    _ss2(n); timedLevel = n === 1 && (OPT.mode === 0 || OPT.mode === 3); levelTimer = 0;
+    if (timedLevel) { clearPuzzle(); stageGoal = 1e6; levelTimer = 60; }
+    updStage();
+    if (OPT.mode !== 2 && OPT.mode !== 1) showBanner(n === 11 ? 'ALL 10 LEVELS COMPLETE — ENDLESS MODE!' : 'LEVEL ' + n + ' — ' + LEVEL_NAMES[(n - 1) % 10] + (timedLevel ? ' · SURVIVE 60s' : ''), 2800);
+};
+const _us2 = updStage; updStage = function () { _us2(); if (OPT.mode === 2) return; document.getElementById('stageTxt').innerText = 'LEVEL ' + stage + (stage <= 10 ? '/10' : '') + ' · ' + wS.n + (timedLevel ? ' · SURVIVE' : ' (' + stageKills + '/' + stageGoal + ')'); };
+(function lvTick() {
+    let last = performance.now();
+    (function f() {
+        requestAnimationFrame(f); const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000); last = now;
+        if (gameState === 'menu' || gameState === 'gameover') { levelTimer = 0; return; }
+        if (gameState !== 'playing' || levelTimer <= 0 || stageTrans > 0) return;
+        levelTimer -= dt; const t = Math.max(0, Math.ceil(levelTimer));
+        puzBar.style.display = 'block'; puzBar.innerHTML = 'SURVIVE · ' + Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+        if (levelTimer <= 0) { levelTimer = 0; timedLevel = false; puzBar.style.display = 'none'; stageClear(); }
+    })();
+})();
+// BUILDINGS row: add RANDOM (PER LEVEL) option, default
+(function () {
+    const c0 = document.getElementById('opt-style-0'); if (!c0) return; const row = c0.parentNode;
+    const b = document.createElement('button'); b.id = 'opt-style-4'; b.className = 'chip sel'; b.textContent = 'RANDOM (PER LEVEL)'; row.appendChild(b);
+    row.querySelectorAll('.chip').forEach(c => { c.classList.remove('sel'); }); b.classList.add('sel');
+    for (let i = 0; i < 4; i++) bindUIBtn('opt-style-' + i, () => { OPT.rand = false; b.classList.remove('sel'); });
+    bindUIBtn('opt-style-4', () => { OPT.rand = true; row.querySelectorAll('.chip').forEach(c => c.classList.remove('sel')); b.classList.add('sel'); });
+})();
+    // ===================== ADD-ON: AUTOSAVE + CONTINUE =====================
+const SAVE_KEY = 'iron_tide_rising_save_v1'; let memSave = null, contTarget = 0, contScore = 0;
+function readSave() { try { const s = localStorage.getItem(SAVE_KEY); if (s) return JSON.parse(s); } catch (e) { } return memSave; }
+function writeSave(o) { memSave = o; try { localStorage.setItem(SAVE_KEY, JSON.stringify(o)); } catch (e) { } }
+function saveNow() { if (!stage) return; writeSave({ stage: stage, score: score, mode: OPT.mode, player: OPT.player, season: OPT.season, style: OPT.style, rand: OPT.rand }); }
+const _ss3 = startStage; startStage = function (n) {
+    let cont = false; if (contTarget && n === 1) { n = contTarget; cont = true; contTarget = 0; }
+    else if (n === 1) n = OPT.order === 1 ? 1 + ((Math.random() * 10) | 0) : (OPT.start || 1);
+    else if (OPT.order === 1) { let t, g = 0; do { t = 1 + ((Math.random() * 10) | 0); } while (t === stage && g++ < 20); n = t; }
+    _ss3(n); if (cont) { score = contScore; ui.scoreTxt.innerText = score; }
+    saveNow();
+};
+setInterval(() => { if (gameState === 'playing') saveNow(); }, 5000);
+function syncMenuChips() {
+    for (const k of ['mode', 'player', 'season', 'style']) {
+        const max = k === 'style' ? 5 : 4; for (let i = 0; i < max + 1; i++) { const c = document.getElementById('opt-' + k + '-' + i); if (c) c.classList.toggle('sel', k === 'style' ? (OPT.rand ? i === 4 : i === OPT.style) : i === OPT[k]); }
+    }
+}
+function continueGame() {
+    const s = readSave(); if (!s) return;
+    OPT.mode = s.mode | 0; OPT.player = s.player | 0; OPT.season = s.season | 0; OPT.style = s.style | 0; OPT.rand = !!s.rand; syncMenuChips();
+    contTarget = Math.max(1, s.stage | 0); contScore = s.score | 0; startGame();
+}
+(function () {
+    const mk = (id, cls) => { const b = document.createElement('button'); b.id = id; b.className = cls; b.textContent = 'Continue'; b.classList.add('hidden'); return b; };
+    const pb = document.getElementById('btn-play-now'), mb = mk('btn-continue', 'btn btn-green'); pb.parentNode.insertBefore(mb, pb);
+    const rb = document.getElementById('btn-retry'), gb = mk('btn-continue-go', 'btn btn-blue'); rb.parentNode.insertBefore(gb, rb);
+    bindUIBtn('btn-continue', continueGame); bindUIBtn('btn-continue-go', continueGame);
+    setInterval(() => { const s = readSave(), t = s ? 'Continue · Level ' + s.stage + ' · Score ' + s.score : ''; for (const b of [mb, gb]) { b.classList.toggle('hidden', !s); if (s && b.textContent !== t) b.textContent = t; } }, 400);
+})();
+    // ===================== ADD-ON: SETTINGS / GUIDE / KEYS / WEAPONS / UI POLISH =====================
+(function () { const st = document.createElement('style'); st.textContent = `
+:root{--a:#27e6ff;--b:#8a5bff;--g:#2dff9a;--r:#ff4d6d}
+body,.btn,.chip,.hud-btn,.mc-btn,#hud,h1,h2,.guide,.kbrow{font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif!important}
+.screen{background:radial-gradient(ellipse at 50% 30%,rgba(30,40,90,.55) 0%,rgba(4,6,18,.94) 70%)!important;backdrop-filter:blur(3px)}
+h1{font-weight:900!important;letter-spacing:.14em!important;font-size:clamp(2.2rem,7vw,5rem)!important;margin:0 0 22px!important;filter:drop-shadow(0 4px 18px rgba(255,60,90,.55))!important}
+h2{font-weight:800!important;letter-spacing:.2em!important;font-size:clamp(1.4rem,3.4vw,2.2rem)!important;margin:0 0 14px!important;color:#e9f6ff!important;text-shadow:0 0 16px rgba(39,230,255,.55)!important}
+.btn{min-width:250px;padding:12px 30px!important;margin:6px!important;font-size:1.05rem!important;font-weight:700!important;letter-spacing:.16em!important;border-radius:12px!important;border:1px solid rgba(255,255,255,.22)!important;color:#e8f4ff!important;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.03))!important;box-shadow:0 6px 18px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.25)!important;transition:all .18s!important}
+.btn:hover{transform:translateY(-2px)!important;border-color:var(--a)!important;box-shadow:0 0 22px rgba(39,230,255,.5),inset 0 1px 0 rgba(255,255,255,.3)!important;background:linear-gradient(180deg,rgba(39,230,255,.28),rgba(39,230,255,.06))!important;color:#fff!important}
+.btn-green{background:linear-gradient(180deg,rgba(45,255,154,.38),rgba(45,255,154,.1))!important;border-color:rgba(45,255,154,.7)!important}
+.btn-green:hover{background:linear-gradient(180deg,rgba(45,255,154,.6),rgba(45,255,154,.2))!important;border-color:var(--g)!important;box-shadow:0 0 24px rgba(45,255,154,.6)!important}
+.btn:not(.btn-green):not(.btn-blue){border-color:rgba(255,77,109,.7)!important;background:linear-gradient(180deg,rgba(255,77,109,.28),rgba(255,77,109,.06))!important}
+.chip{font-size:.78rem!important;font-weight:700!important;letter-spacing:.08em!important;padding:7px 14px!important;margin:3px!important;border-radius:999px!important;border:1px solid rgba(255,255,255,.25)!important;color:#cfe6ff!important;background:rgba(255,255,255,.06)!important;transition:all .15s}
+.chip:hover{border-color:var(--a)!important;color:#fff!important}
+.chip.sel{background:linear-gradient(180deg,var(--g),#12b86a)!important;color:#02140a!important;border-color:var(--g)!important;box-shadow:0 0 14px rgba(45,255,154,.6)!important}
+.optlbl{color:#9fb8e0!important;font-size:.72rem!important;font-weight:800!important;letter-spacing:.28em!important;margin-top:8px!important}
+.readme-content,.guide{background:rgba(10,16,40,.75)!important;border:1px solid rgba(39,230,255,.3)!important;border-radius:14px!important;color:#d7e6ff!important;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.guide{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px 22px;max-width:860px;padding:16px 20px;font-size:.84rem;line-height:1.5;text-align:left}
+.guide h3{margin:0 0 4px;color:var(--a);font-size:.8rem;letter-spacing:.2em}.guide b{color:#fff}.guide kbd{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:5px;padding:0 6px;font-size:.78rem}
+.kbrow{display:flex;align-items:center;justify-content:space-between;width:min(420px,92vw);padding:3px 12px;color:#d7e6ff;font-size:.9rem}
+.kbrow button{min-width:120px;font:inherit;font-weight:700;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(39,230,255,.5);border-radius:8px;padding:5px 10px;cursor:pointer}
+#hud{border-radius:12px!important;border:1px solid rgba(39,230,255,.25)!important;background:linear-gradient(90deg,rgba(5,10,28,.82),rgba(5,10,28,.45))!important;font-weight:700!important;letter-spacing:.1em!important}
+.hud-btn{border-radius:10px!important;font-weight:700!important;letter-spacing:.08em!important;background:rgba(5,10,28,.65)!important;backdrop-filter:blur(4px)}
+.mc-btn{background:rgba(10,16,40,.5)!important;border-width:2px!important;font-weight:800!important;letter-spacing:.04em;backdrop-filter:blur(3px);box-shadow:0 4px 14px rgba(0,0,0,.45)}
+#drivePrompt{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);padding:8px 18px;border-radius:999px;font:700 .95rem 'Segoe UI',Roboto,Arial,sans-serif;letter-spacing:.12em;color:#fff;background:rgba(10,16,40,.78);border:1px solid #ff66ff;box-shadow:0 0 16px rgba(255,102,255,.45);display:none;pointer-events:none;z-index:25;white-space:nowrap}
+`; document.head.appendChild(st); })();
+
+const KEYS = [['Forward', 'KeyW'], ['Back', 'KeyS'], ['Left', 'KeyA'], ['Right', 'KeyD'], ['Jump', 'Space'], ['Drive / Exit vehicle', 'KeyE'], ['Knife stab', 'KeyF'], ['Throw bomb', 'KeyG'], ['Next weapon', 'Tab'], ['Pause', 'KeyP']];
+let KEYMAP = {}; KEYS.forEach(([, c]) => { KEYMAP[c] = c; }); let soundOn = true, musicOn = true, rebindAct = null; OPT.order = 0; OPT.start = 1;
+const SET_KEY = 'itr_settings_v1';
+function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify({ o: { mode: OPT.mode, player: OPT.player, season: OPT.season, style: OPT.style, rand: OPT.rand, order: OPT.order, start: OPT.start }, snd: soundOn, mus: musicOn, km: KEYMAP })); } catch (e) { } }
+// --- weapons: TAB cycles rifle > machine gun > rocket launcher ---
+const mgDrum = new THREE.Mesh(sharedBoxGeo, new THREE.MeshStandardMaterial({ color: 0x252b36, metalness: 0.5, roughness: 0.5 })); mgDrum.scale.set(0.1, 0.22, 0.22); mgDrum.position.set(0, -0.14, 0.02); rifleGroup.add(mgDrum); mgDrum.visible = false;
+const _sw = setWeapon; setWeapon = function (w) { _sw(w); mgDrum.visible = (w === 3); };
+const _frm = fireRifle; fireRifle = function () { _frm(); if (currentWeapon === 3) rifleCooldown = 0.11; };
+function cycleWeapon(dir) { dir = dir || 1; const o = [0, 3, 1]; let i = o.indexOf(currentWeapon); if (i < 0) i = 0; setWeapon(o[(i + dir + 3) % 3]); }
+let _wheelT = 0;
+window.addEventListener('wheel', e => { if (gameState !== 'playing') return; e.preventDefault(); const t = performance.now(); if (t - _wheelT < 160 || !e.deltaY) return; _wheelT = t; cycleWeapon(e.deltaY > 0 ? 1 : -1); }, { passive: false });
+document.addEventListener('keydown', e => { if (gameState !== 'playing') return; if (e.code === 'Tab') { e.preventDefault(); cycleWeapon(); } else if (e.code === 'Digit4') setWeapon(3); });
+// --- key remapping layer (translates custom keys to the game's default codes) ---
+function remapKey(e) {
+    for (const k in KEYMAP) if (KEYMAP[k] === e.code && k !== e.code) { e.stopImmediatePropagation(); e.preventDefault(); const ev = new KeyboardEvent(e.type, { code: k, key: e.key, shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, altKey: e.altKey, repeat: e.repeat, bubbles: true, cancelable: true }); ev.__syn = 1; document.dispatchEvent(ev); return; }
+    if (KEYMAP[e.code] !== undefined && KEYMAP[e.code] !== e.code) { e.stopImmediatePropagation(); e.preventDefault(); }
+}
+window.addEventListener('keydown', e => { if (e.__syn) return; if (rebindAct) { e.preventDefault(); e.stopImmediatePropagation(); finishRebind(e.code); return; } remapKey(e); }, true);
+window.addEventListener('keyup', e => { if (!e.__syn) remapKey(e); }, true);
+function finishRebind(code) { const a = rebindAct; rebindAct = null; if (code !== 'Escape') { const old = KEYMAP[a]; for (const k in KEYMAP) if (k !== a && KEYMAP[k] === code) KEYMAP[k] = old; KEYMAP[a] = code; saveSettings(); } renderKeys(); }
+const kname = c => c.replace(/^Key|^Digit/, '').replace('Arrow', '↑↓←→'.charAt(0) ? 'Arrow ' : '');
+// --- screens ---
+const fitList = [];
+function mkScreen(id) { const d = document.createElement('div'); d.id = id; d.className = 'screen hidden'; document.getElementById('ui-layer').appendChild(d); const w = document.createElement('div'); w.style.cssText = 'display:flex;flex-direction:column;align-items:center;transform-origin:center center;max-width:100%'; d.appendChild(w); fitList.push([d, w]); return w; }
+function fitMyScreens() { for (const [sc, w] of fitList) { if (sc.classList.contains('hidden')) continue; w.style.transform = 'none'; const k = Math.min(1, (sc.clientHeight - 12) / w.scrollHeight, (sc.clientWidth - 12) / w.scrollWidth); w.style.transform = 'scale(' + k + ')'; } }
+setInterval(fitMyScreens, 300);
+const MYSCR = ['settings-screen', 'guide-screen', 'keys-screen']; let backTarget = 'main-menu';
+const _scr = setScreen; setScreen = function (id) { MYSCR.forEach(i => { const el = document.getElementById(i); if (el) el.classList.add('hidden'); }); _scr(id); };
+function btn(id, text, cls, fn) { const b = document.createElement('button'); b.id = id; b.className = 'btn ' + cls; b.textContent = text; bindUIBtn(b, fn); return b; }
+const setW = mkScreen('settings-screen'), guideW = mkScreen('guide-screen'), keysW = mkScreen('keys-screen');
+// settings
+const h2s = document.createElement('h2'); h2s.textContent = 'SETTINGS'; setW.appendChild(h2s);
+const host = document.getElementById('opt-mode-0').parentNode.parentNode; setW.appendChild(host);
+function mkRow(label, list, getIdx, setIdx, pre) {
+    const lb = document.createElement('div'); lb.className = 'optlbl'; lb.textContent = label; host.appendChild(lb); const row = document.createElement('div'); row.className = 'optrow'; host.appendChild(row);
+    list.forEach((n, i) => { const b = document.createElement('button'); b.id = pre + i; b.className = 'chip'; b.textContent = n; row.appendChild(b); bindUIBtn(b.id, () => { setIdx(i); syncExtra(); }); });
+    return () => list.forEach((n, i) => document.getElementById(pre + i).classList.toggle('sel', getIdx() === i));
+}
+const syncs = [
+    mkRow('LEVEL ORDER', ['IN ORDER', 'RANDOM'], () => OPT.order, i => { OPT.order = i; }, 'xo-'),
+    mkRow('START LEVEL', ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'], () => OPT.start - 1, i => { OPT.start = i + 1; }, 'xs-'),
+    mkRow('SOUND EFFECTS', ['ON', 'OFF'], () => soundOn ? 0 : 1, i => { soundOn = i === 0; isMuted = !soundOn; }, 'xf-'),
+    mkRow('MUSIC', ['ON', 'OFF'], () => musicOn ? 0 : 1, i => { musicOn = i === 0; if (!musicOn) GameAudio.stopMusic(); else if (gameState === 'playing') GameAudio.startMusic(); }, 'xm-')
+];
+function syncExtra() { syncs.forEach(f => f()); syncMenuChips(); saveSettings(); }
+const sb = document.createElement('div'); sb.style.cssText = 'display:flex;flex-wrap:wrap;justify-content:center;margin-top:8px';
+sb.appendChild(btn('btn-keys', 'KEYS', 'btn-blue', () => { renderKeys(); setScreen('keys-screen'); })); sb.appendChild(btn('btn-set-back', 'BACK', 'btn-green', () => { setScreen(backTarget); })); setW.appendChild(sb);
+// keys
+const h2k = document.createElement('h2'); h2k.textContent = 'KEYS'; keysW.appendChild(h2k);
+const kl = document.createElement('div'); keysW.appendChild(kl);
+function renderKeys() {
+    kl.innerHTML = ''; KEYS.forEach(([lab, def]) => { const r = document.createElement('div'); r.className = 'kbrow'; const s = document.createElement('span'); s.textContent = lab; const b = document.createElement('button'); b.textContent = rebindAct === def ? 'PRESS A KEY…' : kname(KEYMAP[def]); b.onclick = () => { rebindAct = def; renderKeys(); }; r.appendChild(s); r.appendChild(b); kl.appendChild(r); });
+}
+const kb = document.createElement('div'); kb.style.cssText = 'display:flex;flex-wrap:wrap;justify-content:center;margin-top:8px';
+kb.appendChild(btn('btn-keys-reset', 'RESET', '', () => { rebindAct = null; KEYS.forEach(([, c]) => { KEYMAP[c] = c; }); saveSettings(); renderKeys(); })); kb.appendChild(btn('btn-keys-back', 'BACK', 'btn-green', () => { rebindAct = null; setScreen('settings-screen'); })); keysW.appendChild(kb);
+// guide
+const h2g = document.createElement('h2'); h2g.textContent = 'GUIDE'; guideW.appendChild(h2g);
+const gd = document.createElement('div'); gd.className = 'guide'; gd.innerHTML = `
+<div><h3>MOVE</h3><b>W A S D</b> walk · <b>Shift</b> run · <kbd>Space</kbd> jump (hop onto low objects) · <b>Shift + A/D</b> fast dodge. Mobile: left stick, drag right side to look.</div>
+<div><h3>WEAPONS</h3><kbd>Tab</kbd> or the <b>mouse wheel</b> cycles <b>Rifle → Machine Gun → Rocket Launcher</b>. Keys <kbd>1</kbd> rifle · <kbd>2</kbd> rocket · <kbd>3</kbd> knife · <kbd>4</kbd> machine gun. <b>Left click</b> fires, <kbd>F</kbd> quick stab, <kbd>G</kbd> throws a bomb.</div>
+<div><h3>VEHICLES</h3>Walk up to a car or bike and press <kbd>E</kbd> (or the RIDE button) to drive it. Cars and bikes are much faster and ram enemies. Press <kbd>E</kbd> again to get off.</div>
+<div><h3>DOORS</h3>Doors open on their own when you walk close. Houses have medkits (+40 HP) inside. Your first house is where you start.</div>
+<div><h3>LEVELS</h3>10 open-world levels, each with new buildings, season and enemies. <b>Level 1:</b> survive 60 seconds. <b>Levels 2-10:</b> reach the kill goal and solve the puzzle. Choose in-order or random levels in Settings.</div>
+<div><h3>OTHER</h3><kbd>P</kbd> pause · <kbd>M</kbd> sound. Progress is saved automatically — use <b>Continue</b> on the main menu or after you die. Change keys in Settings → Keys.</div>`;
+guideW.appendChild(gd); guideW.appendChild(btn('btn-guide-back', 'BACK', 'btn-green', () => { setScreen(backTarget); }));
+// main menu: remove all text, add buttons
+(function () {
+    const rc = document.querySelector('#main-menu .readme-content'); if (rc) rc.remove();
+    const rd = document.getElementById('btn-readme');
+    rd.parentNode.insertBefore(btn('btn-settings', 'SETTINGS', 'btn-blue', () => { backTarget = 'main-menu'; syncExtra(); setScreen('settings-screen'); }), rd);
+    rd.parentNode.insertBefore(btn('btn-guide', 'GUIDE', 'btn-blue', () => { backTarget = 'main-menu'; setScreen('guide-screen'); }), rd);
+    const mm = document.getElementById('btn-main-menu');
+    if (mm) { mm.parentNode.insertBefore(btn('btn-pause-set', 'SETTINGS', 'btn-blue', () => { backTarget = 'pause-menu'; syncExtra(); setScreen('settings-screen'); }), mm); mm.parentNode.insertBefore(btn('btn-pause-guide', 'GUIDE', 'btn-blue', () => { backTarget = 'pause-menu'; setScreen('guide-screen'); }), mm); }
+})();
+// music toggle respected by the game's own music calls
+const _smus = GameAudio.startMusic; GameAudio.startMusic = function () { if (musicOn) _smus(); };
+// vehicle prompt + speed
+const dp = document.createElement('div'); dp.id = 'drivePrompt'; document.getElementById('ui-layer').appendChild(dp);
+(function f() {
+    requestAnimationFrame(f); if (gameState !== 'playing') { dp.style.display = 'none'; return; } const p = camera.position;
+    if (riding) { dp.textContent = (riding.k ? 'BIKE' : 'CAR') + ' · ' + Math.round(Math.hypot(velocity.x, velocity.z) * 3.2) + ' KM/H · E TO EXIT'; dp.style.display = 'block'; return; }
+    let nb = 99, nv = null; for (const v of vehicles) { const d = Math.hypot(v.g.position.x - p.x, v.g.position.z - p.z); if (d < nb) { nb = d; nv = v; } }
+    if (nv && nb < 12) { dp.textContent = (isTouchActive || isMobileUA ? 'TAP RIDE' : 'PRESS E') + ' TO DRIVE ' + (nv.k ? 'BIKE' : 'CAR'); dp.style.display = 'block'; } else dp.style.display = 'none';
+})();
+// starter car + bike always next to the first house
+const _gc3 = genCover; genCover = function (st) {
+    _gc3(st);
+    try { [[-26, -6, 0], [26, -6, 1]].forEach(([x, z, k]) => { const bw = k ? 1.8 : 4.4, bd = k ? 4 : 9.4; if (!openFree(x, z, bw, bd)) return; const g = k ? mkBike(0x27e6ff) : mkCar(0xff3355); g.position.set(x, 0, z); extraGroup.add(g); const box = new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, k ? 1.5 : 1.9, z), new THREE.Vector3(bw, k ? 3 : 3.8, bd)); colliders.push(box); vehicles.push({ k, g, box, mul: k ? 1.75 : 2.3, dmg: k ? 35 : 70 }); }); } catch (e) { console.error('starter vehicles', e); }
+};
+// load saved settings
+(function () {
+    try { const s = JSON.parse(localStorage.getItem(SET_KEY) || 'null'); if (s) { Object.assign(OPT, s.o || {}); soundOn = s.snd !== false; musicOn = s.mus !== false; isMuted = !soundOn; if (s.km) Object.assign(KEYMAP, s.km); } } catch (e) { }
+    syncExtra();
+})();
+// everything is built: fit the menus, then reveal the UI (no flash of the old menu)
+try { if (window.__fitMenus) window.__fitMenus(); fitMyScreens(); } catch (e) { }
+document.documentElement.classList.remove('loading');
     </script>
+    <script>window.addEventListener('load', function () { document.documentElement.classList.remove('loading'); });</script>
 </body>
 </html>
