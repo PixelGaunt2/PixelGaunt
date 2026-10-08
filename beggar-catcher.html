@@ -196,6 +196,21 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
 #interaction-prompt{font-family:'Lilita One','Fredoka',sans-serif;font-weight:400;font-size:22px;letter-spacing:.5px;-webkit-text-stroke:1px rgba(0,0,0,.6);paint-order:stroke fill}
 @media (max-width:1024px),(max-height:700px){.menu-title{font-size:32px;margin-bottom:12px}.btn{font-size:18px;min-width:220px;padding:10px 22px;margin:6px}#btn-play{font-size:22px}.level-btn{font-size:16px;padding:12px 6px}.shop-item h3{font-size:19px}.shop-item p{font-size:14px}.readme-box{font-size:14px}.logo{margin-bottom:14px}}
 
+        /* ===== MOBILE MAIN MENU FIX (no cropping: notch safe-area, height-aware sizes, landscape layout) ===== */
+        .menu-screen { padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+        #stats-bar { top: max(14px, env(safe-area-inset-top)) !important; left: max(14px, env(safe-area-inset-left)) !important; }
+        .menu-buttons { display: contents; }
+        .logo-a, .logo-b { font-size: clamp(34px, min(11vw, 13vh), 92px) !important; -webkit-text-stroke-width: 2px !important; }
+        .logo { margin-bottom: clamp(8px, 2.5vh, 26px) !important; max-width: 100%; }
+        .logo-sub { margin-top: clamp(6px, 1.5vh, 18px) !important; max-width: 94%; box-sizing: border-box; }
+        #main-menu .btn { max-width: min(90%, 340px); box-sizing: border-box; }
+        @media (max-height: 520px) {
+            .logo-a, .logo-b { display: inline-block; margin: 0 6px; font-size: clamp(26px, 13vh, 54px) !important; }
+            .logo-sub { display: block; width: max-content; margin: 4px auto 0 !important; padding: 2px 14px; font-size: 12px; }
+            .logo { margin-bottom: 8px !important; }
+            .menu-buttons { display: flex; flex-flow: row wrap; justify-content: center; width: 100%; max-width: 680px; }
+            #main-menu .menu-buttons .btn { flex: 1 1 28%; min-width: 150px; max-width: none; margin: 5px; padding: 8px 10px; font-size: 15px !important; }
+        }
         #game-toast { position: fixed; left: 50%; top: 18%; transform: translateX(-50%) translateY(-20px); background: rgba(20,20,20,0.95); color: #FFD700; border: 3px solid #f5c518; border-radius: 12px; padding: 14px 28px; font-size: 22px; font-weight: bold; text-align: center; z-index: 99999; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: 90vw; box-shadow: 0 6px 24px rgba(0,0,0,.6); }
         #game-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     </style>
@@ -213,11 +228,13 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
 
     <div id="main-menu" class="menu-screen">
         <div class="logo"><div class="logo-a">BEGGAR</div><div class="logo-b">CATCHER</div><div class="logo-sub">⭐ Bounty Hunter Edition ⭐</div></div>
+        <div class="menu-buttons">
         <button id="btn-resume" class="btn" style="display:none; border-color:#00ffcc;">⏩ Resume Game</button>
         <button id="btn-play" class="btn">▶ Play Now</button>
         <button id="btn-readme" class="btn" style="border-color:#ff9900;">📖 Read Me</button>
         <button id="btn-levels" class="btn">🗺️ Levels</button>
         <button id="btn-shop" class="btn">🛒 Upgrades Shop</button>
+        </div>
     </div>
 
     <div id="readme-menu" class="menu-screen" style="display:none;">
@@ -765,7 +782,7 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
                 this.evidence = 0; this.suspicion = 0; this.revealed = false;
                 this.state = 'idle'; this.timer = Math.random() * 5; 
                 this.susMultiplier = data.susMul; this.bounty = data.bounty; this.spookThreshold = data.spook;
-                this.kind = data.kind; this.autoAggro = data.auto || 0; this.horde = !!data.horde; this.lastHit = 0; this.dmg = data.kind === 'zombie' ? 8 : (data.kind === 'dog' ? 12 : 10); this.skinHex = data.kind === 'zombie' ? 0x6fae5a : (data.kind === 'dog' ? data.hex : 0xf8d8b8); this.evMultiplier = (data.color === 'Black' && isTarget) ? 0.5 : 1; this.colorName = data.color; this.baseHex = data.hex;
+                this.kind = data.kind; this.autoAggro = data.auto || 0; this.horde = !isTarget && data.horde === true; /* the level's own 'horde' LIST must not turn the target into an uncatchable horde enemy */ this.lastHit = 0; this.dmg = data.kind === 'zombie' ? 8 : (data.kind === 'dog' ? 12 : 10); this.skinHex = data.kind === 'zombie' ? 0x6fae5a : (data.kind === 'dog' ? data.hex : 0xf8d8b8); this.evMultiplier = (data.color === 'Black' && isTarget) ? 0.5 : 1; this.colorName = data.color; this.baseHex = data.hex;
                 
                 this.models = createCharacterMesh(false, this.baseHex, data.kind);
                 this.mesh = this.models.group; this.mesh.scale.set(data.scale, data.scale, data.scale);
@@ -814,9 +831,15 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
                 if (this.state === 'stealing') { speed *= 1.5; this.models.shirtMat.color.setHex(0x111111); } 
                 else if (!this.revealed) this.models.shirtMat.color.setHex(this.baseHex);
 
+                if (this.state !== 'fleeing') this.fleeTime = 0;
                 if (this.state === 'fleeing') {
-                    speed *= 2.5; const runDir = new THREE.Vector3().subVectors(this.mesh.position, playerGroup.position).normalize();
-                    this.targetPos.copy(this.mesh.position).addScaledVector(runDir, 10);
+                    this.fleeTime = (this.fleeTime || 0) + dt;
+                    speed *= this.fleeTime > 6 ? 1.3 : 2.5; // target gets tired so it can always be caught
+                    const mp = this.mesh.position;
+                    const runDir = new THREE.Vector3().subVectors(mp, playerGroup.position); runDir.y = 0; if (runDir.lengthSq() < 0.0001) runDir.set(1,0,0); runDir.normalize();
+                    const edge = Math.max(Math.abs(mp.x), Math.abs(mp.z));
+                    if (edge > 95) { const toC = new THREE.Vector3(-mp.x, 0, -mp.z).normalize(); runDir.lerp(toC, Math.min(1, (edge - 95) / 35) * 0.8).normalize(); } // curve back from map edge
+                    this.targetPos.copy(mp).addScaledVector(runDir, 10);
                 }
 
                 if (this.state === 'attacking') {
@@ -835,6 +858,7 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
                     }
                 }
 
+                { const L = 138, mp = this.mesh.position; mp.x = Math.max(-L, Math.min(L, mp.x)); mp.z = Math.max(-L, Math.min(L, mp.z)); } // keep every NPC inside the playable map
                 if(isMoving) {
                     const animSpeed = speed * 8;
                     this.models.legL.rotation.x = Math.sin(time * animSpeed) * 0.5; this.models.legR.rotation.x = -Math.sin(time * animSpeed) * 0.5;
@@ -903,16 +927,18 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
             saveData.hasSavedGame = false; saveGameData();
             
             document.getElementById('reward-text').innerText = `+${bounty}`;
-            document.getElementById('complete-menu').style.display = 'flex'; document.getElementById('ui-layer').style.display = 'none';
-
-            document.getElementById('btn-next').onclick = () => {
-                if(saveData.currentLevel < LEVEL_DATA.length) startLevel(saveData.currentLevel + 1); else showToast("Congratulations! You beat the game!", 3000);
+            showMenu('complete-menu');
+            const nextBtn = document.getElementById('btn-next'); const isLast = saveData.currentLevel >= LEVEL_DATA.length;
+            nextBtn.innerText = isLast ? 'Finish Game' : 'Next Level';
+            nextBtn.onclick = () => {
+                if(!isLast) startLevel(saveData.currentLevel + 1);
+                else { showToast("Congratulations! You beat the game!", 3500); quitToMenu(); }
             };
         }
 
         function togglePause() {
             if (gameState === 'PLAYING') {
-                gameState = 'PAUSED';
+                gameState = 'PAUSED'; for (const k in keys) keys[k] = false; player.isZooming = false; camera.fov = 70; camera.updateProjectionMatrix();
                 SoundManager.stopBGM();
                 showMenu('pause-menu');
             } else if (gameState === 'PAUSED') {
@@ -946,12 +972,20 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
         }
 
         // --- 5. CONTROLS ---
-        const keys = { w: false, a: false, s: false, d: false, shift: false, c: false, e: false };
+        const keys = { w: false, a: false, s: false, d: false, shift: false, c: false, e: false, arrowleft: false, arrowright: false, arrowup: false, arrowdown: false };
+        let lockFailed = false, lastLockLoss = 0;
+        document.addEventListener('pointerlockerror', () => { lockFailed = true; });
+        document.addEventListener('pointerlockchange', () => {
+            if (document.pointerLockElement === document.body) { lockFailed = false; return; }
+            if (gameState === 'PLAYING' && !lockFailed) { lastLockLoss = performance.now(); togglePause(); } // mouse released (Esc / alt-tab) -> pause instead of leaving a dead game
+        });
+        window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+        const mouseActive = () => document.pointerLockElement === document.body || lockFailed;
         document.addEventListener('keydown', (e) => {
-            if(e.key === 'Escape') { togglePause(); return; }
+            if(e.key === 'Escape') { if (performance.now() - lastLockLoss > 300) togglePause(); return; }
             if(gameState !== 'PLAYING') return;
 
-            const k = e.key.toLowerCase(); if (keys.hasOwnProperty(k)) keys[k] = true;
+            const k = e.key.toLowerCase(); if (keys.hasOwnProperty(k)) { keys[k] = true; if (k.startsWith('arrow')) e.preventDefault(); }
             if (k === 'c') {
                 player.isCrouching = !player.isCrouching; document.getElementById('stance').innerText = player.isCrouching ? "Crouching" : "Standing";
                 if(!player.hasSkateboard) player.models.group.position.y = player.isCrouching ? -0.5 : 0;
@@ -970,7 +1004,7 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
 
         document.body.addEventListener('click', () => { if(gameState === 'PLAYING') document.body.requestPointerLock(); });
         document.addEventListener('mousedown', (e) => {
-            if (gameState !== 'PLAYING' || document.pointerLockElement !== document.body) return;
+            if (gameState !== 'PLAYING' || !mouseActive()) return;
             if (e.button === 2) { player.isZooming = true; camera.fov = 40; camera.updateProjectionMatrix(); document.getElementById('crosshair').style.color = "#00ffcc"; }
             if (e.button === 0 && !player.holdingGun) combatHit();
         });
@@ -980,7 +1014,7 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
         });
         document.addEventListener('contextmenu', e => e.preventDefault());
         document.addEventListener('mousemove', (e) => {
-            if (gameState === 'PLAYING' && document.pointerLockElement === document.body) {
+            if (gameState === 'PLAYING' && (document.pointerLockElement === document.body || (lockFailed && e.buttons))) {
                 cameraPivot.rotation.y -= e.movementX * 0.002; cameraArm.rotation.x -= e.movementY * 0.002;
                 cameraArm.rotation.x = Math.max(-Math.PI / 6, Math.min(Math.PI / 3, cameraArm.rotation.x));
             }
@@ -1060,6 +1094,10 @@ body,html,button,input{font-family:'Fredoka','Trebuchet MS','Arial Rounded MT Bo
             if (keys.w) moveDir.z += 1; if (keys.s) moveDir.z -= 1;
             if (keys.a) moveDir.x -= 1; if (keys.d) moveDir.x += 1;
 
+            { const lk = 2.2 * dt; // arrow keys rotate the camera (works even if the browser blocks mouse lock)
+              if (keys.arrowleft) cameraPivot.rotation.y += lk; if (keys.arrowright) cameraPivot.rotation.y -= lk;
+              if (keys.arrowup) cameraArm.rotation.x += lk * 0.6; if (keys.arrowdown) cameraArm.rotation.x -= lk * 0.6;
+              cameraArm.rotation.x = Math.max(-Math.PI / 6, Math.min(Math.PI / 3, cameraArm.rotation.x)); }
             let isMoving = false;
             if (moveDir.lengthSq() > 0) {
                 isMoving = true; moveDir.normalize();
