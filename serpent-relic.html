@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#02041c">
 <title>Serpent Relic 4.0: Crystal Cavern</title>
 <style>
     :root {
@@ -15,7 +16,7 @@
         --neon-success: #00ff66;
         --neon-warn: #ffea00;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
     @keyframes bgPulse {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
@@ -224,6 +225,68 @@
         .hud-text { font-size: 0.78rem; letter-spacing: 1px; }
         #minimapContainer { left: 12px; bottom: 16px; width: 96px; height: 96px; }
     }
+
+    /* ================= PERFORMANCE / MOBILE+PC OPTIMIZATION ================= */
+    html, body { overscroll-behavior: none; }
+    body { height: 100vh; height: 100dvh; }
+    #gameContainer { max-width: 1100px; max-height: 1000px; touch-action: none; }
+    canvas { touch-action: none; }
+    .screen { visibility: hidden; transition: opacity .15s ease, transform .15s ease, visibility 0s linear .15s; }
+    .screen.active { visibility: visible; transition-delay: 0s; }
+    .btn { transition: background .15s ease, box-shadow .15s ease, transform .15s ease; touch-action: manipulation; }
+    .lvl-btn { transition: background .15s ease, box-shadow .15s ease, transform .15s ease; touch-action: manipulation; }
+    .level-grid, #screenReadme { touch-action: pan-y; }
+    #hud { padding-top: max(8px, env(safe-area-inset-top)); }
+    #dpad {
+        --k: clamp(54px, 15vw, 74px);
+        grid-template-columns: repeat(3, var(--k)); grid-template-rows: repeat(3, var(--k));
+        bottom: max(18px, env(safe-area-inset-bottom)); right: max(18px, env(safe-area-inset-right));
+        opacity: 0.55; touch-action: none;
+    }
+    .d-btn { touch-action: none; }
+    @media (hover: hover) and (pointer: fine) { #dpad { display: none; } }
+    @media (hover: none) and (pointer: coarse) { #dpad { display: grid; } }
+    @media (pointer: coarse) {
+        #gameContainer { border-radius: 0; border: none; box-shadow: none; }
+        #controls-hud .hud-text { padding: 7px 4px; }
+        #minimapContainer { left: max(12px, env(safe-area-inset-left)); }
+    }
+    @media (max-height: 520px) { #minimapContainer { width: 80px; height: 80px; } h1 { margin-bottom: .4rem; } .btn { padding: 10px 30px; margin: 5px; } }
+
+    /* ================= HUD: stat badges (read-only) + real buttons ================= */
+    #hud { flex-direction: column; flex-wrap: nowrap; align-items: stretch; justify-content: flex-start; gap: 6px; padding: max(8px, env(safe-area-inset-top)) 10px 0; }
+    #hudStats, #hudBtns { display: flex; gap: 6px; justify-content: center; flex-wrap: nowrap; }
+    #hudStats { pointer-events: none; }
+    #hudBtns { pointer-events: auto; }
+    .stat {
+        flex: 1 1 0; min-width: 0; max-width: 140px; display: flex; flex-direction: column; align-items: center; line-height: 1.15;
+        padding: 3px 6px; background: rgba(4,10,52,0.62); border: 1px solid rgba(80,180,255,0.38); border-radius: 10px;
+        box-shadow: inset 0 0 10px rgba(80,180,255,0.08);
+    }
+    .stat small { font-size: .56rem; letter-spacing: 2px; color: #8fb8ff; }
+    .stat b { font-size: 1rem; color: #fff; text-shadow: 0 0 8px var(--neon-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .hbtn {
+        flex: 1 1 0; min-width: 0; min-height: 40px; display: flex; align-items: center; justify-content: center; gap: 6px;
+        padding: 6px 8px; font-family: inherit; font-size: .78rem; font-weight: 800; letter-spacing: 1px; white-space: nowrap;
+        color: #c4f6ff; cursor: pointer; touch-action: manipulation; border-radius: 12px; border: 1.5px solid rgba(80,210,255,0.85);
+        background: linear-gradient(180deg, rgba(50,140,255,0.28), rgba(10,40,140,0.45)); box-shadow: 0 0 12px rgba(0,180,255,0.25);
+        transition: transform .08s ease, filter .08s ease, background .12s ease;
+    }
+    .hbtn small { font-size: .56rem; opacity: .75; padding: 1px 4px; border: 1px solid currentColor; border-radius: 4px; }
+    .hbtn:active { transform: scale(.95); filter: brightness(1.35); }
+    @media (hover: hover) { .hbtn:hover { filter: brightness(1.25); } }
+    #btnActionHUD { border-color: rgba(255,234,0,0.8); color: #fff3a0; }
+    #btnActionHUD.on { border-color: #00f3ff; color: #031030; background: linear-gradient(180deg, #62e8ff, #1e9cff); box-shadow: 0 0 18px rgba(60,210,255,.8); }
+    #btnSoundToggle { border-color: rgba(60,255,150,0.85); color: #b8ffd8; }
+    #btnSoundToggle.muted { border-color: rgba(255,80,110,0.9); color: #ffb3c0; }
+    #btnRestart { border-color: rgba(255,150,60,0.85); color: #ffd9b0; }
+    @media (pointer: coarse) { .kh { display: none; } }
+    @media (max-width: 480px) {
+        #hud { gap: 4px; padding-left: 6px; padding-right: 6px; }
+        #hudStats, #hudBtns { gap: 4px; }
+        .stat { padding: 2px 3px; } .stat small { font-size: .5rem; letter-spacing: 1px; } .stat b { font-size: .88rem; }
+        .hbtn { min-height: 38px; padding: 5px 3px; font-size: .62rem; letter-spacing: .5px; border-radius: 10px; }
+    }
 </style>
 </head>
 <body>
@@ -233,13 +296,18 @@
     <div id="minimapContainer"><canvas id="minimap"></canvas></div>
 
     <div id="hud">
-        <div class="hud-block"><span class="hud-text" id="levelDisplay">SEQ 01</span></div>
-        <div class="hud-block"><span class="hud-text" id="statsDisplay">STEPS: 0 | TOOLS: 0 | KEYS: 0</span></div>
-        <div class="hud-block" id="controls-hud">
-            <span class="hud-text" id="btnSoundToggle" style="margin-right:15px; color: #00ff66;">SOUND: ON</span>
-            <span class="hud-text" id="btnActionHUD" style="margin-right:15px; color: #ffea00;">[SPACE] PUSH: OFF</span>
-            <span class="hud-text" id="btnRestart" style="margin-right:15px;">[R] RESTART</span>
-            <span class="hud-text" id="btnPause">[ESC] PAUSE / BACK</span>
+        <div id="hudStats">
+            <div class="stat"><small>SEQ</small><b id="levelDisplay">001</b></div>
+            <div class="stat"><small>SCORE</small><b id="scoreDisplay">0</b></div>
+            <div class="stat"><small>STEPS</small><b id="stepsDisplay">0</b></div>
+            <div class="stat"><small>KEYS</small><b id="keysDisplay">0</b></div>
+            <div class="stat"><small>TOOLS</small><b id="toolsDisplay">0</b></div>
+        </div>
+        <div id="hudBtns">
+            <button class="hbtn" id="btnActionHUD" type="button" tabindex="-1"><span class="lbl">PUSH: OFF</span><small class="kh">SPACE</small></button>
+            <button class="hbtn" id="btnSoundToggle" type="button" tabindex="-1"><span class="lbl">SOUND: ON</span></button>
+            <button class="hbtn" id="btnRestart" type="button" tabindex="-1"><span class="lbl">RESTART</span><small class="kh">R</small></button>
+            <button class="hbtn" id="btnPause" type="button" tabindex="-1"><span class="lbl">PAUSE</span><small class="kh">ESC</small></button>
         </div>
     </div>
 
@@ -304,7 +372,8 @@
 <script>
 window.onload = () => {
     const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d', { alpha: false });
+    let ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
+    const mainCtx = ctx;
     const minimapCanvas = document.getElementById('minimap');
     const minimapCtx = minimapCanvas.getContext('2d');
     
@@ -314,6 +383,7 @@ window.onload = () => {
     const STATE = { MENU: 0, PLAYING: 1, PAUSED: 2, TRANSITION: 3, LEVEL_SELECT: 4, README: 5 };
     let currentState = STATE.MENU;
     let unlockedLevels = parseInt(localStorage.getItem('serpentUnlockedV3')) || 1;
+    let totalScore = parseInt(localStorage.getItem('serpentScoreV3')) || 0, levelScore = 0;
     let savedLevelIdx = localStorage.getItem('serpentSavedLevelV3');
     let currentLevelIdx = 0;
     
@@ -326,7 +396,7 @@ window.onload = () => {
     let map = [], mapCols = 0, mapRows = 0;
     let inventory = { tools: 0, keys: 0 };
     let puzzleState = { links: [], darkness: false, hasMirror: false, hasTwin: false, teleports: [] };
-    let moveCount = 0, isMoving = false, moveProgress = 0, moveDuration = window.innerWidth < 700 ? 110 : 140; 
+    let moveCount = 0, isMoving = false, moveProgress = 0, moveDuration = 90; 
     let snakeDir = { x: 0, y: 0 };
     let enemies = [];
     
@@ -335,9 +405,13 @@ window.onload = () => {
 
     // Auto low-performance optimization
     const LOW_END_DEVICE = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
-    if (LOW_END_DEVICE) {
-        moveDuration = 100;
-    }
+    const IS_TOUCH = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || ('ontouchstart' in window);
+    let Q = LOW_END_DEVICE ? 1 : 2;               // quality tier: 2 = full, 1 = lite, 0 = minimal (auto-downgrades if FPS is low)
+    moveDuration = 72;            // fast, snappy steps
+    const HOLD_DELAY = 130;                       // ms before a held key / button starts auto-repeating
+    let nextMove = null, blockedHold = null, moveOver = 0;
+    let mapDirty = true, mapCache = null, mapWallCount = -1;
+    const MC_M = 28;                              // margin around cached map layer
 
     let activeTraps = [];
     let deathTimer = null;
@@ -352,8 +426,35 @@ window.onload = () => {
             if (!pools[name]) { pools[name] = { list: [], i: 0 }; }
             return pools[name];
         }
+        const AC = window.AudioContext || window.webkitAudioContext;
+        let actx = null; const bufs = {}, bufState = {};
+        function wa() { if (!actx && AC) { try { actx = new AC({ latencyHint: 'interactive' }); } catch (e) { actx = null; } } return actx; }
+        function loadBuf(name) {
+            const c = wa(); if (!c || bufState[name]) return;
+            bufState[name] = 1;
+            const fail = function () {
+                bufState[name] = 3;
+                try { const p = pool(name); if (!p.list[0]) { const a = new Audio(name + '.wav'); a.preload = 'auto'; a.load(); p.list[0] = a; } } catch (e) {}
+            };
+            try {
+                fetch(name + '.wav').then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); })
+                    .then(function (ab) { return new Promise(function (res, rej) { const q = c.decodeAudioData(ab, res, rej); if (q && q.catch) q.catch(rej); }); })
+                    .then(function (b) { bufs[name] = b; bufState[name] = 2; })
+                    .catch(fail);
+            } catch (e) { fail(); }
+        }
+        function playBuf(name, vol) {
+            const b = bufs[name]; if (!b || !actx) return false;
+            if (actx.state === 'suspended') actx.resume();
+            const src = actx.createBufferSource(), g = actx.createGain();
+            src.buffer = b; g.gain.value = vol; src.connect(g); g.connect(actx.destination); src.start(0);
+            return true;
+        }
         function sfx(name, vol) {
             if (muted) return;
+            if (playBuf(name, vol === undefined ? 0.5 : vol)) return;
+            if (bufState[name] === 1) return;            // still decoding: skip rather than stutter
+            if (!bufState[name]) loadBuf(name);
             try {
                 const p = pool(name);
                 let a = p.list[p.i];
@@ -373,12 +474,16 @@ window.onload = () => {
             try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
         }
         function unlock() {
+            if (actx && actx.state === 'suspended') actx.resume(); else if (!actx) wa();
             if (musicWanted) tryPlayMusic();
         }
         ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
             window.addEventListener(ev, unlock, { passive: true });
         });
         return {
+            preload: function (names) {
+                names.forEach(function (n) { loadBuf(n); if (!AC) { try { const p = pool(n); if (!p.list[0]) { const a = new Audio(n + '.wav'); a.preload = 'auto'; a.load(); p.list[0] = a; } } catch (e) {} } });
+            },
             sfx: sfx,
             startMusic: function () { musicWanted = true; tryPlayMusic(); },
             stopMusic: function () { musicWanted = false; if (music) { music.pause(); music.currentTime = 0; } },
@@ -390,7 +495,7 @@ window.onload = () => {
 
     const AudioEngine = (() => {
         let soundEnabled = true;
-        const init = () => {}; // HTML5 Audio needs no setup; music is unlocked by the first user interaction
+        const init = () => { GameAudio.preload(['hover','object_hit','collect_base','object_destroy_base','node_unlock','ui_open','win_fanfare','player_death']); };
         const toggleMute = () => {
             soundEnabled = !soundEnabled; GameAudio.setMuted(!soundEnabled);
             return soundEnabled;
@@ -414,130 +519,88 @@ window.onload = () => {
 
     const LEVELS = [];
 
+    function buildLevel(i, plain) {
+        const R = (n) => Math.floor(Math.random() * n);
+        const w = 12 + R(6), h = 10 + R(6);
+        const grid = Array.from({ length: h }, () => Array(w).fill('0'));
+        const path = [{ x: 1, y: 1 }]; grid[1][1] = '2';
+        let cx = 1, cy = 1; const tx = w - 2, ty = h - 2;
+        while (cx !== tx || cy !== ty) {
+            if (Math.random() < 0.5) { if (cx < tx) cx++; } else { if (cy < ty) cy++; }
+            if (grid[cy][cx] === '0') { grid[cy][cx] = '1'; path.push({ x: cx, y: cy }); }
+        }
+        grid[ty][tx] = '3';
+        const L = path.length, dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+        // dead-end branches: every carved cell touches the previous one, so they always connect
+        const tips = [];
+        for (let d = 0; d < 4; d++) {
+            const st = path[R(Math.max(1, L >> 1))];
+            let bx = st.x, by = st.y, last = null;
+            for (let k = 0; k < 3; k++) {
+                const o = dirs.filter(([dx, dy]) => { const nx = bx + dx, ny = by + dy; return nx > 0 && nx < w - 1 && ny > 0 && ny < h - 1 && grid[ny][nx] === '0'; });
+                if (!o.length) break;
+                const [dx, dy] = o[R(o.length)]; bx += dx; by += dy; grid[by][bx] = '1'; last = { x: bx, y: by };
+            }
+            if (last) tips.push(last);
+        }
+        const put = (a, b, ch) => {
+            for (let k = Math.max(1, a); k <= Math.min(b, L - 2); k++) { const c = path[k]; if (grid[c.y][c.x] === '1') { grid[c.y][c.x] = ch; return k; } }
+            return -1;
+        };
+        const unput = (k) => { if (k >= 0) { const c = path[k]; grid[c.y][c.x] = '1'; } };
+
+        let hasTwin = false; const notes = [], enemiesList = [], teleportsList = [];
+        if (!plain && Math.random() < 0.20 && tips.length) {
+            const ko = put(Math.max(2, Math.floor(L * 0.3)), L - 4, 'O');
+            const kg = ko < 0 ? -1 : put(Math.max(Math.floor(L * 0.5), ko + 2), L - 2, 'G');
+            if (ko >= 0 && kg >= 0) { const t = tips.pop(); grid[t.y][t.x] = 'W'; hasTwin = true; notes.push('Twin Snakes Co-op'); }
+            else { unput(ko); unput(kg); }
+        }
+        if (!plain && Math.random() < 0.35) {
+            const kd = put(Math.floor(L * 0.75), L - 2, 'L');
+            if (kd >= 0) {
+                let ok = false;
+                if (tips.length) { const t = tips.pop(); grid[t.y][t.x] = 'K'; ok = true; } else ok = put(2, kd - 1, 'K') >= 0;
+                if (ok) notes.push('Keys & Doors'); else unput(kd);
+            }
+        }
+        if (!plain && Math.random() < 0.35) {
+            const kb = put(Math.floor(L * 0.6), L - 2, '4');
+            if (kb >= 0) { if (put(2, kb - 1, '5') >= 0) notes.push('Breakable/Pushable Barriers'); else unput(kb); }
+        }
+        if (!plain && Math.random() < 0.35) {
+            const n = 1 + R(2);
+            for (let e = 0; e < n; e++) {
+                const ep = path[R(Math.max(1, L - 5)) + 3];
+                if (!ep || grid[ep.y][ep.x] !== '1') continue;
+                for (let k = -1; k <= 2; k++) { const gx = ep.x + k; if (gx > 0 && gx < w - 1 && grid[ep.y][gx] === '0') grid[ep.y][gx] = '1'; }
+                enemiesList.push({ x: ep.x, y: ep.y, dir: 1, min: Math.max(1, ep.x - 1), max: Math.min(w - 2, ep.x + 2), speed: 0.04 + Math.random() * 0.02 });
+            }
+            if (enemiesList.length) notes.push('Enemies');
+        }
+        const dark = !plain && Math.random() < 0.15; if (dark) notes.push('Darkness');
+
+        // safety net: every open tile (snake, twin, items, exit) must be reachable from the start
+        const seen = Array.from({ length: h }, () => Array(w).fill(false)), q = [[1, 1]]; seen[1][1] = true;
+        while (q.length) {
+            const [x, y] = q.pop();
+            for (const [dx, dy] of dirs) { const nx = x + dx, ny = y + dy; if (nx >= 0 && nx < w && ny >= 0 && ny < h && !seen[ny][nx] && grid[ny][nx] !== '0') { seen[ny][nx] = true; q.push([nx, ny]); } }
+        }
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (grid[y][x] !== '0' && !seen[y][x]) return null;
+
+        return {
+            name: `Sequence ${i.toString().padStart(3, '0')}`,
+            tip: notes.length ? "Hazards: " + notes.join(", ") : "Navigate the cyber maze.",
+            darkness: dark, hasMirror: false, hasTwin: hasTwin, enemies: enemiesList, teleports: teleportsList,
+            layout: grid.map(row => row.join(''))
+        };
+    }
     function generateMoreLevels(startIdx, count) {
-        for(let i = startIdx; i < startIdx + count; i++) {
-            let w = 12 + Math.floor(Math.random() * 6);
-            let h = 10 + Math.floor(Math.random() * 6);
-            let grid = Array(h).fill().map(() => Array(w).fill('0'));
-            let path = [];
-
-            let cx = 1, cy = 1;
-            grid[cy][cx] = '2'; path.push({x:cx, y:cy});
-            let tx = w - 2, ty = h - 2;
-
-            while(cx !== tx || cy !== ty) {
-                if (Math.random() < 0.5) { 
-                    if (cx < tx) cx++; else if (cx > tx) cx--; 
-                } else { 
-                    if (cy < ty) cy++; else if (cy > ty) cy--; 
-                }
-                if(grid[cy][cx] !== '2') { 
-                    grid[cy][cx] = '1'; 
-                    path.push({x:cx, y:cy}); 
-                }
-            }
-            grid[ty][tx] = '3';
-
-            let deadEndTips = [];
-            for(let d=0; d < 4; d++) {
-                let pIdx = Math.floor(Math.random() * (path.length / 2));
-                let start = path[pIdx];
-                if(!start) continue;
-                let bx = start.x, by = start.y;
-                let lastValid = null;
-                for(let step=0; step<3; step++) {
-                    if(Math.random() > 0.5) { bx += (Math.random()>0.5?1:-1); } else { by += (Math.random()>0.5?1:-1); }
-                    if(bx > 0 && bx < w-1 && by > 0 && by < h-1 && grid[by][bx] === '0') {
-                        grid[by][bx] = '1'; lastValid = {x: bx, y: by};
-                    }
-                }
-                if(lastValid) deadEndTips.push(lastValid);
-            }
-
-            let hasDarkness = Math.random() < 0.15;
-            let hasTwin = Math.random() < 0.20;
-            let hasKeys = Math.random() < 0.35;
-            let hasBreakable = Math.random() < 0.35;
-            let hasPatrols = Math.random() < 0.35;
-            
-            let enemiesList = [], teleportsList = [], tips = [];
-
-            // Twin Mechanics (Naye systems ke sath: Golden Wall & Orb)
-            if (hasTwin && deadEndTips.length > 0) { 
-                tips.push("Twin Snakes Co-op"); 
-                let tip = deadEndTips.pop(); 
-                grid[tip.y][tip.x] = 'W'; 
-                
-                // Orb always sits on the main path BEFORE the golden barrier, so it is always reachable
-                let orbIdx = Math.max(2, Math.floor(path.length * 0.3));
-                while (orbIdx < path.length - 2 && grid[path[orbIdx].y][path[orbIdx].x] !== '1') orbIdx++;
-                grid[path[orbIdx].y][path[orbIdx].x] = 'O';
-
-                // Add Golden Barrier 'G' to block main snake
-                let blockIdx = Math.max(Math.floor(path.length * 0.5), Math.floor(path.length * 0.3) + 4); 
-                if (grid[path[blockIdx].y][path[blockIdx].x] === '1') {
-                    grid[path[blockIdx].y][path[blockIdx].x] = 'G';
-                }
-            } 
-
-            if (hasKeys) {
-                tips.push("Keys & Doors");
-                let doorIdx = Math.floor(path.length * 0.75);
-                if (grid[path[doorIdx].y][path[doorIdx].x] === '1') {
-                    grid[path[doorIdx].y][path[doorIdx].x] = 'L';
-                    if (deadEndTips.length > 0) { 
-                        let tip = deadEndTips.pop(); 
-                        grid[tip.y][tip.x] = 'K'; 
-                    } else { 
-                        let keyIdx = Math.floor(path.length * 0.25); 
-                        grid[path[keyIdx].y][path[keyIdx].x] = 'K'; 
-                    }
-                }
-            }
-
-            if (hasBreakable) {
-                tips.push("Breakable/Pushable Barriers");
-                let blockIdx = Math.floor(path.length * 0.6);
-                if (grid[path[blockIdx].y][path[blockIdx].x] === '1') {
-                    grid[path[blockIdx].y][path[blockIdx].x] = '4'; // Breakable block
-                    let toolIdx = Math.floor(path.length * 0.2);
-                    if(grid[path[toolIdx].y][path[toolIdx].x] === '1') {
-                        grid[path[toolIdx].y][path[toolIdx].x] = '5'; // Tool
-                    }
-                }
-            }
-
-            if (hasPatrols) {
-                tips.push("Enemies");
-                let enemyCount = 1 + Math.floor(Math.random() * 2);
-                for(let e=0; e < enemyCount; e++) {
-                    let epIdx = Math.floor(Math.random() * (path.length - 5)) + 3;
-                    let ep = path[epIdx];
-                    if(grid[ep.y][ep.x] === '1' || grid[ep.y][ep.x] === '0') {
-                        for(let k=-1; k<=2; k++) {
-                            if(ep.x+k > 0 && ep.x+k < w-1) {
-                                if(grid[ep.y][ep.x+k] === '0') grid[ep.y][ep.x+k] = '1';
-                            }
-                        }
-                        enemiesList.push({
-                            x: ep.x, y: ep.y, 
-                            dir: 1, 
-                            min: Math.max(1, ep.x-1), 
-                            max: Math.min(w-2, ep.x+2), 
-                            speed: 0.04 + (Math.random() * 0.02)
-                        });
-                    }
-                }
-            }
-
-            if (hasDarkness) tips.push("Darkness");
-
-            LEVELS.push({
-                name: `Sequence ${(i).toString().padStart(3, '0')}`,
-                tip: tips.length > 0 ? "Hazards: " + tips.join(", ") : "Navigate the cyber maze.",
-                darkness: hasDarkness, hasMirror: false, hasTwin: hasTwin, enemies: enemiesList, teleports: teleportsList,
-                layout: grid.map(row => row.join(''))
-            });
+        for (let i = startIdx; i < startIdx + count; i++) {
+            let lv = null;
+            for (let t = 0; t < 12 && !lv; t++) lv = buildLevel(i, false);
+            LEVELS.push(lv || buildLevel(i, true));
         }
     }
 
@@ -578,6 +641,7 @@ window.onload = () => {
         return (glowCache[k] = c);
     }
     function drawGlow(x, y, r, rgb, a) {
+        if (Q === 0) return;
         ctx.globalAlpha = a; ctx.globalCompositeOperation = 'lighter';
         ctx.drawImage(glowSprite(rgb), x - r, y - r, r * 2, r * 2);
         ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
@@ -742,8 +806,9 @@ window.onload = () => {
 
     // ---- full-screen cavern backdrop ----
     function buildBg() {
-        bgCanvas = document.createElement('canvas'); bgCanvas.width = Math.max(2, canvasW); bgCanvas.height = Math.max(2, canvasH);
+        bgCanvas = document.createElement('canvas'); bgCanvas.width = Math.max(2, Math.round(canvasW * dpr)); bgCanvas.height = Math.max(2, Math.round(canvasH * dpr));
         const g = bgCanvas.getContext('2d'), w = canvasW, h = canvasH, m = Math.max(w, h);
+        g.scale(dpr, dpr);
         const base = g.createRadialGradient(w / 2, h * 0.5, 0, w / 2, h * 0.5, m * 0.8);
         base.addColorStop(0, '#0d33b8'); base.addColorStop(0.45, '#0a1e8c'); base.addColorStop(0.8, '#060e56'); base.addColorStop(1, '#040836');
         g.fillStyle = base; g.fillRect(0, 0, w, h);
@@ -753,12 +818,15 @@ window.onload = () => {
         });
         const vg = g.createRadialGradient(w / 2, h / 2, m * 0.35, w / 2, h / 2, m * 0.85);
         vg.addColorStop(0, 'rgba(0,0,20,0)'); vg.addColorStop(1, 'rgba(0,0,20,0.55)'); g.fillStyle = vg; g.fillRect(0, 0, w, h);
+        if (Q < 2) { const prev = ctx; ctx = g; drawDecor(0, 0, 0); ctx = prev; }   // bake decor once on slower devices
     }
     function drawBackground() {
-        const t = globalTime;
         ctx.drawImage(bgCanvas, 0, 0, canvasW, canvasH);
+        if (Q < 2) return;   // lite/minimal: decor is baked into the cached background
         const playing = currentState !== STATE.MENU && currentState !== STATE.LEVEL_SELECT && currentState !== STATE.README && mapCols > 0;
-        const cx = playing ? camera.x : 0, cy = playing ? camera.y : 0;
+        drawDecor(globalTime, playing ? camera.x : 0, playing ? camera.y : 0);
+    }
+    function drawDecor(t, cx, cy) {
         const sc = Math.max(0.55, Math.min(1, Math.min(canvasW, canvasH) / 760));
         for (const s of SLABS) {
             const x = s.fx * canvasW - cx * s.par, y = s.fy * canvasH + Math.sin(t * 0.0012 + s.ph) * 6 - cy * s.par;
@@ -786,7 +854,7 @@ window.onload = () => {
         hudH = (hudEl ? hudEl.offsetHeight : 64) + 6;
         if (!mapCols) { zoom = 1; return; }
         const cw = mapCols * TS + 90, ch = mapRows * TS + padTop + 50;
-        zoom = Math.max(0.7, Math.min(1, canvasW / cw, (canvasH - hudH) / ch));
+        zoom = Math.max(0.7, Math.min(IS_TOUCH ? 1 : 1.25, canvasW / cw, (canvasH - hudH) / ch)); mapDirty = true;
     }
     function camTarget(hx, hy) {
         const vw = canvasW / zoom, vh = canvasH / zoom, hi = hudH / zoom;
@@ -810,62 +878,115 @@ window.onload = () => {
         return n ? { x: sx / n, y: sy / n } : null;
     }
 
-    function resize() {
-        dpr = LOW_END_DEVICE ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+    let lastDpr = 0;
+    function resize(force) {
+        dpr = Q === 0 ? 1 : Math.min(window.devicePixelRatio || 1, IS_TOUCH ? (Q === 1 ? 1.25 : 1.5) : (Q === 1 ? 1.5 : 2));
+        if (!force && canvasW === canvas.clientWidth && canvasH === canvas.clientHeight && lastDpr === dpr) return;
+        lastDpr = dpr;
         canvasW = canvas.clientWidth; canvasH = canvas.clientHeight;
         canvas.width = Math.round(canvasW * dpr); canvas.height = Math.round(canvasH * dpr);
         minimapCanvas.width = 120; minimapCanvas.height = 120;
         ctx.lineJoin = 'round'; ctx.lineCap = 'round';
         buildBg(); computeView();
     }
-    window.addEventListener('resize', resize); resize();
+    let resizeRaf = 0;
+    const scheduleResize = () => { if (resizeRaf) return; resizeRaf = requestAnimationFrame(() => { resizeRaf = 0; resize(); }); };
+    window.addEventListener('resize', scheduleResize);
+    window.addEventListener('orientationchange', () => setTimeout(scheduleResize, 150));
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleResize);
+    resize();
 
     if (savedLevelIdx !== null && parseInt(savedLevelIdx) > 0 && parseInt(savedLevelIdx) < LEVELS.length) {
         document.getElementById('btnContinue').style.display = 'inline-block';
     }
 
     // Push Mode Logic
-    function togglePushMode() {
-        pushMode = !pushMode;
-        document.getElementById('btnActionHUD').innerText = `[SPACE] PUSH: ${pushMode ? 'ON' : 'OFF'}`;
-        document.getElementById('btnActionHUD').style.color = pushMode ? '#00f3ff' : '#ffea00';
-        const btn = document.getElementById('btnAction');
-        if(btn) {
-            btn.style.background = pushMode ? 'rgba(0, 243, 255, 0.4)' : 'rgba(0, 243, 255, 0.05)';
-        }
+    function setPushUI() {
+        const b = document.getElementById('btnActionHUD');
+        b.classList.toggle('on', pushMode);
+        b.querySelector('.lbl').textContent = 'PUSH: ' + (pushMode ? 'ON' : 'OFF');
+        const a = document.getElementById('btnAction');
+        if (a) a.style.background = pushMode ? 'rgba(0, 243, 255, 0.4)' : '';
     }
+    function togglePushMode() { pushMode = !pushMode; setPushUI(); }
+
+    const UP = [0, -1], DOWN = [0, 1], LEFT = [-1, 0], RIGHT = [1, 0];
+    const KEYDIR = { ArrowUp: UP, w: UP, ArrowDown: DOWN, s: DOWN, ArrowLeft: LEFT, a: LEFT, ArrowRight: RIGHT, d: RIGHT };
+    const keyStack = [];          // held keys (latest last); each entry {d, t}
+    let padHeld = null;           // held on-screen button {dx, dy, t}
+    const keyDirOf = (e) => KEYDIR[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+
+    // Held direction becomes eligible for auto-repeat only after HOLD_DELAY, so quick taps never double-step
+    function heldDir() {
+        const now = performance.now();
+        if (keyStack.length) { const k = keyStack[keyStack.length - 1]; return (now - k.t >= HOLD_DELAY) ? { dx: k.d[0], dy: k.d[1] } : null; }
+        if (padHeld && now - padHeld.t >= HOLD_DELAY) return { dx: padHeld.dx, dy: padHeld.dy };
+        return null;
+    }
+    function clearHeld() { keyStack.length = 0; padHeld = null; blockedHold = null; }
 
     window.addEventListener('keydown', (e) => {
-        if(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-            e.preventDefault();
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) e.preventDefault();
+        // quick continue on the win screen
+        if (currentState === STATE.TRANSITION && document.getElementById('screenWin').classList.contains('active') && (e.key === 'Enter' || e.code === 'Space')) {
+            if (!e.repeat) document.getElementById('btnNextLevel').click();
+            return;
         }
-        if(currentState === STATE.MENU || currentState === STATE.LEVEL_SELECT || currentState === STATE.README) return;
-        if(e.key === 'Escape') togglePause();
-        if(e.key.toLowerCase() === 'r') resetLevel();
-        if(e.code === 'Space') { e.preventDefault(); togglePushMode(); }
-        
-        if(!isMoving && currentState === STATE.PLAYING) {
-            let dx = 0, dy = 0;
-            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') dy = -1;
-            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') dy = 1;
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') dx = -1;
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') dx = 1;
-            if (dx !== 0 || dy !== 0) queueMove(dx, dy);
+        if (currentState === STATE.MENU || currentState === STATE.LEVEL_SELECT || currentState === STATE.README) return;
+        if (e.key === 'Escape') { if (!e.repeat) togglePause(); return; }
+        if (e.repeat) return;
+        if (e.key.toLowerCase() === 'r') { clearHeld(); resetLevel(); return; }
+        if (e.code === 'Space') { togglePushMode(); return; }
+        const d = keyDirOf(e);
+        if (d) {
+            blockedHold = null;
+            if (!keyStack.some(k => k.d === d)) keyStack.push({ d: d, t: performance.now() });
+            queueMove(d[0], d[1]);
         }
     });
+    window.addEventListener('keyup', (e) => {
+        const d = keyDirOf(e);
+        if (d) { const i = keyStack.findIndex(k => k.d === d); if (i >= 0) keyStack.splice(i, 1); blockedHold = null; }
+    });
+    window.addEventListener('blur', clearHeld);
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) { clearHeld(); if (currentState === STATE.PLAYING) togglePause(); }
+    });
 
-    const bindBtn = (id, dx, dy) => {
-        const btn = document.getElementById(id);
-        const trigger = (e) => { e.preventDefault(); if(!isMoving && currentState === STATE.PLAYING) queueMove(dx, dy); };
-        btn.addEventListener('touchstart', trigger, {passive: false}); btn.addEventListener('mousedown', trigger);
+    // On-screen D-pad (pointer events = lowest latency, works for touch + mouse + pen)
+    const bindPad = (id, dx, dy) => {
+        const el = document.getElementById(id);
+        el.addEventListener('pointerdown', (e) => {
+            e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch (_) {}
+            blockedHold = null; padHeld = { dx, dy, t: performance.now() }; queueMove(dx, dy);
+        });
+        const up = () => { if (padHeld && padHeld.dx === dx && padHeld.dy === dy) padHeld = null; blockedHold = null; };
+        el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
     };
-    bindBtn('btnUp', 0, -1); bindBtn('btnDown', 0, 1); bindBtn('btnLeft', -1, 0); bindBtn('btnRight', 1, 0);
+    bindPad('btnUp', 0, -1); bindPad('btnDown', 0, 1); bindPad('btnLeft', -1, 0); bindPad('btnRight', 1, 0);
 
-    // Bind UI action buttons
+    // Swipe anywhere on the playfield (continuous: keep dragging to keep moving)
+    let swipe = null;
+    canvas.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse') return; swipe = { id: e.pointerId, x: e.clientX, y: e.clientY }; });
+    canvas.addEventListener('pointermove', (e) => {
+        if (!swipe || e.pointerId !== swipe.id) return;
+        const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y, TH = 26;
+        if (Math.abs(dx) < TH && Math.abs(dy) < TH) return;
+        if (Math.abs(dx) > Math.abs(dy)) queueMove(dx > 0 ? 1 : -1, 0); else queueMove(0, dy > 0 ? 1 : -1);
+        swipe.x = e.clientX; swipe.y = e.clientY;
+    });
+    const endSwipe = () => { swipe = null; };
+    canvas.addEventListener('pointerup', endSwipe); canvas.addEventListener('pointercancel', endSwipe);
+
+    // Push button + HUD buttons
     const actionBtn = document.getElementById('btnAction');
-    actionBtn.addEventListener('touchstart', (e) => { e.preventDefault(); togglePushMode(); }, {passive: false});
-    actionBtn.addEventListener('mousedown', (e) => { e.preventDefault(); togglePushMode(); });
+    actionBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); togglePushMode(); });
     document.getElementById('btnActionHUD').addEventListener('click', togglePushMode);
+    document.querySelectorAll('.hbtn').forEach((b) => b.addEventListener('click', () => b.blur()));   // so Space/Enter never re-trigger a focused button
+
+    document.addEventListener('gesturestart', (e) => e.preventDefault());
+    document.getElementById('gameContainer').addEventListener('contextmenu', (e) => e.preventDefault());
 
     // Add UI Listeners
     document.getElementById('btnReadme').addEventListener('click', () => { currentState = STATE.README; showScreen('screenReadme'); });
@@ -878,8 +999,8 @@ window.onload = () => {
     document.getElementById('btnSoundToggle').addEventListener('click', () => {
         let isOn = AudioEngine.toggleMute();
         let btn = document.getElementById('btnSoundToggle');
-        btn.innerText = `SOUND: ${isOn ? 'ON' : 'OFF'}`;
-        btn.style.color = isOn ? '#00ff66' : '#ff003c';
+        btn.querySelector('.lbl').textContent = `SOUND: ${isOn ? 'ON' : 'OFF'}`;
+        btn.classList.toggle('muted', !isOn);
     });
 
     document.getElementById('btnPause').addEventListener('click', togglePause);
@@ -910,28 +1031,38 @@ window.onload = () => {
         document.getElementById('minimapContainer').style.display = 'block';
     }
 
+    let popupTimer = 0;
     function showPopup(text, dur = 3500) {
         const p = document.getElementById('popup');
         p.innerText = text; p.classList.add('show');
-        setTimeout(() => p.classList.remove('show'), dur);
+        clearTimeout(popupTimer);
+        popupTimer = setTimeout(() => p.classList.remove('show'), dur);
     }
 
     function generateLevelGrid() {
-        const grid = document.getElementById('levelGrid'); grid.innerHTML = '';
-        for(let i=0; i<LEVELS.length; i++) {
-            const btn = document.createElement('button'); btn.className = `lvl-btn ${i < unlockedLevels ? 'unlocked' : ''}`; btn.innerText = i + 1;
-            if(i < unlockedLevels) btn.onclick = () => { loadLevel(i); AudioEngine.init(); };
-            grid.appendChild(btn);
+        const grid = document.getElementById('levelGrid'), frag = document.createDocumentFragment();
+        for (let i = 0; i < LEVELS.length; i++) {
+            const btn = document.createElement('button'); btn.className = 'lvl-btn' + (i < unlockedLevels ? ' unlocked' : ''); btn.textContent = i + 1; btn.dataset.i = i;
+            frag.appendChild(btn);
         }
+        grid.textContent = ''; grid.appendChild(frag);
     }
+    document.getElementById('levelGrid').addEventListener('click', (e) => {
+        const b = e.target.closest('.lvl-btn'); if (!b || !b.classList.contains('unlocked')) return;
+        AudioEngine.init(); loadLevel(parseInt(b.dataset.i, 10));
+    });
+    document.getElementById('btnGenerateMore').addEventListener('click', () => {
+        generateMoreLevels(LEVELS.length + 1, 100);
+        if (currentLevelIdx >= LEVELS.length) currentLevelIdx = LEVELS.length - 1;
+        loadLevel(currentLevelIdx);
+    });
 
     function loadLevel(index) {
         currentLevelIdx = index; const levelData = LEVELS[index]; localStorage.setItem('serpentSavedLevelV3', index);
         mapRows = levelData.layout.length; mapCols = levelData.layout[0].length;
         map = []; snake = []; twinSnake = []; mirrorSnake = []; enemies = []; activeTraps = [];
-        inventory = { tools: 0, keys: 0 }; moveCount = 0; isMoving = false; particles = [];
-        pushMode = false; document.getElementById('btnActionHUD').innerText = "[SPACE] PUSH: OFF"; document.getElementById('btnActionHUD').style.color = '#ffea00';
-        if(document.getElementById('btnAction')) document.getElementById('btnAction').style.background = 'rgba(0, 243, 255, 0.05)';
+        inventory = { tools: 0, keys: 0 }; moveCount = 0; isMoving = false; particles = []; nextMove = null; blockedHold = null; mapDirty = true;
+        pushMode = false; setPushUI();
         if (deathTimer) clearTimeout(deathTimer);
         
         puzzleState = {
@@ -955,7 +1086,8 @@ window.onload = () => {
             map.push(row);
         }
         
-        snake.escaped = false; twinSnake.escaped = false;
+        snake.escaped = false; twinSnake.escaped = false; levelScore = 0;
+        if (!twinSnake.length) puzzleState.hasTwin = false;   // never run twin logic without a twin snake
         if(levelData.enemies) levelData.enemies.forEach(e => { enemies.push({x: e.x, y: e.y, visualX: e.x, visualY: e.y, dir: e.dir, min: e.min, max: e.max, speed: e.speed}); });
 
         updateHUD(); showPopup(levelData.name + " | " + levelData.tip, 4500);
@@ -974,35 +1106,63 @@ window.onload = () => {
     }
 
     function updateHUD() {
-        document.getElementById('levelDisplay').innerText = `SEQ ${(currentLevelIdx + 1).toString().padStart(3, '0')}`;
-        document.getElementById('statsDisplay').innerText = `STEPS: ${moveCount} | TOOLS: ${inventory.tools} | KEYS: ${inventory.keys}`;
+        const set = (id, v) => { const e = document.getElementById(id); if (e.textContent !== String(v)) e.textContent = v; };
+        set('levelDisplay', (currentLevelIdx + 1).toString().padStart(3, '0'));
+        set('scoreDisplay', totalScore + levelScore);
+        set('stepsDisplay', moveCount);
+        set('keysDisplay', inventory.keys);
+        set('toolsDisplay', inventory.tools);
     }
+    function addScore(n) { levelScore += n; updateHUD(); }
 
     function queueMove(dx, dy) {
+        if (currentState !== STATE.PLAYING) return;
+        if (isMoving) { nextMove = { dx, dy }; return; }   // input buffer: latest press is executed the instant the step ends
+        doMove(dx, dy);
+    }
+    function countWalls() {
+        let n = 0;
+        for (let y = 0; y < mapRows; y++) for (let x = 0; x < mapCols; x++) { const t = map[y][x].type; if (t === 0 || t === 'M' || t === 'V') n++; }
+        return n;
+    }
+    function doMove(dx, dy) {
         if(isMoving || currentState !== STATE.PLAYING) return;
-        if(!snake.escaped && snake.length > 1 && snake[0].x + dx === snake[1].x && snake[0].y + dy === snake[1].y) snake.reverse();
-        if(puzzleState.hasTwin && !twinSnake.escaped && twinSnake.length > 1 && twinSnake[0].x + dx === twinSnake[1].x && twinSnake[0].y + dy === twinSnake[1].y) twinSnake.reverse();
+        // Head/tail swap (original mechanic): pressing toward your own neck turns the snake around.
+        // Safety: if the new head would hit a wall, undo the swap and fold back over the body instead,
+        // so the snake can never be trapped in a dead end.
+        const swapIfOpen = (arr) => {
+            if (arr.escaped || arr.length < 2) return;
+            if (!(arr[0].x + dx === arr[1].x && arr[0].y + dy === arr[1].y)) return;
+            arr.reverse();
+            const nx = arr[0].x + dx, ny = arr[0].y + dy;
+            const t = (nx >= 0 && nx < mapCols && ny >= 0 && ny < mapRows) ? map[ny][nx].type : 0;
+            if (t === 0 || t === 7 || t === 'V' || t === 'L') arr.reverse();   // blocked -> fold back instead
+        };
+        swapIfOpen(snake);
+        if (puzzleState.hasTwin) swapIfOpen(twinSnake);
         processMove(dx, dy);
     }
 
     function tryMoveSnake(sArr, dx, dy, isMain) {
         if (sArr.escaped) return false;
-        const head = sArr[0]; const nx = head.x + dx, ny = head.y + dy;
+        const head = sArr[0]; if (!head) return false;
+        const nx = head.x + dx, ny = head.y + dy;
         if (nx < 0 || nx >= mapCols || ny < 0 || ny >= mapRows) return false;
         const targetTile = map[ny][nx]; const tType = targetTile.type;
 
         if (tType === 0 || tType === 7) return false; 
         if (tType === 'V') { if(isMain){AudioEngine.hit(); cameraShake(5);} return false; }
         if (tType === 'G') {
-            // Failsafe: if no orb is left on the map, the barrier can never open, so dissolve it
-            let orbLeft = false;
-            for (let yy = 0; yy < mapRows && !orbLeft; yy++) for (let xx = 0; xx < mapCols; xx++) if (map[yy][xx].type === 'O') { orbLeft = true; break; }
-            if (!orbLeft) {
-                for (let yy = 0; yy < mapRows; yy++) for (let xx = 0; xx < mapCols; xx++) if (map[yy][xx].type === 'G') map[yy][xx].type = 1;
-                showPopup("Golden Barrier dissolved!", 1500);
-                return tryMoveSnake(sArr, dx, dy, isMain);
+            // Golden box: push it forward; if there is no free tile behind it, it shatters. Never a permanent block.
+            const gx = nx + dx, gy = ny + dy;
+            if (gx >= 0 && gx < mapCols && gy >= 0 && gy < mapRows && map[gy][gx].type === 1) {
+                map[gy][gx].type = 'G'; targetTile.type = 1; AudioEngine.breakRock();
+                createParticles(gx * TILE_SIZE + 20, gy * TILE_SIZE + 20, '#ffd700', 10);
+            } else {
+                targetTile.type = 1; AudioEngine.breakRock(); cameraShake(8);
+                createParticles(nx * TILE_SIZE + 20, ny * TILE_SIZE + 20, '#ffd700', 25);
+                showPopup("Golden Box shattered!", 1200); if (isMain) addScore(20);
             }
-            if(isMain){AudioEngine.hit(); cameraShake(5);} showPopup("Collect the Blue Orb to open the Golden Barrier!", 2000); return false;
         }
 
         // Breakable Block logic + Naye "Push" Mechanics
@@ -1025,7 +1185,7 @@ window.onload = () => {
                 // Default Old Logic
                 if (tType === 4) {
                     if (isMain && inventory.tools > 0) {
-                        inventory.tools--; targetTile.type = 1; AudioEngine.breakRock(); createParticles(nx * TILE_SIZE + 20, ny * TILE_SIZE + 20, '#ffea00', 25); cameraShake(10); showPopup("Barrier Shattered");
+                        inventory.tools--; targetTile.type = 1; AudioEngine.breakRock(); createParticles(nx * TILE_SIZE + 20, ny * TILE_SIZE + 20, '#ffea00', 25); cameraShake(10); showPopup("Barrier Shattered"); addScore(30);
                     } else { if(isMain){AudioEngine.hit(); cameraShake(5);} showPopup("Needs Tool to Break, or Push Mode!", 1500); return false; }
                 } else if (tType === 'H') {
                     let pushX = nx + dx, pushY = ny + dy;
@@ -1043,7 +1203,7 @@ window.onload = () => {
 
         if (tType === 'L') {
             if (inventory.keys > 0) {
-                inventory.keys--; targetTile.type = 1; AudioEngine.door(); createParticles(nx * TILE_SIZE + 20, ny * TILE_SIZE + 20, '#ffea00', 20); showPopup("Door Unlocked!");
+                inventory.keys--; targetTile.type = 1; AudioEngine.door(); createParticles(nx * TILE_SIZE + 20, ny * TILE_SIZE + 20, '#ffea00', 20); showPopup("Door Unlocked!"); addScore(30);
             } else { if(isMain){AudioEngine.hit(); cameraShake(5);} showPopup("Needs a Key!", 1000); return false; }
         }
 
@@ -1060,6 +1220,7 @@ window.onload = () => {
         let movedMain = tryMoveSnake(snake, dx, dy, true);
         let movedTwin = false;
         if (puzzleState.hasTwin) movedTwin = tryMoveSnake(twinSnake, dx, dy, false);
+        if (countWalls() !== mapWallCount) mapDirty = true;
         if (!movedMain && !movedTwin && !puzzleState.hasMirror) return; 
 
         isMoving = true; moveProgress = 0; snakeDir = {x: dx, y: dy};
@@ -1089,7 +1250,7 @@ window.onload = () => {
             if (tile.type === 'O') {
                 tile.type = 1; AudioEngine.pickup(); updateHUD();
                 createParticles(head.x*TILE_SIZE+20, head.y*TILE_SIZE+20, '#00bfff', 30); 
-                showPopup("Orb Collected! Path Cleared!");
+                showPopup("Orb Collected! Path Cleared!"); addScore(100);
                 
                 // Remove all Golden Walls 'G'
                 for (let y = 0; y < mapRows; y++) {
@@ -1105,11 +1266,11 @@ window.onload = () => {
 
             if (isMain && tile.type === 5) {
                 inventory.tools++; tile.type = 1; AudioEngine.pickup(); updateHUD();
-                createParticles(head.x*TILE_SIZE+20, head.y*TILE_SIZE+20, '#00f3ff', 20); showPopup("Relic Tool Acquired");
+                createParticles(head.x*TILE_SIZE+20, head.y*TILE_SIZE+20, '#00f3ff', 20); showPopup("Relic Tool Acquired"); addScore(50);
             }
             if (isMain && tile.type === 'K') {
                 inventory.keys++; tile.type = 1; AudioEngine.pickup(); updateHUD();
-                createParticles(head.x*TILE_SIZE+20, head.y*TILE_SIZE+20, '#ffea00', 20); showPopup("Key Collected");
+                createParticles(head.x*TILE_SIZE+20, head.y*TILE_SIZE+20, '#ffea00', 20); showPopup("Key Collected"); addScore(50);
             }
 
             if (tile.type === 6) {
@@ -1158,16 +1319,19 @@ window.onload = () => {
         if(currentLevelIdx + 1 > unlockedLevels) {
             unlockedLevels = currentLevelIdx + 2; localStorage.setItem('serpentUnlockedV3', unlockedLevels);
         }
-        document.getElementById('winStats').innerText = `Steps: ${moveCount} | Mastery achieved.`;
-        setTimeout(() => showScreen('screenWin'), 1200);
+        levelScore += 100 + Math.max(0, 200 - moveCount * 2);   // clear bonus + speed bonus
+        const gained = levelScore; totalScore += levelScore; levelScore = 0; try { localStorage.setItem('serpentScoreV3', totalScore); } catch (_) {}
+        updateHUD();
+        document.getElementById('winStats').innerText = `Steps: ${moveCount} | Score +${gained} | Total ${totalScore}`;
+        setTimeout(() => showScreen('screenWin'), 350);
     }
 
     function gameOver(reason) {
         if (currentState === STATE.TRANSITION) return;
-        currentState = STATE.TRANSITION; AudioEngine.death(); cameraShake(25);
+        currentState = STATE.TRANSITION; AudioEngine.death(); cameraShake(25); if (IS_TOUCH && navigator.vibrate) try { navigator.vibrate(40); } catch (_) {}
         if(!snake.escaped) createParticles(snake[0].x*TILE_SIZE+20, snake[0].y*TILE_SIZE+20, '#ff003c', 40);
-        showPopup(`Critical Failure: ${reason || 'System Crash'}`, 2500);
-        deathTimer = setTimeout(() => resetLevel(), 2500);
+        showPopup(`Critical Failure: ${reason || 'System Crash'}`, 700);
+        deathTimer = setTimeout(() => resetLevel(), 450);
     }
 
     function createParticles(x, y, color, count) {
@@ -1209,7 +1373,7 @@ window.onload = () => {
         portalBoost = Math.max(0, portalBoost - dt * 0.0006);
         const hc = (mapCols > 0) ? headCenters() : null;
         if (hc) {
-            const ct = camTarget(hc.x, hc.y), k = 1 - Math.pow(0.9, dt / 16.667);
+            const ct = camTarget(hc.x, hc.y), k = 1 - Math.pow(0.78, dt / 16.667);
             camera.targetX = ct.x; camera.targetY = ct.y;
             camera.x += (ct.x - camera.x) * k; camera.y += (ct.y - camera.y) * k;
         }
@@ -1218,8 +1382,19 @@ window.onload = () => {
         
         if(isMoving) { 
             moveProgress += dt; 
-            if(moveProgress >= moveDuration) { isMoving = false; moveProgress = moveDuration; checkTileEvents(); } 
+            if(moveProgress >= moveDuration) { moveOver = moveProgress - moveDuration; isMoving = false; moveProgress = moveDuration; checkTileEvents(); } 
         }
+
+        if (currentState === STATE.PLAYING && !isMoving) {
+            let m = nextMove, fromHold = false; nextMove = null;
+            if (!m) { const h = heldDir(); if (h && !(blockedHold && blockedHold.dx === h.dx && blockedHold.dy === h.dy)) { m = h; fromHold = true; } }
+            if (m) {
+                doMove(m.dx, m.dy);
+                if (isMoving) moveProgress = Math.min(moveOver, 20);   // carry leftover time -> no stutter between steps
+                else if (fromHold) blockedHold = m;                    // don't spam a blocked direction while it is held
+            }
+        }
+        moveOver = 0;
 
         if(currentState === STATE.PLAYING) {
             activeTraps.forEach(tile => {
@@ -1245,7 +1420,7 @@ window.onload = () => {
         }
         
         for(let i=particles.length-1; i>=0; i--) { 
-            let p = particles[i]; p.x += p.vx; p.y += p.vy; p.vx *= 0.95; p.vy *= 0.95; 
+            let p = particles[i]; const f = dt / 16.667, dmp = Math.pow(0.95, f); p.x += p.vx * f; p.y += p.vy * f; p.vx *= dmp; p.vy *= dmp; 
             p.life -= dt*0.0015; if(p.life<=0) particles.splice(i, 1); 
         }
     }
@@ -1398,7 +1573,7 @@ window.onload = () => {
         }
         const trace = () => { ctx.beginPath(); pts.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); }); };
         const head = pts[0], tail = pts[pts.length - 1];
-        if (!LOW_END_DEVICE) { trace(); ctx.lineWidth = 36; ctx.strokeStyle = `rgba(${glowRGB},0.10)`; ctx.stroke(); }
+        if (Q >= 2) { trace(); ctx.lineWidth = 36; ctx.strokeStyle = `rgba(${glowRGB},0.10)`; ctx.stroke(); }
         trace(); ctx.lineWidth = 26; ctx.strokeStyle = 'rgba(200,228,240,0.95)'; ctx.stroke();       // pale rim
         let body = mid;
         if (Math.hypot(head.x - tail.x, head.y - tail.y) > 2) {
@@ -1425,6 +1600,34 @@ window.onload = () => {
         drawPortal(canvasW / 2, hudH + 195 * sc + 8, sc, globalTime, 0);
     }
 
+    function buildMapCache() {
+        const mapW = mapCols * TS, mapH = mapRows * TS, P = 14, sc = dpr * zoom;
+        if (!mapCache) mapCache = document.createElement('canvas');
+        mapCache.width = Math.ceil((mapW + MC_M * 2) * sc); mapCache.height = Math.ceil((mapH + MC_M * 2) * sc);
+        const g = mapCache.getContext('2d');
+        const prev = ctx; ctx = g;
+        g.setTransform(sc, 0, 0, sc, MC_M * sc, MC_M * sc);
+        g.lineJoin = 'round'; g.lineCap = 'round';
+        // glowing frame
+        rrPath(g, -P, -P, mapW + P * 2, mapH + P * 2, 24); g.fillStyle = '#030616'; g.fill();
+        if (Q >= 2) { g.strokeStyle = 'rgba(0,150,255,0.16)'; g.lineWidth = 16; g.stroke(); }
+        g.strokeStyle = 'rgba(40,190,255,0.40)'; g.lineWidth = 7; g.stroke();
+        g.strokeStyle = '#38b8ff'; g.lineWidth = 2.5; g.stroke();
+        // base tiles
+        for (let y = 0; y < mapRows; y++) for (let x = 0; x < mapCols; x++) drawBaseTile(x, y, map[y][x].type);
+        // glowing grid + junction studs
+        g.beginPath();
+        for (let i = 0; i <= mapCols; i++) { g.moveTo(i * TS, 0); g.lineTo(i * TS, mapH); }
+        for (let j = 0; j <= mapRows; j++) { g.moveTo(0, j * TS); g.lineTo(mapW, j * TS); }
+        if (Q >= 1) { g.strokeStyle = 'rgba(20,110,255,0.20)'; g.lineWidth = 7; g.stroke(); }
+        g.strokeStyle = 'rgba(40,140,255,0.78)'; g.lineWidth = 2; g.stroke();
+        g.beginPath();
+        for (let i = 0; i <= mapCols; i++) for (let j = 0; j <= mapRows; j++) { g.moveTo(i * TS + 2.6, j * TS); g.arc(i * TS, j * TS, 2.6, 0, Math.PI * 2); }
+        g.fillStyle = '#8fd8ff'; g.fill();
+        ctx = prev;
+        mapWallCount = countWalls(); mapDirty = false;
+    }
+
     function draw() {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
         drawBackground();
@@ -1434,27 +1637,14 @@ window.onload = () => {
         const vw = canvasW / zoom, vh = canvasH / zoom;
         ctx.save(); ctx.scale(zoom, zoom); ctx.translate(-camera.x, -camera.y);
 
-        // glowing frame
-        rrPath(ctx, -P, -P, mapW + P * 2, mapH + P * 2, 24); ctx.fillStyle = '#030616'; ctx.fill();
-        if (!LOW_END_DEVICE) { ctx.strokeStyle = 'rgba(0,150,255,0.16)'; ctx.lineWidth = 16; ctx.stroke(); }
-        ctx.strokeStyle = 'rgba(40,190,255,0.40)'; ctx.lineWidth = 7; ctx.stroke();
-        ctx.strokeStyle = '#38b8ff'; ctx.lineWidth = 2.5; ctx.stroke();
+        // frame + tiles + grid are pre-rendered once (rebuilt only when walls change)
+        if (mapDirty || !mapCache) buildMapCache();
+        ctx.drawImage(mapCache, -MC_M, -MC_M, mapW + MC_M * 2, mapH + MC_M * 2);
 
         if (camera.y < 40) drawPortal(mapW / 2, -10, portalScale, globalTime, portalBoost);
 
         const x0 = Math.max(0, Math.floor(camera.x / TS)), x1 = Math.min(mapCols - 1, Math.floor((camera.x + vw) / TS));
         const y0 = Math.max(0, Math.floor(camera.y / TS)), y1 = Math.min(mapRows - 1, Math.floor((camera.y + vh) / TS));
-        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) drawBaseTile(x, y, map[y][x].type);
-
-        // glowing grid + junction studs
-        ctx.beginPath();
-        for (let i = 0; i <= mapCols; i++) { ctx.moveTo(i * TS, 0); ctx.lineTo(i * TS, mapH); }
-        for (let j = 0; j <= mapRows; j++) { ctx.moveTo(0, j * TS); ctx.lineTo(mapW, j * TS); }
-        if (!LOW_END_DEVICE) { ctx.strokeStyle = 'rgba(20,110,255,0.20)'; ctx.lineWidth = 7; ctx.stroke(); }
-        ctx.strokeStyle = 'rgba(40,140,255,0.78)'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.beginPath();
-        for (let i = 0; i <= mapCols; i++) for (let j = 0; j <= mapRows; j++) { ctx.moveTo(i * TS + 2.6, j * TS); ctx.arc(i * TS, j * TS, 2.6, 0, Math.PI * 2); }
-        ctx.fillStyle = '#8fd8ff'; ctx.fill();
 
         for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) drawObject(x, y, map[y][x].type);
 
@@ -1463,10 +1653,12 @@ window.onload = () => {
         if (puzzleState.hasTwin && !twinSnake.escaped) drawSnakeData(twinSnake, '#ffe2b0', '#ff9a1a', '#7a3a00', '255,150,30');
         if (!snake.escaped) drawSnakeData(snake, '#c4fbff', '#1fd3ea', '#087a99', '0,243,255');
 
-        particles.forEach(p => {
-            ctx.globalAlpha = Math.max(0, p.life) * 0.35; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 2.2, 0, Math.PI * 2); ctx.fill();
-            ctx.globalAlpha = Math.max(0, p.life); ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
-        });
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i], a = Math.max(0, p.life);
+            ctx.fillStyle = p.color;
+            if (Q >= 2) { ctx.globalAlpha = a * 0.35; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 2.2, 0, Math.PI * 2); ctx.fill(); }
+            ctx.globalAlpha = a; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+        }
         ctx.globalAlpha = 1.0; ctx.restore();
 
         if (puzzleState.darkness && !snake.escaped) {
@@ -1477,9 +1669,25 @@ window.onload = () => {
         }
     }
 
+    let fpsAcc = 0, fpsN = 0, badWindows = 0;
     function loop(timestamp) {
-        let dt = timestamp - lastTime; lastTime = timestamp; if(dt > 100) dt = 100;
-        update(dt); draw(); requestAnimationFrame(loop);
+        requestAnimationFrame(loop);
+        const raw = timestamp - lastTime;
+        const idle = currentState === STATE.MENU || currentState === STATE.LEVEL_SELECT || currentState === STATE.README;
+        if (idle && raw < 28) return;                        // menus: ~30fps (saves battery / CPU)
+        if (currentState === STATE.PAUSED && raw < 60) return; // paused: ~15fps
+        if (raw < 12) return;                                // cap at ~60-72fps on high-refresh screens
+        lastTime = timestamp;
+        // adaptive quality: if gameplay averages < ~42fps for two windows in a row, drop one tier
+        if (currentState === STATE.PLAYING && raw < 100) {
+            fpsAcc += raw; fpsN++;
+            if (fpsN >= 90) {
+                if (fpsAcc / fpsN > 24 && Q > 0) { if (++badWindows >= 2) { Q--; badWindows = 0; resize(true); } } else badWindows = 0;
+                fpsAcc = 0; fpsN = 0;
+            }
+        }
+        const dt = Math.min(raw, 100);
+        update(dt); draw();
     }
     requestAnimationFrame(loop);
 };
