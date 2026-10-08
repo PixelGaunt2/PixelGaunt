@@ -3,24 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#14086a">
 <title>Face Merge</title>
 <style>
-  :root { --gw: min(98vw, 420px, calc(100vh - 200px)); }
-  @supports (height:100dvh) { :root { --gw: min(98vw, 420px, calc(100dvh - 200px)); } }
+  :root { --gw: min(98vw, 520px, calc(100vh - 200px)); }
+  @supports (height:100dvh) { :root { --gw: min(98vw, 520px, calc(100dvh - 200px)); } }
   @media (max-width:600px) {
     :root { --gw: min(98vw, calc(100vh - 200px)); }
     @supports (height:100dvh) { :root { --gw: min(98vw, calc(100dvh - 200px)); } }
   }
   html { height:100%; background:#1a0033; overflow:hidden; -webkit-tap-highlight-color:transparent; }
-  body { margin:0; font-family:sans-serif; background:#1a0033; color:#fff; display:flex; justify-content:center; align-items:center; height:100vh; height:100dvh; width:100%; position:fixed; top:0; left:0; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; }
-  .screen { position:fixed; top:0; left:0; width:100%; height:100vh; height:100dvh; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg, #2c003e, #005c97); transition:opacity 0.3s, visibility 0s; z-index:10; }
+  body { margin:0; font-family:sans-serif; background:#1a0033; color:#fff; display:flex; justify-content:center; align-items:center; height:100vh; height:100dvh; width:100%; position:fixed; top:0; left:0; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+  .screen { position:fixed; top:0; left:0; width:100%; height:100vh; height:100dvh; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(135deg, #2c003e, #005c97); transition:opacity 0.15s, visibility 0s; z-index:10; }
   /* PERF FIX: hidden screens no longer render / animate in background */
-  .hidden { opacity:0; pointer-events:none; z-index:-1; visibility:hidden; transition:opacity 0.3s, visibility 0s 0.3s; }
+  .hidden { opacity:0; pointer-events:none; z-index:-1; visibility:hidden; transition:opacity 0.15s, visibility 0s 0.15s; }
   .screen.hidden, .screen.hidden * { animation-play-state:paused !important; }
   /* Game screen: spread content over the full height (no empty top/bottom) */
   #game-screen { justify-content:space-evenly; padding:env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
   
-  .animated-title { font-size: 60px; font-weight: bold; text-align: center; margin-bottom: 40px; text-transform: uppercase; background: linear-gradient(90deg, #ff4757, #ffa502, #2ed573, #1e90ff, #9b59b6, #ff4757); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 3s linear infinite, bounceTitle 2s ease-in-out infinite; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8)); line-height: 1.1;}
+  .animated-title { font-size: 60px; font-weight: bold; text-align: center; margin-bottom: 40px; text-transform: uppercase; background: linear-gradient(90deg, #ff4757, #ffa502, #2ed573, #1e90ff, #9b59b6, #ff4757); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 3s linear infinite, bounceTitle 2s ease-in-out infinite; line-height: 1.1;}
   @keyframes shine { to { background-position: 200% center; } }
   @keyframes bounceTitle { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-15px) rotate(3deg); } }
 
@@ -83,7 +84,7 @@
   .cell-wrapper { width:100%; height:100%; position:relative; border-radius:50%; touch-action:none;}
   
   .cell { width:100%; height:100%; border-radius:50%; position:absolute; top:0; left:0; cursor:grab; 
-          transition:transform 0.2s ease-in-out; box-shadow:inset -3px -3px 6px rgba(0,0,0,0.4), 0 3px 5px rgba(0,0,0,0.3); z-index:5; 
+          transition:transform 0.12s ease-out; box-shadow:inset -3px -3px 6px rgba(0,0,0,0.4), 0 3px 5px rgba(0,0,0,0.3); z-index:5; 
           display:flex; justify-content:center; align-items:center; touch-action:none; }
   .cell:active { cursor:grabbing; }
   
@@ -107,7 +108,7 @@
   .bird-help::after { content:''; position:absolute; bottom:-4px; left:50%; transform:translateX(-50%); border-width:4px 4px 0; border-style:solid; border-color:#fff transparent transparent transparent; }
   @keyframes blink { 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:0.8; transform:scale(1.1);} }
   
-  .bird-fly-anim { animation: birdFly 0.8s forwards ease-in; z-index: 50 !important; border-radius:0; box-shadow:none; background:transparent;}
+  .bird-fly-anim { animation: birdFly 0.4s forwards ease-in; z-index: 50 !important; border-radius:0; box-shadow:none; background:transparent;}
   @keyframes birdFly { 0% { transform: scale(1); } 30% { transform: scale(1.3) rotate(-10deg); } 100% { transform: scale(2) translateY(-100px) translateX(20px); opacity: 0; } }
 
   .face { position:absolute; width:100%; height:100%; }
@@ -138,11 +139,11 @@
   .face-orange::after { content:''; position:absolute; width:10%; height:4px; background:#222; left:45%; top:35%; }
   .face-orange .mouth { width:20%; height:3px; top:65%; border-radius:2px; }
 
-  .pop { animation:pop 0.3s forwards; }
+  .pop { animation:pop .18s forwards; }
   @keyframes pop { 50%{transform:scale(1.3); opacity:0.8;} 100%{transform:scale(0); opacity:0;} }
   
-  .coin { position:absolute; font-size:24px; animation:coinFly 1s forwards; z-index:50; pointer-events:none; text-shadow:0 0 10px yellow; }
-  @keyframes coinFly { 0%{transform:translateY(0) scale(0.5);} 50%{transform:translateY(-50px) scale(1.5);} 100%{transform:translateY(-80px) scale(1); opacity:0;} }
+  .coin { position:absolute; font-size:22px; animation:coinFly .6s forwards; z-index:50; pointer-events:none; }
+  @keyframes coinFly { 0%{transform:translateY(0) scale(.6);opacity:1;} 100%{transform:translateY(-46px) scale(1.1);opacity:0;} }
   
   .shake { animation:shake 0.4s; }
   @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-5px);} 75%{transform:translateX(5px);} }
@@ -184,9 +185,9 @@
   .face-yellow .mouth { overflow:hidden; }
   .face-yellow .mouth::after { content:''; position:absolute; left:22%; bottom:0; width:56%; height:55%; background:#ff6b81; border-radius:50% 50% 0 0; }
   .face-yellow .eye::after, .face-green .eye::after { content:''; position:absolute; width:30%; height:30%; left:20%; top:15%; background:#fff; border-radius:50%; }
-  .pop { animation:pop .3s forwards; }
+  .pop { animation:pop .18s forwards; }
   @keyframes pop { 40%{transform:scale(1.25);filter:brightness(1.6);} 100%{transform:scale(0);opacity:0;} }
-  .drop-in { animation:dropIn .34s cubic-bezier(.3,1.4,.5,1) backwards; }
+  .drop-in { animation:dropIn .2s ease-out backwards; }
   @keyframes dropIn { from{transform:translateY(-140%);opacity:.2;} to{transform:none;opacity:1;} }
 
   /* hero dog peeking over the panel */
@@ -229,6 +230,66 @@
   .combo-pop { position:absolute; left:50%; top:40%; transform:translate(-50%,-50%); font-size:34px; font-weight:900; white-space:nowrap; color:#ffe14d;
       -webkit-text-stroke:2px #c2410c; text-shadow:0 4px 0 #7c2d12, 0 0 18px rgba(255,200,0,.9); z-index:60; pointer-events:none; animation:comboPop .9s forwards; }
   @keyframes comboPop { 0%{transform:translate(-50%,-30%) scale(.3);opacity:0;} 25%{transform:translate(-50%,-50%) scale(1.25);opacity:1;} 100%{transform:translate(-50%,-120%) scale(1);opacity:0;} }
+</style>
+<style id="fm-perf">
+  /* ===== Optimisation layer: PC + mobile ===== */
+  .screen { padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); }
+  .screen:not(#game-screen) { overflow-y:auto; touch-action:pan-y; justify-content:safe center; }
+  button { touch-action:manipulation; -webkit-appearance:none; appearance:none; font-family:inherit; }
+  .btn, .back-btn, .power-btn, .buy-btn, .lvl-unlocked { cursor:pointer; }
+
+  /* selected face (tap-to-swap) */
+  .cell.sel { filter:brightness(1.2); transform:scale(1.1); z-index:8;
+      box-shadow:0 0 0 3px #fff, 0 0 14px 4px rgba(255,255,255,.8), inset -4px -5px 8px rgba(0,0,0,.35); }
+
+  /* non-blocking toast (replaces alert) */
+  #toast { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 22px); transform:translateX(-50%);
+      background:rgba(0,0,0,.85); color:#fff; padding:10px 18px; border-radius:20px; font-weight:bold; font-size:15px;
+      z-index:500; pointer-events:none; opacity:0; transition:opacity .2s; max-width:90vw; text-align:center; border:2px solid #fff; }
+  #toast.show { opacity:1; }
+
+  /* coin sprite now lives inside the cell wrapper */
+  .coin { left:calc(50% - 12px); top:calc(50% - 14px); }
+
+  /* in-game backdrop stays still: cheaper, and the board is the focus */
+  #decor-game .float-face, #decor-game .spark { animation:none; }
+  #decor-game .spark { opacity:.5; }
+
+  /* short screens (small phones, laptops): tighter menu + game */
+  @media (max-height:700px) {
+    .animated-title { font-size:44px; margin-bottom:18px; }
+    .start-dog { font-size:70px; }
+    .hero { display:none; }
+    .panel { border-radius:18px 18px 12px 12px; }
+    .power-btn { height:44px; font-size:24px; }
+    :root { --gw: min(98vw, 520px, calc(100vh - 150px)); }
+    @supports (height:100dvh) { :root { --gw: min(98vw, 520px, calc(100dvh - 150px)); } }
+  }
+
+  /* phones in landscape: stats on the left, big board on the right */
+  @media (orientation:landscape) and (max-height:560px) {
+    :root { --gw: min(calc(100vh + 40px), calc(100vw - 300px)); }
+    @supports (height:100dvh) { :root { --gw: min(calc(100dvh + 40px), calc(100vw - 300px)); } }
+    #game-screen { display:grid; grid-template-columns:260px auto; grid-template-rows:auto auto; column-gap:14px;
+        align-content:center; justify-content:center; align-items:start; }
+    #game-screen .top-bar { grid-column:1; grid-row:1; width:100%; }
+    #game-screen .panel { grid-column:1; grid-row:2; width:100%; }
+    #game-screen .game-layout { grid-column:2; grid-row:1 / span 2; align-self:center; }
+    .animated-title { font-size:34px; margin-bottom:10px; }
+    .start-dog { font-size:48px; }
+    .lvl-grid { padding:12px; }
+    .lvl-btn { width:44px; height:44px; }
+  }
+
+  @media (min-width:900px) and (min-height:800px) {
+    :root { --gw: min(98vw, 580px, calc(100vh - 210px)); }
+    @supports (height:100dvh) { :root { --gw: min(98vw, 580px, calc(100dvh - 210px)); } }
+    .hero { display:flex; }
+  }
+
+  @media (prefers-reduced-motion:reduce) {
+    .float-face, .spark, .animated-title, .hero-dog, .start-dog, .dog-char { animation:none !important; }
+  }
 </style>
 </head>
 <body>
@@ -334,6 +395,8 @@
   </div>
 </div>
 
+<div id="toast"></div>
+
 <script>
   // ================= VARIABLES & DATA =================
   const W = 8; 
@@ -342,7 +405,7 @@
   let grid=[], iceGrid=[], score=0, moves=0, lvl=1, coins=250;
   let targetAmount=0, targetType='score', targetColor='';
   let isAnim=false, activePower=null, combo=0;
-  let isPaused=false;
+  let isPaused=false, gen=0, selId=null;
   
   // Power Inventory & Costs
   let powers = {hammer:1, bomb:1, rocket:1, magic:1};
@@ -369,6 +432,7 @@
           if (muted) return;
           try {
               const p = pool(name);
+              const now = performance.now(); if (p.t && now - p.t < 60) return; p.t = now;
               let a = p.list[p.i];
               if (!a) { a = new Audio(name + '.wav'); a.preload = 'auto'; p.list[p.i] = a; }
               p.i = (p.i + 1) % POOL_SIZE;
@@ -385,7 +449,15 @@
           if (!musicWanted || muted) return;
           try { const r = ensureMusic().play(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
       }
+      let preloaded = false;
+      function preloadAll() {
+          if (preloaded) return; preloaded = true;
+          ['dash','coin','object_destroy_base','win_fanfare','player_death','collect_base','player_hurt','powerup_unlock'].forEach(function (n) {
+              try { const p = pool(n); for (let k = 0; k < 2; k++) { const a = new Audio(n + '.wav'); a.preload = 'auto'; p.list[k] = a; } } catch (e) {}
+          });
+      }
       function unlock() {
+          preloadAll();
           if (musicWanted) tryPlayMusic();
       }
       ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(function (ev) {
@@ -404,6 +476,7 @@
   function toggleSound() {
       soundOn = !soundOn; GameAudio.setMuted(!soundOn);
       document.getElementById('sound-btn').innerText = soundOn ? '🔊' : '🔇';
+      saveProg();
   }
 
   const sndSwap = ()=>GameAudio.sfx('dash', 0.35);
@@ -434,7 +507,7 @@
   }
 
   function showLevelSelector() {
-      GameAudio.stopMusic();
+      gen++; GameAudio.stopMusic();
       hideAll(); clearInterval(dogTimer); isPaused = false;
       document.getElementById('levels-screen').classList.remove('hidden');
       buildLevelGrid();
@@ -456,518 +529,596 @@
   }
 
   // ================= LEVEL TARGET LOGIC =================
+  const $ = id => document.getElementById(id);
+  const E = {
+    board:$('board'), water:$('water-fill'), dog:$('dog-char'), speech:$('dog-speech'),
+    modal:$('modal'), pauseModal:$('pause-modal'), lvl:$('ui-lvl'), score:$('ui-score'),
+    moves:$('ui-moves'), coins:$('ui-coins'), target:$('ui-target'), toast:$('toast'),
+    game:$('game-screen'), mTitle:$('m-title'), mDesc:$('m-desc'), mBtn:$('m-btn')
+  };
+  const cntEls = { hammer:$('h-cnt'), bomb:$('b-cnt'), rocket:$('r-cnt'), magic:$('m-cnt') };
+  const buyEls = { hammer:$('buy-hammer'), bomb:$('buy-bomb'), rocket:$('buy-rocket'), magic:$('buy-magic') };
+
+  // Snappy timings (ms)
+  const T_SWAP = 130, T_POP = 180, T_DROP = 220;
+  let extraDelay = 0;
+
+  // Every delayed step is tied to the current level session, so leaving a level
+  // mid-cascade can never corrupt the next one.
+  function later(fn, ms) { const g = gen; setTimeout(() => { if (g === gen) fn(); }, ms); }
+  function fallDelay() { const d = T_POP + extraDelay; extraDelay = 0; return d; }
+
+  // Cached markup (built once, not on every refill)
+  const FACE = {};
+  colors.forEach(c => {
+    FACE[c] = `<div class="face face-${c}"><div class="eye eye-l"></div><div class="eye eye-r"></div><div class="mouth"></div></div>`;
+  });
+  const BIRD_HTML = `<div class="cage-bars"></div><div class="bird-emoji">🐦</div><div class="bird-help">Help!</div>`;
+  function getFaceHTML(c) { return FACE[c]; }
+  function getBirdHTML() { return BIRD_HTML; }
+
+  // Non-blocking message (replaces alert())
+  let toastT = 0;
+  function toast(msg) {
+    E.toast.textContent = msg; E.toast.classList.add('show');
+    clearTimeout(toastT); toastT = setTimeout(() => E.toast.classList.remove('show'), 1700);
+  }
+
+  // ================= SAVE PROGRESS =================
+  const SAVE_KEY = 'pgs_face_merge_v1';
+  function saveProg() {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ u:unlockedLevel, c:coins, p:powers, s:soundOn })); } catch (e) {}
+  }
+  (function loadProg() {
+    try {
+      const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (!d) return;
+      if (Number.isFinite(d.u)) unlockedLevel = Math.max(1, Math.min(26, d.u | 0));
+      if (Number.isFinite(d.c)) coins = Math.max(0, d.c | 0);
+      if (d.p) for (const k in powers) if (Number.isFinite(d.p[k])) powers[k] = Math.max(0, d.p[k] | 0);
+      if (d.s === false) { soundOn = false; GameAudio.setMuted(true); $('sound-btn').innerText = '🔇'; }
+    } catch (e) {}
+  })();
+
   function loadLevel(l) {
-    if(l>25){ alert("You completed all 25 levels!"); l=25; }
-    lvl=l; score=0; combo=0; isAnim=false; activePower=null; isPaused=false; GameAudio.startMusic();
-    document.querySelectorAll('.power-btn').forEach(b=>b.classList.remove('active-power'));
-    
-    moves = 15 + Math.floor(l/2); timeLimit = 70 - Math.min(30, l);
-    
-    // Updated Cycle: Added 4th type "Bird/Cage"
+    if (l > 25) { toast("You completed all 25 levels! 🎉"); l = 25; }
+    gen++;
+    lvl = l; score = 0; combo = 0; isAnim = false; activePower = null; isPaused = false;
+    selId = null; dragId = null; isDragging = false; extraDelay = 0;
+    GameAudio.startMusic();
+    document.querySelectorAll('.power-btn').forEach(b => b.classList.remove('active-power'));
+
+    moves = 15 + Math.floor(l / 2); timeLimit = 70 - Math.min(30, l);
+
     let cycle = l % 4;
-    if(cycle === 1) { 
-        targetType='score'; targetAmount = 500 + (l*200); 
-    } else if(cycle === 2) { 
-        targetType='ice'; targetAmount = 4 + Math.floor(l/2); 
-    } else if(cycle === 3) { 
-        targetType='color'; targetColor = colors[l % colors.length]; targetAmount = 15 + l; 
-    } else {
-        targetType='bird'; targetAmount = 3 + Math.floor(l/3);
-    }
-    
-    hideAll(); document.getElementById('game-screen').classList.remove('hidden');
+    if (cycle === 1) { targetType = 'score'; targetAmount = 500 + (l * 200); }
+    else if (cycle === 2) { targetType = 'ice'; targetAmount = 4 + Math.floor(l / 2); }
+    else if (cycle === 3) { targetType = 'color'; targetColor = colors[l % colors.length]; targetAmount = 15 + l; }
+    else { targetType = 'bird'; targetAmount = 3 + Math.floor(l / 3); }
+
+    hideAll(); E.game.classList.remove('hidden');
     buildBoard(); updateUI(); startDogTimer();
   }
 
   function startDogTimer() {
     clearInterval(dogTimer); fillPct = 0;
-    let waterFill = document.getElementById('water-fill'); let dogChar = document.getElementById('dog-char');
-    waterFill.style.height = '0%'; dogChar.style.bottom = '0%'; dogChar.innerText = '🐶'; dogChar.classList.remove('dog-panic');
+    E.water.style.height = '0%'; E.dog.style.bottom = '0%'; E.dog.innerText = '🐶'; E.dog.classList.remove('dog-panic');
     updateDogSpeech("Help! 😰", true); sndDogSad();
 
-    let step = 100 / timeLimit; 
+    const step = 100 / timeLimit;
     dogTimer = setInterval(() => {
-        if(!document.getElementById('modal').classList.contains('hidden') || isPaused) return;
-        fillPct += step; if(fillPct >= 100) fillPct = 100;
-        waterFill.style.height = fillPct + '%'; dogChar.style.bottom = fillPct + '%'; 
-        
-        if(fillPct > 70 && fillPct < 100) { dogChar.innerText = '😰'; dogChar.classList.add('dog-panic'); updateDogSpeech("Panic! 😱", true); }
-        if(fillPct >= 100) { clearInterval(dogTimer); dogChar.innerText = '😭'; showModal(false, "Dog room completely flooded! ⏳"); }
+      if (isPaused || !E.modal.classList.contains('hidden')) return;
+      fillPct += step; if (fillPct >= 100) fillPct = 100;
+      E.water.style.height = fillPct + '%'; E.dog.style.bottom = fillPct + '%';
+
+      if (fillPct > 70 && fillPct < 100) { E.dog.innerText = '😰'; E.dog.classList.add('dog-panic'); updateDogSpeech("Panic! 😱", true); }
+      if (fillPct >= 100) { clearInterval(dogTimer); E.dog.innerText = '😭'; showModal(false, "Dog room completely flooded! ⏳"); }
     }, 1000);
   }
 
+  let speechT = 0;
   function updateDogSpeech(text, persistent = false) {
-      const speech = document.getElementById('dog-speech');
-      speech.innerText = text;
-      speech.style.opacity = 1;
-      if (!persistent) { heroCheer(); setTimeout(() => { speech.style.opacity = 0; }, 2000); }
-  }
-
-  function getFaceHTML(c) {
-      return `<div class="face face-${c}"><div class="eye eye-l"></div><div class="eye eye-r"></div><div class="mouth"></div></div>`;
-  }
-
-  function getBirdHTML() {
-      return `<div class="cage-bars"></div><div class="bird-emoji">🐦</div><div class="bird-help">Help!</div>`;
+    E.speech.innerText = text; E.speech.style.opacity = 1;
+    if (!persistent) { heroCheer(); clearTimeout(speechT); speechT = setTimeout(() => { E.speech.style.opacity = 0; }, 2000); }
   }
 
   function buildBoard() {
-    const b=document.getElementById('board'); b.innerHTML=''; grid=[]; iceGrid=[];
-    let iceSet=new Set(); let birdSet=new Set();
-    
-    if(targetType==='ice') {
-        while(iceSet.size < targetAmount) iceSet.add(Math.floor(Math.random()*(W*W)));
-    } else if(targetType==='bird') {
-        while(birdSet.size < targetAmount) {
-            let rnd = Math.floor(Math.random()*(W*W));
-            if(rnd > W*2) birdSet.add(rnd); // Better to put cages lower down
-        }
+    const b = E.board; b.innerHTML = ''; grid = []; iceGrid = []; selId = null;
+    let iceSet = new Set(), birdSet = new Set();
+
+    if (targetType === 'ice') {
+      while (iceSet.size < targetAmount) iceSet.add(Math.floor(Math.random() * (W * W)));
+    } else if (targetType === 'bird') {
+      while (birdSet.size < targetAmount) {
+        let rnd = Math.floor(Math.random() * (W * W));
+        if (rnd > W * 2) birdSet.add(rnd);
+      }
     }
 
-    for(let i=0; i<W*W; i++) {
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < W * W; i++) {
       let wrap = document.createElement('div'); wrap.className = 'cell-wrapper';
-      let c = document.createElement('div'); c.className='cell'; c.dataset.id=i;
-      
+      let c = document.createElement('div'); c.className = 'cell'; c.dataset.id = i;
+
       let avoid = [];
-      if(i%W >= 2 && grid[i-1] && grid[i-1].color === grid[i-2].color) avoid.push(grid[i-1].color);
-      if(i >= W*2 && grid[i-W] && grid[i-W].color === grid[i-W*2].color) avoid.push(grid[i-W].color);
-      
-      let valid = colors.filter(x=>!avoid.includes(x));
-      
-      if(birdSet.has(i)) {
-          c.classList.add('bean-bird');
-          c.color = 'bird'; // Special unmatchable type
-          c.innerHTML = getBirdHTML();
+      if (i % W >= 2 && grid[i - 1] && grid[i - 1].color === grid[i - 2].color) avoid.push(grid[i - 1].color);
+      if (i >= W * 2 && grid[i - W] && grid[i - W].color === grid[i - W * 2].color) avoid.push(grid[i - W].color);
+      let valid = colors.filter(x => !avoid.includes(x));
+
+      if (birdSet.has(i)) {
+        c.className = 'cell bean-bird'; c.color = 'bird'; c.innerHTML = BIRD_HTML;
       } else {
-          let clr = valid[Math.floor(Math.random()*valid.length)] || colors[0];
-          c.classList.add('bean-'+clr); c.color=clr; c.innerHTML = getFaceHTML(clr);
+        let clr = valid[Math.floor(Math.random() * valid.length)] || colors[0];
+        c.className = 'cell bean-' + clr; c.color = clr; c.innerHTML = FACE[clr];
       }
-      
-      // BULLETPROOF TOUCH & MOUSE EVENTS FOR LIVE DRAGGING
-      c.addEventListener('touchstart', handleInputStart, {passive: false});
-      c.addEventListener('mousedown', handleInputStart);
-      
       wrap.appendChild(c);
-      
-      if(iceSet.has(i)){
-        let ice=document.createElement('div'); ice.className='ice'; ice.id='ice-'+i;
-        wrap.appendChild(ice); iceGrid[i]=true;
-      } else iceGrid[i]=false;
-      
-      b.appendChild(wrap); grid.push(c);
+
+      if (iceSet.has(i)) {
+        let ice = document.createElement('div'); ice.className = 'ice'; ice.id = 'ice-' + i;
+        wrap.appendChild(ice); iceGrid[i] = true;
+      } else iceGrid[i] = false;
+
+      frag.appendChild(wrap); grid.push(c);
+    }
+    b.appendChild(frag);
+
+    // Never start on a dead board
+    if (!hasMoves()) {
+      const ch = shuffleBoard() || [];
+      later(() => ch.forEach(g => g.classList.remove('drop-in')), T_DROP);
     }
   }
 
-  // ================= 100% BULLETPROOF REAL-TIME DRAG LOGIC =================
-  let dragId=null, startX, startY, isDragging=false;
-
-  function handleInputStart(e) {
-      if(isAnim || moves<=0 || isPaused) return;
-      if(this.color === 'bird' && !activePower) return; // Cannot drag cages normally!
-      
-      if(e.cancelable) e.preventDefault(); // Stop native browser drag + emulated mouse events
-
-      dragId = parseInt(this.dataset.id);
-
-      if(activePower) { usePower(dragId); dragId=null; return; }
-
-      this.classList.add('active-drag');
-
-      if(e.type === 'touchstart') {
-          startX = e.touches[0].clientX; startY = e.touches[0].clientY;
-      } else {
-          startX = e.clientX; startY = e.clientY;
+  // ================= BOARD HELPERS (dead-board detection + shuffle) =================
+  function anyMatchArr(a) {
+    for (let r = 0; r < W; r++) for (let c = 0; c < W - 2; c++) {
+      const i = r * W + c, k = a[i];
+      if (k && k !== 'bird' && a[i + 1] === k && a[i + 2] === k) return true;
+    }
+    for (let c = 0; c < W; c++) for (let r = 0; r < W - 2; r++) {
+      const i = r * W + c, k = a[i];
+      if (k && k !== 'bird' && a[i + W] === k && a[i + 2 * W] === k) return true;
+    }
+    return false;
+  }
+  function canMoveArr(a) {
+    for (let i = 0; i < W * W; i++) {
+      const k = a[i]; if (!k || k === 'bird') continue;
+      if (i % W < W - 1) {
+        const j = i + 1, o = a[j];
+        if (o && o !== 'bird' && o !== k) { a[i] = o; a[j] = k; const m = anyMatchArr(a); a[i] = k; a[j] = o; if (m) return true; }
       }
-      isDragging = true;
+      if (i < W * (W - 1)) {
+        const j = i + W, o = a[j];
+        if (o && o !== 'bird' && o !== k) { a[i] = o; a[j] = k; const m = anyMatchArr(a); a[i] = k; a[j] = o; if (m) return true; }
+      }
+    }
+    return false;
+  }
+  const colorsArr = () => grid.map(g => g.color);
+  function hasMoves() { return canMoveArr(colorsArr()); }
+
+  function shuffleBoard() {
+    const idx = [], cl = [];
+    grid.forEach((g, i) => { if (g.color && g.color !== 'bird') { idx.push(i); cl.push(g.color); } });
+    if (idx.length < 3) return [];
+    const base = colorsArr(); let ok = false;
+    for (let t = 0; t < 80 && !ok; t++) {
+      for (let i = cl.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const tmp = cl[i]; cl[i] = cl[j]; cl[j] = tmp; }
+      idx.forEach((id, k) => base[id] = cl[k]);
+      ok = !anyMatchArr(base) && canMoveArr(base);
+    }
+    const changed = [];
+    idx.forEach((id, k) => {
+      const g = grid[id]; g.color = cl[k]; g.className = 'cell drop-in bean-' + cl[k]; g.innerHTML = FACE[cl[k]]; changed.push(g);
+    });
+    return changed;
   }
 
-  document.addEventListener('touchmove', handleInputMove, {passive: false});
-  document.addEventListener('mousemove', handleInputMove);
-  document.addEventListener('touchend', handleInputEnd);
-  document.addEventListener('touchcancel', handleInputEnd);
-  document.addEventListener('mouseup', handleInputEnd);
-
+  // ================= INPUT: unified pointer events (mouse + touch + pen) =================
+  // Drag a face toward a neighbour, OR tap one face then tap an adjacent one.
+  let dragId = null, startX = 0, startY = 0, isDragging = false, tapSelect = true, thresh = 20;
   let moveRaf = 0, pendX = 0, pendY = 0;
 
-  function handleInputMove(e) {
-      if(!isDragging || dragId === null) return;
-      e.preventDefault(); // Stops mobile page scrolling completely
+  function clearSel() { if (selId !== null && grid[selId]) grid[selId].classList.remove('sel'); selId = null; }
 
-      if(e.type === 'touchmove') {
-          if(!e.touches.length) return;
-          pendX = e.touches[0].clientX; pendY = e.touches[0].clientY;
-      } else {
-          pendX = e.clientX; pendY = e.clientY;
-      }
-      // PERF FIX: apply at most once per animation frame (not on every raw event)
-      if(!moveRaf) moveRaf = requestAnimationFrame(applyDragMove);
+  E.board.addEventListener('pointerdown', onDown);
+  E.board.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('pointermove', onMove, { passive: false });
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', onCancel);
+
+  function onDown(e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const cell = e.target.closest ? e.target.closest('.cell') : null;
+    if (!cell) return;
+    if (isAnim || moves <= 0 || isPaused) return;
+    const id = parseInt(cell.dataset.id);
+    if (grid[id].color === 'bird' && !activePower) return;
+    if (e.cancelable) e.preventDefault();
+
+    if (activePower) { clearSel(); usePower(id); return; }
+
+    // Tap-to-swap: a face is selected and an adjacent one was pressed
+    if (selId !== null && selId !== id && isAdjacent(selId, id) && grid[id].color !== 'bird') {
+      const a = selId; clearSel(); animateSwap(a, id); return;
+    }
+    if (selId === id) { clearSel(); tapSelect = false; }
+    else { clearSel(); tapSelect = true; }
+
+    dragId = id; startX = e.clientX; startY = e.clientY; isDragging = true;
+    cell.classList.add('active-drag');
+    thresh = Math.max(14, cell.offsetWidth * 0.32);
+  }
+
+  function onMove(e) {
+    if (!isDragging || dragId === null) return;
+    if (e.cancelable) e.preventDefault();
+    pendX = e.clientX; pendY = e.clientY;
+    if (!moveRaf) moveRaf = requestAnimationFrame(applyDragMove);
   }
 
   function applyDragMove() {
-      moveRaf = 0;
-      if(!isDragging || dragId === null) return;
+    moveRaf = 0;
+    if (!isDragging || dragId === null) return;
+    const dx = pendX - startX, dy = pendY - startY;
+    const cell = grid[dragId];
+    cell.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(0.95)`;
 
-      let dx = pendX - startX;
-      let dy = pendY - startY;
-      let cell = grid[dragId];
-
-      // LIVE VISUAL DRAG
-      cell.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(0.95)`;
-
-      // CANDY CRUSH STYLE INSTANT SWAP
-      if(Math.abs(dx) > 25 || Math.abs(dy) > 25) {
-          let tId = dragId;
-
-          if(Math.abs(dx) > Math.abs(dy)) {
-              if(dx > 0 && dragId % W !== W - 1) tId += 1;
-              else if(dx < 0 && dragId % W !== 0) tId -= 1;
-          } else {
-              if(dy > 0 && dragId < W * (W - 1)) tId += W;
-              else if(dy < 0 && dragId >= W) tId -= W;
-          }
-
-          cell.classList.remove('active-drag');
-          cell.style.transform = ''; // reset drag position
-          isDragging = false;
-
-          if(tId !== dragId && tId >= 0 && tId < W*W && isAdjacent(dragId, tId) && grid[tId].color !== 'bird') {
-              let tempId = dragId;
-              dragId = null;
-              animateSwap(tempId, tId);
-          } else {
-              dragId = null;
-          }
+    if (Math.abs(dx) > thresh || Math.abs(dy) > thresh) {
+      let tId = dragId;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0 && dragId % W !== W - 1) tId += 1;
+        else if (dx < 0 && dragId % W !== 0) tId -= 1;
+      } else {
+        if (dy > 0 && dragId < W * (W - 1)) tId += W;
+        else if (dy < 0 && dragId >= W) tId -= W;
       }
-  }
-
-  function handleInputEnd(e) {
-      if(moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
-      if(!isDragging || dragId === null) return;
-      let cell = grid[dragId];
-      if(cell) {
-          cell.classList.remove('active-drag');
-          cell.style.transform = ''; // Reset ho jayega agar user thora sa hilakar chorr de
-      }
-      dragId = null;
+      cell.classList.remove('active-drag');
+      cell.style.transform = '';
       isDragging = false;
+      const from = dragId; dragId = null;
+      if (tId !== from && tId >= 0 && tId < W * W && isAdjacent(from, tId) && grid[tId].color !== 'bird') animateSwap(from, tId);
+    }
   }
+
+  function endDrag(select) {
+    if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
+    if (!isDragging || dragId === null) return;
+    const cell = grid[dragId];
+    if (cell) { cell.classList.remove('active-drag'); cell.style.transform = ''; }
+    if (select && tapSelect && cell && cell.color && cell.color !== 'bird') { selId = dragId; cell.classList.add('sel'); }
+    dragId = null; isDragging = false;
+  }
+  function onUp() { endDrag(true); }
+  function onCancel() { endDrag(false); }
 
   function isAdjacent(id1, id2) {
-      let r1 = Math.floor(id1/W), c1 = id1%W;
-      let r2 = Math.floor(id2/W), c2 = id2%W;
-      return (Math.abs(r1-r2) + Math.abs(c1-c2)) === 1;
+    const r1 = Math.floor(id1 / W), c1 = id1 % W, r2 = Math.floor(id2 / W), c2 = id2 % W;
+    return (Math.abs(r1 - r2) + Math.abs(c1 - c2)) === 1;
   }
 
+  // Remove an inline slide transform without the cell gliding back
+  function snap(c) { c.style.transition = 'none'; c.style.transform = ''; c.style.zIndex = ''; void c.offsetWidth; c.style.transition = ''; }
+
   function animateSwap(id1, id2) {
-      isAnim = true; sndSwap();
-      let c1 = grid[id1], c2 = grid[id2];
-      let xDist = ((id2%W) - (id1%W)) * 100;
-      let yDist = (Math.floor(id2/W) - Math.floor(id1/W)) * 100;
+    clearSel(); isAnim = true; sndSwap();
+    const c1 = grid[id1], c2 = grid[id2];
+    const xd = ((id2 % W) - (id1 % W)) * 100, yd = (Math.floor(id2 / W) - Math.floor(id1 / W)) * 100;
+    c1.style.transform = `translate(${xd}%, ${yd}%)`;
+    c2.style.transform = `translate(${-xd}%, ${-yd}%)`;
+    c1.style.zIndex = '10'; c2.style.zIndex = '10';
 
-      c1.style.transform = `translate(${xDist}%, ${yDist}%)`;
-      c2.style.transform = `translate(${-xDist}%, ${-yDist}%)`;
-      c1.style.zIndex = "10"; c2.style.zIndex = "10";
-
-      setTimeout(() => {
-          c1.style.transform = ''; c2.style.transform = '';
-          c1.style.zIndex = "5"; c2.style.zIndex = "5";
-          swapLogic(id1, id2);
-          
-          if(!checkMatches(true)) {
-              sndSwap();
-              c1.style.transform = `translate(${xDist}%, ${yDist}%)`;
-              c2.style.transform = `translate(${-xDist}%, ${-yDist}%)`;
-              setTimeout(() => {
-                  c1.style.transform = ''; c2.style.transform = '';
-                  swapLogic(id1, id2); isAnim = false;
-              }, 250);
-          } else { moves--; updateUI(); doMatches(); }
-      }, 250);
+    later(() => {
+      snap(c1); snap(c2); swapLogic(id1, id2);
+      if (!checkMatches(true)) {
+        sndSwap();
+        c1.style.transform = `translate(${xd}%, ${yd}%)`;
+        c2.style.transform = `translate(${-xd}%, ${-yd}%)`;
+        later(() => { snap(c1); snap(c2); swapLogic(id1, id2); isAnim = false; }, T_SWAP);
+      } else { moves--; updateUI(); doMatches(); }
+    }, T_SWAP);
   }
 
   function swapLogic(i1, i2) {
-    let c1=grid[i1].color, cls1=grid[i1].className, html1=grid[i1].innerHTML;
-    grid[i1].color=grid[i2].color; grid[i1].className=grid[i2].className; grid[i1].innerHTML=grid[i2].innerHTML;
-    grid[i2].color=c1; grid[i2].className=cls1; grid[i2].innerHTML=html1;
+    const a = grid[i1], b = grid[i2];
+    const c = a.color, cls = a.className, html = a.innerHTML;
+    a.color = b.color; a.className = b.className; a.innerHTML = b.innerHTML;
+    b.color = c; b.className = cls; b.innerHTML = html;
   }
 
   // ================= INVENTORY & BUY SYSTEM =================
   function buyPower(p) {
-      if(isAnim || isPaused) return;
-      if(coins >= powerCosts[p]) {
-          coins -= powerCosts[p];
-          powers[p]++;
-          sndCoin();
-          updateUI();
-      } else {
-          alert("Not enough coins! You need " + powerCosts[p] + " 🪙");
-      }
+    if (isAnim || isPaused) return;
+    if (coins >= powerCosts[p]) {
+      coins -= powerCosts[p]; powers[p]++; sndCoin(); updateUI(); saveProg();
+    } else {
+      toast("Not enough coins! You need " + powerCosts[p] + " 🪙");
+    }
   }
 
   function togglePower(p) {
-    if(isAnim || isPaused) return;
-    if(powers[p] <= 0) {
-        alert(`You don't have this power. Click '+' to buy for ${powerCosts[p]}🪙`);
-        return;
-    }
+    if (isAnim || isPaused) return;
+    if (powers[p] <= 0) { toast(`No ${p} left — tap + to buy (${powerCosts[p]}🪙)`); return; }
+    clearSel();
     activePower = (activePower === p) ? null : p;
-    document.querySelectorAll('.power-btn').forEach(b=>b.classList.remove('active-power'));
-    if(activePower) document.getElementById('btn-'+p).classList.add('active-power');
+    document.querySelectorAll('.power-btn').forEach(b => b.classList.remove('active-power'));
+    if (activePower) $('btn-' + p).classList.add('active-power');
   }
 
   function usePower(id) {
-    isAnim=true; moves--; 
-    powers[activePower]--; // Deduct from inventory
-    document.getElementById('btn-'+activePower).classList.remove('active-power');
-    
+    isAnim = true; moves--;
+    const p = activePower; powers[p]--; saveProg();
+    $('btn-' + p).classList.remove('active-power');
+
     let t = [];
-    if(activePower === 'hammer') { t.push(id); } 
-    else if(activePower === 'bomb') {
-      let r=Math.floor(id/W), c=id%W;
-      for(let x=-1;x<=1;x++) for(let y=-1;y<=1;y++){
-        let nr=r+x, nc=c+y; if(nr>=0&&nr<W&&nc>=0&&nc<W) t.push(nr*W+nc);
+    if (p === 'hammer') { t.push(id); }
+    else if (p === 'bomb') {
+      let r = Math.floor(id / W), c = id % W;
+      for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) {
+        let nr = r + x, nc = c + y; if (nr >= 0 && nr < W && nc >= 0 && nc < W) t.push(nr * W + nc);
       }
-    } else if(activePower === 'rocket') {
-      let r=Math.floor(id/W), c=id%W;
-      for(let i=0; i<W; i++) { t.push(r*W + i); t.push(i*W + c); }
-    } else if(activePower === 'magic') {
-      let targetColor = grid[id].color;
-      for(let i=0; i<W*W; i++) if(grid[i].color === targetColor) t.push(i);
+    } else if (p === 'rocket') {
+      let r = Math.floor(id / W), c = id % W;
+      for (let i = 0; i < W; i++) { t.push(r * W + i); t.push(i * W + c); }
+    } else if (p === 'magic') {
+      const tc = grid[id].color;
+      for (let i = 0; i < W * W; i++) if (grid[i].color === tc) t.push(i);
     }
 
-    sndBlast(); 
-    let uniqueTargets = [...new Set(t)];
-    uniqueTargets.forEach(tid=>{ breakCell(tid); showCoin(tid); });
-    
-    activePower=null; updateUI(); setTimeout(fall, 400);
+    sndBlast();
+    burst([...new Set(t)]);
+    activePower = null; updateUI(); later(fall, fallDelay());
+  }
+
+  // Break many cells at once; only a handful of coin sprites are spawned (keeps big blasts smooth)
+  function burst(ids) {
+    let n = 0;
+    ids.forEach(id => { if (breakCell(id) && n++ < 12) showCoin(id); });
   }
 
   // ================= MATCHING ENGINE =================
-  function checkMatches(justCheck=false) {
-    let m=new Set();
-    for(let r=0;r<W;r++) for(let c=0;c<W-2;c++){
-      let i=r*W+c; let clr=grid[i].color; if(!clr || clr === 'bird') continue;
-      if(grid[i+1].color===clr && grid[i+2].color===clr) {
-        m.add(i); m.add(i+1); m.add(i+2);
-        if(c<W-3 && grid[i+3].color===clr) m.add(i+3); 
-        if(c<W-4 && grid[i+4].color===clr) m.add(i+4); 
+  function checkMatches(justCheck = false) {
+    let m = new Set();
+    for (let r = 0; r < W; r++) for (let c = 0; c < W - 2; c++) {
+      let i = r * W + c; let clr = grid[i].color; if (!clr || clr === 'bird') continue;
+      if (grid[i + 1].color === clr && grid[i + 2].color === clr) {
+        m.add(i); m.add(i + 1); m.add(i + 2);
+        if (c < W - 3 && grid[i + 3].color === clr) m.add(i + 3);
+        if (c < W - 4 && grid[i + 4].color === clr) m.add(i + 4);
       }
     }
-    for(let c=0;c<W;c++) for(let r=0;r<W-2;r++){
-      let i=r*W+c; let clr=grid[i].color; if(!clr || clr === 'bird') continue;
-      if(grid[i+W].color===clr && grid[i+W*2].color===clr) {
-        m.add(i); m.add(i+W); m.add(i+W*2);
-        if(r<W-3 && grid[i+W*3].color===clr) m.add(i+W*3); 
-        if(r<W-4 && grid[i+4*W].color===clr) m.add(i+4*W); 
+    for (let c = 0; c < W; c++) for (let r = 0; r < W - 2; r++) {
+      let i = r * W + c; let clr = grid[i].color; if (!clr || clr === 'bird') continue;
+      if (grid[i + W].color === clr && grid[i + W * 2].color === clr) {
+        m.add(i); m.add(i + W); m.add(i + W * 2);
+        if (r < W - 3 && grid[i + W * 3].color === clr) m.add(i + W * 3);
+        if (r < W - 4 && grid[i + 4 * W].color === clr) m.add(i + 4 * W);
       }
     }
-    if(justCheck) return m.size>0;
+    if (justCheck) return m.size > 0;
     return m;
   }
 
   function doMatches() {
     let m = checkMatches();
-    if(m.size>0) {
-      combo++; if(combo>1) { score += (combo-1)*20; showCombo(combo); }
-      if(m.size>=4) { 
+    if (m.size > 0) {
+      combo++; if (combo > 1) { score += (combo - 1) * 20; showCombo(combo); }
+      if (m.size >= 4) {
         sndBlast();
-        coins += 10; // Extra coins for big matches!
-        let added=0, attempts=0;
-        while(added<4 && attempts<100) {
-          let rnd=Math.floor(Math.random()*(W*W));
-          if(!m.has(rnd) && grid[rnd].color && grid[rnd].color !== 'bird') { m.add(rnd); added++; }
+        coins += 10;
+        let added = 0, attempts = 0;
+        while (added < 4 && attempts < 100) {
+          let rnd = Math.floor(Math.random() * (W * W));
+          if (!m.has(rnd) && grid[rnd].color && grid[rnd].color !== 'bird') { m.add(rnd); added++; }
           attempts++;
         }
-        document.getElementById('board').classList.add('shake');
-        setTimeout(()=>document.getElementById('board').classList.remove('shake'), 400);
+        E.board.classList.add('shake');
+        setTimeout(() => E.board.classList.remove('shake'), 400);
       } else { sndCoin(); coins += 2; }
-      
-      updateDogSpeech("Happy! 😍"); sndDogHappy();
-      
-      if(fillPct > 0) fillPct = Math.max(0, fillPct - (m.size * 2));
-      document.getElementById('water-fill').style.height = fillPct + '%';
-      document.getElementById('dog-char').style.bottom = fillPct + '%';
-      if(fillPct < 70) {
-          document.getElementById('dog-char').classList.remove('dog-panic');
-          document.getElementById('dog-char').innerText = '🐶';
-      }
 
-      m.forEach(id=>{ breakCell(id); showCoin(id); });
-      updateUI(); setTimeout(fall, 400);
+      updateDogSpeech("Happy! 😍"); sndDogHappy();
+
+      if (fillPct > 0) fillPct = Math.max(0, fillPct - (m.size * 2));
+      E.water.style.height = fillPct + '%';
+      E.dog.style.bottom = fillPct + '%';
+      if (fillPct < 70) { E.dog.classList.remove('dog-panic'); E.dog.innerText = '🐶'; }
+
+      burst([...m]);
+      updateUI(); later(fall, fallDelay());
     } else {
-      combo=0; isAnim=false; checkWin();
+      afterCascade();
     }
+  }
+
+  // Cascade finished: win/lose check, then rescue dead boards with a shuffle
+  function afterCascade() {
+    combo = 0;
+    if (checkWin()) return;
+    if (!hasMoves()) {
+      toast('No moves left — shuffling! 🔀');
+      const ch = shuffleBoard() || [];
+      later(() => {
+        ch.forEach(g => g.classList.remove('drop-in'));
+        if (checkMatches(true)) doMatches(); else isAnim = false;
+      }, T_DROP);
+      return;
+    }
+    isAnim = false;
   }
 
   function breakBirdCage(id) {
-      if(grid[id].color !== 'bird') return; // Double check
-      sndBirdFree();
-      grid[id].color = null; // Important! Allow it to fall empty
-      grid[id].classList.remove('bean-bird');
-      grid[id].innerHTML = '<div class="bird-emoji">🐦</div>'; // Removes bars for animation
-      grid[id].classList.add('bird-fly-anim');
-      
-      score += 150;
-      if(targetType === 'bird') { targetAmount--; }
+    const g = grid[id];
+    if (g.color !== 'bird') return;
+    sndBirdFree();
+    g.color = null;
+    g.classList.remove('bean-bird');
+    g.innerHTML = '<div class="bird-emoji">🐦</div>';
+    g.classList.add('bird-fly-anim');
+    extraDelay = 200; // let the bird fly out before the board refills
+
+    score += 150;
+    if (targetType === 'bird') { targetAmount--; }
   }
 
   function breakCell(id) {
-    if(!grid[id].color) return;
-    
-    // Direct hits on birds via powerups
-    if(grid[id].color === 'bird') {
-        breakBirdCage(id); return;
-    }
-    
-    if(targetType === 'color' && grid[id].color === targetColor) {
-        targetAmount--;
-    }
-    
-    score+=10; grid[id].classList.add('pop'); grid[id].color=null; grid[id].innerHTML='';
-    
-    let adj=[id, id-1, id+1, id-W, id+W];
-    adj.forEach(a=>{
-      if(a>=0 && a<W*W) {
-        if((a===id-1 && id%W===0) || (a===id+1 && id%W===W-1)) return; 
-        
-        // Ice logic
-        if(iceGrid[a]) {
-            iceGrid[a]=false; score+=50;
-            let ice=document.getElementById('ice-'+a); if(ice) ice.remove();
-            if(targetType==='ice') targetAmount--;
+    const g = grid[id];
+    if (!g.color) return false;
+    if (g.color === 'bird') { breakBirdCage(id); return true; }
+
+    if (targetType === 'color' && g.color === targetColor) targetAmount--;
+
+    score += 10; g.classList.add('pop'); g.color = null; g.innerHTML = '';
+
+    const adj = [id, id - 1, id + 1, id - W, id + W];
+    adj.forEach(a => {
+      if (a >= 0 && a < W * W) {
+        if ((a === id - 1 && id % W === 0) || (a === id + 1 && id % W === W - 1)) return;
+        if (iceGrid[a]) {
+          iceGrid[a] = false; score += 50;
+          const ice = $('ice-' + a); if (ice) ice.remove();
+          if (targetType === 'ice') targetAmount--;
         }
-        
-        // Bird/Cage logic from adjacent hits
-        if(grid[a].color === 'bird') {
-            breakBirdCage(a);
-        }
+        if (grid[a].color === 'bird') breakBirdCage(a);
       }
     });
+    return true;
   }
 
+  // Coin sprite lives inside the cell wrapper: no layout measuring needed
   function showCoin(id) {
-    let coin=document.createElement('div'); coin.className='coin'; coin.innerText='🪙';
-    let r=grid[id].getBoundingClientRect();
-    coin.style.left=(r.left+15)+'px'; coin.style.top=r.top+'px';
-    document.body.appendChild(coin); setTimeout(()=>coin.remove(), 1000);
+    const w = grid[id].parentNode; if (!w) return;
+    const c = document.createElement('div'); c.className = 'coin'; c.textContent = '🪙';
+    w.appendChild(c); setTimeout(() => c.remove(), 600);
   }
 
+  // Refill: only touch cells that actually changed (was: rewrite all 64 every step)
   function fall() {
-    for(let c=0; c<W; c++) {
-      let col=[];
-      // Preserve HTML for birds if they fell, and normal beans
-      for(let r=0; r<W; r++) { 
-          if(grid[r*W+c].color) col.push({clr:grid[r*W+c].color, cls:grid[r*W+c].className, html: grid[r*W+c].innerHTML}); 
-      }
-      
-      while(col.length<W) {
-        let clr=colors[Math.floor(Math.random()*colors.length)];
-        col.unshift({clr:clr, cls:'cell drop-in bean-'+clr, html: getFaceHTML(clr)});
-      }
-      
-      for(let r=0; r<W; r++) {
-        grid[r*W+c].color=col[r].clr; 
-        grid[r*W+c].className=col[r].cls;
-        grid[r*W+c].innerHTML=col[r].html;
+    clearSel();
+    const changed = [];
+    for (let c = 0; c < W; c++) {
+      const col = [];
+      for (let r = 0; r < W; r++) { const k = grid[r * W + c].color; if (k) col.push(k); }
+      while (col.length < W) col.unshift(colors[Math.floor(Math.random() * colors.length)]);
+      for (let r = 0; r < W; r++) {
+        const g = grid[r * W + c], clr = col[r];
+        const cls = 'cell bean-' + clr;
+        if (g.color === clr && g.className === cls) continue;
+        g.color = clr;
+        g.className = cls + ' drop-in';
+        g.innerHTML = clr === 'bird' ? BIRD_HTML : FACE[clr];
+        changed.push(g);
       }
     }
-    setTimeout(()=>grid.forEach(g=>g.classList.remove('drop-in')), 340); setTimeout(doMatches, 300);
+    later(() => { changed.forEach(g => g.classList.remove('drop-in')); doMatches(); }, T_DROP);
   }
 
   function updateUI() {
-    document.getElementById('ui-lvl').innerText=lvl; 
-    document.getElementById('ui-score').innerText=score;
-    document.getElementById('ui-moves').innerText=moves; 
-    document.getElementById('ui-coins').innerText=coins; 
-    
-    // Update inventory counts
-    document.getElementById('h-cnt').innerText=powers.hammer;
-    document.getElementById('b-cnt').innerText=powers.bomb;
-    document.getElementById('r-cnt').innerText=powers.rocket;
-    document.getElementById('m-cnt').innerText=powers.magic;
-
-    // Check if player can afford powers to dim the BUY buttons
-    document.getElementById('buy-hammer').style.opacity = coins >= powerCosts.hammer ? '1' : '0.4';
-    document.getElementById('buy-bomb').style.opacity = coins >= powerCosts.bomb ? '1' : '0.4';
-    document.getElementById('buy-rocket').style.opacity = coins >= powerCosts.rocket ? '1' : '0.4';
-    document.getElementById('buy-magic').style.opacity = coins >= powerCosts.magic ? '1' : '0.4';
-
+    E.lvl.textContent = lvl; E.score.textContent = score;
+    E.moves.textContent = moves; E.coins.textContent = coins;
+    for (const k in powers) {
+      cntEls[k].textContent = powers[k];
+      buyEls[k].style.opacity = coins >= powerCosts[k] ? '1' : '0.4';
+    }
     let tText = '';
-    if(targetType === 'score') tText = `Score ${targetAmount} pts`;
-    else if(targetType === 'ice') tText = `Break ${targetAmount} Ice`;
-    else if(targetType === 'color') tText = `Collect ${targetAmount} ${targetColor} Beans`;
-    else if(targetType === 'bird') tText = `Free ${targetAmount} Birds 🐦`;
-    document.getElementById('ui-target').innerText = `Target: ${tText}`;
+    if (targetType === 'score') tText = `Score ${targetAmount} pts`;
+    else if (targetType === 'ice') tText = `Break ${Math.max(0, targetAmount)} Ice`;
+    else if (targetType === 'color') tText = `Collect ${Math.max(0, targetAmount)} ${targetColor} Beans`;
+    else if (targetType === 'bird') tText = `Free ${Math.max(0, targetAmount)} Birds 🐦`;
+    E.target.textContent = `Target: ${tText}`;
   }
 
+  // Returns true when the level has ended (modal shown)
   function checkWin() {
-    let win = false;
-    if(targetType==='score' && score>=targetAmount) win=true;
-    if(targetType==='ice' && targetAmount<=0) win=true;
-    if(targetType==='color' && targetAmount<=0) win=true;
-    if(targetType==='bird' && targetAmount<=0) win=true;
-    
-    if(win) {
-        document.getElementById('dog-char').innerText = '😎'; sndDogHappy();
-        if(lvl == unlockedLevel) unlockedLevel++; 
-        coins += 50; 
-        showModal(true);
-    } else if(moves<=0) {
-        document.getElementById('dog-char').innerText = '😭'; sndDogSad();
-        showModal(false, "Out of moves! Dog is underwater! 😢");
+    if (!E.modal.classList.contains('hidden')) return true; // already ended (e.g. flooded mid-cascade)
+    let win = (targetType === 'score') ? score >= targetAmount : targetAmount <= 0;
+
+    if (win) {
+      E.dog.innerText = '😎'; sndDogHappy();
+      if (lvl === unlockedLevel) unlockedLevel++;
+      coins += 50; saveProg(); updateUI();
+      showModal(true); return true;
     }
+    if (moves <= 0) {
+      E.dog.innerText = '😭'; sndDogSad();
+      showModal(false, "Out of moves! Dog is underwater! 😢"); return true;
+    }
+    return false;
   }
 
   function showModal(win, reason = "") {
-    isAnim=true; clearInterval(dogTimer); GameAudio.stopMusic();
-    if(win) sndWin(); else sndLose();
-    
-    let m=document.getElementById('modal'); m.classList.remove('hidden');
-    document.getElementById('m-title').innerText = win ? "Level Cleared! 🎉" : "Game Over!";
-    document.getElementById('m-title').style.color = win ? "#2ed573" : "#ff4757";
-    document.getElementById('m-desc').innerText = win ? "You saved the dog! Bonus 50 🪙!" : reason;
-    
-    let btn=document.getElementById('m-btn');
+    isAnim = true; clearInterval(dogTimer); GameAudio.stopMusic();
+    if (win) sndWin(); else sndLose();
+
+    E.modal.classList.remove('hidden');
+    E.mTitle.innerText = win ? "Level Cleared! 🎉" : "Game Over!";
+    E.mTitle.style.color = win ? "#2ed573" : "#ff4757";
+    E.mDesc.innerText = win ? "You saved the dog! Bonus 50 🪙!" : reason;
+
+    const btn = E.mBtn;
     btn.innerText = win ? "Next Level ➡" : "Try Again 🔄";
     btn.style.background = win ? "#2ed573" : "#ff4757"; btn.style.boxShadow = win ? "0 6px 0 #27ae60" : "0 6px 0 #c0392b";
     btn.onclick = () => {
-        m.classList.add('hidden');
-        if(win) { if(lvl < 25) loadLevel(lvl+1); else showLevelSelector(); } else { loadLevel(lvl); }
+      E.modal.classList.add('hidden');
+      if (win) { if (lvl < 25) loadLevel(lvl + 1); else showLevelSelector(); } else { loadLevel(lvl); }
     };
   }
 
   // ================= VISUAL EXTRAS =================
   function heroCheer() {
-      const h = document.getElementById('hero-dog'); if(!h) return;
-      h.classList.remove('cheer'); void h.offsetWidth; h.classList.add('cheer');
-      h.onanimationend = () => h.classList.remove('cheer');
+    const h = $('hero-dog'); if (!h) return;
+    h.classList.remove('cheer'); void h.offsetWidth; h.classList.add('cheer');
+    h.onanimationend = () => h.classList.remove('cheer');
   }
 
   function showCombo(n) {
-      const d = document.createElement('div'); d.className = 'combo-pop';
-      d.innerText = 'COMBO x' + n + ' 🔥';
-      const b = document.getElementById('board'); b.appendChild(d);
-      setTimeout(() => d.remove(), 900);
+    const d = document.createElement('div'); d.className = 'combo-pop';
+    d.innerText = 'COMBO x' + n + ' 🔥';
+    E.board.appendChild(d);
+    setTimeout(() => d.remove(), 900);
   }
 
   function buildDecor(el, n) {
-      if(!el) return;
-      let h = '';
-      for(let i=0; i<n; i++) {
-          const c = colors[i % colors.length];
-          const size = 40 + Math.round(Math.random()*36);
-          const left = (i%2) ? 68 + Math.random()*26 : -6 + Math.random()*22;
-          const top = Math.random()*58;
-          const rot = Math.round(-18 + Math.random()*36);
-          h += '<div class="float-face bean-'+c+'" style="width:'+size+'px;height:'+size+'px;left:'+left+'%;top:'+top+'%;--r:'+rot+'deg;animation-duration:'+(4+Math.random()*3).toFixed(1)+'s;animation-delay:-'+(Math.random()*4).toFixed(1)+'s">'+getFaceHTML(c)+'</div>';
-      }
-      for(let i=0; i<8; i++) {
-          h += '<span class="spark" style="left:'+(Math.random()*95)+'%;top:'+(Math.random()*95)+'%;font-size:'+(10+Math.random()*14)+'px;animation-delay:-'+(Math.random()*2).toFixed(1)+'s">✦</span>';
-      }
-      el.innerHTML = h;
+    if (!el) return;
+    let h = '';
+    for (let i = 0; i < n; i++) {
+      const c = colors[i % colors.length];
+      const size = 40 + Math.round(Math.random() * 36);
+      const left = (i % 2) ? 68 + Math.random() * 26 : -6 + Math.random() * 22;
+      const top = Math.random() * 58;
+      const rot = Math.round(-18 + Math.random() * 36);
+      h += '<div class="float-face bean-' + c + '" style="width:' + size + 'px;height:' + size + 'px;left:' + left + '%;top:' + top + '%;--r:' + rot + 'deg;animation-duration:' + (4 + Math.random() * 3).toFixed(1) + 's;animation-delay:-' + (Math.random() * 4).toFixed(1) + 's">' + FACE[c] + '</div>';
+    }
+    for (let i = 0; i < 8; i++) {
+      h += '<span class="spark" style="left:' + (Math.random() * 95) + '%;top:' + (Math.random() * 95) + '%;font-size:' + (10 + Math.random() * 14) + 'px;animation-delay:-' + (Math.random() * 2).toFixed(1) + 's">✦</span>';
+    }
+    el.innerHTML = h;
   }
-  buildDecor(document.getElementById('decor-game'), 9);
-  buildDecor(document.getElementById('decor-start'), 11);
+  const lite = window.matchMedia && matchMedia('(max-width:600px), (pointer:coarse)').matches;
+  buildDecor($('decor-game'), lite ? 5 : 9);
+  buildDecor($('decor-start'), lite ? 7 : 11);
+
+  // ================= PC EXTRAS + BACKGROUND SAFETY =================
+  function gameVisible() { return !E.game.classList.contains('hidden') && E.modal.classList.contains('hidden'); }
+
+  document.addEventListener('keydown', e => {
+    if (!gameVisible()) return;
+    if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') { if (isPaused) resumeGame(); else pauseGame(); }
+    else if (!isPaused) {
+      const m = { '1':'hammer', '2':'bomb', '3':'rocket', '4':'magic' }[e.key];
+      if (m) togglePower(m);
+    }
+  });
+
+  // Auto-pause when the tab/app goes to the background (saves battery, keeps the dog fair)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) return;
+    saveProg();
+    if (gameVisible() && !isPaused) {
+      isPaused = true; GameAudio.pauseMusic();
+      E.pauseModal.classList.remove('hidden');
+    }
+  });
+  window.addEventListener('pagehide', saveProg);
 </script>
 </body>
 </html>
