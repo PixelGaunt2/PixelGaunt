@@ -122,10 +122,19 @@ window.pgOpenDonate = function () {
 
 // Projects in development (home hero, "In development" page). Picture files sit next to index.html.
 window.PG_PROJECTS = [
-    { words: ['NEON', 'ROGUE', 'PROTOCOL'], genre: 'Top-down cyber shooter', img: 'project-neon-rogue-protocol.webp', desc: 'Hack your way through a neon megacity as a rogue android - every district rewrites its rules after midnight.' },
     { words: ['THE', 'HOLLOW', 'TIDE'], genre: 'Underwater adventure', img: 'project-the-hollow-tide.webp', desc: 'Dive into a drowned kingdom, light the ancient lanterns and outrun the creatures that live in the dark currents.' },
     { words: ['SHADOW', 'OF', 'EMBERFALL'], genre: 'Dark fantasy action RPG', img: 'project-shadow-of-emberfall.webp', desc: 'A cursed knight, a dying fire and a kingdom of ash. Forge relics from embers and break the endless night.' },
     { words: ['SKY', 'FORGE', 'RUSH'], genre: 'Airship racing & building', img: 'project-sky-forge-rush.webp', desc: 'Build your own airship from scrap, then race it through floating islands, storms and sky pirates.' }
+];
+
+// Released demos shown first in the home hero (in this order), before the projects in development.
+window.PG_RELEASED = [
+    { words: ['ANNIHILATE', 'PROTOCOL'], tag: '// NEW · DEMO OUT NOW', genre: '3D action shooter', img: 'Annihilate%20Protocol%20Key%20Art.webp', card: 'Annihilate%20Protocol.webp', emblem: '',
+      desc: 'Fight through waves of demons, giant spiders and monsters with guns, punches, dash, knife throws and a devastating ultimate. Play solo, split-screen with a friend, or online.',
+      play: [['games.html?play=annihilate-protocol', 'Play Demo']], status: 'STATUS › Demo Release &amp; Full Release Soon on Steam and Android' },
+    { words: ['GIRL', 'THE', 'DRILLER'], tag: '// OUR DEBUT RELEASE', genre: 'Physics action platformer', img: 'Girl%20The%20Driller.webp', card: 'Girl%20The%20Driller.webp', emblem: 'girlthedriller-frame-0.png',
+      desc: 'Collect all Energy Orbs to unlock the Portal and reach it. Experience highly polished commercial-quality physics action gameplay.',
+      play: [['games.html?play=girl-the-driller', 'Play Demo 2D'], ['games.html?play=girl-the-driller-2.5d', 'Play Demo 2.5D']], status: 'STATUS › Demo Release &amp; Full Release Soon on Steam and Android' }
 ];
 
 // ---- "In development" page (in-development.html): every project with its blurred "?" picture ----
@@ -151,12 +160,17 @@ window.PG_PROJECTS = [
     const hero = document.getElementById('hero-presentation-section'); if (!hero) return;
     const text = hero.querySelector('.cy-hero-text'), art = hero.querySelector('.cy-hero-art'); if (!text || !art) return;
     const SOON = window.PG_PROJECTS;
-    const first = { words: ['GIRL', 'THE', 'DRILLER'], genre: 'Physics action platformer', desc: text.querySelector('.cy-desc') ? text.querySelector('.cy-desc').textContent : '', img: 'Girl%20The%20Driller.webp', real: true };
-    const slides = [first].concat(SOON);
-    const originalText = text.innerHTML;
+    const REL = window.PG_RELEASED.map(r => Object.assign({ real: true }, r));
+    const slides = REL.concat(SOON);
+    const heroImg = art.querySelector('.cy-hero-img'), emblem = art.querySelector('.cy-emblem');
     let cur = 0, timer = null, paused = false, deckOpen = false, hideT = null;
     const esc4 = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const title = s => `<h1 class="cy-title${s.real ? '' : ' cy-title-sm'}"><span>${s.words[0]}</span><span class="cy-outline">${s.words[1]}</span><span class="cy-accent">${s.words[2]}</span></h1>`;
+    const title = s => s.words.length === 2
+        ? `<h1 class="cy-title cy-title-long"><span>${s.words[0]}</span><span class="cy-accent">${s.words[1]}</span></h1>`
+        : `<h1 class="cy-title${s.real ? '' : ' cy-title-sm'}"><span>${s.words[0]}</span><span class="cy-outline">${s.words[1]}</span><span class="cy-accent">${s.words[2]}</span></h1>`;
+    const realText = s => `<span class="cy-tag">${s.tag}</span>${title(s)}<p class="cy-desc">${esc4(s.desc)}</p>
+            <div class="cy-ctas">${s.play.map((p, i) => `<a class="cy-btn ${i ? 'cy-btn-ghost' : 'cy-btn-primary'}"${i ? '' : ' id="hero-play-btn"'} href="${p[0]}"><i class="fas fa-play" aria-hidden="true"></i> ${p[1]}</a>`).join('')}</div>
+            <p class="cy-status">${s.status}</p>`;
     // the "?" picture used for every project still in development
     // Optional pictures for the in-development projects (shown blurred behind the "?"). Upload them next to index.html
     // with exactly the file names above; if a picture is missing, the plain "?" background is used instead.
@@ -168,14 +182,18 @@ window.PG_PROJECTS = [
     hero.appendChild(dots);
     const deck = document.createElement('div'); deck.className = 'cy-deck'; deck.setAttribute('aria-label', 'All our games');
     deck.innerHTML = `<div class="cy-deck-head"><span>// ALL PIXELGAUNT PROJECTS</span><button type="button" class="cy-deck-x" aria-label="Close">&times;</button></div><div class="cy-deck-grid">` + slides.map((s, k) => `<button type="button" class="cy-card${s.real ? ' is-real' : ''}" data-k="${k}" style="--d:${k * 70}ms">
-            <span class="cy-card-img">${s.real ? `<img src="${s.img}" alt="" loading="lazy">` : `<img class="cy-blur" src="${s.img}" alt="" loading="lazy" onerror="this.remove()"><b>?</b>`}</span>
+            <span class="cy-card-img">${s.real ? `<img src="${s.card}" alt="" loading="lazy">` : `<img class="cy-blur" src="${s.img}" alt="" loading="lazy" onerror="this.remove()"><b>?</b>`}</span>
             <span class="cy-card-st ${s.real ? 'live' : ''}">${s.real ? 'Demo out now' : 'In development'}</span>
             <strong>${esc4(s.words.join(' '))}</strong><small>${esc4(s.genre)}</small></button>`).join('') + '</div>';
     hero.appendChild(deck);
 
     function show(k, anim) {
         cur = (k + slides.length) % slides.length; const s = slides[cur];
-        if (s.real) text.innerHTML = originalText;
+        if (s.real) {
+            text.innerHTML = realText(s);
+            if (heroImg && heroImg.getAttribute('src') !== s.img) { heroImg.src = s.img; heroImg.alt = s.words.join(' ') + ' key art'; }
+            if (emblem) { if (s.emblem) { emblem.src = s.emblem; emblem.style.display = ''; } else emblem.style.display = 'none'; }
+        }
         else text.innerHTML = `<span class="cy-tag">// IN DEVELOPMENT</span>${title(s)}<p class="cy-desc">${esc4(s.desc)}</p>
             <div class="cy-ctas"><button type="button" class="cy-btn cy-btn-primary cy-btn-soon" aria-disabled="true"><i class="fas fa-play" aria-hidden="true"></i> Play demo · soon</button><a class="cy-btn cy-btn-ghost" href="https://discord.gg/DfHFVNMBQF" target="_blank" rel="noopener"><i class="fa-brands fa-discord" aria-hidden="true"></i> Follow development</a></div>
             <p class="cy-status">STATUS › In development · ${esc4(s.genre)}</p>`;
@@ -415,6 +433,7 @@ window.pgBlockAdsForOwner = function () {
         window.isLoggedIn = false;
         
         const games = [
+            { id: 18, pinned: true, studio: 'Pixel Gaunt', title: 'Annihilate Protocol', genre: 'Action', controls: 'PC: WASD move, mouse aim, left click fire, F punch, T knife, Space dash, Q sweep, R ultimate, Esc pause. Phone: drag on the left half to move, buttons to fight.', howToPlay: 'Survive each stage and defeat the monsters - collect coins, power-ups and new weapons. Play solo, split-screen or online.', rating: '', releaseDate: 'Demo out now - full release soon on Steam and Android', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 / WebGL (3D).', aiPrompt: ``, image: 'Annihilate Protocol.webp', preview: 'Annihilate Protocol.webp', url: 'annihilate-protocol.html', bgm: '', orientation: 'landscape' },
             { id: 1, studio: 'Pixel Gaunt', title: 'Beggar Catcher', genre: 'Arcade', controls: 'Mouse / Touch. Click to play.', howToPlay: 'Click to catch and play.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Beggar Catcher.webp', url: 'beggar-catcher.html', bgm: 'Beggar Catcher.mp3', orientation: 'landscape' },
             { id: 2, studio: 'Pixel Gaunt', title: 'Bricks KnockOut', genre: 'Arcade', controls: 'Mouse / Touch. Drag to aim.', howToPlay: 'Drag to launch and break the bricks.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Bricks KnockOut.webp', url: 'bricks-knockout.html', bgm: 'Bricks KnockOut.mp3', orientation: 'portrait' },
             { id: 3, studio: 'Pixel Gaunt', title: 'Deck of Doom', genre: 'Card', controls: 'Mouse / Touch. Drag cards to play.', howToPlay: 'Drag cards to build your deck and survive.', rating: '', releaseDate: '', platform: 'Web Browser (Desktop & Mobile Responsive)', technology: 'HTML5 Web Technologies.', aiPrompt: ``, image: 'Deck of Doom.webp', url: 'deck-of-doom.html', bgm: 'Deck of Doom.mp3', orientation: 'portrait' },
@@ -496,6 +515,7 @@ window.pgBlockAdsForOwner = function () {
         window.getRankedGames = function(list) {
             const source = list || games;
             return [...source].sort((a, b) => {
+                if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;   // pinned games (Annihilate Protocol) always come first
                 const diff = (b.playCount || 0) - (a.playCount || 0);
                 if (diff !== 0) return diff;
                 return a.id - b.id;
@@ -1364,6 +1384,7 @@ window.pgBlockAdsForOwner = function () {
         // text on the rail tile; the game's own title in the library stays as it is.
         // To change the rail, edit this list (ids are the `id` values in the games array above).
         const TRENDING = [
+            { id: 18, label: 'Annihilate Protocol (Demo)' },
             { id: 16, label: 'Girl The Driller (Demo 2D)' },
             { id: 17, label: 'Girl The Driller (Demo 2.5D)' },
             { id: 15 },   // Tetris Reimagine
@@ -1393,17 +1414,17 @@ window.pgBlockAdsForOwner = function () {
             });
         }
 
-        // Trending: both Girl The Driller demos always stay; the other 3 places cycle through the rest of
+        // Trending: Annihilate Protocol and both Girl The Driller demos always stay; the other 2 places cycle through the rest of
         // our games every 15 seconds, and all 5 swap places each time.
         let trendStart = 0, trendTimer = null, trendHover = false;
         function renderFeatured() {
-            const fixed = TRENDING.filter(t => t.id === 16 || t.id === 17);
-            const firstOthers = TRENDING.filter(t => t.id !== 16 && t.id !== 17).map(t => t.id);
-            const pool = firstOthers.concat(games.filter(g => !g.community && g.id !== 16 && g.id !== 17 && !firstOthers.includes(g.id)).map(g => g.id));
-            const others = [0, 1, 2].map(k => ({ id: pool[(trendStart + k) % pool.length] }));
+            const ALWAYS = [18, 16, 17];   // Annihilate Protocol + both Girl The Driller demos never leave Trending
+            const fixed = ALWAYS.map(id => TRENDING.find(t => t.id === id) || { id });
+            const firstOthers = TRENDING.filter(t => !ALWAYS.includes(t.id)).map(t => t.id);
+            const pool = firstOthers.concat(games.filter(g => !g.community && !ALWAYS.includes(g.id) && !firstOthers.includes(g.id)).map(g => g.id));
+            const others = [0, 1].map(k => ({ id: pool[(trendStart + k) % pool.length] }));
             let five = fixed.concat(others);
             if (trendStart > 0) { for (let i = five.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [five[i], five[j]] = [five[j], five[i]]; } }
-            else five = [fixed[0], fixed[1]].concat(others);
             paintFeatured(five.map(t => ({ g: games.find(g => g.id === t.id), label: t.label })).filter(t => t.g));
             const rail = document.getElementById('featured-strip');
             if (rail && !trendTimer) {
@@ -1411,7 +1432,7 @@ window.pgBlockAdsForOwner = function () {
                 trendTimer = setInterval(() => {
                     if (document.hidden || trendHover) return;
                     rail.classList.add('pg-trend-out');
-                    setTimeout(() => { trendStart = (trendStart + 3) % pool.length; renderFeatured(); rail.classList.remove('pg-trend-out'); }, 400);
+                    setTimeout(() => { trendStart = (trendStart + 2) % pool.length; renderFeatured(); rail.classList.remove('pg-trend-out'); }, 400);
                 }, 15000);
             }
         }
@@ -1467,7 +1488,7 @@ window.pgBlockAdsForOwner = function () {
             if (!window._pgPlatformPromise) {
                 window._pgPlatformPromise = new Promise((resolve, reject) => {
                     const tag = document.createElement('script');
-                    tag.src = 'platform.js?v=20261017';   // version tag: browsers always load the newest file after an update
+                    tag.src = 'platform.js?v=20261018';   // version tag: browsers always load the newest file after an update
                     tag.async = true;
                     tag.onload = () => resolve(window.PG);
                     tag.onerror = () => { window._pgPlatformPromise = null; reject(new Error('platform.js failed to load')); };

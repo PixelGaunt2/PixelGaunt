@@ -1249,3 +1249,15 @@ footer { border-top: 1px solid rgba(var(--pg-a-rgb), .3); }
 .pg-dev-note { color: var(--pg-c) !important; font-size: .82rem !important; min-height: 1em; }
 @media (max-width: 560px) { .pg-dev-card { grid-template-columns: 1fr; } .pg-dev-img { min-height: 180px; } }
 @media (prefers-reduced-motion: reduce) { .pg-dev-card { animation: none; opacity: 1; transform: none; } .pg-dev-img b, .pg-soon-q b { animation: none; } }
+
+/* 2026-10-18: Annihilate Protocol */
+.cy-title.cy-title-long { font-size: clamp(44px, 6vw, 92px); letter-spacing: -1px; }
+.cy-title.cy-title-long span + span { margin-top: 6px; }
+.coming-soon-grid.pg-soon-two.pg-soon-three { grid-template-columns: repeat(2, minmax(0, 460px)); }
+.pg-soon-three .pg-soon-dev { grid-column: 1 / -1; order: 3; min-height: 200px; }
+.pg-soon-q { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 100%; }
+.pg-soon-q img { height: 100%; }
+.pg-soon-gtd ul li { display: grid; grid-template-columns: 96px 1fr; gap: 6px; }
+.pg-soon-gtd ul b { min-width: 0; }
+.pg-soon-logo.pg-soon-logo-wide { width: min(100%, 260px); height: auto; aspect-ratio: 3 / 1; object-fit: cover; border: 1px solid rgba(var(--pg-a-rgb), .45); }
+@media (max-width: 760px) { .coming-soon-grid.pg-soon-two.pg-soon-three { grid-template-columns: 1fr; } }
