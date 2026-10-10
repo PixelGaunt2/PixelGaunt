@@ -91,6 +91,19 @@
         .hud-btn:hover { background: #00ccff; color: #000; }
         .hud-btn small { opacity: 0.6; font-weight: normal; }
         #btn-main-resume { border-color: #00ff00; color: #00ff00; }
+        /* ===== NO-SCROLL / FIT SCREEN (PC + mobile) ===== */
+        html, body { position: fixed; inset: 0; width: 100%; height: 100%; height: 100dvh; overflow: hidden; overscroll-behavior: none; touch-action: none; -webkit-user-select: none; user-select: none; }
+        body > canvas { position: fixed; inset: 0; width: 100% !important; height: 100% !important; display: block; touch-action: none; }
+        #ui-layer { position: fixed !important; inset: 0; width: 100% !important; height: 100% !important; height: 100dvh !important; }
+        .screen { overflow: hidden !important; }
+        /* ===== ONLINE ===== */
+        .ol-col { display: flex; flex-direction: column; align-items: center; }
+        .ol-row { display: flex; align-items: center; justify-content: center; }
+        .ol-st { color: #9fb8e0; font-size: 1rem; margin: 6px 12px 10px; text-align: center; min-height: 1.3em; }
+        .ol-in { background: rgba(5,10,28,0.7); border: 2px solid #00ccff; color: #fff; font: bold 1.2rem 'Courier New', monospace; padding: 10px 14px; margin: 6px; text-align: center; outline: none; width: 14em; max-width: 80%; -webkit-user-select: text; user-select: text; }
+        #mp-board { display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); pointer-events: none; font: bold 12px 'Courier New', monospace; text-shadow: 1px 1px 0 #000; background: rgba(5,10,28,0.55); border: 1px solid rgba(255,255,255,0.15); padding: 4px 10px; line-height: 1.35; min-width: 130px; text-align: center; }
+        #mp-board b { color: #ffaa00; margin-left: 6px; }
+        html.mpon #btn-main-menu { display: none !important; }
     </style>
 </head>
 <body>
@@ -856,11 +869,12 @@
         let resumeAvail = false;
         function setResumeBtn(v) { resumeAvail = v; document.getElementById('btn-main-resume').classList.toggle('hidden', !v); }
         function resumeGame() {
+            if (MP.on && MP.paused) { MP.paused = false; setScreen('game-hud'); if (!isTouchActive && !isMobileUA && document.body.requestPointerLock) document.body.requestPointerLock(); return; }
             if (gameState !== 'paused') return; setResumeBtn(false);
             gameState = 'playing'; setScreen('game-hud'); GameAudio.startMusic();
             if (!isTouchActive && !isMobileUA && document.body.requestPointerLock) document.body.requestPointerLock();
         }
-        function pauseGame() { if (gameState !== 'playing') return; gameState = 'paused'; setScreen('pause-menu'); GameAudio.pauseMusic(); isMouseDown = false; document.exitPointerLock(); }
+        function pauseGame() { if (gameState !== 'playing') return; if (MP.on) { MP.paused = true; isMouseDown = false; setScreen('pause-menu'); document.exitPointerLock(); return; } gameState = 'paused'; setScreen('pause-menu'); GameAudio.pauseMusic(); isMouseDown = false; document.exitPointerLock(); }
         bindUIBtn('btn-resume', resumeGame);
         bindUIBtn('btn-main-resume', resumeGame);
         bindUIBtn('btn-main-menu', () => { if (gameState !== 'paused') return; setResumeBtn(true); setScreen('main-menu'); });
@@ -883,7 +897,7 @@
         bindUIBtn('btn-pixel', () => { pixelLook = !pixelLook; ui.btnPixel.innerText = pixelLook ? 'Pixel Look: ON' : 'Pixel Look: OFF'; applyRenderSize(); });
 
         document.addEventListener('pointerlockchange', () => {
-            if (document.pointerLockElement !== document.body && gameState === 'playing' && !isTouchActive && !isMobileUA) { gameState = 'paused'; setScreen('pause-menu'); GameAudio.pauseMusic(); }
+            if (document.pointerLockElement !== document.body && gameState === 'playing' && !isTouchActive && !isMobileUA) { if (MP.on) { MP.paused = true; isMouseDown = false; setScreen('pause-menu'); return; } gameState = 'paused'; setScreen('pause-menu'); GameAudio.pauseMusic(); }
         });
         const euler = new THREE.Euler(0, 0, 0, 'YXZ');
         document.addEventListener('mousemove', (e) => {
@@ -943,7 +957,7 @@
             setWeapon(0); setScreen('game-hud'); GameAudio.startMusic();
             if (!isTouchActive && !isMobileUA && document.body.requestPointerLock) document.body.requestPointerLock();
         }
-        function returnToMenu() { setResumeBtn(false); GameAudio.stopMusic(); gameState = 'menu'; setScreen('main-menu'); document.exitPointerLock(); clearScene(); clearPuzzle(); camera.rotation.set(0, 0, 0); camera.position.set(0, playerHeight, 10); }
+        function returnToMenu() { if (MP.on) mpLeave(); setResumeBtn(false); GameAudio.stopMusic(); gameState = 'menu'; setScreen('main-menu'); document.exitPointerLock(); clearScene(); clearPuzzle(); camera.rotation.set(0, 0, 0); camera.position.set(0, playerHeight, 10); }
 
         // --- COMBAT & MECHANICS ---
         function dash(dir) { if (dashCooldown > 0) return; velocity.x += dir * 180; dashCooldown = 1.0; fovKick = 1; ui.dashTxt.innerText = "WAIT"; ui.dashTxt.style.color = "red"; }
@@ -1048,7 +1062,7 @@
             return out.set((Math.random() * 2 - 1) * 30, 0, camera.position.z > 0 ? -200 : 200);
         }
         function spawnBot() {
-            if (gameState !== 'playing' && gameState !== 'menu') return;
+            if (gameState !== 'playing' && gameState !== 'menu') return; if (MP.client && !MP.fb) return;
             // roster changes with the stage: early stages = grunts + season enemies, later stages unlock shooters, strafers and tanks (tank swarm every 5th stage)
             const typeRoll = Math.random(), tankP = stage % 5 === 0 ? 0.25 : stage >= 3 ? Math.min(0.2, 0.03 + 0.02 * stage) : 0, shootP = stage >= 2 ? Math.min(0.25, 0.06 + 0.02 * stage) : 0, strafeP = stage >= 2 ? 0.15 : 0.05, runP = 0.2;
             let type = 'normal', speed = 6, maxHp = 75, scale = 1;
@@ -1061,6 +1075,7 @@
                 ({ dog: () => { speed = 17; maxHp = 40; scale = 1; }, ninja: () => { speed = 13; maxHp = 55; scale = 0.95; }, zombie: () => { speed = 5; maxHp = 140; scale = 1.05; }, girl: () => { speed = 10; maxHp = 60; scale = 0.95; } })[type]();
             }
             maxHp = Math.round(maxHp * (1 + 0.08 * (stage - 1))); speed *= 1 + 0.02 * stage;
+            if (MP.fb) { type = MP.fb; const q = ({ normal: [6, 75, 1], tank: [3, 500, 1], shooter: [5, 50, 1], strafer: [8, 75, 1], runner: [12, 30, 0.85], dog: [17, 40, 1], ninja: [13, 55, 0.95], zombie: [5, 140, 1.05], girl: [10, 60, 0.95] })[type] || [6, 75, 1]; speed = q[0]; maxHp = q[1]; scale = q[2]; }
             const mat = botMats[type];
             const g = new THREE.Group(); g.userData.isBot = true;
             const hitBoxMesh = new THREE.Mesh(sharedBoxGeo, new THREE.MeshBasicMaterial({ visible: false }));
@@ -1108,7 +1123,7 @@
         function botFire(bot, kind, dmg) {
             const g = bot.group; g.updateMatrixWorld(true);
             _v1.copy(bot.muzzle); g.localToWorld(_v1);
-            _v2.copy(camera.position); _v2.y -= 0.8;
+            _v2.copy(MP.on ? MP.tp : camera.position); _v2.y -= 0.8;
             const dist = _v1.distanceTo(_v2);
             _vel.subVectors(_v2, _v1).normalize(); _vel.x += (Math.random() - 0.5) * kind.spread * 2; _vel.y += (Math.random() - 0.5) * kind.spread * 2; _vel.z += (Math.random() - 0.5) * kind.spread * 2; _vel.normalize().multiplyScalar(kind.speed);
             const m = new THREE.Mesh(sharedBoxGeo, kind.mat); m.scale.set(kind.w, kind.w, kind.len); m.position.copy(_v1);
@@ -1124,6 +1139,7 @@
         function groundAt(x, z, f) { let g = 0; for (let i = 0; i < colliders.length; i++) { const c = colliders[i]; if (c.max.y <= f && c.max.y > g && x + 0.9 > c.min.x && x - 0.9 < c.max.x && z + 0.9 > c.min.z && z - 0.9 < c.max.z) g = c.max.y; } return g; }
         function segPointDist(a, b, p) { _v3.subVectors(b, a); const l2 = _v3.lengthSq(); let t = l2 > 0 ? _tmp.subVectors(p, a).dot(_v3) / l2 : 0; t = Math.max(0, Math.min(1, t)); return _tmp.copy(a).addScaledVector(_v3, t).distanceTo(p); }
 
+        const MP = { on: false, host: false, client: false, paused: false, dead: false, busy: 0, fb: null, fxIn: false, tp: new THREE.Vector3(), tgt: null, peers: {}, cb: {}, av: {}, all: [], pool: [], peer: null, conn: null, id: 'H', idx: 0, name: 'Player', room: '', code: '', opt: null, rt: 0 };
         const clock = new THREE.Clock();
         const _prevP = new THREE.Vector3(), _playerCenter = new THREE.Vector3();
         function animate() {
@@ -1214,6 +1230,7 @@
                     const p = arrays.enemyProjectiles[i]; _prevP.copy(p.mesh.position);
                     const steps = Math.max(1, Math.ceil(p.vel.length() * delta / 1.6)); let dead = false;
                     for (let s = 0; s < steps; s++) { p.mesh.position.addScaledVector(p.vel, delta / steps); if (pointInColliders(p.mesh.position) || p.mesh.position.y < 0.1) { dead = true; break; } }
+                    if (MP.host && mpProjHit(p)) dead = true;
                     if (segPointDist(_prevP, p.mesh.position, _playerCenter) < 2.1) { takePlayerDamage(p.dmg); sparks(p.mesh.position, 6, 10, null, 0); dead = true; }
                     else if (dead) sparks(p.mesh.position, 7, 8, null, 0);
                     if (dead || p.mesh.position.distanceTo(camera.position) > 320) { scene.remove(p.mesh); arrays.enemyProjectiles.splice(i, 1); }
@@ -1221,8 +1238,8 @@
 
                 // --- bots ---
                 _playerFlatPos.set(camera.position.x, 0, camera.position.z);
-                for (const bot of arrays.bots) {
-                    const g = bot.group; _oldPos.copy(g.position);
+                for (const bot of (MP.client ? [] : arrays.bots)) {
+                    const g = bot.group; _oldPos.copy(g.position); if (MP.on) mpTarget(g.position);
                     g.lookAt(_playerFlatPos.x, g.position.y, _playerFlatPos.z);
                     const dist = g.position.distanceTo(_playerFlatPos);
                     bot.strafeT -= delta; if (bot.strafeT <= 0) { bot.strafeDir *= -1; bot.strafeT = 1 + Math.random() * 2.2; }
@@ -1247,7 +1264,7 @@
                         if (bot.burst > 0) { bot.burstT -= delta; if (bot.burstT <= 0) { botFire(bot, BULLET, bot.type === 'shooter' ? 6 : 4); bot.burst--; bot.burstT = 0.13; } }
                         else { bot.shootTimer -= delta; if (bot.shootTimer <= 0 && dist < range) { if (bot.type === 'tank') { botFire(bot, SHELL, 18); bot.shootTimer = 3.6 + Math.random(); } else { bot.burst = bot.type === 'shooter' ? 3 : 2; bot.burstT = 0; bot.shootTimer = (bot.type === 'shooter' ? 2.0 : 2.6) + Math.random() * 1.2; } } }
                     }
-                    if (dist < (bot.type === 'tank' ? 8 : 4)) takePlayerDamage(20 * delta);
+                    if (dist < (bot.type === 'tank' ? 8 : 4)) mpMelee(20 * delta);
                 }
             }
 
@@ -1858,6 +1875,185 @@ html.mob #drivePrompt{bottom:auto!important;top:12%!important;font-size:.8rem!im
     if (window.visualViewport) window.visualViewport.addEventListener('resize', () => window.dispatchEvent(new Event('resize')));
     setInterval(mobFit, 600); mobFit();
 })();
+// ================= ONLINE CO-OP (free worldwide P2P via PeerJS) =================
+const MP_TY = ['normal', 'runner', 'strafer', 'shooter', 'tank', 'dog', 'ninja', 'zombie', 'girl'];
+const PCOL = [0x2dff7a, 0x00ccff, 0xffb020, 0xff4fd8, 0xb07cff, 0xffe14a], PCSS = ['#2dff7a', '#00ccff', '#ffb020', '#ff4fd8', '#b07cff', '#ffe14a'];
+const MAXP = 6, PFX = 'pgirt1-';
+const mpEsc = s => String(s == null ? '' : s).replace(/[^\w \-]/g, '').slice(0, 10);
+const olSt = t => { const e = document.getElementById('ol-st'); if (e) e.textContent = t; };
+let botSeq = 0;
+// ---- UI ----
+const olW = mkScreen('online-screen'); MYSCR.push('online-screen');
+olW.innerHTML = '<h2>PLAY ONLINE</h2><div class="ol-st" id="ol-st">Free worldwide co-op vs bots · up to 6 players</div><input id="ol-name" class="ol-in" maxlength="10" placeholder="YOUR NAME"><div id="ol-menu" class="ol-col"></div><div id="ol-ready" class="ol-col" style="display:none"><div class="ol-st" id="ol-info"></div></div>';
+const om = document.getElementById('ol-menu'), orr = document.getElementById('ol-ready');
+function mpShowMenu() { om.style.display = 'flex'; orr.style.display = 'none'; olSt('Free worldwide co-op vs bots · up to 6 players'); }
+om.appendChild(btn('ol-quick', 'Quick Match', 'btn-green', () => mpGuard(mpQuick_)));
+om.appendChild(btn('ol-create', 'Create Private Room', 'btn-blue', () => mpGuard(mpCreate_)));
+const jr = document.createElement('div'); jr.className = 'ol-row'; jr.innerHTML = '<input id="ol-code" class="ol-in" maxlength="4" placeholder="CODE" style="width:6em;text-align:center;text-transform:uppercase">';
+jr.appendChild(btn('ol-join', 'Join', 'btn-blue', () => mpGuard(mpJoin_))); om.appendChild(jr);
+om.appendChild(btn('ol-back', 'Back', '', () => { mpLeave(); setScreen('main-menu'); }));
+orr.appendChild(btn('ol-go', 'Enter Battle', 'btn-green', () => mpBegin()));
+orr.appendChild(btn('ol-leave', 'Leave', '', () => { mpLeave(); mpShowMenu(); }));
+{ const pb = document.getElementById('btn-play-now'); pb.parentNode.insertBefore(btn('btn-online', '🌐 Play Online', 'btn-blue', () => { mpShowMenu(); setScreen('online-screen'); mpEnsure(); }), pb.nextSibling); }
+const board = document.createElement('div'); board.id = 'mp-board'; document.getElementById('game-hud').appendChild(board);
+function mpName() { let n = mpEsc(document.getElementById('ol-name').value).trim() || ''; if (!n) { try { n = mpEsc(localStorage.getItem('irt_name') || ''); } catch (e) { } } if (!n) n = 'Player' + (100 + (Math.random() * 900 | 0)); try { localStorage.setItem('irt_name', n); } catch (e) { } document.getElementById('ol-name').value = n; return n; }
+try { document.getElementById('ol-name').value = mpEsc(localStorage.getItem('irt_name') || ''); } catch (e) { }
+// ---- network plumbing ----
+function mpEnsure() { return new Promise(res => { if (window.Peer) return res(true); const u = ['https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js', 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js']; let i = 0; (function nx() { if (i >= u.length) return res(false); const s = document.createElement('script'); s.src = u[i++]; s.onload = () => window.Peer ? res(true) : nx(); s.onerror = nx; document.head.appendChild(s); })(); }); }
+async function mpGuard(fn) { if (MP.busy || MP.on) return; MP.busy = 1; MP.name = mpName(); try { if (!(await mpEnsure())) { olSt('Could not load network library (offline?)'); } else await fn(); } catch (e) { olSt('Network error — try again'); } MP.busy = 0; }
+function mpPeer(id) { return new Promise(res => { let done = false; const fin = (v, p) => { if (done) return; done = true; res({ v, p }); }; let p; try { p = new Peer(id || undefined, { debug: 0 }); } catch (e) { return fin('err'); } p.on('open', () => fin('open', p)); p.on('error', e => fin(e && e.type === 'unavailable-id' ? 'taken' : 'err', p)); setTimeout(() => fin('err', p), 9000); }); }
+async function mpTryHost(id) { const r = await mpPeer(id); if (r.v !== 'open') { try { r.p && r.p.destroy(); } catch (e) { } return r.v; } MP.peer = r.p; MP.peers = {}; MP.host = true; r.p.on('connection', mpOnConn); r.p.on('error', () => { }); return 'host'; }
+async function mpTryJoin(id) {
+    const r = await mpPeer(); if (r.v !== 'open') { try { r.p && r.p.destroy(); } catch (e) { } return 'err'; } const p = r.p;
+    return new Promise(res => {
+        let done = false; const fin = v => { if (done) return; done = true; if (v !== 'ok') { try { p.destroy(); } catch (e) { } } res(v); };
+        const c = p.connect(id, { serialization: 'json', reliable: true }); p.on('error', () => fin('err'));
+        c.on('open', () => c.send({ t: 'join', n: MP.name }));
+        c.on('data', m => { if (m.t === 'welcome') { MP.peer = p; MP.conn = c; MP.id = m.id; MP.idx = m.idx; MP.host = false; fin('ok'); } else if (m.t === 'full') fin('full'); else mpClientData(m); });
+        c.on('close', () => { fin('err'); if (MP.peer === p) mpLost(); });
+        setTimeout(() => fin('err'), 7000);
+    });
+}
+async function mpQuick_() { for (let i = 0; i < 8; i++) { olSt('Searching lobby ' + (i + 1) + '…'); const id = PFX + 'q-' + i; let r = await mpTryHost(id); if (r === 'host') { MP.room = 'LOBBY ' + (i + 1); MP.code = ''; return mpReady(); } if (r === 'err') { olSt('Matchmaking server unreachable — check connection and retry'); return; } r = await mpTryJoin(id); if (r === 'ok') { MP.room = 'LOBBY ' + (i + 1); MP.code = ''; return mpReady(); } } olSt('All lobbies busy — try a private room'); }
+async function mpCreate_() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; for (let t = 0; t < 4; t++) { let c = ''; for (let i = 0; i < 4; i++) c += A[Math.random() * A.length | 0]; olSt('Creating room…'); const r = await mpTryHost(PFX + 'r-' + c); if (r === 'host') { MP.room = 'ROOM ' + c; MP.code = c; return mpReady(); } if (r === 'err') { olSt('Server unreachable — retry'); return; } } olSt('Could not create room — retry'); }
+async function mpJoin_() { const c = document.getElementById('ol-code').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (c.length !== 4) { olSt('Enter the 4-letter room code'); return; } olSt('Joining ' + c + '…'); const r = await mpTryJoin(PFX + 'r-' + c); if (r === 'ok') { MP.room = 'ROOM ' + c; MP.code = c; return mpReady(); } olSt(r === 'full' ? 'Room is full (max 6)' : 'Room not found'); }
+function mpReady() { om.style.display = 'none'; orr.style.display = 'flex'; document.getElementById('ol-info').textContent = (MP.host ? 'Hosting ' : 'Connected to ') + MP.room + (MP.host && MP.code ? ' — share code ' + MP.code : '') + (MP.host ? '. Others can join anytime.' : '.'); olSt('Ready!'); }
+function mpOnConn(c) {
+    c.on('data', m => {
+        if (m.t === 'join') {
+            if (MP.peers[c.peer] || Object.keys(MP.peers).length >= MAXP - 1) { c.send({ t: 'full' }); setTimeout(() => { try { c.close(); } catch (e) { } }, 400); return; }
+            const used = new Set(Object.values(MP.peers).map(p => p.idx)); let idx = 1; while (used.has(idx)) idx++;
+            MP.peers[c.peer] = { c, name: mpEsc(m.n).trim() || 'Player', idx, p: [0, 4, 10, 0, 0], w: 0, h: 100, d: 0, sc: 0, acc: 0, ok: 0 };
+            c.send({ t: 'welcome', id: c.peer, idx }); if (MP.on) { showBanner(MP.peers[c.peer].name + ' JOINED', 1500); for (let i = 0; i < 5 && arrays.bots.length < 46; i++) spawnBot(); }
+            return;
+        }
+        const q = MP.peers[c.peer]; if (!q) return;
+        if (m.t === 's' && Array.isArray(m.p)) { q.p = m.p; q.w = m.w; q.h = m.h; q.d = m.d; q.ok = 1; }
+        else if (m.t === 'hit') mpHostHit(c.peer, m.id, Math.min(300, +m.d || 0));
+        else if (m.t === 'fx') { mpFx(m); for (const id in MP.peers) if (id !== c.peer && MP.peers[id].c.open) MP.peers[id].c.send(m); }
+    });
+    const drop = () => { const q = MP.peers[c.peer]; if (!q) return; delete MP.peers[c.peer]; if (MP.on) showBanner(q.name + ' LEFT', 1500); };
+    c.on('close', drop); c.on('error', drop);
+}
+function mpLost() { if (!MP.peer || MP.host) return; mpLeave('Host disconnected', true); }
+function mpSend(m) { if (!MP.on) return; if (MP.host) { for (const id in MP.peers) { const q = MP.peers[id]; if (q.c.open) q.c.send(m); } } else if (MP.conn && MP.conn.open) MP.conn.send(m); }
+function mpLeave(msg, go) {
+    const was = MP.on, p = MP.peer, cs = Object.values(MP.peers).map(q => q.c), cn = MP.conn;
+    MP.peer = null; MP.conn = null; MP.peers = {}; MP.on = MP.host = MP.client = MP.paused = MP.dead = false; MP.fb = null;
+    try { cs.forEach(c => c.close()); if (cn) cn.close(); if (p) p.destroy(); } catch (e) { }
+    for (const id in MP.av) scene.remove(MP.av[id].g); MP.av = {}; MP.cb = {}; MP.all = []; MP.pool.forEach(m => { m.visible = false; });
+    board.style.display = 'none'; document.documentElement.classList.remove('mpon'); if (MP.opt) { Object.assign(OPT, MP.opt); MP.opt = null; }
+    if (was && go) { returnToMenu(); showBanner(msg || 'DISCONNECTED', 3000); }
+}
+function mpBegin() {
+    if (!MP.peer) return; MP.opt = Object.assign({}, OPT); Object.assign(OPT, { mode: 1, order: 0, start: 1, rand: true, season: 0 }); contTarget = 0;
+    MP.on = true; MP.client = !MP.host; MP.paused = false; MP.dead = false; MP.cb = {}; document.documentElement.classList.add('mpon'); board.style.display = 'block';
+    startGame(); if (MP.host) for (let i = 0; i < Object.keys(MP.peers).length * 5; i++) spawnBot();
+}
+// ---- host simulation hooks ----
+function mpTarget(pos) {
+    let bx = null, bd = 1e9; if (!MP.dead) { bx = { id: null, x: camera.position.x, y: camera.position.y, z: camera.position.z }; bd = (bx.x - pos.x) ** 2 + (bx.z - pos.z) ** 2; }
+    for (const id in MP.peers) { const q = MP.peers[id]; if (q.d || !q.ok) continue; const d = (q.p[0] - pos.x) ** 2 + (q.p[2] - pos.z) ** 2; if (d < bd) { bd = d; bx = { id, x: q.p[0], y: q.p[1], z: q.p[2] }; } }
+    if (!bx) bx = { id: null, x: camera.position.x, y: camera.position.y, z: camera.position.z };
+    MP.tgt = bx.id; MP.tp.set(bx.x, bx.y, bx.z); _playerFlatPos.set(bx.x, 0, bx.z);
+}
+function mpDmgTo(id, d) { const q = MP.peers[id]; if (q) q.acc += d; }
+function mpMelee(d) { if (!MP.on || MP.tgt == null) takePlayerDamage(d); else mpDmgTo(MP.tgt, d); }
+const _mpq = new THREE.Vector3();
+function mpProjHit(p) { for (const id in MP.peers) { const q = MP.peers[id]; if (q.d || !q.ok) continue; _mpq.set(q.p[0], q.p[1] - 0.8, q.p[2]); if (segPointDist(_prevP, p.mesh.position, _mpq) < 2.1) { mpDmgTo(id, p.dmg); return true; } } return false; }
+const _ad = applyDamage;
+function mpHostHit(id, bid, d) { const b = arrays.bots.find(x => x.id === bid); if (!b) return; const s0 = score; _ad(b.group, d); ui.hit.style.opacity = 0; if (!arrays.bots.includes(b)) { const g = score - s0; score = s0; ui.scoreTxt.innerText = score; const q = MP.peers[id]; if (q) { q.sc += g; if (q.c.open) q.c.send({ t: 'gain', v: g }); } } }
+applyDamage = function (g, a) {
+    if (MP.on && MP.client) { const b = arrays.bots.find(x => x.group === g); if (!b || b.id == null) return; mpSend({ t: 'hit', id: b.id, d: a }); ui.hit.style.opacity = 1; setTimeout(() => { ui.hit.style.opacity = 0; }, 100); playSound('damage'); return; }
+    _ad(g, a);
+};
+const _sbo = spawnBot; spawnBot = function () { if (MP.client && !MP.fb) return; const n = arrays.bots.length; _sbo(); if (arrays.bots.length > n) { const b = arrays.bots[arrays.bots.length - 1]; if (b.id == null) b.id = ++botSeq; return b; } };
+const _ss9 = startStage; startStage = function (n) { if (!MP.on) return _ss9(n); const R = Math.random; Math.random = mulberry32(0x5EED1 + n); try { _ss9(n); } finally { Math.random = R; } };
+const _sv = saveNow; saveNow = function () { if (!MP.on) _sv(); };
+// ---- local player (co-op, respawn instead of game over) ----
+const _tpd2 = takePlayerDamage;
+takePlayerDamage = function (a) {
+    if (!MP.on) return _tpd2(a); if (gameState !== 'playing' || MP.dead) return;
+    hp -= a * PLR().dmg; playSound('hurt'); updateHpUI(); ui.dmg.style.opacity = 0.5; setTimeout(() => { ui.dmg.style.opacity = 0; }, 200);
+    if (hp <= 0) { hp = 0; updateHpUI(); MP.dead = true; MP.rt = performance.now() + 4000; playSound('death'); showBanner('DOWNED — RESPAWN IN 4s', 3800); }
+};
+function mpRespawn() { MP.dead = false; hp = 100; updateHpUI(); camera.position.set((Math.random() - 0.5) * 20, playerHeight, 10 + Math.random() * 10); playerY = playerHeight; velocity.set(0, 0, 0); showBanner('BACK IN THE FIGHT', 1400); }
+const _f1 = fireRifle; fireRifle = function () { if (MP.dead) return; _f1(); };
+const _f2 = fireBazooka; fireBazooka = function () { if (MP.dead) return; _f2(); };
+const _f3 = stab; stab = function () { if (MP.dead) return; _f3(); };
+const _f4 = throwBomb; throwBomb = function () { if (MP.dead) return; _f4(); };
+const _ft = fireTracer; fireTracer = function (a, b) { _ft(a, b); if (MP.on && !MP.fxIn) mpSend({ t: 'fx', k: 's', a: [+a.x.toFixed(1), +a.y.toFixed(1), +a.z.toFixed(1)], b: [+b.x.toFixed(1), +b.y.toFixed(1), +b.z.toFixed(1)] }); };
+const _ce = createExplosion; createExplosion = function (p) { _ce(p); if (MP.on && !MP.fxIn) mpSend({ t: 'fx', k: 'b', a: [+p.x.toFixed(1), +p.y.toFixed(1), +p.z.toFixed(1)] }); };
+function mpBoomFx(a) {
+    const v = new THREE.Vector3(a[0], a[1], a[2]), m = new THREE.Mesh(sharedSphereGeo, expMat.clone()); m.position.copy(v); scene.add(m);
+    const f = new THREE.Sprite(new THREE.SpriteMaterial({ map: starTex, color: 0xffcc80, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); f.position.copy(v); f.scale.set(34, 34, 1); scene.add(f);
+    arrays.explosions.push({ mesh: m, flash: f, scale: 1, maxScale: 15 }); sparks(v, 50, 50, null, 0); debris(v, 16, 0xff8a1e, 0.7); if (camera.position.distanceTo(v) < 90) playSound('explode');
+}
+function mpFx(m) { if (gameState !== 'playing' || !Array.isArray(m.a)) return; MP.fxIn = true; try { if (m.k === 's' && Array.isArray(m.b)) fireTracer(new THREE.Vector3(m.a[0], m.a[1], m.a[2]), new THREE.Vector3(m.b[0], m.b[1], m.b[2])); else if (m.k === 'b') mpBoomFx(m.a); } finally { MP.fxIn = false; } }
+// ---- snapshots ----
+function mpSnap() {
+    const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100, b = [];
+    for (const k of arrays.bots) { if (k.id == null) continue; const g = k.group, q = g.quaternion; b.push([k.id, MP_TY.indexOf(k.type), r1(g.position.x), r1(g.position.z), r2(2 * Math.atan2(q.y, q.w))]); }
+    const e = arrays.enemyProjectiles.slice(0, 40).map(p => [r1(p.mesh.position.x), r1(p.mesh.position.y), r1(p.mesh.position.z)]);
+    const all = [{ id: 'H', i: 0, n: MP.name, p: [camera.position.x, camera.position.y, camera.position.z, camera.rotation.y, camera.rotation.x], h: hp, s: score, d: MP.dead ? 1 : 0 }];
+    for (const id in MP.peers) { const q = MP.peers[id]; all.push({ id, i: q.idx, n: q.name, p: q.p, h: q.h, s: q.sc, d: q.d }); }
+    MP.all = all; const m = { t: 'B', b, e, p: all.map(a => [a.id, a.i, a.n, r1(a.p[0]), r1(a.p[1]), r1(a.p[2]), r2(a.p[3]), r2(a.p[4]), Math.round(a.h), a.s, a.d]) };
+    for (const id in MP.peers) { const q = MP.peers[id]; if (!q.c.open) continue; q.c.send(m); if (q.acc > 0.5) { q.c.send({ t: 'dmg', d: q.acc }); q.acc = 0; } }
+}
+function mpClientData(m) {
+    if (!MP.on) return;
+    if (m.t === 'B') mpApply(m); else if (m.t === 'dmg') takePlayerDamage(+m.d || 0); else if (m.t === 'gain') { score += +m.v || 0; ui.scoreTxt.innerText = score; } else if (m.t === 'fx') mpFx(m);
+}
+function mpApply(m) {
+    const seen = {};
+    for (const r of m.b) {
+        seen[r[0]] = 1; let b = MP.cb[r[0]];
+        if (!b) { MP.fb = MP_TY[r[1]] || 'normal'; b = spawnBot(); MP.fb = null; if (!b) continue; b.id = r[0]; MP.cb[r[0]] = b; b.group.position.x = r[2]; b.group.position.z = r[3]; b.ry = r[4]; }
+        b.tx = r[2]; b.tz = r[3]; b.tr = r[4];
+    }
+    for (const id in MP.cb) if (!seen[id]) {
+        const b = MP.cb[id], g = b.group; delete MP.cb[id]; scene.remove(g); _v1.copy(g.position); _v1.y = 3; debris(_v1, 24, BOT_COLORS[b.type], 0.9); sparks(_v1, 16, 18, null, 0); playSound('hit');
+        for (let i = raycastTargets.length - 1; i >= 0; i--) { if (raycastTargets[i].userData && raycastTargets[i].userData.parentBot === g) raycastTargets.splice(i, 1); }
+        arrays.bots = arrays.bots.filter(x => x !== b);
+    }
+    while (MP.pool.length < 40) { const o = new THREE.Mesh(sharedBoxGeo, BULLET.mat); o.scale.set(0.5, 0.5, 0.5); o.visible = false; scene.add(o); MP.pool.push(o); }
+    MP.pool.forEach((o, i) => { const e = m.e[i]; if (e) { o.position.set(e[0], e[1], e[2]); o.visible = true; } else o.visible = false; });
+    MP.all = m.p.map(a => ({ id: a[0], i: a[1], n: a[2], p: [a[3], a[4], a[5], a[6], a[7]], h: a[8], s: a[9], d: a[10] }));
+}
+// ---- remote player avatars ----
+function mkAvatar(idx, name) {
+    const c = PCOL[idx % 6], g = new THREE.Group(), m = new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.3, roughness: 0.6 }), dk = new THREE.MeshStandardMaterial({ color: 0x1b2030, roughness: 0.7 }), sk = new THREE.MeshStandardMaterial({ color: 0xe8c9a0, roughness: 0.8 });
+    const bx = (mt, sx, sy, sz, x, y, z) => { const o = new THREE.Mesh(sharedBoxGeo, mt); o.scale.set(sx, sy, sz); o.position.set(x, y, z); g.add(o); return o; };
+    bx(dk, 0.7, 1.8, 0.7, -0.5, 0.9, 0); bx(dk, 0.7, 1.8, 0.7, 0.5, 0.9, 0); bx(m, 1.9, 1.7, 1, 0, 2.65, 0); bx(m, 0.6, 1.4, 0.6, -1.25, 2.7, 0); bx(dk, 0.35, 0.35, 1.9, 0.95, 2.7, -1);
+    const head = new THREE.Group(); head.position.set(0, 3.85, 0); g.add(head); const h = new THREE.Mesh(sharedBoxGeo, sk); h.scale.set(0.95, 0.95, 0.95); head.add(h);
+    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const x = cv.getContext('2d'); x.font = 'bold 34px Courier New'; x.textAlign = 'center'; x.fillStyle = '#000'; x.fillText(name, 130, 44); x.fillStyle = PCSS[idx % 6]; x.fillText(name, 128, 42);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false })); sp.scale.set(7, 1.75, 1); sp.position.set(0, 6.3, 0); g.add(sp);
+    return { g, head };
+}
+function mpAvatars() {
+    const me = MP.host ? 'H' : MP.id, seen = {};
+    for (const a of MP.all) { if (a.id === me) continue; seen[a.id] = 1; let v = MP.av[a.id]; if (!v) { v = MP.av[a.id] = mkAvatar(a.i, mpEsc(a.n)); v.g.position.set(a.p[0], 0, a.p[2]); scene.add(v.g); } v.t = a; }
+    for (const id in MP.av) {
+        const v = MP.av[id]; if (!seen[id]) { scene.remove(v.g); delete MP.av[id]; continue; } const a = v.t, g = v.g; g.visible = !a.d;
+        g.position.x += (a.p[0] - g.position.x) * 0.3; g.position.z += (a.p[2] - g.position.z) * 0.3; g.position.y += (Math.max(0, a.p[1] - 4.05) - g.position.y) * 0.3;
+        g.rotation.y += (((a.p[3] - g.rotation.y + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * 0.3; v.head.rotation.x = a.p[4];
+    }
+}
+(function mpLoop() {
+    requestAnimationFrame(mpLoop); if (!MP.on) return;
+    if (MP.paused) { moveForward = moveBackward = moveLeft = moveRight = false; isMouseDown = false; }
+    if (MP.client) for (const b of arrays.bots) {
+        if (b.tx === undefined) continue; const g = b.group, dx = b.tx - g.position.x, dz = b.tz - g.position.z; g.position.x += dx * 0.35; g.position.z += dz * 0.35;
+        b.ry += (((b.tr - b.ry + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * 0.35; g.rotation.set(0, b.ry, 0);
+        if (b.legL) { const mv = Math.hypot(dx, dz); b.walkT += mv * 0.55; const sw = mv > 0.05 ? Math.sin(b.walkT) * 0.7 : 0; b.legL.rotation.x = sw; b.legR.rotation.x = -sw; }
+    }
+    mpAvatars();
+})();
+setInterval(() => {
+    if (!MP.on || gameState !== 'playing') return; if (MP.dead && performance.now() > MP.rt) mpRespawn();
+    if (MP.host) mpSnap(); else if (MP.conn && MP.conn.open) { const c = camera.position, r = v => Math.round(v * 10) / 10; MP.conn.send({ t: 's', p: [r(c.x), r(c.y), r(c.z), Math.round(camera.rotation.y * 100) / 100, Math.round(camera.rotation.x * 100) / 100], w: currentWeapon, h: Math.round(hp), d: MP.dead ? 1 : 0 }); }
+}, 80);
+setInterval(() => { if (!MP.on) return; board.innerHTML = '<div style="opacity:.7;margin-bottom:2px">' + mpEsc(MP.room) + ' · ' + MP.all.length + ' ONLINE</div>' + MP.all.map(a => '<div style="color:' + PCSS[a.i % 6] + '">' + mpEsc(a.n) + ' <span style="opacity:.8">' + (a.d ? 'DOWN' : Math.max(0, a.h | 0)) + '</span> <b>' + (a.s | 0) + '</b></div>').join(''); }, 300);
 // everything is built: fit the menus, then reveal the UI (no flash of the old menu)
 try { if (window.__fitMenus) window.__fitMenus(); fitMyScreens(); } catch (e) { }
 document.documentElement.classList.remove('loading');
