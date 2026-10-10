@@ -294,7 +294,17 @@
 </style>
 <style id="fm-online">
   .ol-btn2 { background:#ff9f1c !important; box-shadow:0 6px 0 #c76a00 !important; }
-  #online-screen { gap:12px; text-align:center; padding-left:16px; padding-right:16px; }
+  #online-screen { text-align:center; padding-left:16px; padding-right:16px; }
+  /* spacing lives on the inner .fit column (the gap was on the screen before, so buttons touched/overlapped) */
+  #online-screen .fit { gap:18px; padding:8px 0 14px; max-width:100%; }
+  #online-screen .fit > * { flex:0 0 auto; margin-top:0 !important; max-width:100%; }
+  #online-screen .btn { white-space:nowrap; position:relative; z-index:1; }
+  #online-screen .btn:active { transform:translateY(4px); }
+  #ol-room { box-sizing:border-box; line-height:1.3; }
+  #ol-room .btn { margin-top:10px !important; }
+  .ol-join { flex-wrap:nowrap; max-width:100%; }
+  @media (max-width:420px) { .ol-title { font-size:30px; } #online-screen .btn { font-size:18px; padding:12px 24px; } #ol-code { width:110px; font-size:22px; } .ol-join .btn { padding:12px 18px; font-size:18px; } #ol-room .code { font-size:30px; } }
+  @media (max-height:600px) { #online-screen .fit { gap:10px; } .ol-title { font-size:28px; } }
   .ol-title { font-size:38px; margin:0; text-shadow:0 4px 0 #000; }
   #ol-status { max-width:340px; min-height:44px; font-size:15px; line-height:1.4; color:#dfe9ff; margin:0; }
   #ol-room { display:none; background:rgba(0,0,0,.45); border:2px solid #4fd0ff; border-radius:14px; padding:10px 18px; }
@@ -1185,7 +1195,7 @@ const myAv = AVATARS[(Math.random() * AVATARS.length) | 0];
 const QM_SLOTS = 10;
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-function olStatus(t) { $('ol-status').textContent = t; }
+function olStatus(t) { $('ol-status').textContent = t; if (window.fitAll) requestAnimationFrame(window.fitAll); }
 function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function withSeed(seed, fn) { const o = Math.random; Math.random = mulberry(seed); try { fn(); } finally { Math.random = o; } }
 function send(o) { try { if (net.conn && net.conn.open) net.conn.send(o); } catch (e) {} }
@@ -1203,6 +1213,7 @@ function showOnline() {
   hideAll(); olCleanup(); $('online-screen').classList.remove('hidden');
   $('ol-room').style.display = 'none';
   olStatus('Race a friend or a random player. Same board, first to clear the target wins!');
+  if (window.fitAll) requestAnimationFrame(window.fitAll);
 }
 function olBack() { olCleanup(); goToStart(); }
 
