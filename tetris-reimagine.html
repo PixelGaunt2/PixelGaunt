@@ -136,6 +136,29 @@
     #btnSpaceGl .nb { --bc:linear-gradient(90deg,#ff3ad8,#ff9a1f,#ff3ad8); --cut:10px; }
     #btnSpaceGl .in { background:linear-gradient(180deg,#26083f,#12072f); font-family:'Orbitron',sans-serif; font-size:.65rem; letter-spacing:3px; color:#ffb347; text-shadow:0 0 8px #ff9a1f; }
     #btnSpaceGl.pressed .in, #btnSpaceGl:active .in { background:linear-gradient(180deg,#5a1366,#2a0a3f); }
+
+    /* ===== Online versus ===== */
+    #board-row { flex:1; min-height:0; width:100%; display:flex; gap:6px; }
+    #board-row > #board-glow { width:auto; min-width:0; }
+    #opp-panel { flex:none; --gl:rgba(255,80,120,.85); --cut:12px; --bw:2px; }
+    #opp-panel .nb { --bc:linear-gradient(135deg,#ff6a8a,#ff9a1f 50%,#b44bff); }
+    #oppIn { flex-direction:column; justify-content:flex-start; gap:5px; padding:7px 6px; background:linear-gradient(180deg,#14072e,#07041f); font-family:'Orbitron',sans-serif; text-align:center; overflow:hidden; }
+    #oppName { font-size:.55rem; letter-spacing:2px; color:#ff9ab0; text-shadow:0 0 6px #ff4f7a; flex:none; }
+    #oppCanvas { display:block; border-radius:4px; background:#030624; flex:none; }
+    #oppStats { font-size:.5rem; color:#9fb4ff; line-height:1.5; white-space:pre; flex:none; }
+    #incoming { font-size:.75rem; font-weight:800; color:#4a4f7a; flex:none; }
+    #incoming.on { color:#ff3b5c; text-shadow:0 0 8px #ff3b5c; }
+    #onlineMenu h1, #vsResult h1 { font-size:clamp(1.3rem,6vw,1.9rem); margin:0 0 10px; }
+    #olMain, #olWait { display:flex; flex-direction:column; align-items:center; width:100%; }
+    .olrow { display:flex; gap:6px; width:80%; max-width:260px; margin:6px 0; flex:none; }
+    .olrow input { flex:1; min-width:0; text-align:center; text-transform:uppercase; letter-spacing:4px; font:800 1rem 'Orbitron',sans-serif; color:#fff; background:#07104a; border:2px solid #2a62ff; border-radius:8px; padding:8px; outline:none; user-select:text; -webkit-user-select:text; }
+    .olrow button { width:auto; margin:0; padding:10px 16px; letter-spacing:1px; }
+    #olMsg, #olStatus { color:#ffd23a; font-size:.78rem; min-height:1.2em; margin:2px 0 6px; line-height:1.35; max-width:90%; }
+    #roomCode { font-family:'Orbitron',sans-serif; font-weight:800; font-size:2rem; letter-spacing:6px; color:#00f2fe; margin:4px 0; text-shadow:0 0 12px #00e5ff; cursor:pointer; }
+    #roomBox { color:#a8b2d1; font-size:.7rem; margin-bottom:8px; }
+    #vsCount { background:transparent; pointer-events:none; justify-content:center; }
+    #vsCountNum { font-family:'Orbitron',sans-serif; font-weight:800; font-size:clamp(4rem,26vw,7rem); color:#fff; text-shadow:0 0 24px #00e5ff, 0 0 48px #b44bff; }
+    @media (max-height:700px) { button { padding:9px 16px; margin:4px 0; } h1 { margin-bottom:10px; } }
 </style>
 </head>
 <body>
@@ -174,6 +197,7 @@
     </div>
 
     <!-- Board -->
+    <div id="board-row">
     <div id="board-glow">
         <div class="glowbg"><div class="nb"><div class="in"></div></div></div>
         <div class="glowbg red"><div class="nb"><div class="in"></div></div></div>
@@ -184,6 +208,7 @@
                 <h1>Tetris<br>Reimagine</h1>
                 <button id="playBtn" class="primary">PLAY NOW</button>
                 <button id="resumeBtn" class="green hidden">RESUME</button>
+                <button id="onlineBtn" style="background:linear-gradient(45deg,#b44bff,#ff5fa8);">🌐 ONLINE VERSUS</button>
                 <button id="openReadmeBtn" class="ghost">README</button>
             </div>
 
@@ -194,6 +219,7 @@
                     <p>If you encounter any issues or have feedback, please feel free to reach out to us!</p>
                     <p>📧 <strong>Email:</strong> <a href="mailto:pixelgaunt@gmail.com">pixelgaunt@gmail.com</a></p>
                     <p>💬 <strong>WhatsApp:</strong> <a href="https://chat.whatsapp.com/EZ68rQjkqgv8Vc5hzjK8yc" target="_blank" style="color:#38ef7d;">Join our Group</a></p>
+                    <p><strong>🌐 Online Versus:</strong> free worldwide 1v1. Use Quick Match, or Create Room and send the code to a friend. Clear lines to send garbage to your opponent; last one standing wins.</p>
                     <p><strong>Keyboard:</strong> ◀ ▶ / A D move · ▲ / W / X rotate · Z rotate back · ▼ / S soft drop · SPACE instant drop · P pause<br><strong>Touch:</strong> buttons, or on the board: drag to move · tap to rotate · swipe down to drop · flick down for instant drop</p>
                 </div>
                 <button id="closeReadmeBtn" class="green">CLOSE</button>
@@ -216,7 +242,40 @@
             <div id="levelUpMsg" class="overlay hidden" style="background:rgba(0,242,254,.25); pointer-events:none; justify-content:center;">
                 <h1 style="font-size:clamp(1.8rem,10vw,3rem); margin:0;">LEVEL UP!</h1>
             </div>
+
+            <div id="onlineMenu" class="overlay hidden">
+                <h1>Online<br>Versus</h1>
+                <div id="olMain">
+                    <div id="olMsg"></div>
+                    <button id="quickBtn" class="primary">QUICK MATCH</button>
+                    <button id="createBtn" class="green">CREATE ROOM</button>
+                    <div class="olrow"><input id="joinInput" maxlength="5" placeholder="CODE" autocomplete="off" autocapitalize="characters" spellcheck="false"><button id="joinBtn">JOIN</button></div>
+                    <button id="olBackBtn" class="ghost">BACK</button>
+                </div>
+                <div id="olWait" class="hidden">
+                    <div id="olStatus"></div>
+                    <div id="roomBox" class="hidden"><div>ROOM CODE · tap to copy</div><div id="roomCode"></div><div>Send this code to a friend</div></div>
+                    <button id="olCancelBtn" class="ghost">CANCEL</button>
+                </div>
+            </div>
+
+            <div id="vsResult" class="overlay hidden" style="background:rgba(2,4,30,.8);">
+                <h1 id="vsTitle">YOU WIN!</h1>
+                <p id="vsSub" style="color:#a8b2d1; margin:0 0 16px; font-size:.85rem;"></p>
+                <button id="rematchBtn" class="green">REMATCH</button>
+                <button id="vsMenuBtn" class="ghost">MAIN MENU</button>
+            </div>
+
+            <div id="vsCount" class="overlay hidden"><span id="vsCountNum"></span></div>
         </div></div>
+    </div>
+    <div class="gl hidden" id="opp-panel"><div class="nb"><div class="in" id="oppIn">
+        <div id="oppName">OPPONENT</div>
+        <canvas id="oppCanvas"></canvas>
+        <div id="oppStats">SCORE 0
+LVL 1</div>
+        <div id="incoming">⚠ 0</div>
+    </div></div></div>
     </div>
 
     <!-- Controls -->
@@ -436,6 +495,13 @@
         { mat: [[0,1,0],[1,1,1],[0,0,0]], color: makeColor('#ff5fa8') },
         { mat: [[1,1,0],[0,1,1],[0,0,0]], color: makeColor('#ff3347') }
     ];
+    const GARBAGE_COLOR = makeColor('#7d86a8');
+    const PAL = SHAPES.map(s => s.color).concat([GARBAGE_COLOR]);
+    const colorIdx = new Map(PAL.map((c, i) => [c, i + 1]));
+    let rng = Math.random;
+    let versus = false, pending = [], oppLast = null;
+    const oppCanvas = document.getElementById('oppCanvas'), oppCtx = oppCanvas.getContext('2d');
+    const oppPanel = document.getElementById('opp-panel');
 
     const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
     const nextCanvas = document.getElementById('nextCanvas'); const nextCtx = nextCanvas.getContext('2d');
@@ -464,13 +530,15 @@
         const wrap = document.getElementById('game-wrapper');
         const glow = document.getElementById('board-glow');
         const availH = glow.clientHeight - frame;
-        const maxW = IS_DESKTOP ? 560 : 440, maxBoard = IS_DESKTOP ? 460 : 400;
-        const availW = Math.min(vw - 8, maxW) - 8 - frame;
-        let w = Math.floor(Math.min(availW, availH / 2, maxBoard));
+        const k = versus ? 0.46 : 0; // opponent board is 46% of the size of yours
+        const maxW = IS_DESKTOP ? (versus ? 760 : 560) : (versus ? 600 : 440), maxBoard = IS_DESKTOP ? 460 : 400;
+        const availW = Math.min(vw - 8, maxW) - 8 - frame - (versus ? 22 : 0);
+        let w = Math.floor(Math.min(availW / (1 + k), availH / 2, maxBoard));
         w = Math.max(w, 100); const h = w * 2;
-        wrap.style.width = Math.min(vw, Math.max(w + frame + 8, 300)) + 'px';
+        const ow = versus ? Math.max(44, Math.round(w * k)) : 0;
+        wrap.style.width = Math.min(vw, Math.max(w + frame + 8 + (versus ? ow + 22 : 0), 300)) + 'px';
         const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-        const key = w + 'x' + vw + 'x' + vh + '@' + dpr;
+        const key = w + 'x' + vw + 'x' + vh + '@' + dpr + (versus ? 'v' : '');
         if (key === lastFit) return; // nothing really changed (mobile URL bar jitter etc.)
         lastFit = key;
         canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
@@ -479,7 +547,14 @@
         canvas.width = cw; canvas.height = cw * 2;
         SC = canvas.width / LW;
         spriteCache.clear(); boardBg = null;
-        glow.style.width = '100%';
+        glow.style.width = 'auto';
+        oppPanel.classList.toggle('hidden', !versus);
+        if (versus) {
+            oppPanel.style.width = (ow + 16) + 'px';
+            oppCanvas.style.width = ow + 'px'; oppCanvas.style.height = (ow * 2) + 'px';
+            oppCanvas.width = Math.max(10, Math.round(ow * dpr / 10) * 10); oppCanvas.height = oppCanvas.width * 2;
+            drawOpp(oppLast || '0'.repeat(200));
+        }
         buildBg();
         if (state === 'PAUSED') { drawBg(performance.now() + 100); draw(); }
     }
@@ -492,7 +567,7 @@
     // ===================== GAMEPLAY =====================
     function refillBag() {
         bag = SHAPES.map((s, i) => i);
-        for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; }
+        for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; }
     }
     function getRandomPiece() {
         if (!bag.length) refillBag();
@@ -506,6 +581,7 @@
         particles = []; floatingTexts = []; trails = [];
         clearingAnimation.active = false; clearingAnimation.spawned = new Set();
         document.getElementById('board-glow').classList.remove('danger');
+        pending = []; updateIncoming();
         updateSpeed(); updateHUD();
         nextPiece = getRandomPiece();
         spawnPiece();
@@ -518,6 +594,7 @@
         lockTimer = 0; lockResets = 0; dropCounter = 0;
         drawNextPiece();
         if (collide(activePiece)) {
+            if (versus) { vsLose(); return; }
             state = 'GAMEOVER'; GameAudio.stopMusic(); AudioSys.gameOver();
             if (score > bestScore) { bestScore = score; store.set('tetrisReimagineBest', bestScore); }
             document.getElementById('crashLevel').innerText = level;
@@ -657,7 +734,7 @@
             }
         }
         activePiece = null; checkLines();
-        if (!clearingAnimation.active) { combo = -1; checkDanger(); if (state === 'PLAY') spawnPiece(); }
+        if (!clearingAnimation.active) { combo = -1; if (versus) applyGarbage(); checkDanger(); if (state === 'PLAY') spawnPiece(); }
     }
 
     function checkLines() {
@@ -676,6 +753,12 @@
         combo++;
         if (combo > 0) pts += 50 * combo * level;
         score += pts; linesThisLevel += n;
+        if (versus) { // attack: 2 lines=1, 3=2, tetris=4, +1 for combos; incoming garbage is cancelled first
+            let atk = [0, 0, 1, 2, 4][Math.min(n, 4)]; if (combo >= 2) atk++;
+            while (atk > 0 && pending.length) { const p = pending[0], t = Math.min(atk, p.n); p.n -= t; atk -= t; if (p.n <= 0) pending.shift(); }
+            updateIncoming();
+            if (atk > 0) netSend({ t: 'g', n: atk, hole: Math.floor(Math.random() * COLS) });
+        }
 
         grid = grid.filter((row, idx) => !rows.includes(idx));
         while (grid.length < ROWS) grid.unshift(Array(COLS).fill(null));
@@ -687,7 +770,7 @@
         if (combo > 0) addFloatingText(`COMBO x${combo + 1}`, LW / 2, cy + 28, 18, '#ff5fa8');
 
         if (linesThisLevel >= 10 && level < maxLevels) {
-            level++; linesThisLevel = 0; store.set('tetrisReimagineLevel', level); savedLevel = level;
+            level++; linesThisLevel = 0; if (!versus) { store.set('tetrisReimagineLevel', level); savedLevel = level; }
             updateSpeed(); AudioSys.levelUp(); showLevelUp();
         } else if (linesThisLevel >= 10 && level === maxLevels) { linesThisLevel = 10; }
 
@@ -846,13 +929,14 @@
                 }
             }
         } else if (state === 'MENU' || state === 'GAMEOVER') updateEffects(dt);
-        if (state !== 'PAUSED') { drawBg(timestamp); draw(); } // nothing moves while paused: skip all rendering
+        if (versus) netTick(timestamp);
+        if (state !== 'PAUSED') { drawBg(timestamp); draw(); if (versus) drawIncoming(); } // nothing moves while paused: skip all rendering
         requestAnimationFrame(gameLoop);
     }
 
     // ===================== INPUT =====================
     function pauseGame() {
-        if (state !== 'PLAY') return;
+        if (state !== 'PLAY' || versus) return; // no pausing in online matches
         state = 'PAUSED'; GameAudio.pauseMusic(); stopHolds();
         document.getElementById('pauseMenu').classList.remove('hidden');
     }
@@ -963,6 +1047,341 @@
         if (savedLevel > 1) document.getElementById('resumeBtn').classList.remove('hidden'); state = 'MENU';
         document.getElementById('board-glow').classList.remove('danger');
     });
+
+    // ===================== ONLINE VERSUS (free worldwide P2P via PeerJS cloud) =====================
+    const NET = {
+        slots: 12, prefix: 'tetris-reimagine-v1-',
+        opts: { debug: 0, config: { iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:global.stun.twilio.com:3478' },
+            { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+            { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+            { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+        ] } }
+    };
+    let peer = null, conn = null, isHost = false, netToken = 0, matchTok = 0, lastRecv = 0, lastSend = 0, lastB = '';
+    let myRematch = false, oppRematch = false, connLost = false, startWait = 0;
+    const $ = id => document.getElementById(id);
+    const elIncoming = $('incoming'), elOppStats = $('oppStats');
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+    function loadPeerJS() {
+        return new Promise((res, rej) => {
+            if (window.Peer) return res();
+            const urls = ['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
+            let i = 0;
+            const next = () => {
+                if (window.Peer) return res();
+                if (i >= urls.length) return rej(new Error('load'));
+                const s = document.createElement('script'); s.src = urls[i++];
+                s.onload = () => window.Peer ? res() : next(); s.onerror = next; document.head.appendChild(s);
+            };
+            next();
+        });
+    }
+    function openPeer(id) {
+        return new Promise((res, rej) => {
+            let p, done = false;
+            try { p = id ? new Peer(id, NET.opts) : new Peer(NET.opts); } catch (e) { return rej({ type: 'fatal' }); }
+            const timer = setTimeout(() => { if (!done) { done = true; try { p.destroy(); } catch (e) {} rej({ type: 'timeout' }); } }, 9000);
+            p.on('open', () => { if (done) return; done = true; clearTimeout(timer); res(p); });
+            p.on('error', e => { if (!done) { done = true; clearTimeout(timer); try { p.destroy(); } catch (x) {} rej(e || { type: 'error' }); } });
+            p.on('disconnected', () => { if (done && p === peer && !p.destroyed && !(conn && conn.open)) { try { p.reconnect(); } catch (e) {} } });
+        });
+    }
+    // Connect to a host and wait for its "welcome" (resolves the open connection, or null)
+    function tryConnect(p, id, ms) {
+        return new Promise(res => {
+            let c, done = false, timer = 0;
+            const onErr = e => { if (e && e.type === 'peer-unavailable' && String(e.message || '').indexOf(id) >= 0) fin(false); };
+            const fin = ok => {
+                if (done) return; done = true; clearTimeout(timer); try { p.off('error', onErr); } catch (e) {}
+                if (!ok) { try { c && c.close(); } catch (e) {} }
+                res(ok ? c : null);
+            };
+            p.on('error', onErr);
+            try { c = p.connect(id, { reliable: true, serialization: 'json' }); } catch (e) { return fin(false); }
+            c.on('data', d => { if (d && d.t === 'welcome') fin(true); else if (d && d.t === 'busy') fin(false); });
+            c.on('error', () => fin(false)); c.on('close', () => fin(false));
+            timer = setTimeout(() => fin(false), ms);
+        });
+    }
+    function netSend(o) { try { if (conn && conn.open) conn.send(o); } catch (e) {} }
+    function setupConn(c) {
+        conn = c; lastRecv = performance.now();
+        c.on('data', onNetMsg);
+        c.on('close', () => { if (conn === c) onConnClose(); });
+        c.on('error', () => { if (conn === c) onConnClose(); });
+    }
+    function hostAccept(hp) {
+        hp.on('connection', c => {
+            const go = () => {
+                if (peer !== hp || (conn && conn.open) || versus) { try { c.send({ t: 'busy' }); } catch (e) {} setTimeout(() => { try { c.close(); } catch (e) {} }, 400); return; }
+                setupConn(c); connLost = false;
+                try { c.send({ t: 'welcome' }); } catch (e) {}
+                onConnected();
+            };
+            if (c.open) go(); else c.on('open', go);
+        });
+    }
+    function waitForConn(tok, ms) {
+        return new Promise(res => {
+            const t0 = performance.now();
+            const iv = setInterval(() => {
+                if (tok !== netToken) { clearInterval(iv); res(false); }
+                else if (conn && conn.open) { clearInterval(iv); res(true); }
+                else if (ms && performance.now() - t0 > ms) { clearInterval(iv); res(false); }
+            }, 200);
+        });
+    }
+    function onConnected() {
+        lastRecv = performance.now(); connLost = false;
+        $('roomBox').classList.add('hidden'); setStatus('Opponent found! Starting…');
+        if (isHost) { try { peer.disconnect(); } catch (e) {} setTimeout(() => { if (conn && conn.open && !versus) hostStart(); }, 700); } // frees the matchmaking slot
+        else { clearTimeout(startWait); startWait = setTimeout(() => { if (!versus) { cleanupNet(); showOl('main', 'Opponent did not start the match. Try again.'); } }, 10000); }
+    }
+    function cleanupNet() {
+        clearTimeout(startWait);
+        const c = conn, p = peer; conn = null; peer = null; isHost = false; connLost = false;
+        try { c && c.close(); } catch (e) {} try { p && p.destroy(); } catch (e) {}
+    }
+    function showOl(view, msg) {
+        $('olMain').classList.toggle('hidden', view !== 'main'); $('olWait').classList.toggle('hidden', view !== 'wait');
+        $('roomBox').classList.add('hidden');
+        if (view === 'main') $('olMsg').textContent = msg || ''; else $('olStatus').textContent = msg || '';
+    }
+    function setStatus(m) { $('olStatus').textContent = m; }
+
+    // ---- Matchmaking: first free "queue slot" ID makes you a waiting host; anyone finding an occupied slot joins it ----
+    async function quickMatch() {
+        const tok = ++netToken; cleanupNet(); showOl('wait', 'Connecting to matchmaking…');
+        try { await loadPeerJS(); } catch (e) { if (tok === netToken) showOl('main', 'Could not load the network library. Check your internet connection.'); return; }
+        let guest = null, fails = 0;
+        const drop = () => { if (guest) { try { guest.destroy(); } catch (e) {} guest = null; } };
+        while (tok === netToken) {
+            setStatus('Searching for an opponent…');
+            let hosted = false;
+            for (let i = 0; i < NET.slots && tok === netToken; i++) {
+                const id = NET.prefix + 'q' + i;
+                let hp = null;
+                try { hp = await openPeer(id); }
+                catch (e) {
+                    if (tok !== netToken) { drop(); return; }
+                    if (e && e.type === 'unavailable-id') { // somebody is waiting here → try to join them
+                        if (!guest) {
+                            try { guest = await openPeer(); } catch (e2) { guest = null; if (++fails > 3) { showOl('main', 'Matchmaking server unreachable. Try again later.'); return; } await sleep(1500); break; }
+                            if (tok !== netToken) { drop(); return; }
+                        }
+                        const c = await tryConnect(guest, id, 4500);
+                        if (tok !== netToken) { drop(); if (c) { try { c.close(); } catch (x) {} } return; }
+                        if (c) { peer = guest; guest = null; isHost = false; connLost = false; setupConn(c); onConnected(); return; }
+                        continue;
+                    }
+                    if (++fails > 4) { showOl('main', 'Matchmaking server unreachable. Try again later.'); return; }
+                    await sleep(1500); break;
+                }
+                if (tok !== netToken) { try { hp.destroy(); } catch (e) {} drop(); return; }
+                drop(); peer = hp; isHost = true; connLost = false; hostAccept(hp);
+                setStatus('Waiting for an opponent… keep this screen open');
+                const ok = await waitForConn(tok, 9000 + Math.random() * 9000);
+                if (tok !== netToken) return;
+                if (ok) return;
+                try { hp.destroy(); } catch (e) {} peer = null; hosted = true; break; // re-scan from slot 0 so waiting players find each other
+            }
+            if (!hosted) await sleep(800);
+        }
+        drop();
+    }
+    async function createRoom() {
+        const tok = ++netToken; cleanupNet(); showOl('wait', 'Creating room…');
+        try { await loadPeerJS(); } catch (e) { if (tok === netToken) showOl('main', 'Could not load the network library. Check your internet connection.'); return; }
+        const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let hp = null, code = '';
+        for (let k = 0; k < 6 && !hp; k++) {
+            code = ''; for (let i = 0; i < 5; i++) code += A[Math.floor(Math.random() * A.length)];
+            try { hp = await openPeer(NET.prefix + 'r' + code); }
+            catch (e) { if (tok !== netToken) return; if (!e || e.type !== 'unavailable-id') { showOl('main', 'Could not reach the matchmaking server. Try again.'); return; } }
+        }
+        if (tok !== netToken) { if (hp) { try { hp.destroy(); } catch (e) {} } return; }
+        if (!hp) { showOl('main', 'Could not create a room. Try again.'); return; }
+        peer = hp; isHost = true; connLost = false; hostAccept(hp);
+        showOl('wait', 'Waiting for your friend to join…');
+        $('roomCode').textContent = code; $('roomBox').classList.remove('hidden');
+    }
+    async function joinRoom(raw) {
+        const code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (code.length !== 5) { showOl('main', 'Enter the 5-character room code.'); return; }
+        const tok = ++netToken; cleanupNet(); showOl('wait', 'Joining room ' + code + '…');
+        try { await loadPeerJS(); } catch (e) { if (tok === netToken) showOl('main', 'Could not load the network library. Check your internet connection.'); return; }
+        let gp; try { gp = await openPeer(); } catch (e) { if (tok === netToken) showOl('main', 'Could not reach the matchmaking server.'); return; }
+        if (tok !== netToken) { try { gp.destroy(); } catch (e) {} return; }
+        const c = await tryConnect(gp, NET.prefix + 'r' + code, 9000);
+        if (tok !== netToken) { try { gp.destroy(); } catch (e) {} if (c) { try { c.close(); } catch (x) {} } return; }
+        if (!c) { try { gp.destroy(); } catch (e) {} showOl('main', 'Room not found, already full, or unreachable.'); return; }
+        peer = gp; isHost = false; connLost = false; setupConn(c); onConnected();
+    }
+
+    // ---- Messages ----
+    function onNetMsg(d) {
+        if (!d || typeof d !== 'object') return;
+        lastRecv = performance.now();
+        switch (d.t) {
+            case 'start': if (!isHost && typeof d.seed === 'number' && isFinite(d.seed)) { clearTimeout(startWait); beginVersus(d.seed); } break;
+            case 'b':
+                if (versus && typeof d.b === 'string' && d.b.length === 200 && /^[0-8]+$/.test(d.b)) {
+                    oppLast = d.b; drawOpp(d.b);
+                    elOppStats.textContent = 'SCORE ' + ((+d.s | 0) || 0) + '\nLVL ' + ((+d.l | 0) || 1);
+                }
+                break;
+            case 'g':
+                if (versus && (state === 'PLAY' || state === 'COUNTDOWN')) {
+                    const n = Math.max(1, Math.min(8, d.n | 0)), hole = Math.max(0, Math.min(COLS - 1, d.hole | 0));
+                    pending.push({ n, hole }); updateIncoming();
+                }
+                break;
+            case 'dead': if (versus) vsWin('Your opponent crashed'); break;
+            case 'rematch':
+                oppRematch = true;
+                if (state === 'VSOVER') { if (myRematch && isHost) hostStart(); else $('vsSub').textContent = 'Opponent wants a rematch!'; }
+                break;
+            case 'bye': onConnClose(); break;
+        }
+    }
+    function onConnClose() {
+        if (connLost) return; connLost = true;
+        if (versus) {
+            if (state === 'PLAY' || state === 'COUNTDOWN') vsWin('Opponent disconnected');
+            else if (state === 'VSOVER') { $('vsSub').textContent = 'Opponent left the match'; const b = $('rematchBtn'); b.disabled = true; b.style.opacity = .4; }
+        } else if (state === 'ONLINE') { cleanupNet(); showOl('main', 'Connection lost. Try again.'); }
+    }
+    setInterval(() => { // heartbeat + dead-connection watchdog
+        if (!conn || !conn.open || connLost) return;
+        netSend({ t: 'p' });
+        if (performance.now() - lastRecv > 10000 && (versus || state === 'ONLINE')) onConnClose();
+    }, 2000);
+
+    // ---- Match flow ----
+    function hostStart() {
+        if (!isHost || !conn || !conn.open) return;
+        const seed = (Math.random() * 2147483647) | 0;
+        netSend({ t: 'start', seed }); beginVersus(seed);
+    }
+    function beginVersus(seed) {
+        ['menu', 'readmeMenu', 'pauseMenu', 'gameOverMenu', 'onlineMenu', 'vsResult'].forEach(id => $(id).classList.add('hidden'));
+        versus = true; myRematch = oppRematch = false; oppLast = null; lastB = ''; lastSend = 0;
+        const rb = $('rematchBtn'); rb.disabled = false; rb.style.opacity = 1; rb.textContent = 'REMATCH';
+        lastFit = ''; fitLayout();
+        rng = mulberry32(seed >>> 0); stopHolds();
+        initGame(1); state = 'COUNTDOWN';
+        drawOpp('0'.repeat(200)); elOppStats.textContent = 'SCORE 0\nLVL 1';
+        const tok = ++matchTok, el = $('vsCount'), num = $('vsCountNum');
+        let n = 3; num.textContent = n; el.classList.remove('hidden');
+        const tick = () => {
+            if (tok !== matchTok || !versus || state !== 'COUNTDOWN') return;
+            n--;
+            if (n > 0) { num.textContent = n; setTimeout(tick, 800); }
+            else { el.classList.add('hidden'); state = 'PLAY'; dropCounter = 0; GameAudio.startMusic(); }
+        };
+        setTimeout(tick, 800);
+    }
+    function showVsResult(win, sub) {
+        const t = $('vsTitle'); t.textContent = win ? 'YOU WIN!' : 'YOU LOSE'; $('vsSub').textContent = sub || '';
+        $('vsCount').classList.add('hidden'); $('vsResult').classList.remove('hidden');
+        if (connLost) { const b = $('rematchBtn'); b.disabled = true; b.style.opacity = .4; }
+    }
+    function vsLose() {
+        if (state === 'VSOVER') return;
+        state = 'VSOVER'; matchTok++; netSend({ t: 'dead' }); GameAudio.stopMusic(); AudioSys.gameOver(); stopHolds(); shakeScreen();
+        showVsResult(false, 'Final score ' + score);
+    }
+    function vsWin(reason) {
+        if (state === 'VSOVER') return;
+        state = 'VSOVER'; matchTok++; GameAudio.stopMusic(); AudioSys.levelUp(); stopHolds();
+        showVsResult(true, (reason || '') + ' · Score ' + score);
+    }
+    function leaveOnline() {
+        netToken++; matchTok++; cleanupNet();
+        versus = false; pending = []; oppLast = null; rng = Math.random; state = 'MENU';
+        grid = Array(ROWS).fill().map(() => Array(COLS).fill(null)); activePiece = null; particles = []; floatingTexts = []; trails = [];
+        clearingAnimation.active = false; score = 0; level = 1; linesThisLevel = 0; updateHUD(); updateIncoming();
+        GameAudio.stopMusic(); stopHolds();
+        $('board-glow').classList.remove('danger');
+        ['onlineMenu', 'vsResult', 'vsCount'].forEach(id => $(id).classList.add('hidden'));
+        $('menu').classList.remove('hidden');
+        if (savedLevel > 1) $('resumeBtn').classList.remove('hidden');
+        lastFit = ''; fitLayout();
+    }
+
+    // ---- Garbage / board sync / opponent view ----
+    function pendingTotal() { let t = 0; for (const p of pending) t += p.n; return t; }
+    function updateIncoming() {
+        const t = pendingTotal(); elIncoming.textContent = '⚠ ' + t; elIncoming.classList.toggle('on', t > 0);
+    }
+    function applyGarbage() {
+        let rows = 0;
+        while (pending.length && rows < 8) {
+            const p = pending[0];
+            while (p.n > 0 && rows < 8) {
+                if (grid[0].some(v => v !== null)) { pending = []; updateIncoming(); vsLose(); return; }
+                grid.shift(); const row = Array(COLS).fill(GARBAGE_COLOR); row[p.hole] = null; grid.push(row);
+                p.n--; rows++;
+            }
+            if (p.n <= 0) pending.shift();
+        }
+        if (rows) { updateIncoming(); AudioSys.lock(); shakeScreen(5); }
+    }
+    function drawIncoming() {
+        const t = Math.min(pendingTotal(), ROWS); if (!t) return;
+        ctx.setTransform(SC, 0, 0, SC, 0, 0);
+        ctx.fillStyle = 'rgba(255,50,80,.95)'; ctx.fillRect(0, LH - t * CELL, 4, t * CELL);
+    }
+    function encodeBoard() {
+        const a = new Array(200);
+        for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { const v = grid[r][c]; a[r * COLS + c] = v ? (colorIdx.get(v) || 8) : 0; }
+        if (activePiece) {
+            const id = colorIdx.get(activePiece.color) || 1;
+            for (let r = 0; r < activePiece.mat.length; r++) for (let c = 0; c < activePiece.mat[r].length; c++) if (activePiece.mat[r][c]) {
+                const y = activePiece.y + r, x = activePiece.x + c;
+                if (y >= 0 && y < ROWS && x >= 0 && x < COLS) a[y * COLS + x] = id;
+            }
+        }
+        return a.join('');
+    }
+    function netTick(now) {
+        if (state !== 'PLAY' || now - lastSend < 90) return;
+        const b = encodeBoard();
+        if (b !== lastB || now - lastSend > 700) { lastB = b; lastSend = now; netSend({ t: 'b', b, s: score, l: level }); }
+    }
+    function drawOpp(str) {
+        const W = oppCanvas.width, H = oppCanvas.height, cs = W / COLS;
+        oppCtx.clearRect(0, 0, W, H); oppCtx.fillStyle = '#030624'; oppCtx.fillRect(0, 0, W, H);
+        const hl = Math.max(1, cs * 0.22);
+        for (let i = 0; i < 200; i++) {
+            const ch = str.charCodeAt(i) - 48; if (ch < 1 || ch > 8) continue;
+            const col = PAL[ch - 1], x = (i % COLS) * cs, y = ((i / COLS) | 0) * cs;
+            oppCtx.fillStyle = col.base; oppCtx.fillRect(x + .5, y + .5, cs - 1, cs - 1);
+            oppCtx.fillStyle = 'rgba(255,255,255,.35)'; oppCtx.fillRect(x + .5, y + .5, cs - 1, hl);
+        }
+    }
+
+    // ---- UI wiring ----
+    $('onlineBtn').addEventListener('click', () => {
+        $('menu').classList.add('hidden'); showOl('main', ''); $('onlineMenu').classList.remove('hidden'); state = 'ONLINE';
+        loadPeerJS().catch(() => {});
+    });
+    $('olBackBtn').addEventListener('click', leaveOnline);
+    $('olCancelBtn').addEventListener('click', () => { netToken++; cleanupNet(); showOl('main', ''); });
+    $('quickBtn').addEventListener('click', quickMatch);
+    $('createBtn').addEventListener('click', createRoom);
+    $('joinBtn').addEventListener('click', () => joinRoom($('joinInput').value));
+    $('joinInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(e.target.value); });
+    $('roomCode').addEventListener('click', () => { try { navigator.clipboard.writeText($('roomCode').textContent); $('roomCode').style.color = '#38ef7d'; setTimeout(() => $('roomCode').style.color = '', 600); } catch (e) {} });
+    $('rematchBtn').addEventListener('click', () => {
+        if (connLost || myRematch) return;
+        myRematch = true; netSend({ t: 'rematch' }); $('rematchBtn').textContent = 'WAITING…';
+        if (oppRematch && isHost) hostStart();
+    });
+    $('vsMenuBtn').addEventListener('click', leaveOnline);
+    window.addEventListener('beforeunload', () => { netSend({ t: 'bye' }); try { conn && conn.close(); } catch (e) {} });
 
     fitLayout(); updateHUD(); requestAnimationFrame(gameLoop);
     // fonts load after first layout; re-fit once everything is ready
