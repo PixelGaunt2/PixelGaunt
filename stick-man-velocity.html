@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Stickman Velocity</title>
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
         body {
@@ -345,6 +346,28 @@
             .action-zone { gap: 7px; }
             .action-btn.ult-btn { top: -58px; width: 50px; height: 50px; font-size: 12px; }
         }
+
+        /* ===== FIT-SCREEN / NO-SCROLL LAYER ===== */
+        html, body { position: fixed; inset: 0; overflow: hidden; overscroll-behavior: none; }
+        canvas { position: fixed; inset: 0; z-index: 0; object-fit: contain; margin: 0; }
+        .screen-overlay { overflow: hidden !important; justify-content: center !important; padding: 2vmin !important; touch-action: none !important; }
+        .screen-overlay, .screen-overlay * { touch-action: manipulation !important; }
+        .screen-overlay > :first-child { margin-top: 0 !important; } .screen-overlay > :last-child { margin-bottom: 0 !important; }
+        .neon-title { font-size: clamp(20px, 7vmin, 64px) !important; margin-bottom: 1.5vh !important; letter-spacing: 3px !important; }
+        .arcade-btn { font-size: clamp(12px, 3vmin, 22px) !important; padding: clamp(5px, 1.4vh, 14px) 18px !important; margin-top: clamp(4px, 1.3vh, 14px) !important; }
+        .readme-box { font-size: clamp(11px, 2.4vmin, 16px) !important; padding: 2vmin !important; margin-bottom: 1.5vh !important; line-height: 1.35 !important; }
+        #readmeModal { padding-top: 2vmin !important; }
+        #finalStats { font-size: clamp(12px, 3vmin, 18px) !important; }
+        #rewardText { font-size: clamp(14px, 4vmin, 26px) !important; }
+        .mpcol { display: flex; flex-direction: column; align-items: center; gap: 1.2vh; max-width: 92vw; }
+        .mprow { display: flex; gap: 8px; align-items: center; }
+        #mpMenu input { font: bold clamp(13px, 3vmin, 20px) 'Courier New', monospace; text-align: center; text-transform: uppercase; color: #fff; background: rgba(6,3,18,0.85); border: 2px solid var(--cyan); border-radius: 10px; padding: clamp(5px, 1.3vh, 12px) 10px; width: min(300px, 70vw); outline: none; }
+        #mpMenu .mprow input { width: min(150px, 38vw); }
+        #mpCode { font-size: clamp(26px, 9vmin, 64px); font-weight: bold; letter-spacing: 8px; color: var(--gold); text-shadow: 0 0 14px var(--gold); }
+        #mpList { font-size: clamp(13px, 3vmin, 20px); line-height: 1.4; text-align: left; min-width: 160px; }
+        #mpWait, #mpStatus { color: var(--gold); font-weight: bold; text-align: center; font-size: clamp(11px, 2.6vmin, 16px); min-height: 1.2em; margin-top: 1vh; }
+        #rot { display: none; position: fixed; inset: 0; z-index: 20000; background: #050510; color: #fff; align-items: center; justify-content: center; text-align: center; font: bold 20px 'Courier New', monospace; padding: 20px; }
+        @media (orientation: portrait) and (max-width: 900px) and (pointer: coarse) { #rot { display: flex; } }
     </style>
 </head>
 <body>
@@ -354,7 +377,7 @@
             <div style="font-weight:bold; font-size: 18px; text-shadow: 1px 1px #000;" id="playerStageText">PLAYER 1 (LVL 1)</div>
             <div class="health-bar-container"><div id="playerHealth"></div><div id="hpText">100 / 100</div></div>
             
-            <div class="hud-timers">
+            <div class="hud-timers" id="hudTimers">
                 <div class="timer-row"><span style="color:#00ffff;">MEGA FIRE</span><div class="bar-bg"><div id="fbBar" class="bar-fill" style="background:#00ffff;"></div></div></div>
                 <div class="timer-row"><span style="color:#ffcc00;">SPEED UP</span><div class="bar-bg"><div id="speedBar" class="bar-fill" style="background:#ffcc00;"></div></div></div>
                 <div class="timer-row" id="carTimerRow" style="display:none;"><span style="color:#00aaff;">CAR MODE</span><div class="bar-bg"><div id="carBar" class="bar-fill" style="background:#00aaff;"></div></div></div>
@@ -393,8 +416,29 @@
         <button class="arcade-btn btn-green continue-btn" id="btnContinue" onclick="continueGame()">RESUME GAME</button>
         <div id="noSaveMsg" style="display:none;">No saved game yet — press NEW GAME</div>
         <button class="arcade-btn" onclick="startNewGame()">NEW GAME</button>
+        <button class="arcade-btn btn-green" onclick="mpOpen()">&#127760; ONLINE CO-OP</button>
         <button class="arcade-btn btn-gold" id="btnReadme" onclick="showReadme()">README</button>
     </div>
+
+    <div id="mpMenu" class="screen-overlay" style="display:none;">
+        <div class="neon-title">ONLINE CO-OP</div>
+        <div id="mpForm" class="mpcol">
+            <input id="mpNameIn" maxlength="10" placeholder="YOUR NAME" autocomplete="off">
+            <button class="arcade-btn btn-green" onclick="mpHost()">CREATE ROOM</button>
+            <div class="mprow"><input id="mpCodeIn" maxlength="5" placeholder="ROOM CODE" autocomplete="off"><button class="arcade-btn btn-gold" style="width:auto;" onclick="mpJoinBtn()">JOIN</button></div>
+            <button class="arcade-btn btn-dark" onclick="location.href=location.href.split(/[?#]/)[0]">BACK</button>
+        </div>
+        <div id="mpLobby" class="mpcol" style="display:none;">
+            <div>ROOM CODE</div><div id="mpCode"></div>
+            <button class="arcade-btn btn-dark" onclick="mpCopy()">COPY INVITE LINK</button>
+            <div id="mpList"></div>
+            <button class="arcade-btn btn-green" id="mpStart" onclick="mpStartHost()">START GAME</button>
+            <div id="mpWait">Waiting for the host to start...</div>
+            <button class="arcade-btn btn-dark" onclick="location.href=location.href.split(/[?#]/)[0]">LEAVE</button>
+        </div>
+        <div id="mpStatus"></div>
+    </div>
+    <div id="rot">&#8635; Rotate your phone to landscape to play</div>
 
     <div id="pauseMenu" class="screen-overlay" style="display: none;">
         <div class="neon-title" style="text-shadow: 0 0 10px #ffaa00, 0 0 40px #ffaa00; color: #ffaa00;">GAME PAUSED</div>
@@ -503,10 +547,7 @@
         var bgDirty = true, bgCache = null, bgTick = 0, reflecting = false;
         // DISPLAY FIX
         function resizeCanvas() {
-            const GAME_HEIGHT = 720;
-            const scale = GAME_HEIGHT / window.innerHeight;
-            canvas.width = window.innerWidth * scale;
-            canvas.height = GAME_HEIGHT; bgDirty = true;
+            canvas.width = 1280; canvas.height = 720; bgDirty = true;   // fixed 16:9 arena, CSS letterboxes it to any screen
         }
         let resizeTimer = 0;
         window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(resizeCanvas, 120); });
@@ -1267,8 +1308,8 @@
                 if (this.vehicle) { this.drawVehicle(); c.restore(); return; }
                 if (this.type === 'ninja') { this.drawNinja(); c.restore(); return; }
 
-                if (this.team === 'ally') c.globalAlpha *= 0.8;
-                if (this.team === 'player' && this.invulnTimer > 0 && Math.floor(this.invulnTimer / 4) % 2 === 0) c.globalAlpha *= 0.45;
+                if (this.team === 'ally' && !this.remote) c.globalAlpha *= 0.8;
+                if ((this.team === 'player' || this.remote) && this.invulnTimer > 0 && Math.floor(this.invulnTimer / 4) % 2 === 0) c.globalAlpha *= 0.45;
                 drawGlow(this.fc || this.color, this.position.x + this.width / 2, this.position.y + this.height * 0.55,
                          this.type === 'goliath' ? 125 : (this.type === 'spider' ? 85 : 95), 0.8);
                 c.lineCap = 'round'; c.lineJoin = 'round';
@@ -1815,7 +1856,7 @@
             
             jump() { 
                 if (this.isCrouching || this.isDiving || this.isKnockedDown) return; 
-                if (hasCarMode && this.jumps >= 1) return; 
+                if (hasCarMode && !this.remote && this.jumps >= 1) return; 
                 if (this.jumps < this.maxJumps) { this.velocity.y = -15; this.jumps++; sfxJump(); } 
             }
             dash() { if (this.isKnockedDown || this.isDashing || this.dashCooldown > 0) return; this.isDashing = true; this.dashTimer = 15; this.dashOrigin = { x: this.position.x + this.width / 2, y: this.position.y + this.height }; this.dashCooldown = (this.team==='player'&&spdOn())?10:this.maxDashCooldown; sfxJump(); }
@@ -1837,19 +1878,19 @@
             }
 
             doSweepOrDive() {
-                if(hasCarMode) return;
+                if(hasCarMode && !this.remote) return;
                 if(this.velocity.y === 0) this.sweepAttack();
                 else this.diveAttack();
             }
 
             attack(type) {
-                if (hasCarMode || this.isDashing || this.isKnockedDown || this.isDiving) return;
+                if ((hasCarMode && !this.remote) || this.isDashing || this.isKnockedDown || this.isDiving) return;
 
                 // An attack is already playing: let it finish. The player's next press is buffered
                 // and fires the moment the swing is far enough along (no more cancelled kicks).
                 const v = this.vis;
                 if ((v.type === 'punch' || v.type === 'kick') && v.t < v.dur * 0.7) {
-                    if (this.team === 'player') this.attackBuffer = type;
+                    if (this.team === 'player' || this.remote) this.attackBuffer = type;
                     return;
                 }
                 this.startAttack(type);
@@ -1893,7 +1934,7 @@
 
                 if(this.fireballCooldown > 0) return; 
                 // player: fast. Enemy gunners (red): much slower, a bit faster each stage
-                this.fireballCooldown = (this.team === 'player')
+                this.fireballCooldown = (this.team === 'player' || this.remote)
                     ? (fbOn() ? 25 : 45)
                     : Math.max(110, 200 - currentStage * 10);
                 
@@ -1926,7 +1967,7 @@
 
             takeHit(damage, sourceX) {
                 if (this.isDashing) return;
-                if (this.team === 'player' && this.invulnTimer > 0) return;
+                if ((this.team === 'player' || this.remote) && this.invulnTimer > 0) return;
                 if (this.team === 'player' && shieldOn()) {
                     shieldHits--; sfxHit();
                     createParticles(this.position.x + this.width/2, this.position.y + this.height/2, '#35d0ff');
@@ -1934,7 +1975,7 @@
                 }
                 this.health -= damage;
                 this.flashTimer = 8;
-                if (this.team === 'player') this.invulnTimer = 90;     // ~1.5s grace period after being hit
+                if (this.team === 'player' || this.remote) this.invulnTimer = 90;     // ~1.5s grace period after being hit
                 createParticles(this.position.x + this.width/2, this.position.y + this.height/2, this.color);
                 sfxHit();
 
@@ -2130,7 +2171,7 @@
         // keep going, then U-turn once they are well past. Jump, dash, or hit them to stop the run.
         function vehicleAI(en) {
             let targetP = player, best = Math.abs(player.position.x - en.position.x);
-            for (const a of allies) { const d = Math.abs(a.position.x - en.position.x); if (d < best) { best = d; targetP = a; } }
+            for (const a of targets()) { const d = Math.abs(a.position.x - en.position.x); if (d < best) { best = d; targetP = a; } }
             const bike = en.vehicle === 'bike';
             const spd = (bike ? 9 : 5.5) + currentStage * (bike ? 0.35 : 0.25);
             const dx = (targetP.position.x + targetP.width / 2) - (en.position.x + en.width / 2);
@@ -2156,7 +2197,7 @@
         // Sword ninja: stalks the target, crouches (telegraph), then leaps and slashes in mid-air. The jump-slash is its ONLY attack.
         function ninjaAI(en) {
             let targetP = player, best = Math.abs(player.position.x - en.position.x);
-            for (const a of allies) { const d = Math.abs(a.position.x - en.position.x); if (d < best) { best = d; targetP = a; } }
+            for (const a of targets()) { const d = Math.abs(a.position.x - en.position.x); if (d < best) { best = d; targetP = a; } }
             const dx = (targetP.position.x + targetP.width / 2) - (en.position.x + en.width / 2), adx = Math.abs(dx), dt = dx > 0 ? 1 : -1;
             const grounded = en.velocity.y === 0 && en.position.y + en.height >= groundY() - 1;
             en.swinging = false;
@@ -2212,8 +2253,8 @@
         }
 
         function spawnEnemy() {
-            if (gameState !== 'PLAYING' || levelCompleted) return;
-            if (enemies.length >= MAX_ENEMIES) return;
+            if (gameState !== 'PLAYING' || levelCompleted || (MP.on && !MP.host)) return;
+            if (enemies.length >= MAX_ENEMIES + remotes.length * 2) return;
             const rand = Math.random(); let type = 'brawler'; let color = '#ffaa00';
             
             let gunnerChance = 0.2 + (currentStage * 0.02);
@@ -2236,14 +2277,14 @@
                 else if (rand < spiderChance) { type = 'spider'; color = '#00ffaa'; }
             }
 
-            let spawnX = player.position.x + (Math.random() > 0.5 ? canvas.width : -canvas.width);
+            let spawnX = Math.random() > 0.5 ? canvas.width + 60 : -110;
             const en = new Sprite({ position: { x: spawnX, y: -100 }, velocity: { x: 0, y: 0 }, color, team: 'enemy', type });
-            if (vehicleKind) { en.makeVehicle(vehicleKind); en.rideDir = spawnX > player.position.x ? -1 : 1; if (type === 'gunner') en.fireballCooldown = 90; }
+            if (vehicleKind) { en.makeVehicle(vehicleKind); en.rideDir = spawnX > canvas.width / 2 ? -1 : 1; if (type === 'gunner') en.fireballCooldown = 90; }
             enemies.push(en);
         }
 
         setInterval(spawnEnemy, Math.max(800, 2000 - (currentStage * 150))); 
-        setInterval(() => { if(gameState==='PLAYING' && Math.random()<0.4 && !levelCompleted && flyingBats.length < MAX_BATS) flyingBats.push(new Bat(player.position.x + canvas.width, 50)); }, Math.max(1500, 3000 - (currentStage * 200)));
+        setInterval(() => { if(gameState==='PLAYING' && !(MP.on && !MP.host) && Math.random()<0.4 && !levelCompleted && flyingBats.length < MAX_BATS) flyingBats.push(new Bat(canvas.width + 30, 50)); }, Math.max(1500, 3000 - (currentStage * 200)));
 
         function checkUltimateTrigger() {
             if(!ultReady && killsSmall >= reqSmall && killsSpider >= reqSpider && killsBig >= reqBig) {
@@ -2255,6 +2296,7 @@
         }
 
         function triggerUltimate() {
+            if (MP.on && !MP.host) { mpEv('ult'); return; }
             if(ultReady) {
                 ultReady = false;
                 killsSmall = 0; killsSpider = 0; killsBig = 0; 
@@ -2493,6 +2535,7 @@
         }
 
         function saveGame() {
+            if (MP.on) return;   // online sessions never overwrite the solo save
             const saveObj = {
                 stage: currentStage, score: score, coins: coins, blackOrbs: blackOrbs,
                 maxHealth: player.maxHealth, dashCD: player.maxDashCooldown, diveCD: player.maxDiveCooldown
@@ -2512,6 +2555,7 @@
             
             document.getElementById('rewardText').innerHTML = `STATS UPGRADED!<br><span style="color:#00ffff">${costumes}</span>`;
             document.getElementById('levelComplete').style.display = 'flex';
+            mpBroadcast({ t: 'lvl', h: document.getElementById('rewardText').innerHTML });
             showHud(false);
 
             currentStage++;
@@ -2533,6 +2577,7 @@
             player.dead = false;
             player.isKnockedDown = false;
             player.position.y = 0;
+            player.down = false; mpNext();
             
             // Auto Next Level Bug Fix: Clean up power-ups perfectly
             carQueue.length = 0;
@@ -2591,14 +2636,13 @@
             
             c.save(); applyShake(); drawBackground();
 
-            let targetCameraX = player.position.x - canvas.width / 2 + player.width / 2;
-            cameraX += (targetCameraX - cameraX) * 0.1;
+            cameraX = 0;   // no scrolling: the whole arena is always on screen
 
             let currentSpeed = 7;
             if (spdOn()) currentSpeed = 12;
             if (hasCarMode) currentSpeed = 18;
 
-            if (keys.a.pressed && player.position.x > cameraX - canvas.width/2 + 50 && !player.isKnockedDown) { player.velocity.x = -currentSpeed; }
+            if (keys.a.pressed && player.position.x > 0 && !player.isKnockedDown) { player.velocity.x = -currentSpeed; }
             else if (keys.d.pressed && !player.isKnockedDown) { player.velocity.x = currentSpeed; }
             else if (!player.isDashing && !player.isDiving && !player.isKnockedDown) { player.velocity.x = 0; }
 
@@ -2739,7 +2783,7 @@
 
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 const proj = projectiles[i]; proj.update();
-                if (Math.abs(proj.x - player.position.x) > canvas.width || !proj.active) { projectiles.splice(i, 1); continue; }
+                if (proj.x < -120 || proj.x > canvas.width + 120 || !proj.active) { projectiles.splice(i, 1); continue; }
                 
                 let hitSomething = false;
                 if (proj.team === 'enemy' && !player.isDashing && !player.isKnockedDown && !hasCarMode) {
@@ -2832,7 +2876,7 @@
 
             for (let i = flyingBats.length - 1; i >= 0; i--) {
                 const bat = flyingBats[i]; if (bat.dead || bat.position.x < cameraX - 200) { flyingBats.splice(i, 1); continue; }
-                bat.update(player);
+                bat.update(mpNear(bat.cx));
                 if (player.isAttacking && bat.hitCooldown <= 0) {
                     const bb = { x: bat.position.x, y: bat.position.y, w: bat.width, h: bat.height };
                     const ab = player.attackBox;
@@ -2873,7 +2917,7 @@
                     ninjaAI(enemy);
                 } else if (!enemy.isKnockedDown) {
                     let targetP = player; let cDist = Math.abs(player.position.x - enemy.position.x);
-                    for(let ally of allies) { let aDist = Math.abs(ally.position.x - enemy.position.x); if(aDist < cDist) { cDist = aDist; targetP = ally; } }
+                    for(let ally of targets()) { let aDist = Math.abs(ally.position.x - enemy.position.x); if(aDist < cDist) { cDist = aDist; targetP = ally; } }
                     
                     if (cDist > (hasCarMode?150:80)) {
                         enemy.facingRight = targetP.position.x > enemy.position.x;
@@ -2915,8 +2959,11 @@
                 }
             }
 
+            mpHostStep();
             player.update();
+            mpTags();
             drawWaterOverlay();
+            mpSnap();
 
             const hpPct = Math.max(0, player.health / player.maxHealth * 100);
             setWidth('playerHealth', hpPct); el('playerHealth').classList.toggle('low', hpPct < 30);
@@ -2928,7 +2975,7 @@
                 setText('ultTracker', `ULT TARGETS: Small ${Math.min(killsSmall, reqSmall)}/${reqSmall} | Spiders ${Math.min(killsSpider, reqSpider)}/${reqSpider} | Big ${Math.min(killsBig, reqBig)}/${reqBig}`);
             }
 
-            if (player.health <= 0) { 
+            if (player.health <= 0 && mpCanDie()) { 
                 gameState = 'GAME_OVER'; GameAudio.stopMusic(); sfxGameOver();
                 document.getElementById('finalStats').innerText = `Reached Stage: ${currentStage} | Score: ${score} | Coins: ${coins}`; 
                 document.getElementById('gameOver').style.display = 'flex'; 
@@ -2982,6 +3029,7 @@
         }
 
         function togglePause() {
+            if (MP.on) return;   // no pausing in online co-op
             if (gameState === 'PLAYING') {
                 gameState = 'PAUSED'; GameAudio.pauseMusic();
                 resetInputs(); saveGame();
@@ -2998,6 +3046,262 @@
         document.addEventListener('visibilitychange', () => { if (document.hidden && gameState === 'PLAYING') togglePause(); });
         window.addEventListener('pagehide', () => { if (gameState === 'PLAYING' || gameState === 'PAUSED') saveGame(); });
 
+        // ======================= ONLINE CO-OP (PeerJS / WebRTC, free, no server) =======================
+        // Host runs the whole game; guests send inputs and render the host's snapshots.
+        const MP = { on: false, host: false, peer: null, cn: null, conns: [], name: 'PLAYER', code: '', ps: [], myId: 0, run: false, tick: 0, nid: 0, E: new Map(), B: new Map(), P: [], J: [], K: [], W: [], lt: 0 };
+        const remotes = [];
+        const PCOL = ['#00ff88', '#ff9f1a', '#ff4d94', '#b388ff'];
+        const ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'], username: 'openrelayproject', credential: 'openrelayproject' }] };
+        const $ = id => document.getElementById(id);
+        const r1 = v => Math.round(v * 10) / 10;
+        const mpAll = () => [player].concat(remotes);
+        const targets = () => remotes.length ? allies.concat(remotes.filter(r => !r.down)) : allies;
+        const mpBroadcast = d => { if (MP.on && MP.host) MP.conns.forEach(cn => cn.open && cn.send(d)); };
+        function mpNear(x) { let b = player, bd = 1e9; for (const s of mpAll()) { if (s.down) continue; const d = Math.abs(s.position.x - x); if (d < bd) { bd = d; b = s; } } return b; }
+        
+        // ---------- lobby UI ----------
+        function mpSay(t) { $('mpStatus').textContent = t || ''; }
+        function mpShow(v) { $('mpForm').style.display = v === 'form' ? 'flex' : 'none'; $('mpLobby').style.display = v === 'lobby' ? 'flex' : 'none'; }
+        function mpName() { const n = ($('mpNameIn').value || 'PLAYER').trim().slice(0, 10).toUpperCase().replace(/[<>&"']/g, ''); try { localStorage.setItem('smvName', n); } catch (e) {} return n || 'PLAYER'; }
+        function mpOpen() {
+            $('mainMenu').style.display = 'none'; $('mpMenu').style.display = 'flex'; mpShow('form');
+            try { $('mpNameIn').value = localStorage.getItem('smvName') || ''; } catch (e) {}
+            const m = /[?&]room=([A-Za-z0-9]+)/.exec(location.search); if (m) $('mpCodeIn').value = m[1].toUpperCase();
+        }
+        function mpNames() { return [MP.name].concat(MP.conns.map(c => c.nm)); }
+        function mpLobbyUI() {
+            const ps = MP.host ? mpNames() : MP.ps;
+            $('mpList').innerHTML = ps.map((n, i) => '<div>' + (i === 0 ? '&#9733; ' : '&#9679; ') + n + '</div>').join('');
+            $('mpStart').style.display = MP.host ? 'block' : 'none'; $('mpWait').style.display = MP.host ? 'none' : 'block';
+        }
+        function mpLobbyBroadcast() { const ps = mpNames(); MP.conns.forEach(c => c.open && c.send({ t: 'lobby', ps })); mpLobbyUI(); }
+        function mpCopy() {
+            const u = location.href.split(/[?#]/)[0] + '?room=' + MP.code;
+            if (navigator.clipboard) navigator.clipboard.writeText(u).then(() => mpSay('Invite link copied!'), () => prompt('Copy invite link:', u)); else prompt('Copy invite link:', u);
+        }
+        function mpJoinBtn() { mpJoin($('mpCodeIn').value); }
+        
+        // ---------- host ----------
+        function mpHost() {
+            if (typeof Peer === 'undefined') { mpSay('Online service could not load. Check your internet and reload.'); return; }
+            MP.name = mpName(); MP.on = true; MP.host = true; mpSay('Creating room...');
+            const make = () => {
+                MP.code = Array.from({ length: 5 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.random() * 32 | 0]).join('');
+                const p = new Peer('smvel-' + MP.code, { config: ICE });
+                p.on('open', () => { MP.peer = p; mpSay(''); mpShow('lobby'); $('mpCode').textContent = MP.code; mpLobbyUI(); });
+                p.on('error', e => { if (e.type === 'unavailable-id') { p.destroy(); make(); } else mpSay('Network error: ' + e.type); });
+                p.on('connection', cn => {
+                    cn.on('open', () => { if (MP.run || MP.conns.length >= 3) { cn.send({ t: 'full' }); setTimeout(() => cn.close(), 400); } });
+                    cn.on('data', m => mpHostMsg(cn, m));
+                    cn.on('close', () => mpDrop(cn)); cn.on('error', () => mpDrop(cn));
+                });
+            };
+            make();
+        }
+        function mpHostMsg(cn, m) {
+            if (m.t === 'hi') { if (!MP.run && MP.conns.length < 3 && !MP.conns.includes(cn)) { cn.nm = String(m.n || 'PLAYER').slice(0, 10).replace(/[<>&"']/g, ''); cn.inp = {}; MP.conns.push(cn); mpLobbyBroadcast(); } }
+            else if (m.t === 'in') cn.inp = m;
+            else if (m.t === 'ev') {
+                if (m.k === 'ult') { if (gameState === 'PLAYING') triggerUltimate(); return; }
+                const r = cn.sp; if (!r || r.down || gameState !== 'PLAYING') return;
+                if (!r.isDashing && !r.isDiving) r.facingRight = !!m.fr;
+                if (m.k === 'jump') r.jump(); else if (m.k === 'punch') r.attack('punch'); else if (m.k === 'kick') r.attack('kick');
+                else if (m.k === 'dash') r.dash(); else if (m.k === 'dive') r.doSweepOrDive();
+            }
+        }
+        function mpDrop(cn) {
+            const i = MP.conns.indexOf(cn); if (i < 0) return; MP.conns.splice(i, 1);
+            if (cn.sp) { const j = remotes.indexOf(cn.sp); if (j >= 0) remotes.splice(j, 1); }
+            if (!MP.run) mpLobbyBroadcast();
+        }
+        function mpStartHost() {
+            if (MP.run) return; MP.run = true;
+            MP.conns.forEach((cn, i) => {
+                const r = new Sprite({ position: { x: 560 + i * 70, y: 0 }, velocity: { x: 0, y: 0 }, color: PCOL[i + 1], team: 'ally', type: 'brawler' });
+                r.remote = true; r.nm = cn.nm; r.spdT = 0; r.maxHealth = r.health = 100; r.cn = cn; r._id = ++MP.nid; cn.sp = r; remotes.push(r);
+                cn.send({ t: 'start', me: r._id });
+            });
+            player._id = ++MP.nid; player.color = PCOL[0];
+            currentStage = 1; score = 0; coins = 0; blackOrbs = 0; player.maxHealth = player.health = 100;
+            player.maxDashCooldown = 60; player.maxDiveCooldown = 90; player.position.x = 480;
+            $('playerStageText').innerText = 'PLAYER 1 (LVL 1)'; $('orbBoard').innerText = 'BLACK ORBS: 0/10';
+            $('pauseBtn').style.display = 'none'; $('mpMenu').style.display = 'none';
+            beginPlaying();
+        }
+        function mpDown(s) { if (s.down) return; s.down = true; s.rsp = 300; s.position.x = -5000; s.velocity.x = 0; s.isKnockedDown = false; s.isAttacking = false; s.isDashing = false; s.isDiving = false; }
+        function mpUp(s) { s.down = false; s.dead = false; s.health = Math.ceil(s.maxHealth / 2); s.position.x = 300 + Math.random() * 680; s.position.y = 0; s.velocity.y = 0; s.invulnTimer = 150; s.flashTimer = 0; }
+        function mpCanDie() {      // called when the host's HP hits 0; returns true only if the whole team is down
+            if (!MP.on) return true;
+            if (!player.down) mpDown(player);
+            if (!mpAll().every(s => s.down)) return false;
+            mpBroadcast({ t: 'over', st: currentStage, sc: score, co: coins }); return true;
+        }
+        function mpNext() {
+            if (!MP.on || !MP.host) return;
+            for (const s of mpAll()) {
+                s.down = false; s.dead = false; s.isKnockedDown = false;
+                if (s !== player) { s.maxHealth = player.maxHealth; s.maxDashCooldown = player.maxDashCooldown; s.maxDiveCooldown = player.maxDiveCooldown; s.health = s.maxHealth; s.position.x = 300 + Math.random() * 680; s.position.y = 0; s.spdT = 0; }
+                else if (s.position.x < 0) s.position.x = 480;
+            }
+            mpBroadcast({ t: 'next' });
+        }
+        
+        // ---------- host simulation of remote players (runs every game frame) ----------
+        function mpHostStep() {
+            const W = canvas.width, cl = s => { s.position.x = Math.max(0, Math.min(W - s.width, s.position.x)); };
+            if (!player.down) cl(player); else if (--player.rsp <= 0) mpUp(player);
+            for (const a of allies) cl(a);
+            if (!MP.on) return;
+            for (const r of remotes) {
+                if (r.down) { if (--r.rsp <= 0) mpUp(r); continue; }
+                if (r.health <= 0) { mpDown(r); continue; }
+                const i = (r.cn && r.cn.inp) || {}, sp = r.spdT > 0 ? (r.spdT--, 11) : 7;
+                if (!r.isKnockedDown) { if (i.l) r.velocity.x = -sp; else if (i.r) r.velocity.x = sp; else if (!r.isDashing && !r.isDiving) r.velocity.x = 0; }
+                if ((i.l || i.r) && !r.isDashing && !r.isDiving && !r.isKnockedDown) r.facingRight = (i.l && !i.r) ? false : ((i.r && !i.l) ? true : !!i.fr);
+                if (i.d) r.crouch(); else r.stand();
+                if (i.f) r.shootFireball();
+                r.update(); cl(r);
+                const cx = r.position.x + r.width / 2, cy = r.position.y + r.height / 2;
+                for (const e of enemies) {
+                    if (r.isAttacking && !e.dead && !e.isKnockedDown && !(e.flashTimer > 0) && rectangularCollision({ r1: r, r2: e })) {
+                        let d = r.attackType === 'kick' ? 25 : 15; if (r.attackType === 'sweep' || r.attackType === 'dive') d = 35;
+                        e.takeHit(d + currentStage * 5, r.position.x); triggerShake();
+                    }
+                }
+                for (const b of flyingBats) {
+                    if (b.dead) continue; const dx = b.cx - cx, dy = b.cy - cy;
+                    if (r.isAttacking && b.hitCooldown <= 0 && Math.abs(dx) < r.width / 2 + 70 && Math.abs(dy) < r.height / 2 + 45) { b.hitCooldown = 12; b.takeHit((r.attackType === 'kick' ? 25 : 15) + currentStage * 5, r.position.x); }
+                    else if (!r.isDashing && !r.isKnockedDown && Math.hypot(dx, dy) < 55) { r.takeHit(10 + currentStage * 2, b.cx); b.dead = true; createParticles(b.cx, b.cy, '#8800ff'); }
+                }
+                for (const p of projectiles) {
+                    if (p.team === 'enemy' && p.active && !r.isDashing && !r.isKnockedDown && Math.hypot(p.x - cx, p.y - cy) < p.radius + r.width / 2) { r.takeHit(15 + currentStage * 2, p.x); p.active = false; triggerShake(); }
+                }
+                for (let k = coinsArray.length - 1; k >= 0; k--) { const q = coinsArray[k]; if (Math.hypot(q.x - cx, q.y - cy) < q.radius + r.height / 2 + 20) { sfxCoin(); score += 5; coins++; coinsArray.splice(k, 1); } }
+                for (let k = powerUps.length - 1; k >= 0; k--) {
+                    const q = powerUps[k]; if (Math.hypot(q.x - cx, q.y - cy) < q.radius + r.height / 2) {
+                        if (q.type === 'heal') r.health = Math.min(r.maxHealth, r.health + 50); else if (q.type === 'speed') r.spdT = 600; else score += 10;
+                        sfxCoin(); powerUps.splice(k, 1);
+                    }
+                }
+            }
+        }
+        function mpTags() {
+            if (!MP.on) return;
+            const list = MP.host ? mpAll().map(s => [s, s === player ? MP.name : s.nm, s === player]) : MP.P.map(s => [s, s.nm, s._id === MP.myId]);
+            c.save(); c.textAlign = 'center'; c.font = 'bold 13px Courier New';
+            for (const [s, n, me] of list) {
+                if (!s || s.down || s.position.x < -500) continue;
+                const x = s.position.x + s.width / 2; let y = s.position.y - 14;
+                if (s.team === 'ally') { const hp = Math.max(0, s.health / s.maxHealth); c.fillStyle = 'rgba(0,0,0,0.55)'; c.fillRect(x - 28, y, 56, 6); c.fillStyle = hp > 0.5 ? '#39ff14' : (hp > 0.25 ? '#ffcc00' : '#ff2a55'); c.fillRect(x - 28, y, 56 * hp, 6); }
+                y -= 22; c.lineWidth = 3; c.strokeStyle = '#000'; c.fillStyle = me ? '#ffee00' : '#fff';
+                c.strokeText((me ? '\u25BC ' : '') + n, x, y); c.fillText((me ? '\u25BC ' : '') + n, x, y);
+            }
+            c.restore();
+        }
+        // ---------- host -> guests snapshots (20 per second) ----------
+        function ser(s, ex) {
+            const o = { i: s._id || (s._id = ++MP.nid), x: r1(s.position.x), y: r1(s.position.y), vx: r1(s.velocity.x), vy: r1(s.velocity.y), f: s.facingRight ? 1 : 0, a: s.isAttacking || undefined, at: s.attackType || undefined,
+                h: Math.round(s.health), m: s.maxHealth, ht: s.height, w: s.width, cr: s.isCrouching || undefined, d: s.isDashing || undefined, dv: s.isDiving || undefined, ko: s.isKnockedDown || undefined,
+                vk: s.vehicle || undefined, vt: (s.vis && s.vis.type) || undefined, vs: s.vis ? s.vis.t : 0, vd: s.vis ? s.vis.dur : 1, vc: s.vis ? s.vis.combo : 0, ty: s.type, c: s.color, tm: s.team,
+                ns: s.nState, sw: s.swinging || undefined, fl: s.flashTimer || undefined, rd: s.rideDir || undefined, sf: s.shotFlash || undefined };
+            if (ex) Object.assign(o, ex); return o;
+        }
+        function mpSnap() {
+            if (!MP.run || ++MP.tick % 3) return;
+            const L = a => a.map(s => ser(s));
+            const d = { t: 's', f: framesElapsed, st: currentStage, sc: score, co: coins, lt: levelType, u: [killsSmall, killsSpider, killsBig, ultReady ? 1 : 0],
+                p: [ser(player, { n: MP.name })].concat(remotes.map(r => ser(r, { n: r.nm }))), e: L(enemies.filter(e => !e.dead)), a: L(allies),
+                b: flyingBats.filter(b => !b.dead).map(b => ({ i: b.id || (b.id = ++MP.nid), x: r1(b.position.x), y: r1(b.position.y), vx: b.velocity.x, fl: b.flash || undefined })),
+                j: projectiles.filter(p => p.active).map(p => ({ x: r1(p.x), y: r1(p.y), v: p.velocity, c: p.color, tm: p.team, r: p.radius })),
+                k: coinsArray.map(q => [r1(q.x), r1(q.y)]), w: powerUps.map(q => [r1(q.x), r1(q.y), q.type]) };
+            for (const cn of MP.conns) if (cn.open) cn.send(d);
+        }
+        
+        // ---------- guest ----------
+        function mpJoin(code) {
+            if (typeof Peer === 'undefined') { mpSay('Online service could not load. Check your internet and reload.'); return; }
+            code = (code || '').trim().toUpperCase(); if (code.length < 4) { mpSay('Enter the room code first.'); return; }
+            MP.name = mpName(); MP.on = true; MP.host = false; MP.code = code; mpSay('Connecting...');
+            const p = new Peer({ config: ICE }); MP.peer = p;
+            p.on('error', e => { mpSay(e.type === 'peer-unavailable' ? 'Room not found. Check the code.' : 'Network error: ' + e.type); });
+            p.on('open', () => {
+                const cn = p.connect('smvel-' + code, { serialization: 'json', reliable: true }); MP.cn = cn;
+                const to = setTimeout(() => { if (!cn.open) mpSay('Could not connect (room closed or network blocked).'); }, 15000);
+                cn.on('open', () => { clearTimeout(to); cn.send({ t: 'hi', n: MP.name }); mpSay(''); mpShow('lobby'); $('mpCode').textContent = code; mpLobbyUI(); });
+                cn.on('data', mpGuestMsg);
+                cn.on('close', () => { if (MP.run) { MP.run = false; gameState = 'GAME_OVER'; $('finalStats').innerText = 'Disconnected from host.'; $('gameOver').style.display = 'flex'; showHud(false); } else mpSay('Disconnected from host.'); });
+            });
+        }
+        function mpGuestMsg(m) {
+            if (m.t === 'lobby') { MP.ps = m.ps; mpLobbyUI(); }
+            else if (m.t === 'full') { mpShow('form'); mpSay('Room is full or already started.'); }
+            else if (m.t === 'start') mpGuestStart(m.me);
+            else if (m.t === 's') mpApply(m);
+            else if (m.t === 'lvl') { $('rewardText').innerHTML = m.h; $('levelComplete').style.display = 'flex'; showHud(false); sfxLevelComplete(); }
+            else if (m.t === 'next') { $('levelComplete').style.display = 'none'; showHud(true); $('hudTimers').style.display = 'none'; }
+            else if (m.t === 'over') { MP.run = false; gameState = 'GAME_OVER'; GameAudio.stopMusic(); sfxGameOver(); $('finalStats').innerText = `Reached Stage: ${m.st} | Score: ${m.sc} | Coins: ${m.co}`; $('gameOver').style.display = 'flex'; showHud(false); }
+        }
+        function mpEv(k) { if (MP.cn && MP.cn.open) MP.cn.send({ t: 'ev', k, fr: player.facingRight ? 1 : 0 }); }
+        function mpGuestStart(me) {
+            MP.run = true; MP.myId = me; $('mpMenu').style.display = 'none'; $('mainMenu').style.display = 'none';
+            gameState = 'PLAYING'; showHud(true); $('pauseBtn').style.display = 'none'; $('hudTimers').style.display = 'none';
+            player.jump = () => mpEv('jump'); player.attack = t => mpEv(t); player.dash = () => mpEv('dash'); player.doSweepOrDive = () => mpEv('dive');
+            player.stand = player.crouch = player.shootFireball = () => {};
+            setInterval(() => { if (MP.run && MP.cn && MP.cn.open) MP.cn.send({ t: 'in', l: keys.a.pressed, r: keys.d.pressed, d: keys.s.pressed, f: keys.fire.pressed, fr: player.facingRight ? 1 : 0 }); }, 50);
+            startMusic(); requestAnimationFrame(guestLoop);
+        }
+        function mpAppEnt(s, q) {
+            s.position.x = q.x; s.position.y = q.y; s.velocity.x = q.vx; s.velocity.y = q.vy; s.facingRight = !!q.f; s.isAttacking = !!q.a; s.attackType = q.at || null;
+            s.health = q.h; s.maxHealth = q.m; s.height = q.ht; s.width = q.w; s.isCrouching = !!q.cr; s.isDashing = !!q.d; s.isDiving = !!q.dv; s.isKnockedDown = !!q.ko;
+            if (q.d) s.dashTimer = 3; if (q.dv) s.diveTimer = 3; if (q.ko) s.knockdownTimer = 8;
+            s.vis = { type: q.vt || null, t: q.vs || 0, dur: q.vd || 1, combo: q.vc || 0 }; s.nState = q.ns; s.swinging = !!q.sw; s.flashTimer = q.fl || 0; s.rideDir = q.rd || 0; s.shotFlash = q.sf || 0;
+            if (q.n) s.nm = q.n;
+        }
+        function mpApply(d) {
+            const live = new Set(), ids = new Set(d.p.map(q => q.i));
+            for (const q of d.p.concat(d.e, d.a)) {
+                live.add(q.i); let s = MP.E.get(q.i);
+                if (!s) { s = new Sprite({ position: { x: q.x, y: q.y }, velocity: { x: 0, y: 0 }, color: q.c, team: ids.has(q.i) ? 'ally' : q.tm, type: q.ty }); s._id = q.i; if (q.vk) s.makeVehicle(q.vk); if (ids.has(q.i)) s.remote = true; MP.E.set(q.i, s); }
+                mpAppEnt(s, q);
+            }
+            for (const k of MP.E.keys()) if (!live.has(k)) MP.E.delete(k);
+            MP.P = d.p.map(q => MP.E.get(q.i));
+            const bl = new Set();
+            for (const q of d.b) { bl.add(q.i); let b = MP.B.get(q.i); if (!b) { b = new Bat(q.x, q.y); MP.B.set(q.i, b); } b.position.x = q.x; b.position.y = q.y; b.velocity.x = q.vx; b.flash = q.fl || 0; }
+            for (const k of MP.B.keys()) if (!bl.has(k)) MP.B.delete(k);
+            MP.J = d.j.map(q => new Projectile(q.x, q.y, q.v, q.c, q.tm, q.r > 12));
+            MP.K = d.k.map(q => { const k = new Coin(q[0], q[1]); k.x = q[0]; k.y = q[1]; return k; });
+            MP.W = d.w.map(q => new PowerUp(q[0], q[1], q[2]));
+            // ---- HUD ----
+            framesElapsed = d.f; currentStage = d.st; score = d.sc; coins = d.co;
+            const me = d.p.find(q => q.i === MP.myId);
+            if (me) { const pct = Math.max(0, me.h / me.m * 100); setWidth('playerHealth', pct); el('playerHealth').classList.toggle('low', pct < 30); setText('hpText', Math.max(0, me.h) + ' / ' + me.m); setText('playerStageText', 'PLAYER ' + (d.p.indexOf(me) + 1) + ' (LVL ' + d.st + ')'); }
+            setText('scoreBoard', 'SCORE: ' + d.sc); setText('coinBoard', 'COINS: ' + d.co); setText('orbBoard', 'ONLINE CO-OP');
+            const ltc = el('levelTimerContainer'); if (ltc.style.display !== 'flex') ltc.style.display = 'flex';
+            setWidth('levelTimerFill', d.f / LEVEL_TIMER_FRAMES * 100);
+            const sl = Math.max(0, Math.ceil((LEVEL_TIMER_FRAMES - d.f) / 60)); setText('levelTimerText', 'STAGE ' + d.st + ' ENDS IN: ' + Math.floor(sl / 60) + ':' + (sl % 60 < 10 ? '0' : '') + sl % 60);
+            if (d.lt !== levelType) { levelType = d.lt; announceLevel(); }
+            const ut = el('ultTracker'), u = d.u;
+            if (u[3]) { ut.classList.add('ready'); setText('ultTracker', '\u26A1 ULTIMATE READY! TAP TO UNLEASH! \u26A1'); $('btnUlt').classList.add('ready'); }
+            else { ut.classList.remove('ready'); $('btnUlt').classList.remove('ready'); setText('ultTracker', `ULT TARGETS: Small ${Math.min(u[0], reqSmall)}/${reqSmall} | Spiders ${Math.min(u[1], reqSpider)}/${reqSpider} | Big ${Math.min(u[2], reqBig)}/${reqBig}`); }
+        }
+        let guestLast = 0;
+        function guestLoop(ts) {
+            if (!MP.run) return; requestAnimationFrame(guestLoop);
+            if (ts - guestLast < 14) return; guestLast = ts;
+            c.save(); applyShake(); drawBackground();
+            for (const k of MP.K) k.draw(); for (const w of MP.W) w.draw();
+            for (const b of MP.B.values()) { b.animTimer += 0.3; b.draw(); }
+            const pl = new Set(MP.P);
+            for (const s of MP.E.values()) if (!pl.has(s)) s.update();
+            for (const s of MP.P) if (s && s.position.x > -1000) s.update();
+            for (const j of MP.J) j.update();
+            for (let i = particles.length - 1; i >= 0; i--) { const p = particles[i]; if (p.alpha <= 0) { particles.splice(i, 1); continue; } c.globalAlpha = p.alpha; c.fillStyle = p.color; c.beginPath(); c.arc(p.x, p.y, 4, 0, 6.2832); c.fill(); p.update(); }
+            c.globalAlpha = 1; drawWaterOverlay(); mpTags(); c.restore();
+        }
+        if (/[?&]room=/.test(location.search)) setTimeout(mpOpen, 50);
+        
         drawBackground();
         (function menuLoop() {
             if (gameState !== 'MENU') return;
