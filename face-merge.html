@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#14086a">
 <title>Face Merge</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
   :root { --gw: min(98vw, 520px, calc(100vh - 200px)); }
   @supports (height:100dvh) { :root { --gw: min(98vw, 520px, calc(100dvh - 200px)); } }
@@ -19,7 +20,7 @@
   .hidden { opacity:0; pointer-events:none; z-index:-1; visibility:hidden; transition:opacity 0.15s, visibility 0s 0.15s; }
   .screen.hidden, .screen.hidden * { animation-play-state:paused !important; }
   /* Game screen: spread content over the full height (no empty top/bottom) */
-  #game-screen { justify-content:space-evenly; padding:env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
+  #game-screen { justify-content:center; padding:env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
   
   .animated-title { font-size: 60px; font-weight: bold; text-align: center; margin-bottom: 40px; text-transform: uppercase; background: linear-gradient(90deg, #ff4757, #ffa502, #2ed573, #1e90ff, #9b59b6, #ff4757); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 3s linear infinite, bounceTitle 2s ease-in-out infinite; line-height: 1.1;}
   @keyframes shine { to { background-position: 200% center; } }
@@ -192,7 +193,7 @@
 
   /* hero dog peeking over the panel */
   .hero { position:relative; width:var(--gw); height:62px; margin-bottom:-16px; display:flex; justify-content:center; align-items:flex-end; }
-  #game-screen > .hero { z-index:3; }
+  #game-screen .hero { z-index:3; }
   .hero-dog { font-size:62px; line-height:1; filter:drop-shadow(0 4px 8px rgba(0,0,0,.5)) drop-shadow(0 0 18px rgba(120,190,255,.9)); animation:breathe 2.4s infinite; }
   .hero-dog.cheer { animation:cheer .5s; }
   @keyframes cheer { 0%,100%{transform:scale(1);} 30%{transform:scale(1.25) rotate(-8deg);} 60%{transform:scale(1.15) rotate(8deg);} }
@@ -234,7 +235,7 @@
 <style id="fm-perf">
   /* ===== Optimisation layer: PC + mobile ===== */
   .screen { padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); }
-  .screen:not(#game-screen) { overflow-y:auto; touch-action:pan-y; justify-content:safe center; }
+  
   button { touch-action:manipulation; -webkit-appearance:none; appearance:none; font-family:inherit; }
   .btn, .back-btn, .power-btn, .buy-btn, .lvl-unlocked { cursor:pointer; }
 
@@ -270,7 +271,7 @@
   @media (orientation:landscape) and (max-height:560px) {
     :root { --gw: min(calc(100vh + 40px), calc(100vw - 300px)); }
     @supports (height:100dvh) { :root { --gw: min(calc(100dvh + 40px), calc(100vw - 300px)); } }
-    #game-screen { display:grid; grid-template-columns:260px auto; grid-template-rows:auto auto; column-gap:14px;
+    #game-fit { display:grid; grid-template-columns:260px auto; grid-template-rows:auto auto; column-gap:14px;
         align-content:center; justify-content:center; align-items:start; }
     #game-screen .top-bar { grid-column:1; grid-row:1; width:100%; }
     #game-screen .panel { grid-column:1; grid-row:2; width:100%; }
@@ -291,19 +292,48 @@
     .float-face, .spark, .animated-title, .hero-dog, .start-dog, .dog-char { animation:none !important; }
   }
 </style>
+<style id="fm-online">
+  .ol-btn2 { background:#ff9f1c !important; box-shadow:0 6px 0 #c76a00 !important; }
+  #online-screen { gap:12px; text-align:center; padding-left:16px; padding-right:16px; }
+  .ol-title { font-size:38px; margin:0; text-shadow:0 4px 0 #000; }
+  #ol-status { max-width:340px; min-height:44px; font-size:15px; line-height:1.4; color:#dfe9ff; margin:0; }
+  #ol-room { display:none; background:rgba(0,0,0,.45); border:2px solid #4fd0ff; border-radius:14px; padding:10px 18px; }
+  #ol-room .code { font-size:36px; font-weight:900; letter-spacing:6px; color:#ffe14d; text-shadow:0 0 10px rgba(255,225,77,.6); }
+  .ol-join { display:flex; gap:8px; align-items:center; }
+  #ol-code { width:130px; font-size:26px; font-weight:bold; text-align:center; text-transform:uppercase; letter-spacing:4px; padding:10px; border-radius:16px; border:3px solid #4fd0ff; background:#0b1250; color:#fff; outline:none; -webkit-user-select:text; user-select:text; touch-action:manipulation; }
+  .ol-join .btn { padding:12px 24px; font-size:20px; }
+  #vs-bar { display:none; flex-direction:column; gap:3px; width:100%; margin-bottom:6px; }
+  .vs-row { display:flex; align-items:center; gap:6px; height:16px; }
+  .vs-av { font-size:14px; width:20px; text-align:center; }
+  .vs-track { flex:1; height:9px; background:rgba(0,0,0,.45); border-radius:6px; overflow:hidden; border:1px solid rgba(255,255,255,.25); }
+  .vs-fill { height:100%; width:0%; transition:width .3s; border-radius:6px; }
+  .vs-fill.me { background:linear-gradient(90deg,#3ee27f,#a6ff7a); }
+  .vs-fill.op { background:linear-gradient(90deg,#ff6b81,#ffb25c); }
+  .vs-txt { font-size:10px; width:74px; text-align:right; color:#cfe0ff; white-space:nowrap; }
+</style>
+<style id="fm-fit">
+  /* No scrolling anywhere: every screen is one auto-fitted block */
+  html, body { overflow:hidden; overscroll-behavior:none; }
+  .screen { overflow:hidden !important; justify-content:center !important; align-items:center; }
+  .fit { display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; flex:none; transform-origin:50% 50%; box-sizing:border-box; }
+  #game-fit { gap:6px; }
+  @media (max-width:380px) { .lvl-btn { width:44px; height:44px; font-size:18px; } .lvl-grid { padding:12px; gap:8px; } .animated-title { font-size:48px; } }
+  @media (orientation:landscape) and (max-height:560px) { #game-fit { gap:0; } }
+</style>
 </head>
 <body>
 
 <div id="start-screen" class="screen">
   <div class="decor" id="decor-start"></div>
-  <div class="start-dog">🐶</div>
+  <div class="fit"><div class="start-dog">🐶</div>
   <h1 class="animated-title">Face<br>Merge</h1>
   <button class="btn" onclick="showLevelSelector()">Play Now</button>
+  <button class="btn ol-btn2" style="margin-top: 15px; font-size: 20px; padding: 12px 28px;" onclick="showOnline()">🌍 Online Race</button>
   <button class="btn" style="margin-top: 15px; background: #1e90ff; box-shadow: 0 6px 0 #0984e3; font-size: 18px; padding: 10px 25px;" onclick="showReadme()">Readme</button>
-</div>
+</div></div>
 
 <div id="readme-screen" class="screen hidden" style="background:rgba(0,0,0,0.95); z-index:200;">
-  <div class="readme-content">
+  <div class="fit"><div class="readme-content">
     <h2>Disclaimer</h2>
     <p>
       This game is strictly AI-created. While we have made every effort to ensure a smooth and enjoyable experience, please note that there might be occasional bugs or glitches present in the gameplay. We sincerely apologize for any inconvenience this may cause.
@@ -317,17 +347,30 @@
     </p>
     <button class="btn" style="margin-top:20px; font-size:18px; padding:10px 25px;" onclick="hideReadme()">Close</button>
   </div>
-</div>
+</div></div>
+
+<div id="online-screen" class="screen hidden">
+  <div class="fit"><h1 class="ol-title">🌍 Online Race</h1>
+  <p id="ol-status">Race a friend or a random player. Same board, first to clear the target wins!</p>
+  <button class="btn" onclick="olQuick()">⚡ Quick Match</button>
+  <button class="btn" style="background:#1e90ff; box-shadow:0 6px 0 #0984e3;" onclick="olCreate()">Create Room</button>
+  <div id="ol-room">
+    Room code<br><span class="code" id="ol-room-code">----</span><br>
+    <button class="btn" style="margin-top:8px; font-size:14px; padding:8px 18px; background:#9b59b6; box-shadow:0 4px 0 #732d91;" onclick="olCopy()">📋 Copy invite link</button>
+  </div>
+  <div class="ol-join"><input id="ol-code" maxlength="6" placeholder="CODE" autocomplete="off" autocapitalize="characters"><button class="btn" onclick="olJoin()">Join</button></div>
+  <button class="btn" style="margin-top:6px; font-size:18px; padding:10px 25px; background:#7f8c8d; box-shadow:0 4px 0 #566061;" onclick="olBack()">Back to Menu</button>
+</div></div>
 
 <div id="levels-screen" class="screen hidden">
-  <h1 style="color:#fff; font-size:35px; text-shadow:0 4px 0 #000; margin-top:0;">Select Level</h1>
+  <div class="fit"><h1 style="color:#fff; font-size:35px; text-shadow:0 4px 0 #000; margin-top:0;">Select Level</h1>
   <div class="lvl-grid" id="lvl-grid"></div>
   <button class="btn" style="margin-top:30px; font-size:18px; padding:10px 25px;" onclick="goToStart()">Back to Menu</button>
-</div>
+</div></div>
 
 <div id="game-screen" class="screen hidden">
   <div class="decor" id="decor-game"></div>
-  <div class="top-bar">
+  <div class="fit" id="game-fit"><div class="top-bar">
       <div style="display:flex; gap:5px;">
           <button class="back-btn" onclick="showLevelSelector()" title="Back to Levels">⬅</button>
           <button class="back-btn" onclick="pauseGame()" title="Pause Game">⏸</button>
@@ -346,6 +389,10 @@
     <div class="stat">Moves<span id="ui-moves">15</span></div>
   </div>
   
+  <div id="vs-bar">
+    <div class="vs-row"><span class="vs-av" id="vs-me-av">🐶</span><div class="vs-track"><div class="vs-fill me" id="vs-me-fill"></div></div><span class="vs-txt" id="vs-me-txt">You</span></div>
+    <div class="vs-row"><span class="vs-av" id="vs-op-av">🐶</span><div class="vs-track"><div class="vs-fill op" id="vs-op-fill"></div></div><span class="vs-txt" id="vs-op-txt">Rival</span></div>
+  </div>
   <div class="powers">
     <div class="power-slot">
         <button class="power-btn" id="btn-hammer" onclick="togglePower('hammer')">🔨<span id="h-cnt">1</span></button>
@@ -376,7 +423,7 @@
       </div>
       <div id="board"></div>
   </div>
-</div>
+</div></div>
 
 <div id="pause-modal" class="screen hidden" style="background:rgba(0,0,0,0.85); z-index:100;">
   <div style="background:linear-gradient(135deg, #2c003e, #005c97); padding:35px; border-radius:20px; text-align:center; border:3px solid #fff; box-shadow:0 0 20px rgba(0,0,0,0.8); max-width:300px;">
@@ -392,6 +439,7 @@
     <h2 id="m-title" style="margin-top:0; font-size:30px;">Game Over</h2>
     <p id="m-desc" style="font-size:18px;">Out of moves!</p>
     <button class="btn" id="m-btn">Try Again</button>
+    <button class="btn" id="m-menu" style="display:none; margin-top:12px; font-size:16px; padding:8px 22px; background:#7f8c8d; box-shadow:0 4px 0 #566061;">Leave</button>
   </div>
 </div>
 
@@ -496,6 +544,7 @@
   function hideReadme() { document.getElementById('readme-screen').classList.add('hidden'); }
 
   function pauseGame() {
+      if (online) { toast('No pausing in online races'); return; }
       if(isAnim || !document.getElementById('modal').classList.contains('hidden')) return;
       isPaused = true; GameAudio.pauseMusic();
       document.getElementById('pause-modal').classList.remove('hidden');
@@ -507,6 +556,7 @@
   }
 
   function showLevelSelector() {
+      if (online) { olCleanup(); gen++; clearInterval(dogTimer); isPaused = false; goToStart(); return; }
       gen++; GameAudio.stopMusic();
       hideAll(); clearInterval(dogTimer); isPaused = false;
       document.getElementById('levels-screen').classList.remove('hidden');
@@ -579,7 +629,7 @@
     } catch (e) {}
   })();
 
-  function loadLevel(l) {
+  function loadLevel(l, seed) {
     if (l > 25) { toast("You completed all 25 levels! 🎉"); l = 25; }
     gen++;
     lvl = l; score = 0; combo = 0; isAnim = false; activePower = null; isPaused = false;
@@ -595,8 +645,10 @@
     else if (cycle === 3) { targetType = 'color'; targetColor = colors[l % colors.length]; targetAmount = 15 + l; }
     else { targetType = 'bird'; targetAmount = 3 + Math.floor(l / 3); }
 
+    targetInit = Math.max(1, targetAmount);
     hideAll(); E.game.classList.remove('hidden');
-    buildBoard(); updateUI(); startDogTimer();
+    if (seed !== undefined) withSeed(seed, buildBoard); else buildBoard();
+    updateUI(); startDogTimer();
   }
 
   function startDogTimer() {
@@ -1015,6 +1067,7 @@
   function updateUI() {
     E.lvl.textContent = lvl; E.score.textContent = score;
     E.moves.textContent = moves; E.coins.textContent = coins;
+    if (online && net.live) olProgress();
     for (const k in powers) {
       cntEls[k].textContent = powers[k];
       buyEls[k].style.opacity = coins >= powerCosts[k] ? '1' : '0.4';
@@ -1034,7 +1087,7 @@
 
     if (win) {
       E.dog.innerText = '😎'; sndDogHappy();
-      if (lvl === unlockedLevel) unlockedLevel++;
+      if (!online && lvl === unlockedLevel) unlockedLevel++;
       coins += 50; saveProg(); updateUI();
       showModal(true); return true;
     }
@@ -1046,6 +1099,8 @@
   }
 
   function showModal(win, reason = "") {
+    if (online && net.live) { onlineResult(win, reason); return; }
+    E.mBtn.style.display = ''; $('m-menu').style.display = 'none';
     isAnim = true; clearInterval(dogTimer); GameAudio.stopMusic();
     if (win) sndWin(); else sndLose();
 
@@ -1113,12 +1168,275 @@
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) return;
     saveProg();
-    if (gameVisible() && !isPaused) {
+    if (gameVisible() && !isPaused && !online) {
       isPaused = true; GameAudio.pauseMusic();
       E.pauseModal.classList.remove('hidden');
     }
   });
   window.addEventListener('pagehide', saveProg);
+</script>
+<script>
+// ================= ONLINE MULTIPLAYER (WebRTC via PeerJS public cloud - free, no account) =================
+let online = false, targetInit = 1;
+const net = { peer:null, conn:null, host:false, live:false, done:false, token:0, qt:0, busyHandler:null, code:'',
+  oppAv:'🐶', oppPct:0, oppMoves:0, oppScore:0, oppOut:false, myOut:false, myRm:false, oppRm:false, result:'', sig:'', myPct:0 };
+const AVATARS = ['🐶','🐱','🐼','🦊','🐸','🐵','🐯','🐰'];
+const myAv = AVATARS[(Math.random() * AVATARS.length) | 0];
+const QM_SLOTS = 10;
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function olStatus(t) { $('ol-status').textContent = t; }
+function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function withSeed(seed, fn) { const o = Math.random; Math.random = mulberry(seed); try { fn(); } finally { Math.random = o; } }
+function send(o) { try { if (net.conn && net.conn.open) net.conn.send(o); } catch (e) {} }
+function olReady() { if (typeof Peer === 'undefined') { olStatus('Online library failed to load. Check your internet connection and reload.'); return false; } return true; }
+
+function olCleanup() {
+  online = false; net.live = false; net.done = false; net.token++;
+  clearTimeout(net.qt); net.busyHandler = null;
+  try { if (net.conn) net.conn.close(); } catch (e) {}
+  try { if (net.peer) net.peer.destroy(); } catch (e) {}
+  net.conn = null; net.peer = null; net.sig = '';
+  const v = $('vs-bar'); if (v) v.style.display = 'none';
+}
+function showOnline() {
+  hideAll(); olCleanup(); $('online-screen').classList.remove('hidden');
+  $('ol-room').style.display = 'none';
+  olStatus('Race a friend or a random player. Same board, first to clear the target wins!');
+}
+function olBack() { olCleanup(); goToStart(); }
+
+function olCreate() {
+  if (!olReady()) return;
+  olCleanup(); const tok = ++net.token; net.host = true;
+  let code = ''; for (let i = 0; i < 5; i++) code += CODE_CHARS[(Math.random() * CODE_CHARS.length) | 0];
+  olStatus('Creating room…');
+  const p = net.peer = new Peer('pgsfm-' + code);
+  p.on('open', () => {
+    if (tok !== net.token) return;
+    $('ol-room-code').textContent = code; $('ol-room').style.display = 'block';
+    net.code = code; olStatus('Room ready! Share the code or invite link. Waiting for your friend…');
+  });
+  p.on('connection', c => acceptConn(c, tok));
+  p.on('error', e => {
+    if (tok !== net.token) return;
+    if (e.type === 'unavailable-id') olCreate(); else olStatus('Connection problem (' + e.type + '). Please try again.');
+  });
+}
+function olCopy() {
+  const url = location.href.split('#')[0] + '#room=' + net.code;
+  const done = () => toast('Invite link copied! 📋');
+  try { navigator.clipboard.writeText(url).then(done, () => toast(url)); } catch (e) { toast(url); }
+}
+function olJoin(code) {
+  if (!olReady()) return;
+  code = (typeof code === 'string' ? code : $('ol-code').value).trim().toUpperCase();
+  if (code.length < 4) { olStatus('Type the room code first.'); return; }
+  olCleanup(); const tok = ++net.token; net.host = false;
+  olStatus('Connecting to room ' + code + '…');
+  const p = net.peer = new Peer();
+  p.on('error', e => {
+    if (tok !== net.token) return;
+    olStatus(e.type === 'peer-unavailable' ? 'Room not found. Check the code.' : 'Connection problem (' + e.type + ').');
+  });
+  p.on('open', () => {
+    if (tok !== net.token) return;
+    const c = p.connect('pgsfm-' + code, { reliable: true });
+    net.busyHandler = () => olStatus('That room already has two players.');
+    net.qt = setTimeout(() => { if (!net.live && tok === net.token) olStatus('Could not reach the room. Ask your friend to create a new one.'); }, 10000);
+    c.on('open', () => { if (tok !== net.token) return; net.conn = c; wireConn(c, tok); });
+    c.on('error', () => { if (tok === net.token && !net.live) olStatus('Could not connect. Try again.'); });
+  });
+}
+
+// Quick match: claim the first free lobby slot as host, or join whoever already waits there.
+function olQuick() {
+  if (!olReady()) return;
+  olCleanup(); const tok = ++net.token; $('ol-room').style.display = 'none';
+  olStatus('Searching for an opponent worldwide…'); qmSlot(0, tok);
+}
+function qmSlot(i, tok) {
+  if (tok !== net.token) return;
+  if (i >= QM_SLOTS) { olStatus('Lobby is full right now. Try again, or use Create Room.'); olCleanup(); return; }
+  net.host = true; net.busyHandler = null;
+  const p = net.peer = new Peer('pgsfm-q-' + i); let claimed = false;
+  p.on('open', () => { if (tok !== net.token) return; claimed = true; olStatus('Waiting for an opponent… keep this screen open. (Tip: ask a friend to press Quick Match too!)'); });
+  p.on('connection', c => acceptConn(c, tok));
+  p.on('error', e => {
+    if (tok !== net.token) return;
+    if (e.type === 'unavailable-id') { try { p.destroy(); } catch (_) {} qmGuest(i, tok); }
+    else if (!claimed) olStatus('Connection problem (' + e.type + '). Check your internet and retry.');
+  });
+}
+function qmGuest(i, tok) {
+  if (tok !== net.token) return;
+  net.host = false; olStatus('Joining a waiting player…');
+  const p = net.peer = new Peer(); let settled = false;
+  const next = () => {
+    if (settled || net.live || tok !== net.token) return; settled = true;
+    clearTimeout(net.qt); net.busyHandler = null;
+    try { p.destroy(); } catch (_) {} net.conn = null; qmSlot(i + 1, tok);
+  };
+  p.on('error', next);
+  p.on('open', () => {
+    if (tok !== net.token) return;
+    const c = p.connect('pgsfm-q-' + i, { reliable: true });
+    net.qt = setTimeout(() => { try { c.close(); } catch (_) {} next(); }, 6000);
+    net.busyHandler = next;
+    c.on('error', next);
+    c.on('open', () => { if (settled || tok !== net.token) return; net.conn = c; wireConn(c, tok); });
+  });
+}
+
+function acceptConn(c, tok) {
+  if (tok !== net.token) { try { c.close(); } catch (_) {} return; }
+  if (net.conn) { c.on('open', () => { try { c.send({ t:'busy' }); } catch (e) {} setTimeout(() => { try { c.close(); } catch (e) {} }, 400); }); return; }
+  net.conn = c; wireConn(c, tok);
+}
+function wireConn(c, tok) {
+  c.on('data', d => { if (tok === net.token) onData(d); });
+  c.on('close', () => { if (tok === net.token && net.conn === c) onClose(); });
+  c.on('error', () => { if (tok === net.token && net.conn === c) onClose(); });
+  if (c.open) onConnOpen(); else c.on('open', onConnOpen);
+}
+function onConnOpen() {
+  send({ t:'hi', av:myAv });
+  if (net.host) { online = true; net.live = true; clearTimeout(net.qt); setTimeout(hostStart, 350); }
+}
+function hostStart() {
+  if (!net.live) return;
+  const seed = (Math.random() * 4294967295) >>> 0, l = 3 + ((Math.random() * 10) | 0);
+  send({ t:'start', seed, l }); beginRound(l, seed);
+}
+function beginRound(l, seed) {
+  net.done = false; net.oppOut = net.myOut = net.myRm = net.oppRm = false; net.result = '';
+  net.oppPct = 0; net.oppMoves = 0; net.oppScore = 0; net.sig = ''; net.myPct = 0;
+  $('vs-bar').style.display = 'flex';
+  loadLevel(l, seed);
+  renderVs();
+  toast('Race started! Level ' + l + ' 🏁');
+}
+function onClose() {
+  if (!net.live) return;
+  net.live = false;
+  if (net.done) { E.mBtn.style.display = 'none'; E.mDesc.innerText += ' (Opponent left)'; }
+  else finishOnline('win', 'Opponent disconnected. You win! 🏆');
+}
+function onData(d) {
+  if (!d || !d.t) return;
+  switch (d.t) {
+    case 'hi': net.oppAv = d.av || '🐶'; renderVs(); break;
+    case 'busy': if (net.busyHandler) net.busyHandler(); break;
+    case 'start': clearTimeout(net.qt); net.busyHandler = null; online = true; net.live = true; beginRound(d.l, d.seed); break;
+    case 'p': net.oppPct = d.p; net.oppMoves = d.m; net.oppScore = d.s; renderVs(); break;
+    case 'win':
+      if (!net.done) finishOnline('lose', 'Your rival cleared the target first! 🏁');
+      else if (net.result === 'win') olModal('Draw! 🤝', '#f1c40f', 'Photo finish: you both cleared it!', true);
+      break;
+    case 'out':
+      net.oppOut = true; net.oppScore = d.s;
+      if (net.myOut) decideBothOut(); else if (!net.done) toast('Rival is out of moves! Finish the target to win 💪');
+      break;
+    case 'rm': net.oppRm = true; if (net.myRm && net.host) hostStart(); break;
+  }
+}
+
+function olProgress() {
+  const pct = targetType === 'score' ? Math.min(1, score / targetInit) : 1 - Math.max(0, targetAmount) / targetInit;
+  net.myPct = pct;
+  const sig = pct.toFixed(3) + '|' + moves + '|' + score;
+  if (sig !== net.sig) { net.sig = sig; send({ t:'p', p:pct, m:moves, s:score }); }
+  renderVs();
+}
+function renderVs() {
+  $('vs-me-av').textContent = myAv; $('vs-op-av').textContent = net.oppAv;
+  $('vs-me-fill').style.width = Math.round((net.myPct || 0) * 100) + '%';
+  $('vs-op-fill').style.width = Math.round((net.oppPct || 0) * 100) + '%';
+  $('vs-me-txt').textContent = 'You · ' + moves + ' mv';
+  $('vs-op-txt').textContent = 'Rival · ' + net.oppMoves + ' mv';
+}
+
+function olModal(title, color, desc, rematch) {
+  E.modal.classList.remove('hidden');
+  E.mTitle.innerText = title; E.mTitle.style.color = color; E.mDesc.innerText = desc;
+  const b = E.mBtn; b.style.display = rematch && net.live ? '' : 'none';
+  b.innerText = 'Rematch 🔄'; b.style.background = '#2ed573'; b.style.boxShadow = '0 6px 0 #27ae60';
+  b.onclick = () => { net.myRm = true; send({ t:'rm' }); b.innerText = 'Waiting for rival…'; if (net.oppRm && net.host) hostStart(); };
+  const m = $('m-menu'); m.style.display = ''; m.onclick = showLevelSelector;
+}
+function finishOnline(res, desc) {
+  net.done = true; net.result = res; isAnim = true; clearInterval(dogTimer); GameAudio.stopMusic();
+  if (res === 'win') { sndWin(); olModal('You Win! 🏆', '#2ed573', desc, true); }
+  else if (res === 'lose') { sndLose(); olModal('You Lost 😢', '#ff4757', desc, true); }
+  else { sndCoin(); olModal('Draw! 🤝', '#f1c40f', desc, true); }
+}
+function onlineResult(win, reason) {
+  isAnim = true; clearInterval(dogTimer);
+  if (net.done) return;
+  if (win) { send({ t:'win' }); finishOnline('win', 'You cleared the target first! Score ' + score); return; }
+  net.myOut = true; send({ t:'out', s:score }); GameAudio.stopMusic();
+  if (net.oppOut) { decideBothOut(); return; }
+  olModal('You are out!', '#ff9f1c', reason + ' Waiting to see if your rival can finish…', false);
+}
+function decideBothOut() {
+  if (net.done) return;
+  if (score > net.oppScore) finishOnline('win', 'Both ran out. You scored higher: ' + score + ' vs ' + net.oppScore + ' 🏆');
+  else if (score < net.oppScore) finishOnline('lose', 'Both ran out. Rival scored higher: ' + net.oppScore + ' vs ' + score);
+  else finishOnline('draw', 'Both ran out with the same score: ' + score);
+}
+
+window.addEventListener('pagehide', () => { try { if (net.peer) net.peer.destroy(); } catch (e) {} });
+// Invite link:  yoursite/face-merge.html#room=ABCDE
+(function () {
+  const m = /room=([A-Za-z0-9]{4,8})/.exec(location.hash || ''); if (!m) return;
+  showOnline(); $('ol-code').value = m[1].toUpperCase();
+  setTimeout(() => olJoin(m[1]), 400);
+})();
+</script>
+
+<script>
+// ================= AUTO-FIT: no scrolling on PC or mobile =================
+(function () {
+  const fits = [].slice.call(document.querySelectorAll('.fit'));
+  const root = document.documentElement;
+  let busy = false;
+  function gameGw(f, availH, availW) {
+    if (window.matchMedia('(orientation:landscape) and (max-height:560px)').matches) { root.style.removeProperty('--gw'); return; }
+    const lay = f.querySelector('.game-layout'); if (!lay) return;
+    root.style.setProperty('--gw', '300px');
+    for (let pass = 0; pass < 2; pass++) {
+      const overhead = f.offsetHeight - lay.offsetHeight;
+      const side = availH - overhead - 4;
+      const gw = Math.max(240, Math.min(side + 94, availW * 0.98, 700));
+      root.style.setProperty('--gw', gw + 'px');
+    }
+  }
+  function fitOne(f) {
+    const scr = f.parentElement, cs = getComputedStyle(scr), n = k => parseFloat(cs[k]) || 0;
+    const availH = scr.clientHeight - n('paddingTop') - n('paddingBottom');
+    const availW = scr.clientWidth - n('paddingLeft') - n('paddingRight');
+    if (availH < 50 || availW < 50) return;
+    f.style.transform = '';
+    if (f.id === 'game-fit') gameGw(f, availH, availW);
+    const h = f.offsetHeight, w = Math.max(f.scrollWidth, f.offsetWidth);
+    const k = Math.min(1, (availH - 2) / h, availW / w);
+    f.style.transform = k < 0.999 ? 'scale(' + k.toFixed(4) + ')' : '';
+  }
+  function fitAll() {
+    if (busy) return;
+    const a = document.activeElement; if (a && a.tagName === 'INPUT') return; // don't jump while typing
+    busy = true; try { fits.forEach(fitOne); } finally { busy = false; }
+  }
+  window.fitAll = fitAll;
+  window.addEventListener('resize', fitAll);
+  window.addEventListener('orientationchange', () => setTimeout(fitAll, 250));
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', fitAll);
+  document.addEventListener('focusout', () => setTimeout(fitAll, 50));
+  if (window.ResizeObserver) { const ro = new ResizeObserver(() => requestAnimationFrame(fitAll)); fits.forEach(f => ro.observe(f)); }
+  window.addEventListener('load', fitAll);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll);
+  fitAll();
+})();
 </script>
 </body>
 </html>
