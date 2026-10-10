@@ -421,6 +421,64 @@
 #loot-screen>:last-child,#death-screen>:last-child{margin-bottom:auto}
 #map-container{height:min(600px,calc(100dvh - 200px));min-height:360px;flex-shrink:0;width:calc(100% - 24px)}
 .loot-container .card:first-child,.loot-column .card{margin-left:0}
+
+/* ===== ONLINE CO-OP ===== */
+#online-screen{background:radial-gradient(ellipse at 50% 0%,rgba(170,30,80,.4),transparent 58%),repeating-linear-gradient(0deg,rgba(0,0,0,.3) 0 2px,transparent 2px 36px),repeating-linear-gradient(90deg,rgba(0,0,0,.22) 0 2px,transparent 2px 72px),linear-gradient(#0b0f2e,#1b1347 62%,#0a0c20) !important;
+ justify-content:flex-start !important;align-items:center}
+#online-screen .ol-box{text-align:center}
+.ol-box{background:linear-gradient(#141a3a,#0c1028);border:3px solid #3d4c9a;box-shadow:0 0 28px rgba(60,90,255,.35),inset 0 0 20px rgba(0,0,0,.55)}
+.ol-sub{color:#8fd0ff;font-size:13px;font-weight:bold;margin-top:-6px}
+.ol-label{color:#bdc3c7;font-weight:bold;font-size:14px;text-align:left;margin:4px 0 6px}
+.ol-or{color:#7f8c8d;font-size:12px;font-weight:bold;margin:14px 0 10px}
+.ol-link{background:transparent;border:none;color:#bdc3c7;text-decoration:underline;margin:10px auto 0;font-family:'Nunito',sans-serif;font-weight:bold;font-size:14px;display:block}
+#ol-diffs{display:flex;gap:5px;justify-content:center;background:#2f3542;padding:6px 12px;border-radius:20px;border:1px solid #57606f;width:fit-content;margin:0 auto}
+.ol-diff{background:transparent;color:#bdc3c7;border:1px solid transparent;border-radius:12px;padding:6px 15px;font-family:'Righteous';font-size:14px;letter-spacing:1px}
+.ol-diff:hover{color:#fff}
+.ol-diff.active{background:#f39c12;color:#000;border-color:#f1c40f;box-shadow:0 0 10px rgba(243,156,18,.5)}
+#ol-room-code{font-family:'Press Start 2P',monospace;font-size:clamp(26px,9vw,42px);letter-spacing:6px;color:#ffd23f;text-shadow:3px 3px 0 #b3121f,0 0 24px #ff8a00;margin:8px 0 14px;user-select:text;-webkit-user-select:text}
+#ol-players{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.ol-player{background:#111;border:2px solid #3a4b66;border-radius:10px;padding:8px 12px;font-weight:bold;font-size:15px;color:#ecf0f1;display:flex;justify-content:space-between;align-items:center}
+.ol-player.wait{color:#7f8c8d;border-style:dashed}
+.ol-player small{color:#8fd0ff}
+#ol-msg{min-height:18px;margin-top:10px;font-size:14px;font-weight:bold;color:#ff6b7a}
+#ol-msg.ok{color:#2ecc71}
+#ol-start:disabled{opacity:.45;filter:grayscale(.7)}
+#ol-toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 170px);transform:translateX(-50%);background:#0a0710;border:3px solid #26aaff;border-radius:12px;padding:10px 16px;font-weight:bold;font-size:14px;color:#fff;z-index:7000;display:none;max-width:90vw;text-align:center;box-shadow:0 0 18px rgba(38,170,255,.6);pointer-events:none}
+#ol-modal{z-index:7500}
+#ol-top{display:none;font-size:11px;color:#8fd0ff;font-weight:bold;text-align:center}
+body.online #ol-top{display:block}
+body.online .top-btn-group button[onclick="pauseGame()"]{display:none}
+.end-turn-btn.off{opacity:.45;filter:grayscale(.8)}
+#ol-map-note{display:none;font-size:13px;color:#8fd0ff;font-weight:bold;margin-bottom:8px;text-align:center;padding:0 12px}
+body.online #ol-map-note{display:block}
+.ol-wait{color:#bdc3c7;font-weight:bold;font-size:15px;padding:30px 10px;text-align:center}
+
+/* ===== NO-SCROLL FIT SYSTEM: every menu screen scales to fit the viewport ===== */
+html,body{overflow:hidden;height:100%;overscroll-behavior:none}
+#title-screen,#readme-screen,#setup-screen,#online-screen,#map-screen,#loot-screen,#death-screen{
+ overflow:hidden !important;touch-action:none !important;overscroll-behavior:none !important;
+ justify-content:flex-start !important;align-items:stretch !important;
+ padding-top:env(safe-area-inset-top,0px) !important;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 6px) !important;
+ padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.screen>.fit-wrap{width:100%;flex:0 0 auto;margin:auto 0 !important;overflow:visible}
+.fit-in{width:100%;display:flex;flex-direction:column;align-items:center;transform-origin:top center}
+.fit-in>*{flex-shrink:0}
+#map-container{height:min(600px,calc(100dvh - 190px)) !important;min-height:300px !important}
+@media (max-height:560px){#map-container{height:min(600px,calc(100dvh - 150px)) !important;min-height:240px !important}}
+
+/* PC / tablet: hand of cards scales with window height so the battlefield always has room */
+@media (min-width:769px) and (min-height:561px){
+ #hand-container{--hand-h:clamp(138px,27dvh,262px);height:var(--hand-h) !important;padding-bottom:6px}
+ #hand-container .card{height:calc(var(--hand-h) - 12px) !important;width:calc((var(--hand-h) - 12px)*.7) !important;margin-left:calc(var(--hand-h)*-.08)}
+ #hand-container .card:first-child{margin-left:0}
+ #hand-container .card .card-art{font-size:calc(var(--hand-h)*.2)}
+ #hand-container .card .card-desc{height:calc(var(--hand-h)*.27);font-size:clamp(8px,calc(var(--hand-h)*.048),12px);padding:4px}
+ #hand-container .card .card-title{font-size:clamp(8px,calc(var(--hand-h)*.05),13px)}
+ #hand-container .card .card-cost{width:clamp(20px,calc(var(--hand-h)*.115),30px);height:clamp(20px,calc(var(--hand-h)*.115),30px);font-size:clamp(11px,calc(var(--hand-h)*.07),18px)}
+ .energy-orb{width:clamp(56px,calc(var(--hand-h)*.36),90px);height:clamp(56px,calc(var(--hand-h)*.36),90px);font-size:clamp(18px,calc(var(--hand-h)*.12),32px)}
+ :root{--rc:clamp(46px,calc(var(--hand-h)*.27),70px)}
+}
+
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -444,6 +502,7 @@
         <div class="title-buttons">
             <button class="btn-play" onclick="openSetup('1v1')">Single Player</button>
             <button class="btn-play highlight" onclick="openSetup('2v2')">2 Player Mode</button>
+            <button class="btn-play" style="border-color:#2ecc71;background:linear-gradient(#1f8f55,#0f4a2c);box-shadow:0 0 20px rgba(46,204,113,.5);" onclick="openOnline()">🌐 Online Co-op</button>
             <button class="btn-play" style="border-color: #9b59b6; background: #1e2532;" onclick="showScreen('readme-screen')">📖 Read Me</button>
         </div>
     </div>
@@ -499,6 +558,7 @@
             <button class="btn-top" onclick="showScreen('title-screen')">🔙 Back to Title</button>
         </div>
         <h2 class="map-title">THE SPIRE</h2>
+        <div id="ol-map-note"></div>
         <div style="font-size: 12px; color: #bdc3c7; margin-bottom: 10px;">⚔️ Battle &nbsp; 🎁 Treasure &nbsp; 👹 Boss</div>
         <div id="map-container"><svg id="map-svg"></svg><div id="map-nodes"></div></div>
     </div>
@@ -583,6 +643,61 @@
         
         <div id="hand-container"></div>
     </div>
+
+        <!-- ONLINE CO-OP LOBBY -->
+    <div id="online-screen" class="screen">
+        <div class="setup-container ol-box">
+            <h2 class="setup-header">ONLINE CO-OP</h2>
+            <div class="ol-sub">Free rooms &bull; No account &bull; Play with friends worldwide</div>
+
+            <div id="ol-step-profile">
+                <div class="ol-label">ENTER NAME:</div>
+                <input type="text" id="ol-name" class="name-input" placeholder="Wizard" autocomplete="off" maxlength="12">
+
+                <div class="ol-label" style="margin-top:12px;">SELECT CLASS:</div>
+                <div class="char-select-row" id="ol-chars">
+                    <div class="char-btn active" onclick="olPickChar(this,'🧙‍♂️','Wizard')">🧙‍♂️</div>
+                    <div class="char-btn" onclick="olPickChar(this,'🧝‍♀️','Elf')">🧝‍♀️</div>
+                    <div class="char-btn" onclick="olPickChar(this,'🥷','Ninja')">🥷</div>
+                    <div class="char-btn" onclick="olPickChar(this,'🧛','Vampire')">🧛</div>
+                    <div class="char-btn" onclick="olPickChar(this,'🤖','Cyborg')">🤖</div>
+                </div>
+
+                <div class="ol-label" style="margin-top:12px;">DIFFICULTY (when you host):</div>
+                <div id="ol-diffs">
+                    <button class="ol-diff" onclick="olDiff(0.7,this)">EASY</button>
+                    <button class="ol-diff active" onclick="olDiff(1.0,this)">NORMAL</button>
+                    <button class="ol-diff" onclick="olDiff(1.5,this)">HARD</button>
+                </div>
+
+                <button class="btn-play highlight" style="width:100%;margin-top:16px;" onclick="olCreate()">CREATE ROOM</button>
+                <div class="ol-or">— or join a friend —</div>
+                <input type="text" id="ol-code" class="name-input" placeholder="ROOM CODE" autocomplete="off" maxlength="5" style="text-transform:uppercase;letter-spacing:6px;">
+                <button class="btn-play" style="width:100%;margin-top:10px;" onclick="olJoin()">JOIN ROOM</button>
+                <button class="ol-link" onclick="olCancel()">Back to title</button>
+            </div>
+
+            <div id="ol-step-room" style="display:none;">
+                <div class="ol-label">ROOM CODE</div>
+                <div id="ol-room-code">-----</div>
+                <button class="btn-top" id="ol-copy" style="margin:0 auto;" onclick="olCopyLink()">📋 Share invite link</button>
+                <div id="ol-players"></div>
+                <button id="ol-start" class="btn-play highlight" style="width:100%;margin-top:14px;" disabled onclick="olHostStart()">START RUN</button>
+                <button class="ol-link" onclick="olCancel()">Leave room</button>
+            </div>
+
+            <div id="ol-msg"></div>
+        </div>
+    </div>
+
+    <div id="ol-modal" class="game-modal">
+        <div class="game-modal-box">
+            <h2 id="ol-modal-title"></h2>
+            <p id="ol-modal-text"></p>
+            <button id="ol-modal-btn" class="btn-play highlight" style="width:100%;"></button>
+        </div>
+    </div>
+    <div id="ol-toast"></div>
 
     <!-- IN-GAME PAUSE / BACK POPUPS -->
     <div id="pause-modal" class="game-modal">
@@ -1350,6 +1465,7 @@
    if(k){const im=new Image(); im.src=SPR[k]; im.className='px-sprite anim-idle'; sp.after(im);}
   });
  }
+ window.applySprites=applySprites;
  // title screen portraits -> pixel art
  const pi=(k)=>'<img src="'+SPR[k]+'" alt="">';
  document.querySelector('.hero-portrait .portrait-img').innerHTML=pi('wizard');
@@ -1385,6 +1501,636 @@
  window.renderHand=function(){_rh();document.getElementById('hand-container').style.setProperty('--n',Math.max(5,state.hand.length));};
  window.addEventListener('orientationchange',()=>setTimeout(()=>window.dispatchEvent(new Event('resize')),250));
 })();
+</script>
+<script>
+/* ===================== ONLINE CO-OP (PeerJS, host-authoritative) ===================== */
+(function () {
+'use strict';
+var ICE = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:global.stun.twilio.com:3478' }
+  // Players behind very strict NATs may need a TURN relay. Add one here, e.g.:
+  // ,{ urls:'turn:your.turn.host:3478', username:'user', credential:'pass' }
+];
+var PREFIX = 'pixelgaunt-dod-v1-';
+var CLASSES = ['🧙‍♂️', '🧝‍♀️', '🥷', '🧛', '🤖'];
+var $ = function (id) { return document.getElementById(id); };
+
+var OL = {
+  on: false, role: null, peer: null, conn: null, code: '', connected: false,
+  phase: 'p1', swapped: false, h1: null, h2: { hand: [], deck: [], discard: [] },
+  name: '', emoji: CLASSES[0], defName: 'Wizard', diff: 1,
+  hostName: '', hostEmoji: CLASSES[0], guestName: '', guestEmoji: CLASSES[1],
+  myTurn: false, energy: 0, redrawn: false,
+  lootIds: { h: [], g: [] }, lootDone: { h: false, g: false }, lootSent: false, lootGuard: false,
+  eIdx: [0, 2], battleId: -1, screen: 'title-screen',
+  lastMsg: 0, snapQueued: false, hb: null, leaving: false,
+  handSig: '', lootKey: '', mapKey: '', pending: false, fromGuest: false, ready: false
+};
+
+/* ---------- small helpers ---------- */
+function toast(msg, ms) {
+  var t = $('ol-toast'); t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toast._t); toast._t = setTimeout(function () { t.style.display = 'none'; }, ms || 3000);
+}
+function olMsg(msg, ok) { var m = $('ol-msg'); m.textContent = msg || ''; m.className = ok ? 'ok' : ''; }
+function cleanName(n, d) { n = String(n || '').replace(/[<>]/g, '').trim().slice(0, 12); return n || d; }
+function cleanEmoji(e) { return CLASSES.indexOf(e) >= 0 ? e : CLASSES[0]; }
+function send(m) { try { if (OL.conn && OL.conn.open) OL.conn.send(m); } catch (e) {} }
+function genCode() { var a = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789', s = ''; for (var i = 0; i < 5; i++) s += a[Math.floor(Math.random() * a.length)]; return s; }
+function setTurn(text, color) { var t = $('turn-indicator'); t.textContent = text.toUpperCase(); t.style.color = color; }
+function loadPeer() {
+  return new Promise(function (res, rej) {
+    if (window.Peer) return res();
+    var urls = ['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'], i = 0;
+    (function next() {
+      if (i >= urls.length) return rej(new Error('load'));
+      var s = document.createElement('script'); s.src = urls[i++];
+      s.onload = function () { window.Peer ? res() : next(); }; s.onerror = next;
+      document.head.appendChild(s);
+    })();
+  });
+}
+
+/* ---------- lobby UI ---------- */
+window.openOnline = function () {
+  olMsg('');
+  $('ol-step-profile').style.display = 'block'; $('ol-step-room').style.display = 'none';
+  showScreen('online-screen');
+};
+window.olPickChar = function (el, emoji, def) {
+  document.querySelectorAll('#ol-chars .char-btn').forEach(function (b) { b.classList.remove('active'); });
+  el.classList.add('active'); OL.emoji = emoji; OL.defName = def; $('ol-name').placeholder = def;
+};
+window.olDiff = function (v, btn) {
+  OL.diff = v; document.querySelectorAll('#ol-diffs .ol-diff').forEach(function (b) { b.classList.remove('active'); }); btn.classList.add('active');
+};
+function readProfile() { OL.name = cleanName($('ol-name').value, OL.defName); }
+function renderPlayers() {
+  var box = $('ol-players'); box.textContent = '';
+  function row(name, emoji, tag, wait) {
+    var d = document.createElement('div'); d.className = 'ol-player' + (wait ? ' wait' : '');
+    var a = document.createElement('span'); a.textContent = (emoji ? emoji + ' ' : '') + name;
+    var b = document.createElement('small'); b.textContent = tag;
+    d.append(a, b); box.appendChild(d);
+  }
+  if (OL.role === 'host') {
+    row(OL.name, OL.emoji, 'HOST', false);
+    if (OL.connected && OL.guestName) row(OL.guestName, OL.guestEmoji, 'READY', false); else row('Waiting for a friend…', '', '', true);
+    $('ol-start').disabled = !(OL.connected && OL.guestName);
+  } else {
+    row(OL.hostName || 'Host', OL.hostEmoji, 'HOST', false); row(OL.name, OL.emoji, 'YOU', false);
+  }
+}
+function showRoom() {
+  $('ol-step-profile').style.display = 'none'; $('ol-step-room').style.display = 'block';
+  $('ol-room-code').textContent = OL.code;
+  $('ol-start').style.display = OL.role === 'host' ? 'block' : 'none';
+  $('ol-copy').style.display = OL.role === 'host' ? 'block' : 'none';
+  renderPlayers();
+}
+window.olCopyLink = function () {
+  var url = location.href.split('#')[0].split('?')[0] + '?room=' + OL.code;
+  var txt = 'Join my Deck of Doom co-op room! Code: ' + OL.code + ' ' + url;
+  if (navigator.share) { navigator.share({ title: 'Deck of Doom', text: txt, url: url }).catch(function () {}); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function () { toast('Invite copied!'); }, function () { prompt('Copy this invite:', txt); });
+  else prompt('Copy this invite:', txt);
+};
+function resetNet() {
+  clearInterval(OL.hb); OL.hb = null;
+  try { if (OL.conn) OL.conn.close(); } catch (e) {}
+  try { if (OL.peer) OL.peer.destroy(); } catch (e) {}
+  OL.conn = null; OL.peer = null; OL.connected = false; OL.role = null; OL.code = '';
+}
+window.olCancel = function () {
+  if (OL.conn) send({ t: 'bye' });
+  resetNet(); olMsg(''); showScreen('title-screen');
+};
+
+/* ---------- connection ---------- */
+function startHeartbeat() {
+  clearInterval(OL.hb); OL.lastMsg = Date.now();
+  OL.hb = setInterval(function () {
+    send({ t: 'p' });
+    if (OL.connected && Date.now() - OL.lastMsg > 20000) onConnClose(OL.conn);
+  }, 4000);
+}
+function wireConn(conn) {
+  conn.on('data', function (m) { OL.lastMsg = Date.now(); if (m && typeof m === 'object' && typeof m.t === 'string') onMsg(m); });
+  conn.on('close', function () { onConnClose(conn); });
+  conn.on('error', function () { onConnClose(conn); });
+}
+function peerError(e) {
+  var t = e && e.type;
+  if (t === 'peer-unavailable') olMsg('Room not found. Check the code and make sure the host is still waiting.');
+  else if (t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed') olMsg('Cannot reach the matchmaking server. Check your internet and try again.');
+  else olMsg('Connection problem (' + (t || 'unknown') + ').');
+  if (!OL.on) { resetNet(); $('ol-step-profile').style.display = 'block'; $('ol-step-room').style.display = 'none'; }
+}
+
+window.olCreate = function () {
+  readProfile(); olMsg('Connecting…', true);
+  loadPeer().then(function () { OL.role = 'host'; tryCreate(0); }, function () { olMsg('Could not load the online library. Check your internet.'); });
+};
+function tryCreate(n) {
+  OL.code = genCode();
+  var peer = new Peer(PREFIX + OL.code, { config: { iceServers: ICE } });
+  OL.peer = peer;
+  peer.on('open', function () {
+    OL.hostName = OL.name; OL.hostEmoji = OL.emoji; OL.guestName = ''; OL.connected = false;
+    showRoom(); olMsg('Share the code or invite link with a friend.', true);
+  });
+  peer.on('connection', onIncoming);
+  peer.on('disconnected', function () { try { peer.reconnect(); } catch (e) {} });
+  peer.on('error', function (e) {
+    if (e && e.type === 'unavailable-id' && n < 5) { try { peer.destroy(); } catch (x) {} tryCreate(n + 1); }
+    else peerError(e);
+  });
+}
+function onIncoming(conn) {
+  if (OL.on || (OL.conn && OL.connected)) {
+    conn.on('open', function () { try { conn.send({ t: 'full' }); } catch (e) {} setTimeout(function () { try { conn.close(); } catch (e) {} }, 400); });
+    return;
+  }
+  OL.conn = conn; wireConn(conn);
+  conn.on('open', function () { OL.connected = true; startHeartbeat(); });
+}
+
+window.olJoin = function () {
+  var code = $('ol-code').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (code.length !== 5) { olMsg('Enter the 5-character room code.'); return; }
+  readProfile(); olMsg('Connecting…', true);
+  loadPeer().then(function () {
+    OL.role = 'guest'; OL.code = code;
+    var peer = new Peer({ config: { iceServers: ICE } }); OL.peer = peer;
+    peer.on('open', function () {
+      var conn = peer.connect(PREFIX + code, { reliable: true }); OL.conn = conn; wireConn(conn);
+      var to = setTimeout(function () { if (!conn.open) { olMsg('Could not connect. The room may be full, closed, or blocked by your network.'); resetNet(); } }, 15000);
+      conn.on('open', function () {
+        clearTimeout(to); OL.connected = true; startHeartbeat();
+        send({ t: 'join', name: OL.name, emoji: OL.emoji });
+        showRoom(); olMsg('Connected! Waiting for the host to start…', true);
+      });
+    });
+    peer.on('disconnected', function () { try { peer.reconnect(); } catch (e) {} });
+    peer.on('error', peerError);
+  }, function () { olMsg('Could not load the online library. Check your internet.'); });
+};
+
+function onConnClose(conn) {
+  if (conn !== OL.conn || !OL.connected) return;
+  OL.connected = false; clearInterval(OL.hb);
+  if (OL.role === 'host') onPartnerGone(); else onHostGone();
+}
+function onHostGone() {
+  if (OL.on) olModal('HOST LEFT', 'The host disconnected. The run has ended.', 'BACK TO TITLE', leaveOnline);
+  else { olMsg('The host left the room.'); resetNet(); $('ol-step-profile').style.display = 'block'; $('ol-step-room').style.display = 'none'; }
+}
+function onPartnerGone() {
+  toast((OL.guestName || 'Your partner') + ' disconnected', 4000);
+  if (!OL.on) { OL.guestName = ''; OL.conn = null; renderPlayers(); return; }
+  OL.conn = null; state.player2.hp = 0; OL.lootDone.g = true;
+  if (OL.phase === 'p2') hostEndP2();
+  if (OL.screen === 'loot-screen') checkLootDone();
+  updateTop(); updateUI();
+}
+
+function olModal(title, text, btn, fn) {
+  $('ol-modal-title').textContent = title; $('ol-modal-text').textContent = text;
+  var b = $('ol-modal-btn'); b.textContent = btn; b.onclick = function () { $('ol-modal').classList.remove('open'); fn(); };
+  $('ol-modal').classList.add('open');
+}
+function leaveOnline() {
+  if (OL.conn) send({ t: 'bye' });
+  OL.on = false; OL.leaving = true;
+  var net = { c: OL.conn, p: OL.peer };
+  clearInterval(OL.hb);
+  setTimeout(function () { try { net.c && net.c.close(); } catch (e) {} try { net.p && net.p.destroy(); } catch (e) {} }, 200);
+  OL.conn = null; OL.peer = null; OL.connected = false; OL.role = null; OL.swapped = false; OL.lootGuard = false; OL.phase = 'p1';
+  state.hand = []; state.discard = []; state.deck = [];
+  document.body.classList.remove('online');
+  $('ol-modal').classList.remove('open'); $('back-modal').classList.remove('open');
+  showScreen('title-screen'); OL.leaving = false;
+}
+window.addEventListener('beforeunload', function () { if (OL.conn) send({ t: 'bye' }); });
+
+/* ---------- top status ---------- */
+var topEl = document.createElement('div'); topEl.id = 'ol-top'; $('top-bar').appendChild(topEl);
+function updateTop() {
+  if (!OL.on) return;
+  topEl.textContent = '🌐 ROOM ' + OL.code + ' · ' + (OL.role === 'host'
+    ? OL.hostName + (OL.connected ? ' + ' + OL.guestName : ' (solo)')
+    : OL.hostName + ' + ' + OL.guestName);
+}
+function refreshBtns() {
+  var b = document.querySelector('.end-turn-btn'); if (!b) return;
+  var can = OL.role === 'host' ? (OL.phase === 'p1' && isPlayerTurn) : (OL.role === 'guest' ? OL.myTurn : true);
+  b.classList.toggle('off', OL.on && !can);
+}
+
+/* ---------- message router ---------- */
+function onMsg(m) {
+  if (OL.role === 'host') {
+    switch (m.t) {
+      case 'join':
+        OL.guestName = cleanName(m.name, 'Player 2'); OL.guestEmoji = cleanEmoji(m.emoji);
+        send({ t: 'welcome', hostName: OL.hostName, hostEmoji: OL.hostEmoji });
+        renderPlayers(); toast(OL.guestName + ' joined!'); break;
+      case 'play': hostGuestPlay(m); break;
+      case 'end': if (OL.phase === 'p2' && isPlayerTurn) hostEndP2(); break;
+      case 'redraw': if (OL.phase === 'p2' && isPlayerTurn) { OL.fromGuest = true; try { window.redrawHand(); } finally { OL.fromGuest = false; } } break;
+      case 'loot':
+        if (OL.screen === 'loot-screen' && !OL.lootDone.g) {
+          var c = ALL_CARDS.find(function (x) { return x.id === m.id; });
+          if (c && OL.lootIds.g.indexOf(c.id) >= 0) OL.h2.deck.push(Object.assign({}, c));
+          OL.lootDone.g = true; checkLootDone();
+        } break;
+      case 'bye': onConnClose(OL.conn); break;
+    }
+  } else {
+    switch (m.t) {
+      case 'welcome': OL.hostName = cleanName(m.hostName, 'Host'); OL.hostEmoji = cleanEmoji(m.hostEmoji); renderPlayers(); break;
+      case 'full': olMsg('That room already has two players.'); resetNet(); $('ol-step-profile').style.display = 'block'; $('ol-step-room').style.display = 'none'; break;
+      case 'start': guestStart(m); break;
+      case 'snap': if (OL.on) guestApply(m.s); break;
+      case 'victory': olModal('VICTORY!', 'You conquered The Spire together.', 'BACK TO TITLE', leaveOnline); try { playSound('victory'); } catch (e) {} break;
+      case 'bye': onConnClose(OL.conn); break;
+    }
+  }
+}
+
+/* ===================== HOST ===================== */
+function setNames() {
+  var set = function (pre, name, emoji) {
+    var sp = document.querySelector('#' + pre + '-sprite span.emoji-char'); sp.dataset.orig = emoji; sp.textContent = emoji;
+    document.querySelector('#' + pre + '-container .player-name').textContent = name;
+  };
+  set('player', OL.hostName, OL.hostEmoji); set('player2', OL.guestName, OL.guestEmoji);
+  $('player2-container').style.display = 'flex'; $('enemy2-container').style.display = 'flex';
+}
+window.olHostStart = function () {
+  if (OL.role !== 'host' || !OL.connected || !OL.guestName) return;
+  send({ t: 'start', hostName: OL.hostName, hostEmoji: OL.hostEmoji, guestName: OL.guestName, guestEmoji: OL.guestEmoji });
+  OL.on = true; document.body.classList.add('online');
+  state.mode = '2v2'; state.diffMult = OL.diff; state.player.name = OL.hostName; state.player.emoji = OL.hostEmoji;
+  setNames(); GameAudio.startMusic(); updateTop();
+  window.startGame();
+};
+var _sg = window.startGame;
+window.startGame = function () {
+  _sg();
+  state.hand = []; state.discard = [];
+  if (OL.on && OL.role === 'host') {
+    state.deck = state.deck.slice(0, 9);
+    OL.h2 = { hand: [], deck: state.deck.map(function (c) { return Object.assign({}, c); }), discard: [] };
+    OL.swapped = false; OL.phase = 'p1'; OL.battleId = 0; OL.lootGuard = false;
+  }
+};
+
+function scheduleSnap() {
+  if (!OL.on || OL.role !== 'host' || !OL.connected || OL.snapQueued) return;
+  OL.snapQueued = true; setTimeout(function () { OL.snapQueued = false; sendSnap(); }, 40);
+}
+function hero(k) { var p = state[k]; return { hp: p.hp, maxHp: p.maxHp, block: p.block || 0, str: p.str || 0 }; }
+function foe(k, i) { var e = state[k]; return { i: OL.eIdx[i], hp: e.hp, maxHp: e.maxHp, intent: e.intent || 0, str: e.str || 0 }; }
+function sendSnap() {
+  if (!OL.on || OL.role !== 'host' || !OL.connected) return;
+  var p2 = OL.phase === 'p2';
+  send({ t: 'snap', s: {
+    screen: OL.screen, phase: OL.phase, battle: OL.battleId, node: state.currentNodeId, visited: state.visitedNodes.slice(),
+    floor: $('floor-display').textContent,
+    p1: hero('player'), p2: hero('player2'), e1: foe('enemy', 0), e2: foe('enemy2', 1),
+    myTurn: p2 && isPlayerTurn, energy: p2 ? state.player.energy : 0, maxEnergy: state.player.maxEnergy, redrawn: !!state._redrawn,
+    hand: p2 ? state.hand.map(function (c) { return c.id; }) : [],
+    deck: p2 ? state.deck.length : OL.h2.deck.length,
+    names: [OL.hostName, OL.guestName], emojis: [OL.hostEmoji, OL.guestEmoji],
+    loot: OL.screen === 'loot-screen' ? { ids: OL.lootIds.g, wait: OL.lootDone.g } : null
+  } });
+}
+
+var _show = window.showScreen;
+window.showScreen = function (id) {
+  if (OL.on && id === 'title-screen' && !OL.leaving) { leaveOnline(); return; }
+  _show(id); OL.screen = id;
+  if (OL.on && OL.role === 'host') scheduleSnap();
+};
+var _upd = window.updateUI;
+window.updateUI = function () { _upd(); if (OL.on) { refreshBtns(); if (OL.role === 'host') scheduleSnap(); } };
+
+var _rh = window.renderHand;
+window.renderHand = function () {
+  if (OL.on && OL.role === 'host' && OL.phase === 'p2') {
+    var c = $('hand-container'); c.textContent = '';
+    var d = document.createElement('div'); d.className = 'ol-wait'; d.textContent = '⏳ ' + OL.guestName + ' is playing…'; c.appendChild(d); return;
+  }
+  _rh();
+};
+
+var _sel = window.selectTarget;
+window.selectTarget = function (k, t) {
+  if (OL.on && t === 'player') k = (OL.role === 'guest' || OL.phase === 'p2') ? 'player2' : 'player';
+  _sel(k, t);
+};
+var _auto = window.autoSelectAliveTargets;
+window.autoSelectAliveTargets = function () {
+  _auto();
+  if (OL.on && OL.role === 'host' && OL.phase === 'p2' && state.player2.hp > 0) selectTarget('player2', 'player');
+};
+
+var _sb = window.startBattle;
+window.startBattle = function (i) {
+  if (!(OL.on && OL.role === 'host')) return _sb(i);
+  var g = OL.h2; g.deck = g.deck.concat(g.hand, g.discard); g.hand = []; g.discard = []; shuffle(g.deck);
+  OL.eIdx = [i, 2]; OL.battleId++; OL.phase = 'p1'; OL.swapped = false; OL.lootGuard = false;
+  _sb(i);
+};
+
+var _st = window.startTurn;
+window.startTurn = function () {
+  if (!(OL.on && OL.role === 'host')) return _st();
+  OL.phase = 'p1'; _st();
+  setTurn(OL.hostName + "'s turn", '#2ecc71');
+  if (state.player.hp <= 0) {
+    state.discard.push.apply(state.discard, state.hand); state.hand = []; renderHand();
+    setTimeout(hostEndP1, 600);
+  }
+  updateUI();
+};
+
+var _et = window.endTurn;
+window.endTurn = function () {
+  if (OL.on && OL.role === 'host') { if (OL.phase === 'p1' && isPlayerTurn) hostEndP1(); return; }
+  if (OL.on && OL.role === 'guest') { if (OL.myTurn && !OL.pending) { OL.pending = true; send({ t: 'end' }); } return; }
+  _et();
+};
+function hostEndP1() {
+  if (OL.phase !== 'p1') return;
+  isPlayerTurn = false;
+  state.discard.push.apply(state.discard, state.hand); state.hand = []; renderHand();
+  var h = $('tap-hint'); if (h) h.classList.remove('on');
+  if (state.player2.hp <= 0 || !OL.connected) goEnemy(); else startP2();
+}
+function startP2() {
+  OL.phase = 'p2';
+  OL.h1 = { hand: state.hand, deck: state.deck, discard: state.discard };
+  state.hand = OL.h2.hand; state.deck = OL.h2.deck; state.discard = OL.h2.discard; OL.swapped = true;
+  state.player.energy = state.player.maxEnergy; state._redrawn = false; state.activePlayer = 'player2';
+  isPlayerTurn = true;
+  setTurn(OL.guestName + "'s turn", '#2ecc71');
+  drawCards(5); selectTarget('player2', 'player'); updateUI(); sendSnap();
+}
+function unswap() {
+  if (!OL.swapped) return;
+  OL.h2 = { hand: state.hand, deck: state.deck, discard: state.discard };
+  state.hand = OL.h1.hand; state.deck = OL.h1.deck; state.discard = OL.h1.discard; OL.swapped = false;
+}
+function hostEndP2() {
+  if (OL.phase !== 'p2') return;
+  state.discard.push.apply(state.discard, state.hand); state.hand = [];
+  unswap(); isPlayerTurn = false; renderHand(); goEnemy();
+}
+function goEnemy() {
+  OL.phase = 'enemy'; isPlayerTurn = false; state.activePlayer = 'player';
+  setTurn('ENEMY TURN', '#ff4757'); updateUI(); sendSnap();
+  setTimeout(enemyTurn, 800);
+}
+
+var _eea = window.executeEnemyAttack;
+window.executeEnemyAttack = function (k, d, cb) {
+  if (OL.on && OL.role === 'host') {
+    var alive = ['player', 'player2'].filter(function (h) { return state[h].hp > 0; });
+    if (alive.length) state.activePlayer = alive[Math.floor(Math.random() * alive.length)];
+  }
+  _eea(k, d, cb);
+};
+
+function hostGuestPlay(m) {
+  if (OL.phase !== 'p2' || !isPlayerTurn) return;
+  var i = m.i | 0, card = state.hand[i];
+  if (!card || state.player.energy < card.cost) return;
+  state.activePlayer = 'player2';
+  if ((m.enemy === 'enemy' || m.enemy === 'enemy2') && state[m.enemy].hp > 0) state.activeEnemy = m.enemy;
+  var target = getPrimaryTarget(card.type); if (!target) return;
+  state.player.energy -= card.cost; state.hand.splice(i, 1); state.discard.push(card);
+  showFloatingText('player2-sprite', card.name, '#ffd23f');
+  if (card.type === 'attack') { showEmotion('player2-container', '💢', 600); swapEmojiFace('player2', '😡', 500); dashAttack('player2-sprite', target.id, 300, 200); }
+  else { showEmotion('player2-container', '✨', 600); swapEmojiFace('player2', '🤩', 600); }
+  renderHand(); updateUI();
+  setTimeout(function () { applyCardEffect(card, target); }, 300);
+}
+
+var _rd = window.redrawHand;
+window.redrawHand = function () {
+  if (OL.on && OL.role === 'guest') {
+    if (OL.myTurn && !OL.redrawn && OL.energy >= 1 && !OL.pending) { OL.pending = true; send({ t: 'redraw' }); } else playSound('error');
+    return;
+  }
+  if (OL.on && OL.role === 'host' && OL.phase !== 'p1' && !OL.fromGuest) return;
+  _rd();
+};
+
+/* loot / map / victory (host side) */
+function renderLoot(ids) {
+  var box = $('loot-options'); box.innerHTML = '';
+  ids.forEach(function (id) {
+    var item = ALL_CARDS.find(function (c) { return c.id === id; }); if (!item) return;
+    var col = document.createElement('div'); col.className = 'loot-column';
+    col.innerHTML = '<div class="card ' + item.type + '"><div class="ambient-effect ' + getCardEffectClass(item.type) + '"></div><div class="card-header"><div class="card-cost">' + item.cost + '</div><div class="card-title">' + item.name + '</div></div><div class="card-art">' + item.img + '</div><div class="card-desc">' + item.desc + '</div></div><button class="btn-green" onclick="takeCard(' + item.id + ')">TAKE CARD</button>';
+    box.appendChild(col);
+  });
+}
+function lootWait() { $('loot-options').innerHTML = '<div class="ol-wait">⏳ Waiting for your partner to choose…</div>'; }
+
+var _gcl = window.generateCombatLoot;
+window.generateCombatLoot = function () {
+  if (!(OL.on && OL.role === 'host')) return _gcl();
+  if (OL.lootGuard) return; OL.lootGuard = true;
+  unswap(); isPlayerTurn = false;
+  ['player', 'player2'].forEach(function (k) {
+    if (state[k].hp <= 0 && (k === 'player' || OL.connected)) state[k].hp = Math.ceil(state[k].maxHp * 0.3);
+  });
+  var pool = ALL_CARDS.slice(); shuffle(pool); OL.lootIds.h = pool.slice(0, 3).map(function (c) { return c.id; });
+  shuffle(pool); OL.lootIds.g = pool.slice(0, 3).map(function (c) { return c.id; });
+  OL.lootDone = { h: false, g: !OL.connected };
+  renderLoot(OL.lootIds.h); playSound('win'); updateUI(); showScreen('loot-screen');
+};
+function checkLootDone() {
+  if (OL.lootDone.h && OL.lootDone.g) { OL.lootDone = { h: false, g: false }; OL.lootGuard = false; completeNode(); }
+}
+var _tc = window.takeCard;
+window.takeCard = function (id) {
+  if (!OL.on) return _tc(id);
+  if (OL.role === 'guest') { if (OL.lootSent) return; OL.lootSent = true; send({ t: 'loot', id: id }); lootWait(); return; }
+  if (OL.lootDone.h) return;
+  var c = ALL_CARDS.find(function (x) { return x.id === id; }); if (c && OL.lootIds.h.indexOf(id) >= 0) state.deck.push(Object.assign({}, c));
+  OL.lootDone.h = true; lootWait(); checkLootDone();
+};
+var _sl = window.skipLoot;
+window.skipLoot = function () {
+  if (!OL.on) return _sl();
+  if (OL.role === 'guest') { if (OL.lootSent) return; OL.lootSent = true; send({ t: 'loot', id: null }); lootWait(); return; }
+  if (OL.lootDone.h) return;
+  OL.lootDone.h = true; lootWait(); checkLootDone();
+};
+var _cn = window.completeNode;
+window.completeNode = function () {
+  if (OL.on && OL.role === 'host') {
+    var node = MAP_DATA.find(function (n) { return n.id === state.currentNodeId; });
+    if (node.type === 'boss') {
+      playSound('victory'); send({ t: 'victory' });
+      olModal('VICTORY!', 'You conquered The Spire together.', 'BACK TO TITLE', leaveOnline); return;
+    }
+    return _cn();
+  }
+  _cn();
+};
+var _en = window.enterNode;
+window.enterNode = function (id) { if (OL.on && OL.role === 'guest') return; _en(id); };
+
+var _obc = window.openBackConfirm;
+window.openBackConfirm = function () {
+  var m = $('back-modal'), h = m.querySelector('h2'), p = m.querySelector('p'), b = m.querySelector('.btn-play.highlight');
+  if (OL.on) { h.textContent = 'LEAVE ROOM?'; p.textContent = 'You will disconnect from the co-op run.'; b.textContent = 'Leave'; }
+  else { h.textContent = 'LEAVE BATTLE?'; p.textContent = 'Return to the map? Your current battle progress will be lost.'; b.textContent = 'Back to Map'; }
+  _obc();
+};
+var _cb = window.confirmBack;
+window.confirmBack = function () { if (OL.on) { closeBackConfirm(); leaveOnline(); return; } _cb(); };
+
+/* ===================== GUEST ===================== */
+function guestStart(m) {
+  OL.hostName = cleanName(m.hostName, 'Host'); OL.hostEmoji = cleanEmoji(m.hostEmoji);
+  OL.guestName = cleanName(m.guestName, 'Player 2'); OL.guestEmoji = cleanEmoji(m.guestEmoji);
+  OL.on = true; OL.battleId = -1; OL.mapKey = ''; OL.lootKey = ''; OL.handSig = '';
+  document.body.classList.add('online');
+  state.mode = '2v2'; state.activePlayer = 'player2'; state.hand = []; state.deck = []; state.discard = [];
+  setNames(); GameAudio.startMusic(); updateTop();
+  $('ol-map-note').textContent = 'The host chooses the path…';
+}
+function buildEnemy(prefix, idx) {
+  var e = ENEMIES[idx] || ENEMIES[0], box = $(prefix + '-sprite'); box.textContent = '';
+  box.classList.remove('has-px');
+  var amb = document.createElement('div'); amb.className = 'ambient-effect ' + (e.name === 'Slime Boss' ? 'effect-water' : 'effect-smoke');
+  var sp = document.createElement('span'); sp.className = 'emoji-char anim-idle'; sp.dataset.orig = e.img; sp.textContent = e.img; sp.style.cssText = 'position:relative;z-index:5;';
+  var ib = document.createElement('div'); ib.className = 'intent-badge'; ib.id = prefix + '-intent'; ib.textContent = '⚔️ 0';
+  var bb = document.createElement('div'); bb.className = 'block-badge'; bb.id = prefix + '-block-badge'; bb.style.display = 'none'; bb.textContent = '0';
+  box.append(amb, sp, ib, bb); $(prefix + '-name').textContent = e.name;
+}
+function fx(k, o, n, phase) {
+  var id = k + '-sprite', hero = k.indexOf('player') === 0;
+  if (n.hp < o.hp) { showFloatingText(id, '-' + (o.hp - n.hp), '#ff4757'); triggerAnim(id, 'anim-damage'); createHitSpark(id); playSound(hero ? 'hurt' : 'attack'); }
+  else if (n.hp > o.hp) { showFloatingText(id, '+' + (n.hp - o.hp), '#2ecc71'); playSound('power'); }
+  if ((n.block || 0) > (o.block || 0)) { showFloatingText(id, '+' + (n.block - o.block), '#3498db'); triggerAnim(id, 'anim-block'); playSound('block'); }
+  else if (phase === 'enemy' && (n.block || 0) < (o.block || 0) && n.hp >= o.hp) { showFloatingText(id, 'BLOCKED', '#3498db'); playSound('block'); }
+  if ((n.str || 0) > (o.str || 0)) { showFloatingText(id, 'STR UP!', '#f1c40f'); playSound('power'); }
+}
+function guestApply(s) {
+  if (!s || typeof s !== 'object') return;
+  OL.pending = false;
+  OL.hostName = cleanName(s.names && s.names[0], OL.hostName); OL.guestName = cleanName(s.names && s.names[1], OL.guestName);
+  if (s.screen !== OL.screen) { _show(s.screen); OL.screen = s.screen; }
+  if (s.screen !== 'map-screen') OL.mapKey = '';
+  if (s.screen !== 'loot-screen') { OL.lootKey = ''; OL.lootSent = false; }
+  if (s.screen === 'game-screen') guestGame(s);
+  else if (s.screen === 'map-screen') {
+    var key = s.node + ':' + (s.visited || []).join(',');
+    if (key !== OL.mapKey) { OL.mapKey = key; state.currentNodeId = s.node | 0; state.visitedNodes = (s.visited || []).map(Number); window.renderMap(); }
+  } else if (s.screen === 'loot-screen' && s.loot) {
+    var lk = s.loot.ids.join(',') + (s.loot.wait ? 'w' : '');
+    if (lk !== OL.lootKey && !OL.lootSent) { OL.lootKey = lk; renderLoot(s.loot.ids.map(Number)); }
+  }
+  updateTop();
+}
+function guestGame(s) {
+  var newBattle = s.battle !== OL.battleId;
+  $('floor-display').textContent = String(s.floor || '').slice(0, 12);
+  if (newBattle) {
+    OL.battleId = s.battle; state.activePlayer = 'player2';
+    buildEnemy('enemy', s.e1.i | 0); buildEnemy('enemy2', s.e2.i | 0);
+    $('player2-container').style.display = 'flex'; $('enemy2-container').style.display = 'flex';
+    if (window.applySprites) window.applySprites();
+    selectTarget('player2', 'player'); selectTarget('enemy', 'enemy'); OL.handSig = '';
+  }
+  [['player', s.p1], ['player2', s.p2], ['enemy', s.e1], ['enemy2', s.e2]].forEach(function (pair) {
+    var k = pair[0], n = pair[1], o = state[k];
+    if (!newBattle) fx(k, o, n, s.phase);
+    o.hp = n.hp; o.maxHp = n.maxHp; o.block = n.block || 0; o.str = n.str || 0;
+    if (n.intent !== undefined) o.intent = n.intent;
+  });
+  if (state[state.activeEnemy].hp <= 0) { var alt = state.activeEnemy === 'enemy' ? 'enemy2' : 'enemy'; if (state[alt].hp > 0) selectTarget(alt, 'enemy'); }
+  OL.myTurn = !!s.myTurn; OL.energy = s.energy | 0; OL.redrawn = !!s.redrawn;
+  isPlayerTurn = OL.myTurn; state._redrawn = OL.redrawn;
+  state.player.energy = OL.energy; state.player.maxEnergy = s.maxEnergy | 0 || 3;
+  setTurn(s.phase === 'p1' ? OL.hostName + "'s turn" : (s.phase === 'p2' ? 'Your turn' : 'Enemy turn'), s.phase === 'enemy' ? '#ff4757' : '#2ecc71');
+  state.hand = (s.hand || []).map(function (id) { var c = ALL_CARDS.find(function (x) { return x.id === id; }); return c ? Object.assign({}, c) : null; }).filter(Boolean);
+  var sig = state.hand.map(function (c) { return c.id; }).join(',') + '|' + OL.myTurn;
+  if (sig !== OL.handSig) {
+    OL.handSig = sig; renderHand();
+    if (!state.hand.length) {
+      var c = $('hand-container'); c.textContent = '';
+      if (!OL.myTurn) { var d = document.createElement('div'); d.className = 'ol-wait'; d.textContent = s.phase === 'p1' ? '⏳ ' + OL.hostName + ' is playing…' : '⏳ Enemy turn…'; c.appendChild(d); }
+    }
+  }
+  $('deck-count').textContent = s.deck | 0;
+  updateUI();
+  $('energy-text').textContent = OL.myTurn ? OL.energy + '/' + state.player.maxEnergy : '–';
+}
+
+var _rc = window.releaseCard;
+window.releaseCard = function (i, e) {
+  if (!(OL.on && OL.role === 'guest')) return _rc(i, e);
+  var el = document.querySelectorAll('#hand-container .card')[i], card = state.hand[i];
+  if (!OL.myTurn || OL.pending || !el || !card || !el.classList.contains('card-ready')) return;
+  cancelCard(el);
+  if (card.cost > OL.energy) { playSound('error'); return; }
+  OL.pending = true; send({ t: 'play', i: i, enemy: state.activeEnemy });
+};
+
+/* ---------- invite link auto-fill ---------- */
+try {
+  var q = new URLSearchParams(location.search).get('room');
+  if (q && /^[A-Za-z0-9]{5}$/.test(q)) { openOnline(); $('ol-code').value = q.toUpperCase(); olMsg('Enter your name and press JOIN ROOM.', true); }
+} catch (e) {}
+})();
+
+</script>
+<script>
+/* ===================== FIT-TO-SCREEN (no scrolling) ===================== */
+(function () {
+  var IDS = ['title-screen', 'readme-screen', 'setup-screen', 'online-screen', 'map-screen', 'loot-screen', 'death-screen'];
+  var pending = false;
+  function wrap(scr) {
+    if (scr.querySelector(':scope > .fit-wrap')) return;
+    var out = document.createElement('div'), inn = document.createElement('div');
+    out.className = 'fit-wrap'; inn.className = 'fit-in';
+    while (scr.firstChild) inn.appendChild(scr.firstChild);
+    out.appendChild(inn); scr.appendChild(out);
+    if (window.ResizeObserver) new ResizeObserver(schedule).observe(inn);
+  }
+  function fit(scr) {
+    var out = scr.querySelector(':scope > .fit-wrap'); if (!out) return;
+    var inn = out.firstElementChild; if (!inn.offsetHeight) return;
+    inn.style.transform = 'none'; out.style.height = 'auto';
+    var cs = getComputedStyle(scr);
+    var availH = scr.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    var availW = scr.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    var nh = inn.offsetHeight, nw = Math.max(inn.scrollWidth, inn.offsetWidth);
+    var s = Math.min(1, availH / nh, availW / nw);
+    if (s < 1) { inn.style.transform = 'scale(' + s.toFixed(4) + ')'; out.style.height = (nh * s) + 'px'; }
+  }
+  function fitAll() { pending = false; IDS.forEach(function (id) { var e = document.getElementById(id); if (e && e.style.display !== 'none' && e.offsetHeight) fit(e); }); }
+  function schedule() { if (!pending) { pending = true; requestAnimationFrame(fitAll); } }
+  IDS.forEach(function (id) { var e = document.getElementById(id); if (e) wrap(e); });
+  window.addEventListener('resize', schedule);
+  window.addEventListener('orientationchange', function () { setTimeout(schedule, 250); });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', schedule);
+  var _s = window.showScreen;
+  window.showScreen = function (id) { _s(id); schedule(); setTimeout(schedule, 60); };
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+  window.addEventListener('load', schedule); schedule();
+})();
+
 </script>
 </body>
 </html>
