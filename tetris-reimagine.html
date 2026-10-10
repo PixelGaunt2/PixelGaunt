@@ -138,8 +138,9 @@
     #btnSpaceGl.pressed .in, #btnSpaceGl:active .in { background:linear-gradient(180deg,#5a1366,#2a0a3f); }
 
     /* ===== Online versus ===== */
-    #board-row { flex:1; min-height:0; width:100%; display:flex; gap:6px; }
-    #board-row > #board-glow { width:auto; min-width:0; }
+    #board-row { flex:1; min-height:0; width:100%; display:flex; gap:6px; align-items:center; justify-content:center; }
+    #board-row > #board-glow { flex:none; min-width:0; }
+    #opp-panel { display:none !important; }
     #opp-panel { flex:none; --gl:rgba(255,80,120,.85); --cut:12px; --bw:2px; }
     #opp-panel .nb { --bc:linear-gradient(135deg,#ff6a8a,#ff9a1f 50%,#b44bff); }
     #oppIn { flex-direction:column; justify-content:flex-start; gap:5px; padding:7px 6px; background:linear-gradient(180deg,#14072e,#07041f); font-family:'Orbitron',sans-serif; text-align:center; overflow:hidden; }
@@ -529,16 +530,16 @@ LVL 1</div>
         document.body.style.height = vh + 'px';
         const wrap = document.getElementById('game-wrapper');
         const glow = document.getElementById('board-glow');
-        const availH = glow.clientHeight - frame;
-        const k = versus ? 0.46 : 0; // opponent board is 46% of the size of yours
+        const availH = document.getElementById('board-row').clientHeight - frame;
+        const k = 0; // opponent screen is not shown
         const maxW = IS_DESKTOP ? (versus ? 760 : 560) : (versus ? 600 : 440), maxBoard = IS_DESKTOP ? 460 : 400;
-        const availW = Math.min(vw - 8, maxW) - 8 - frame - (versus ? 22 : 0);
+        const availW = Math.min(vw - 8, maxW) - 8 - frame - 0;
         let w = Math.floor(Math.min(availW / (1 + k), availH / 2, maxBoard));
         w = Math.max(w, 100); const h = w * 2;
-        const ow = versus ? Math.max(44, Math.round(w * k)) : 0;
-        wrap.style.width = Math.min(vw, Math.max(w + frame + 8 + (versus ? ow + 22 : 0), 300)) + 'px';
+        const ow = 0;
+        wrap.style.width = Math.min(vw, Math.max(w + frame + 8, 300)) + 'px';
         const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-        const key = w + 'x' + vw + 'x' + vh + '@' + dpr + (versus ? 'v' : '');
+        const key = w + 'x' + h + 'x' + vw + 'x' + vh + '@' + dpr + (versus ? 'v' : '');
         if (key === lastFit) return; // nothing really changed (mobile URL bar jitter etc.)
         lastFit = key;
         canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
@@ -547,9 +548,9 @@ LVL 1</div>
         canvas.width = cw; canvas.height = cw * 2;
         SC = canvas.width / LW;
         spriteCache.clear(); boardBg = null;
-        glow.style.width = 'auto';
-        oppPanel.classList.toggle('hidden', !versus);
-        if (versus) {
+        glow.style.width = (w + frame) + 'px'; glow.style.height = (h + frame) + 'px';
+        oppPanel.classList.add('hidden');
+        if (false) {
             oppPanel.style.width = (ow + 16) + 'px';
             oppCanvas.style.width = ow + 'px'; oppCanvas.style.height = (ow * 2) + 'px';
             oppCanvas.width = Math.max(10, Math.round(ow * dpr / 10) * 10); oppCanvas.height = oppCanvas.width * 2;
@@ -1226,12 +1227,7 @@ LVL 1</div>
         lastRecv = performance.now();
         switch (d.t) {
             case 'start': if (!isHost && typeof d.seed === 'number' && isFinite(d.seed)) { clearTimeout(startWait); beginVersus(d.seed); } break;
-            case 'b':
-                if (versus && typeof d.b === 'string' && d.b.length === 200 && /^[0-8]+$/.test(d.b)) {
-                    oppLast = d.b; drawOpp(d.b);
-                    elOppStats.textContent = 'SCORE ' + ((+d.s | 0) || 0) + '\nLVL ' + ((+d.l | 0) || 1);
-                }
-                break;
+            case 'b': break; // opponent screen is not shown
             case 'g':
                 if (versus && (state === 'PLAY' || state === 'COUNTDOWN')) {
                     const n = Math.max(1, Math.min(8, d.n | 0)), hole = Math.max(0, Math.min(COLS - 1, d.hole | 0));
@@ -1348,8 +1344,7 @@ LVL 1</div>
     }
     function netTick(now) {
         if (state !== 'PLAY' || now - lastSend < 90) return;
-        const b = encodeBoard();
-        if (b !== lastB || now - lastSend > 700) { lastB = b; lastSend = now; netSend({ t: 'b', b, s: score, l: level }); }
+        
     }
     function drawOpp(str) {
         const W = oppCanvas.width, H = oppCanvas.height, cs = W / COLS;
